@@ -41,4 +41,4 @@
 
 **Combien écrit-il sur le disque ?** Quelques Go par jour au plus en usage normal ; la première reprise de l'historique écrit davantage, une seule fois. Prenez un SSD plutôt qu'une carte SD.
 
-**Où poser une question ?** Sur le forum de la communauté Home Assistant (fil WattSlot), ou dans un [ticket GitHub](https://github.com/jmcruvellier/wattslot/issues/new/choose).
+**Où poser une question ?** Dans les [Discussions](https://github.com/jmcruvellier/wattslot/discussions) ; pour un bogue, ouvrez un [ticket GitHub](https://github.com/jmcruvellier/wattslot/issues/new/choose).

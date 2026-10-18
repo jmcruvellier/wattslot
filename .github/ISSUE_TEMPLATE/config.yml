@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
   - name: Questions and discussion
-    url: https://community.home-assistant.io/
-    about: Ask questions and share your setup on the Home Assistant community forum (WattSlot thread).
+    url: https://github.com/jmcruvellier/wattslot/discussions
+    about: Ask questions, suggest ideas and share your setup in the Discussions.
   - name: Security issue
     url: https://github.com/jmcruvellier/wattslot/security/advisories/new
     about: Report a vulnerability privately, never in a public issue.

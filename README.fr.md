@@ -56,6 +56,7 @@ Ouvrez `http://<hôte>:8100` et connectez-vous avec Home Assistant depuis la pag
 
 ## Aide et contributions
 
+- **Questions et idées** : posez-les dans les [Discussions](https://github.com/jmcruvellier/wattslot/discussions), en français ou en anglais.
 - **Bogues et idées** : [ouvrez un ticket](https://github.com/jmcruvellier/wattslot/issues/new/choose), en français ou en anglais. Pour un bogue, joignez le rapport anonymisé de **Réglages → État de l'application → Préparer un rapport**.
 - **Contribuer** (code, traductions) : voir [CONTRIBUTING.md](CONTRIBUTING.md).
 - **Sécurité** : voir [SECURITY.md](SECURITY.md).
