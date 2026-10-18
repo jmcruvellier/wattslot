@@ -1,0 +1,306 @@
+# Contrôles de la v2 (application unique, dossier app/), lancés sur chaque pull request
+# vers la branche main et après chaque merge. Ceux de la v1 restent dans controles.yml.
+#
+# Minutes d'Actions (quota du dépôt privé, 16/10/2026) : sur une pull request, seuls les jobs
+# que les fichiers modifiés concernent (job « changes »), une seule version de Python et l'image
+# amd64 ; tout tourne après le merge, avant la publication. Une exécution remplacée par un
+# nouveau push sur la même pull request est annulée.
+name: Contrôles v2
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+    # Merge de documentation seule : ni contrôles ni publication de l'image (le workflow ne
+    # tourne pas si tous les fichiers modifiés sont ignorés).
+    paths-ignore:
+      - "docs/**"
+      - "**.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  changes:
+    name: Fichiers modifiés
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+      image: ${{ steps.filter.outputs.image }}
+      addon: ${{ steps.filter.outputs.addon }}
+      integration: ${{ steps.filter.outputs.integration }}
+      bench: ${{ steps.filter.outputs.bench }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3.0.2
+        id: filter
+        with:
+          filters: |
+            workflow: &workflow
+              - .github/workflows/v2.yml
+            backend:
+              - *workflow
+              - app/backend/**
+              - dev/**
+              - bench/**
+            frontend:
+              - *workflow
+              - app/frontend/**
+            image:
+              - *workflow
+              - app/**
+            addon:
+              - *workflow
+              - ha-addon/**
+              - app/backend/pyproject.toml
+              - app/frontend/package.json
+              - app/frontend/package-lock.json
+              - app/scripts/**
+            integration:
+              - *workflow
+              - app/**
+              - dev/**
+            bench:
+              - *workflow
+              - bench/**
+              - app/backend/src/wattslot/storage/**
+              - app/backend/pyproject.toml
+
+  privacy:
+    # Données personnelles (lot 7.1) : sur les fichiers de publish.txt, à chaque exécution (quelques
+    # secondes). La liste personnelle vient du secret PRIVACY_TERMS ; sans lui (PR d'un fork du
+    # dépôt public), seules les règles génériques s'appliquent. La sortie ne cite jamais le texte.
+    name: Données personnelles
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Contrôle
+        env:
+          PRIVACY_TERMS: ${{ secrets.PRIVACY_TERMS }}
+        run: python3 dev/tools/privacy_check.py
+
+  backend:
+    name: Backend (Python ${{ matrix.python }})
+    needs: changes
+    if: github.event_name != 'pull_request' || needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ${{ fromJSON(github.event_name == 'pull_request' && '["3.12"]' || '["3.11", "3.12"]') }}
+    defaults:
+      run:
+        working-directory: app/backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Dépendances
+        run: pip install -e ".[dev]"
+      - name: Lint
+        run: ruff check . && ruff format --check .
+      - name: Typage
+        run: mypy
+      - name: Tests
+        run: pytest
+      - name: Outils de développement (lint, tests)
+        run: |
+          ruff check --config pyproject.toml ../../dev
+          ruff format --check --config pyproject.toml ../../dev
+          cd ../../dev && python -m pytest tools/tests
+      - name: Banc de performance (lint, tests en profil minimal)
+        run: |
+          ruff check --config pyproject.toml ../../bench
+          ruff format --check --config pyproject.toml ../../bench
+          cd ../.. && python -m pytest bench/tests
+
+  frontend:
+    name: Frontend
+    needs: changes
+    if: github.event_name != 'pull_request' || needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: app/frontend/package-lock.json
+      # npm 10 (livré avec Node 22) échoue sur les dépendances pairs facultatives de Vitest
+      # (« Cannot read properties of null (reading 'edgesOut') ») ; npm 11 les résout.
+      - name: npm 11
+        run: npm install -g npm@11.20.0
+      - name: Dépendances
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Typage
+        run: npm run typecheck
+      - name: Tests
+        run: npm test
+      - name: Compilation
+        run: npm run build
+      - name: Budget de taille de l'interface
+        run: npm run size
+
+  image:
+    name: Image (${{ matrix.platform }})
+    needs: changes
+    if: github.event_name != 'pull_request' || needs.changes.outputs.image == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # arm64 émulée (3 min) : après le merge seulement.
+        platform: ${{ fromJSON(github.event_name == 'pull_request' && '["linux/amd64"]' || '["linux/amd64", "linux/arm64"]') }}
+    steps:
+      - uses: actions/checkout@v4
+      # linux/arm64 est émulée (QEMU) : les runners ARM ne sont pas offerts aux dépôts privés
+      # du plan gratuit.
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - name: Construction
+        uses: docker/build-push-action@v6
+        with:
+          context: app
+          platforms: ${{ matrix.platform }}
+          load: true
+          tags: wattslot:test
+          cache-from: type=gha,scope=${{ matrix.platform }}
+          cache-to: type=gha,scope=${{ matrix.platform }},mode=max
+      - name: Démarrage et état
+        run: |
+          docker run -d --name wattslot --platform ${{ matrix.platform }} -p 8100:8100 wattslot:test
+          for i in $(seq 1 90); do
+            if curl -fsS http://127.0.0.1:8100/api/health -o health.json; then break; fi
+            sleep 2
+          done
+          cat health.json
+          python3 - <<'PY'
+          import json
+          health = json.load(open("health.json"))
+          assert health["mode"] == "standalone", health
+          assert health["connections"]["home_assistant"]["state"] == "not_configured", health
+          PY
+          curl -fsS http://127.0.0.1:8100/ | grep -q '<div id="root">'
+          docker exec wattslot test -f /data/wattslot.db
+      - name: Journal du conteneur
+        if: always()
+        run: docker logs wattslot || true
+
+  addon:
+    name: Extension Home Assistant
+    needs: changes
+    if: github.event_name != 'pull_request' || needs.changes.outputs.addon == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Lint de l'extension
+        uses: frenck/action-addon-linter@v2.21.1
+        with:
+          path: ha-addon/wattslot
+      # La version de l'extension est celle de l'application (serveur, interface et verrou de
+      # npm) : une seule source, alignée par app/scripts/version.py (lot 6t.1).
+      - name: Versions cohérentes
+        run: python3 app/scripts/version.py --check
+
+  integration:
+    name: Intégration (HA de test)
+    needs: changes
+    if: github.event_name != 'pull_request' || needs.changes.outputs.integration == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Démarrage de l'environnement de développement
+        run: docker compose -f dev/docker-compose.yml up -d --build
+      - name: Simulation de deux heures de la journée ensoleillée
+        run: >
+          docker compose -f dev/docker-compose.yml run --rm simulator
+          --speed 3600 --start 10:00 --end 12:00
+      - name: Contrôle de bout en bout
+        run: docker compose -f dev/docker-compose.yml --profile check run --rm check
+      - name: Journaux
+        if: always()
+        run: docker compose -f dev/docker-compose.yml logs --no-color
+
+  bench:
+    name: Banc de performance
+    needs: changes
+    if: github.event_name != 'pull_request' || needs.changes.outputs.bench == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Dépendances
+        run: pip install -e app/backend
+      - name: Banc, Oxigraph embarqué (pyoxigraph), avec seuils
+        run: >
+          python -m bench.run --profile quick --output bench-pyoxigraph.json
+          --thresholds bench/seuils.json
+      # Comparaison avec un serveur Oxigraph : à la demande seulement (lancement manuel du
+      # workflow), le choix étant fait (lot 0.5).
+      - name: Banc, serveur Oxigraph
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          docker run -d --name oxigraph -p 7878:7878 ghcr.io/oxigraph/oxigraph:0.5.11
+          for i in $(seq 1 30); do curl -fsS http://localhost:7878/ > /dev/null && break; sleep 1; done
+          python -m bench.run --profile quick --server http://localhost:7878 --output bench-serveur.json
+      - name: Rapport
+        if: always()
+        run: python -m bench.report bench-*.json >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: banc-de-performance
+          path: bench-*.json
+
+  publish:
+    name: Publication de l'image
+    needs: [privacy, backend, frontend, image, addon, integration, bench]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/wattslot
+          # Étiquettes de développement seulement : la version (X.Y.Z) est publiée par le workflow
+          # de publication, sur étiquette Git, et n'est jamais réécrite (lot 6t.1).
+          tags: |
+            type=ref,event=branch
+            type=sha
+      - uses: docker/build-push-action@v6
+        with:
+          context: app
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: |
+            type=gha,scope=linux/amd64
+            type=gha,scope=linux/arm64

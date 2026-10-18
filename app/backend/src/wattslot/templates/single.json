@@ -1,0 +1,71 @@
+{
+  "format": "wattslot/template",
+  "version": 1,
+  "name": {
+    "fr": "Solaire, tarif unique",
+    "en": "Solar, single price"
+  },
+  "description": {
+    "fr": "Un seul prix toute la journée (indicatif, à remplacer par le vôtre). Chauffe-eau tous les deux jours, sèche-linge après le lave-linge, lave-vaisselle et lave-linge placés au meilleur moment, filtration de la piscine selon la saison, pompe à chaleur surtout l'hiver, voiture électrique chargée avant 7 h. Batterie et vitesses de la piscine : réglages par défaut, à ajuster.",
+    "en": "A single price all day (indicative, to replace with yours). Water heater every other day, dryer after the washing machine, dishwasher and washing machine placed at the best time, pool filtration by season, heat pump mostly in winter, electric car charged before 7 am. Battery and pool speeds: default settings, to adjust."
+  },
+  "devices": [
+    {
+      "type": "WaterHeater",
+      "behavior": "CycleBehavior",
+      "recurrence": {
+        "rule": "FREQ=DAILY;INTERVAL=2"
+      }
+    },
+    {
+      "type": "WashingMachine",
+      "behavior": "CycleBehavior"
+    },
+    {
+      "type": "Dryer",
+      "behavior": "CycleBehavior",
+      "after": "WashingMachine"
+    },
+    {
+      "type": "Dishwasher",
+      "behavior": "CycleBehavior"
+    },
+    {
+      "type": "PoolPump",
+      "behavior": "RuntimeBehavior",
+      "runtime": {}
+    },
+    {
+      "type": "heat_pump",
+      "behavior": "RuntimeBehavior",
+      "runtime": {
+        "minimum_hours": {
+          "summer": 0,
+          "mid_season": 2,
+          "winter": 4
+        },
+        "skip_days": {
+          "summer": 365,
+          "mid_season": 1,
+          "winter": 0
+        },
+        "max_starts": 3
+      }
+    },
+    {
+      "type": "ev",
+      "behavior": "EnergyByDeadlineBehavior",
+      "energy": {
+        "energy_kwh": 10,
+        "earliest_hour": 0,
+        "deadline_hour": 7,
+        "max_kw": 7.4
+      }
+    }
+  ],
+  "tariff": {
+    "kind": "SingleTariff",
+    "base_eur_kwh": 0.25,
+    "export_eur_kwh": 0.0
+  }
+}

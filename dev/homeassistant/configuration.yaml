@@ -1,0 +1,8 @@
+# Home Assistant de test de l'environnement de développement (dev/docker-compose.yml).
+# Les entités simulées (production, réseau, batterie, équipements) sont écrites par
+# dev/tools/simulator.py ; le compte, la liste de tâches et le tableau Énergie sont créés par
+# dev/tools/bootstrap.py.
+default_config:
+
+logger:
+  default: warning

@@ -1,0 +1,59 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wattslot"
+description = "Planification énergétique domestique pour Home Assistant (v2)."
+version = "0.8.0"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi==0.142.1",
+    "highspy==1.15.1",  # moteur du calcul (décision 11), roues amd64 et arm64
+    "mcp==2.3.0",  # serveur MCP pour l'Assist de HA (lot 6.1), SDK officiel
+    "pyoxigraph==0.5.11",
+    "tzdata==2026.4",  # fuseaux horaires : l'image Python « slim » n'en a pas
+    "uvicorn[standard]==0.54.0",
+    "websockets==17.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "httpx2==2.13.1",
+    "mypy==2.3.1",
+    "pyshacl==0.40.1",  # formes SHACL vérifiées en CI (lot 2b.4), jamais dans l'image
+    "pytest==9.1.1",
+    "ruff==0.16.9",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+wattslot = [
+    "ontology/*.ttl",
+    "ontology/library/*.ttl",
+    "profiles/*.json",
+    "templates/*.json",
+    "planning/locales/*.json",
+    "planning/locales/warnings/*.json",
+    "assistant/prompts/*.txt",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "BLE", "SIM", "RUF"]
+
+[tool.mypy]
+strict = true
+files = ["src", "tests"]
+
+[[tool.mypy.overrides]]
+module = ["pyoxigraph"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

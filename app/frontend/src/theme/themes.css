@@ -1,0 +1,191 @@
+/* Thèmes de l'interface (lot 6b.1, points n° 5 et 6 de la phase 6 bis). Un bloc par thème, tous
+   avec les mêmes variables ; « Automatique » (data-theme="auto", ou pas d'attribut) prend Ivoire,
+   puis Graphite quand le système est en sombre. Le bloc Graphite est recopié tel quel dans la
+   règle @media : un test vérifie qu'ils restent identiques, et que chaque thème tient les
+   contrastes AA (textes sur fonds et surfaces, texte sur la couleur d'action). Un thème nommé
+   s'applique aussi à une partie de la page (data-theme sur un élément).
+
+   Couleurs de sens : --sun (soleil), --battery (batterie), --go (appareils à lancer),
+   --discharge (décharge) ; les séries des graphiques en dérivent. */
+
+:root,
+:root[data-theme="auto"],
+[data-theme="ivory"] {
+  color-scheme: light;
+  --bg: #f6f5f1;
+  --surface: #ffffff;
+  --surface-alt: #efede7;
+  --border: #e6e3db;
+  --text: #17191c;
+  --text-dim: #5f646c;
+  --accent: #17191c;
+  --accent-text: #ffffff;
+  --link: #1f5fd6;
+  --danger: #b42318;
+  --ok: #1e7a43;
+  --warning: #8a5300;
+  --sun: #e8a23a;
+  --sun-soft: #fff5e3;
+  --battery: #3d7bf5;
+  --battery-soft: #eaf1fe;
+  --go: #2e9e57;
+  --discharge: #f08a6e;
+  --consumption: #8b6fe0;
+  --grid-import: #3b6fd8;
+  --grid-import-peak: #9dbbf2;
+  --grid-export: #2fb27c;
+  --pool-silence: #8a6a1f;
+}
+
+[data-theme="graphite"] {
+  color-scheme: dark;
+  --bg: #121417;
+  --surface: #1c1f24;
+  --surface-alt: #252931;
+  --border: #2a2e35;
+  --text: #eef0f3;
+  --text-dim: #9aa1ac;
+  --accent: #f2c26b;
+  --accent-text: #17191c;
+  --link: #8fb0ff;
+  --danger: #ff8a80;
+  --ok: #5bd08a;
+  --warning: #f2b451;
+  --sun: #f2b451;
+  --sun-soft: #2b2416;
+  --battery: #6f9cff;
+  --battery-soft: #172238;
+  --go: #4cc27a;
+  --discharge: #ff8a6e;
+  --consumption: #b39cff;
+  --grid-import: #5b8cff;
+  --grid-import-peak: #a9c2ff;
+  --grid-export: #34d399;
+  --pool-silence: #c9a24a;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]),
+  :root[data-theme="auto"] {
+    color-scheme: dark;
+    --bg: #121417;
+    --surface: #1c1f24;
+    --surface-alt: #252931;
+    --border: #2a2e35;
+    --text: #eef0f3;
+    --text-dim: #9aa1ac;
+    --accent: #f2c26b;
+    --accent-text: #17191c;
+    --link: #8fb0ff;
+    --danger: #ff8a80;
+    --ok: #5bd08a;
+    --warning: #f2b451;
+    --sun: #f2b451;
+    --sun-soft: #2b2416;
+    --battery: #6f9cff;
+    --battery-soft: #172238;
+    --go: #4cc27a;
+    --discharge: #ff8a6e;
+    --consumption: #b39cff;
+    --grid-import: #5b8cff;
+    --grid-import-peak: #a9c2ff;
+    --grid-export: #34d399;
+    --pool-silence: #c9a24a;
+  }
+}
+
+[data-theme="ocean"] {
+  color-scheme: light;
+  --bg: #eef4fa;
+  --surface: #ffffff;
+  --surface-alt: #e3ecf5;
+  --border: #d6e2ee;
+  --text: #0e2233;
+  --text-dim: #4e6478;
+  --accent: #0b5cad;
+  --accent-text: #ffffff;
+  --link: #0b5cad;
+  --danger: #b42318;
+  --ok: #1a7346;
+  --warning: #8a5300;
+  --sun: #f0a531;
+  --sun-soft: #fff4df;
+  --battery: #2b7de9;
+  --battery-soft: #e1eefb;
+  --go: #1f8a55;
+  --discharge: #ef7d62;
+  --consumption: #7d6be0;
+  --grid-import: #2b6cc4;
+  --grid-import-peak: #9cc2ef;
+  --grid-export: #22a37a;
+  --pool-silence: #8a6a1f;
+}
+
+[data-theme="meadow"] {
+  color-scheme: light;
+  --bg: #f1f5ef;
+  --surface: #ffffff;
+  --surface-alt: #e6ede2;
+  --border: #dce5d6;
+  --text: #1a241b;
+  --text-dim: #56665a;
+  --accent: #2f6b45;
+  --accent-text: #ffffff;
+  --link: #245c8f;
+  --danger: #b42318;
+  --ok: #2f6b45;
+  --warning: #875200;
+  --sun: #d99a2b;
+  --sun-soft: #fbf1da;
+  --battery: #3b6fb0;
+  --battery-soft: #e5eef7;
+  --go: #4e9a63;
+  --discharge: #e07f63;
+  --consumption: #8a72c9;
+  --grid-import: #3b6fb0;
+  --grid-import-peak: #a4bfdf;
+  --grid-export: #5aa877;
+  --pool-silence: #7a5f1c;
+}
+
+[data-theme="dusk"] {
+  color-scheme: dark;
+  --bg: #1a1530;
+  --surface: #241d40;
+  --surface-alt: #2e2650;
+  --border: #362c5c;
+  --text: #f1eefa;
+  --text-dim: #a9a2c6;
+  --accent: #f29e6b;
+  --accent-text: #1a1530;
+  --link: #afc0ff;
+  --danger: #ff9b8f;
+  --ok: #6fdca6;
+  --warning: #f6b65a;
+  --sun: #f6b65a;
+  --sun-soft: #3a2a35;
+  --battery: #8fa8ff;
+  --battery-soft: #2a2a5a;
+  --go: #5fd39a;
+  --discharge: #ff8f7a;
+  --consumption: #d3a6ff;
+  --grid-import: #7f97ff;
+  --grid-import-peak: #b9c6ff;
+  --grid-export: #5fd39a;
+  --pool-silence: #d0a85a;
+}
+
+/* Variables communes à tous les thèmes, et noms d'avant la phase 6 bis, gardés pour les écrans
+   pas encore refaits ; recalculés sur chaque élément qui porte un thème (écran de démonstration). */
+:root,
+[data-theme] {
+  --radius: 0.75rem;
+  --gap: 0.75rem;
+  --font: "Manrope Variable", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --primary: var(--accent);
+  --primary-text: var(--accent-text);
+  --production: var(--sun);
+  --charge: var(--battery);
+  --cycle: var(--go);
+  --pool-eco: var(--sun);
+}

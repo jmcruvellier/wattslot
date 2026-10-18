@@ -1,0 +1,53 @@
+{
+  "_meta": {
+    "status": "reviewed"
+  },
+  "avertissement": {
+    "profil_indisponible_du": "{equipement} est dû aujourd'hui mais son profil est indisponible (status={status}) : impossible de dimensionner un créneau, à placer manuellement.",
+    "heures_insuffisantes_du": "{equipement} est dû aujourd'hui mais il ne reste pas assez de temps pour un cycle complet ({duree_min} à partir de {debut_min}) : non placé. S'il a déjà tourné, cochez la tâche dans Home Assistant.",
+    "profil_indisponible_attente": "{equipement} est en attente mais son profil est indisponible (status={status}) : non placé.",
+    "dependance_non_placee": "{equipement} doit suivre {depend_de}, qui n'a pas pu être placé aujourd'hui : non placé.",
+    "heures_insuffisantes_attente": "{equipement} est en attente mais il ne reste pas assez de temps pour un cycle complet ({duree_min} à partir de {debut_min}) : non placé.",
+    "contrainte_impossible": "{equipement} : aucun créneau ne respecte ses contraintes horaires ({contraintes}) : non placé ou durée minimale non tenue.",
+    "contrainte_non_respectee": "{equipement} : contrainte souple non respectée ({contraintes}) pour tenir le reste du plan.",
+    "prevision_open_meteo": "Prévision solaire calculée par Open-Meteo d'après vos panneaux : moins précise qu'une intégration de prévision dans le tableau Énergie de Home Assistant.",
+    "prevision_horaire_indisponible": "Prévision solaire horaire indisponible ou incomplète : repli sur la forme moyenne des {jours} derniers jours, moins fidèle à la météo du jour.",
+    "panneau_sans_historique": "Panneau {panneau} : historique insuffisant ({jours} jours), repli sur la forme moyenne de la terrasse.",
+    "soc_depart_approximatif": "SoC de départ approximatif pour la prévision de demain : SoC réel actuel utilisé, faute de planning du jour exploitable en cache. Il sera affiné aux prochains calculs de la journée.",
+    "regle_recurrence_non_geree": "{equipement} : règle de récurrence non gérée, seule son échéance est prise en compte dans les prévisions des jours suivants.",
+    "horizon_interrompu": "Prévisions arrêtées avant le {jour} : {raison}.",
+    "tache_reportee": "{equipement} reporté au {jour} : {pct_jour} % couvert par le solaire, contre {pct_auj} % aujourd'hui.",
+    "tache_reportee_sans_creneau": "{equipement} reporté au {jour} : plus assez de temps aujourd'hui pour un cycle complet."
+  },
+  "date": {
+    "format": "{jour} {num} {mois} {annee}",
+    "jour_0": "Lundi",
+    "jour_1": "Mardi",
+    "jour_2": "Mercredi",
+    "jour_3": "Jeudi",
+    "jour_4": "Vendredi",
+    "jour_5": "Samedi",
+    "jour_6": "Dimanche",
+    "mois_1": "Janvier",
+    "mois_2": "Février",
+    "mois_3": "Mars",
+    "mois_4": "Avril",
+    "mois_5": "Mai",
+    "mois_6": "Juin",
+    "mois_7": "Juillet",
+    "mois_8": "Août",
+    "mois_9": "Septembre",
+    "mois_10": "Octobre",
+    "mois_11": "Novembre",
+    "mois_12": "Décembre",
+    "format_sans_annee": "{jour} {num} {mois}"
+  },
+  "equipement": {
+    "Batterie": "Batterie",
+    "Chauffe-eau": "Chauffe-eau",
+    "Lave-linge": "Lave-linge",
+    "Sèche-linge": "Sèche-linge",
+    "Lave-vaisselle": "Lave-vaisselle",
+    "Piscine (filtration)": "Piscine"
+  }
+}

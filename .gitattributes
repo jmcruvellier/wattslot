@@ -1,0 +1,6 @@
+# Fins de ligne LF dans le repo, quel que soit le poste (Windows ou Linux).
+# Les fichiers sont déployés sur des hôtes Linux : un CRLF casse les scripts shell et les Dockerfile.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary

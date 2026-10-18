@@ -1,0 +1,53 @@
+{
+  "_meta": {
+    "status": "to_review"
+  },
+  "avertissement": {
+    "profil_indisponible_du": "{equipement} is vandaag aan de beurt, maar het profiel is niet beschikbaar (status={status}): geen tijdvak te bepalen, plan het met de hand in.",
+    "heures_insuffisantes_du": "{equipement} is vandaag aan de beurt, maar er blijft niet genoeg tijd over voor een volledige cyclus ({duree_min} vanaf {debut_min}): niet ingepland. Als het al gedraaid heeft, vink de taak dan af in Home Assistant.",
+    "profil_indisponible_attente": "{equipement} wacht, maar het profiel is niet beschikbaar (status={status}): niet ingepland.",
+    "dependance_non_placee": "{equipement} moet na {depend_de} komen, dat vandaag niet ingepland kon worden: niet ingepland.",
+    "heures_insuffisantes_attente": "{equipement} wacht, maar er blijft niet genoeg tijd over voor een volledige cyclus ({duree_min} vanaf {debut_min}): niet ingepland.",
+    "contrainte_impossible": "{equipement}: geen tijdvak voldoet aan de tijdsbeperkingen ({contraintes}): niet ingepland of minimale looptijd niet gehaald.",
+    "contrainte_non_respectee": "{equipement}: zachte beperking niet nageleefd ({contraintes}) om de rest van het plan te halen.",
+    "prevision_open_meteo": "Zonneprognose berekend door Open-Meteo op basis van uw panelen: minder nauwkeurig dan een prognose-integratie in het energiedashboard van Home Assistant.",
+    "prevision_horaire_indisponible": "Zonneprognose per uur niet beschikbaar of onvolledig: terugval op het gemiddelde verloop van de laatste {jours} dagen, minder getrouw aan het weer van vandaag.",
+    "panneau_sans_historique": "Paneel {panneau}: te weinig geschiedenis ({jours} dagen), terugval op het gemiddelde verloop van het terras.",
+    "soc_depart_approximatif": "Benaderend beginlaadniveau voor de prognose van morgen: het huidige gemeten laadniveau wordt gebruikt, omdat er nog geen bruikbaar dagplan in de cache staat. Het wordt bij de volgende berekeningen van de dag verfijnd.",
+    "regle_recurrence_non_geree": "{equipement}: niet-ondersteunde herhalingsregel, alleen de vervaldatum telt in de prognoses van de volgende dagen.",
+    "horizon_interrompu": "Prognoses gestopt vóór {jour}: {raison}.",
+    "tache_reportee": "{equipement} uitgesteld naar {jour}: {pct_jour} % gedekt door zonne-energie, tegenover {pct_auj} % vandaag.",
+    "tache_reportee_sans_creneau": "{equipement} uitgesteld naar {jour}: vandaag niet meer genoeg tijd voor een volledige cyclus."
+  },
+  "date": {
+    "format": "{jour} {num} {mois} {annee}",
+    "jour_0": "maandag",
+    "jour_1": "dinsdag",
+    "jour_2": "woensdag",
+    "jour_3": "donderdag",
+    "jour_4": "vrijdag",
+    "jour_5": "zaterdag",
+    "jour_6": "zondag",
+    "mois_1": "januari",
+    "mois_2": "februari",
+    "mois_3": "maart",
+    "mois_4": "april",
+    "mois_5": "mei",
+    "mois_6": "juni",
+    "mois_7": "juli",
+    "mois_8": "augustus",
+    "mois_9": "september",
+    "mois_10": "oktober",
+    "mois_11": "november",
+    "mois_12": "december",
+    "format_sans_annee": "{jour} {num} {mois}"
+  },
+  "equipement": {
+    "Batterie": "Batterij",
+    "Chauffe-eau": "Boiler",
+    "Lave-linge": "Wasmachine",
+    "Sèche-linge": "Droger",
+    "Lave-vaisselle": "Vaatwasser",
+    "Piscine (filtration)": "Zwembad"
+  }
+}

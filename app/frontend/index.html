@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en" data-theme="auto">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WattSlot</title>
+    <!-- Adresse relative : derrière l'ingress de HA, l'application est servie sous un préfixe. -->
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <script>
+      // Réglages gardés dans le navigateur sous l'ancien nom (avant le renommage en WattSlot,
+      // lot 7.1) : repris une fois, avant que l'application les lise.
+      try {
+        ["language", "theme", "menu"].forEach(function (name) {
+          var former = localStorage.getItem("energy-optimizer." + name);
+          if (former !== null && localStorage.getItem("wattslot." + name) === null) {
+            localStorage.setItem("wattslot." + name, former);
+          }
+          localStorage.removeItem("energy-optimizer." + name);
+        });
+      } catch (error) {
+        // Stockage indisponible : rien à reprendre.
+      }
+      // Thème choisi sur cet appareil, appliqué avant le premier affichage (src/theme/theme.ts).
+      try {
+        var theme = localStorage.getItem("wattslot.theme");
+        if (["ivory", "graphite", "ocean", "meadow", "dusk"].indexOf(theme) >= 0) {
+          document.documentElement.setAttribute("data-theme", theme);
+        }
+      } catch (error) {
+        // Stockage indisponible : thème automatique.
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

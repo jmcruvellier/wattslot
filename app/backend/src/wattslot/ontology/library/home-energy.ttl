@@ -1,0 +1,237 @@
+# Bibliothèque « Énergie domestique » (phases 1 et 2 bis).
+#
+# Le domaine partagé par toutes les installations : maison, équipements, capteurs et leurs rôles,
+# grandeurs, agrégats des relevés, alignés sur SAREF, SAREF4ENER, SOSA et SSN. Maintenue dans
+# l'atelier VocBench ; ce fichier en est la forme normalisée (dev/tools/library.py), livrée avec
+# l'application. Le schéma de l'application est à part, dans ../schema.ttl.
+#
+# Les IRI <#…> et <ontology/…> sont relatives : l'application les résout avec l'espace de noms
+# déclaré dans wattslot/ontology/__init__.py (BASE).
+
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix sosa: <http://www.w3.org/ns/sosa/> .
+@prefix ssn: <http://www.w3.org/ns/ssn/> .
+@prefix saref: <https://saref.etsi.org/core/> .
+@prefix s4ener: <https://saref.etsi.org/saref4ener/> .
+
+# --- Ontologie -----------------------------------------------------------------------------------
+
+<ontology/library/home-energy> a owl:Ontology ;
+    rdfs:label "Énergie domestique"@fr, "Home energy"@en ;
+    owl:imports s4ener:, saref:, sosa:, ssn: ;
+    owl:versionInfo "0.2" .
+
+# --- Classes -------------------------------------------------------------------------------------
+
+<#ACPower> a owl:Class ;
+    rdfs:subClassOf <#Power> ;
+    rdfs:label "Puissance alternative (AC)"@fr, "AC power"@en .
+<#Aggregate> a owl:Class ;
+    rdfs:subClassOf sosa:Observation ;
+    rdfs:label "Agrégat"@fr, "Aggregate"@en ;
+    rdfs:comment "Synthèse des relevés d'un capteur sur une période (quart d'heure, heure)."@fr .
+<#Appliance> a owl:Class ;
+    rdfs:subClassOf <#Device> ;
+    rdfs:label "Appareil"@fr, "Appliance"@en .
+<#Battery> a owl:Class ;
+    rdfs:subClassOf <#Device> ;
+    rdfs:label "Batterie"@fr, "Battery"@en .
+<#ChargeLevel> a owl:Class ;
+    rdfs:subClassOf <#Quantity> ;
+    rdfs:label "Niveau de charge"@fr, "Charge level"@en .
+<#CumulativeEnergy> a owl:Class ;
+    rdfs:subClassOf <#Energy> ;
+    rdfs:label "Énergie cumulée"@fr, "Cumulative energy"@en ;
+    rdfs:comment "Compteur qui ne fait qu'augmenter"@fr .
+<#DCPower> a owl:Class ;
+    rdfs:subClassOf <#Power> ;
+    rdfs:label "Puissance continue (DC)"@fr, "DC power"@en .
+<#DailyEnergy> a owl:Class ;
+    rdfs:subClassOf <#Energy> ;
+    rdfs:label "Énergie quotidienne"@fr, "Daily energy"@en ;
+    rdfs:comment "Compteur remis à zéro chaque jour"@fr .
+<#Device> a owl:Class ;
+    rdfs:subClassOf saref:Device, sosa:Platform ;
+    rdfs:label "Équipement"@fr, "Device"@en .
+<#Dishwasher> a owl:Class ;
+    rdfs:subClassOf <#Appliance> ;
+    rdfs:label "Lave-vaisselle"@fr, "Dishwasher"@en .
+<#Dryer> a owl:Class ;
+    rdfs:subClassOf <#Appliance> ;
+    rdfs:label "Sèche-linge"@fr, "Dryer"@en .
+<#Efficiency> a owl:Class ;
+    rdfs:subClassOf <#Quantity> ;
+    rdfs:label "Rendement"@fr, "Efficiency"@en .
+<#ElectricCurrent> a owl:Class ;
+    rdfs:subClassOf <#Quantity> ;
+    rdfs:label "Intensité"@fr, "Electric current"@en .
+<#ElectricityMeter> a owl:Class ;
+    rdfs:subClassOf <#Device>, saref:Meter ;
+    rdfs:label "Compteur électrique"@fr, "Electricity meter"@en ;
+    rdfs:comment "Compteur du raccordement au réseau"@fr .
+<#Energy> a owl:Class ;
+    rdfs:subClassOf <#Quantity> ;
+    rdfs:label "Énergie"@fr, "Energy"@en .
+<#ExportedEnergy> a owl:Class ;
+    rdfs:subClassOf <#Energy> ;
+    rdfs:label "Énergie injectée"@fr, "Exported energy"@en .
+<#ForecastEnergy> a owl:Class ;
+    rdfs:subClassOf <#Energy> ;
+    rdfs:label "Énergie prévue"@fr, "Forecast energy"@en .
+<#GridConnection> a owl:Class ;
+    rdfs:subClassOf <#Device> ;
+    rdfs:label "Raccordement au réseau"@fr, "Grid connection"@en .
+<#Home> a owl:Class ;
+    rdfs:label "Maison"@fr, "Home"@en .
+<#Irradiance> a owl:Class ;
+    rdfs:subClassOf <#Quantity> ;
+    rdfs:label "Irradiance"@fr, "Irradiance"@en .
+<#Microinverter> a owl:Class ;
+    rdfs:subClassOf <#Device> ;
+    rdfs:label "Micro-onduleur"@fr, "Microinverter"@en ;
+    rdfs:comment "Un par panneau ou groupe de panneaux d'une production solaire"@fr .
+<#OtherLoad> a owl:Class ;
+    rdfs:subClassOf <#Appliance> ;
+    rdfs:label "Autre consommation"@fr, "Other consumption"@en .
+<#PoolPump> a owl:Class ;
+    rdfs:subClassOf <#Appliance> ;
+    rdfs:label "Filtration de piscine"@fr, "Pool pump"@en .
+<#Power> a owl:Class ;
+    rdfs:subClassOf <#Quantity> ;
+    rdfs:label "Puissance"@fr, "Power"@en .
+<#Quantity> a owl:Class ;
+    rdfs:subClassOf sosa:ObservableProperty ;
+    rdfs:label "Grandeur"@fr, "Quantity"@en .
+<#Role> a owl:Class ;
+    rdfs:label "Rôle d'un capteur"@fr, "Sensor role"@en .
+<#Room> a owl:Class ;
+    rdfs:label "Pièce"@fr, "Room"@en .
+<#Sensor> a owl:Class ;
+    rdfs:subClassOf sosa:Sensor ;
+    rdfs:label "Capteur"@fr, "Sensor"@en .
+<#SmartPlug> a owl:Class ;
+    rdfs:subClassOf <#Device> ;
+    rdfs:label "Prise connectée"@fr, "Smart plug"@en ;
+    rdfs:comment "Porte les capteurs de l'appareil branché"@fr .
+<#SolarInstallation> a owl:Class ;
+    rdfs:subClassOf <#Device> ;
+    rdfs:label "Production solaire"@fr, "Solar production"@en .
+<#Temperature> a owl:Class ;
+    rdfs:subClassOf <#Quantity> ;
+    rdfs:label "Température"@fr, "Temperature"@en .
+<#UninterruptiblePowerSupply> a owl:Class ;
+    rdfs:subClassOf <#Device> ;
+    rdfs:label "Onduleur (alimentation sans interruption)"@fr, "Uninterruptible power supply"@en .
+<#Voltage> a owl:Class ;
+    rdfs:subClassOf <#Quantity> ;
+    rdfs:label "Tension"@fr, "Voltage"@en .
+<#WashingMachine> a owl:Class ;
+    rdfs:subClassOf <#Appliance> ;
+    rdfs:label "Lave-linge"@fr, "Washing machine"@en .
+<#WaterHeater> a owl:Class ;
+    rdfs:subClassOf <#Appliance> ;
+    rdfs:label "Chauffe-eau"@fr, "Water heater"@en .
+
+# --- Propriétés d'objet --------------------------------------------------------------------------
+
+<#hasDevice> a owl:ObjectProperty ;
+    rdfs:domain <#Home> ;
+    rdfs:range <#Device> ;
+    rdfs:label "a pour équipement"@fr, "has device"@en .
+<#hasSensor> a owl:ObjectProperty ;
+    rdfs:subPropertyOf sosa:hosts ;
+    rdfs:domain <#Device> ;
+    rdfs:range <#Sensor> ;
+    rdfs:label "a pour capteur"@fr, "has sensor"@en .
+<#locatedIn> a owl:ObjectProperty ;
+    rdfs:domain <#Device> ;
+    rdfs:range <#Room> ;
+    rdfs:label "est situé dans"@fr, "located in"@en .
+<#role> a owl:ObjectProperty ;
+    rdfs:domain <#Sensor> ;
+    rdfs:range <#Role> ;
+    rdfs:label "rôle"@fr, "role"@en .
+
+# --- Propriétés de données -----------------------------------------------------------------------
+
+<#capacityKwh> a owl:DatatypeProperty ;
+    rdfs:domain <#Battery> ;
+    rdfs:range xsd:double ;
+    rdfs:label "capacité (kWh)"@fr, "capacity (kWh)"@en .
+<#energyKwh> a owl:DatatypeProperty ;
+    rdfs:domain <#Aggregate> ;
+    rdfs:range xsd:double ;
+    rdfs:label "énergie de la période (kWh)"@fr, "energy over the period (kWh)"@en .
+<#haEntity> a owl:DatatypeProperty ;
+    rdfs:domain <#Sensor> ;
+    rdfs:range xsd:string ;
+    rdfs:label "entité Home Assistant"@fr, "Home Assistant entity"@en .
+<#key> a owl:DatatypeProperty ;
+    rdfs:domain <#Device> ;
+    rdfs:range xsd:string ;
+    rdfs:label "clé stable de l'équipement"@fr, "stable device key"@en .
+<#last> a owl:DatatypeProperty ;
+    rdfs:domain <#Aggregate> ;
+    rdfs:range xsd:double ;
+    rdfs:label "valeur en fin de période"@fr, "value at the end of the period"@en .
+<#max> a owl:DatatypeProperty ;
+    rdfs:domain <#Aggregate> ;
+    rdfs:range xsd:double ;
+    rdfs:label "maximum"@fr, "maximum"@en .
+<#mean> a owl:DatatypeProperty ;
+    rdfs:domain <#Aggregate> ;
+    rdfs:range xsd:double ;
+    rdfs:label "moyenne pondérée par la durée"@fr, "time-weighted mean"@en .
+<#period> a owl:DatatypeProperty ;
+    rdfs:domain <#Aggregate> ;
+    rdfs:range xsd:string ;
+    rdfs:label "période (durée ISO 8601)"@fr, "period (ISO 8601 duration)"@en .
+<#resetsDaily> a owl:DatatypeProperty ;
+    rdfs:domain <#Sensor> ;
+    rdfs:range xsd:boolean ;
+    rdfs:label "remis à zéro chaque jour"@fr, "resets daily"@en .
+<#start> a owl:DatatypeProperty ;
+    rdfs:domain <#Aggregate> ;
+    rdfs:range xsd:dateTime ;
+    rdfs:label "début de la période"@fr, "period start"@en .
+<#typeKey> a owl:DatatypeProperty ;
+    rdfs:range xsd:string ;
+    rdfs:label "clé stable d'un type d'équipement propre"@fr, "stable key of a custom device type"@en ;
+    rdfs:comment "Type propre à une installation : sous-classe d'un type de la bibliothèque, déclarée dans le graphe de la maison."@fr .
+
+# --- Propriétés d'annotation ---------------------------------------------------------------------
+
+<#quantity> a owl:AnnotationProperty ;
+    rdfs:label "grandeur observée"@fr, "observed quantity"@en .
+
+# --- Individus -----------------------------------------------------------------------------------
+
+<#EnergyCharged> a <#Role> ;
+    rdfs:label "Énergie chargée"@fr, "Energy charged"@en ;
+    <#quantity> <#Energy> .
+<#EnergyConsumed> a <#Role> ;
+    rdfs:label "Énergie consommée"@fr, "Energy consumed"@en ;
+    <#quantity> <#Energy> .
+<#EnergyDischarged> a <#Role> ;
+    rdfs:label "Énergie déchargée"@fr, "Energy discharged"@en ;
+    <#quantity> <#Energy> .
+<#EnergyExported> a <#Role> ;
+    rdfs:label "Énergie injectée"@fr, "Energy exported"@en ;
+    <#quantity> <#Energy> .
+<#EnergyImported> a <#Role> ;
+    rdfs:label "Énergie soutirée"@fr, "Energy imported"@en ;
+    <#quantity> <#Energy> .
+<#EnergyProduced> a <#Role> ;
+    rdfs:label "Énergie produite"@fr, "Energy produced"@en ;
+    <#quantity> <#Energy> .
+<#PowerConsumed> a <#Role> ;
+    rdfs:label "Puissance consommée"@fr, "Power consumed"@en ;
+    <#quantity> <#Power> .
+<#PowerProduced> a <#Role> ;
+    rdfs:label "Puissance produite"@fr, "Power produced"@en ;
+    <#quantity> <#Power> .
+<#StateOfCharge> a <#Role> ;
+    rdfs:label "État de charge"@fr, "State of charge"@en ;
+    <#quantity> <#ChargeLevel> .

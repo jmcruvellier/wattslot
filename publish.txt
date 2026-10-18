@@ -1,0 +1,19 @@
+# Fichiers contrôlés par dev/tools/privacy_check.py : tout le dépôt public.
+
+.gitattributes
+.github/
+.gitignore
+CODE_OF_CONDUCT.md
+CONTRIBUTING.md
+LICENSE
+NOTICE
+README.fr.md
+README.md
+SECURITY.md
+app/
+bench/
+dev/
+docs/
+ha-addon/
+repository.yaml
+publish.txt

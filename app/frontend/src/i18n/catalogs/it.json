@@ -1,0 +1,1402 @@
+{
+  "_meta": {
+    "status": "to_review"
+  },
+  "app": {
+    "title": "WattSlot",
+    "language": "Lingua",
+    "screen_loading": "Caricamento della pagina…",
+    "to_review": "{name} (da rivedere)"
+  },
+  "health": {
+    "loading": "Connessione all'applicazione…",
+    "error": "L'applicazione non risponde ({status}).",
+    "version": "Versione {version}",
+    "support": "Sostieni il progetto",
+    "mode": "Modalità",
+    "home_assistant": "Home Assistant",
+    "home_assistant_version": "Home Assistant {version}",
+    "home_assistant_error": "Ultimo errore: {error}"
+  },
+  "mode": {
+    "addon": "Componente aggiuntivo di Home Assistant",
+    "standalone": "Autonoma"
+  },
+  "updates": {
+    "menu": "Nuova versione disponibile",
+    "row": "Nuova versione {version}",
+    "available": "La versione {version} è disponibile.",
+    "notes": "Note di rilascio",
+    "addon": "Aggiornala da Impostazioni → App di Home Assistant.",
+    "standalone": "Aggiornala sull'host, nella cartella del deployment:",
+    "current": "È la versione più recente.",
+    "unavailable": "Al momento non è possibile verificare le nuove versioni."
+  },
+  "connection": {
+    "not_configured": "non configurata",
+    "connecting": "connessione…",
+    "connected": "connessa",
+    "error": "errore di connessione"
+  },
+  "nav": {
+    "main": "Navigazione principale",
+    "today": "Oggi",
+    "planning": "Pianificazione",
+    "home": "La mia casa",
+    "assistant": "Assistente",
+    "settings": "Impostazioni",
+    "library": "Libreria degli apparecchi",
+    "status": "Stato dell'app",
+    "connection": "Connessione a Home Assistant",
+    "more": "Per saperne di più",
+    "collapse": "Comprimi il menu",
+    "expand": "Espandi il menu",
+    "request": "Richiedi un apparecchio",
+    "status_ok": "Tutto funziona",
+    "status_degraded": "Da controllare",
+    "status_blocking": "Il calcolo è bloccato",
+    "devices": "Apparecchi e sensori",
+    "templates": "Modelli pronti",
+    "backup": "Salvare o condividere",
+    "graph": "Grafo della casa",
+    "notifications": "Notifiche",
+    "display": "Lingua e visualizzazione",
+    "calculation": "Calcolo automatico"
+  },
+  "setup": {
+    "loading": "Lettura della configurazione iniziale…",
+    "error": "Impossibile leggere la configurazione iniziale.",
+    "title": "Primi passi",
+    "intro": "Ciò che manca per ottenere il primo piano. I passi essenziali vengono prima; gli altri migliorano il piano.",
+    "required": "essenziale",
+    "open": "Vai",
+    "run_now": "Calcola il piano ora",
+    "running": "Calcolo in corso…",
+    "refresh": "Ricontrolla",
+    "all_done": "Configurazione completata",
+    "some_left": "Configurazione: restano {count} passo/i facoltativo/i",
+    "states": {
+      "done": "fatto",
+      "todo": "da fare",
+      "waiting": "in corso",
+      "blocked": "dopo i passi precedenti",
+      "not_applicable": "non applicabile"
+    },
+    "steps": {
+      "connection": "Connessione a Home Assistant",
+      "energy_dashboard": "Dashboard energia di Home Assistant",
+      "home": "La sua casa",
+      "forecast": "Previsione solare",
+      "history": "Storico dei consumi",
+      "first_plan": "Primo piano",
+      "tariff": "Tariffa elettrica",
+      "battery": "Batteria",
+      "notification": "Notifica",
+      "template": "Modello pronto all'uso"
+    },
+    "reason": {
+      "ha_not_configured": "L'applicazione non conosce l'indirizzo di Home Assistant.",
+      "ha_disconnected": "Home Assistant non risponde. {error}",
+      "needs_connection": "Possibile non appena Home Assistant è connesso.",
+      "no_energy_dashboard": "La dashboard energia di Home Assistant non è configurata: dichiari lì la produzione solare e il contatore (Impostazioni › Plance › Energia).",
+      "home_not_saved": "Controlli gli apparecchi proposti e salvi la sua casa.",
+      "no_forecast": "Nessuna previsione solare: ne aggiunga una alla dashboard energia di Home Assistant (Forecast.Solar, Solcast, Open-Meteo…) oppure descriva i pannelli (potenza, inclinazione, orientamento) per una previsione calcolata dall'applicazione.",
+      "history_importing": "Importazione dello storico di Home Assistant (restano {count} contatore/i): niente da fare.",
+      "no_plan_yet": "Tutto pronto: il piano sarà calcolato all'ora successiva, oppure subito.",
+      "needs_previous_steps": "Possibile non appena i passi essenziali sono fatti.",
+      "tariff_default": "Si ipotizza un prezzo unico di 0,25 €/kWh: indichi la sua tariffa per un piano più preciso.",
+      "battery_default": "Impostazioni predefinite della batteria: le adatti alle sue.",
+      "no_notification": "Scelga un dispositivo che riceva ogni giorno la raccomandazione del piano.",
+      "needs_home": "Possibile non appena la sua casa è salvata.",
+      "template_suggested": "Parta da un modello (fasce orarie, Tempo, prezzo dinamico…) che imposta in una volta apparecchi e tariffa, poi affini."
+    }
+  },
+  "plan": {
+    "title": "Piano del giorno",
+    "tabs": {
+      "yesterday": "Ieri",
+      "today": "Oggi",
+      "tomorrow": "Domani",
+      "week": "Settimana"
+    },
+    "loading": "Lettura del piano…",
+    "error": "Impossibile leggere il piano.",
+    "missing": "Ancora nessun piano per questa vista: sarà calcolato all'ora successiva.",
+    "missing_yesterday": "Nessun archivio per ieri.",
+    "cards": {
+      "energy": "Produzione e consumo",
+      "soc": "Batteria (livello di carica)",
+      "grid": "Rete"
+    },
+    "series": {
+      "production": "Produzione prevista",
+      "production_actual": "Produzione misurata",
+      "consumption": "Consumo previsto",
+      "consumption_actual": "Consumo misurato",
+      "soc": "Livello di carica previsto",
+      "soc_actual": "Livello di carica misurato",
+      "floor": "Minimo {pct} %",
+      "import_actual": "Prelievo misurato",
+      "export_actual": "Surplus misurato",
+      "grid": "Rete prevista (prelievo − surplus)"
+    },
+    "week": {
+      "title": "Settimana dal {start} al {end}",
+      "computed": "Orizzonte calcolato alle {time} ({how})",
+      "seconds": "calcolo in {seconds} s",
+      "production": "Produzione",
+      "soc": "Livello di carica",
+      "soc_value": "{start} → {end} %",
+      "soc_max": "massimo",
+      "import": "Prelievo dalla rete",
+      "import_peak": "di cui ore di punta",
+      "export": "Surplus",
+      "devices": "Apparecchi",
+      "no_device": "Nessun apparecchio previsto",
+      "detail": "Vedi il dettaglio",
+      "waiting": "Per ora le attività senza data vengono collocate solo su domani: la ripartizione sulla settimana arriverà dopo.",
+      "weather": {
+        "sunny": "soleggiato",
+        "mixed": "variabile",
+        "cloudy": "nuvoloso"
+      },
+      "charts": {
+        "production": "Produzione prevista",
+        "consumption": "Consumo previsto",
+        "soc": "Batteria (livello di carica previsto)"
+      },
+      "series": {
+        "production": "Produzione",
+        "consumption": "Consumo",
+        "soc": "Livello di carica",
+        "surplus": "Surplus"
+      },
+      "off_peak": "Ore fuori punta",
+      "agenda": "Agenda della settimana",
+      "battery_line": "Batteria: {start}%, fino al {max}%, {end}% la sera",
+      "open_day": "Apri {day}"
+    },
+    "header": {
+      "computed": "Calcolato alle {time} ({how})",
+      "manual": "a mano",
+      "auto": "automatico",
+      "never": "Mai calcolato",
+      "reading": "ultima lettura alle {time}",
+      "compute": "Calcola",
+      "running": "Calcolo in corso…",
+      "refresh": "Aggiorna i dati reali",
+      "failed": "L'operazione non è riuscita: veda la diagnostica."
+    },
+    "freshness": {
+      "stale_today": "⚠️ Ultimo calcolo {hours} h {minutes} fa: i calcoli automatici sembrano interrotti.",
+      "stopped_yesterday": "⚠️ I calcoli di ieri si sono fermati alle {time}: i calcoli automatici devono essere stati interrotti."
+    },
+    "notices": "Avvisi del piano",
+    "banner": {
+      "departure_title": "Batteria a inizio giornata",
+      "departure": {
+        "measured": "Partenza a mezzanotte: {kwh} kWh ({pct} %) misurati",
+        "plan": "Partenza a mezzanotte: {kwh} kWh ({pct} %) secondo il piano",
+        "tonight": "Partenza a mezzanotte: {kwh} kWh ({pct} %), livello previsto stanotte a mezzanotte",
+        "now": "Partenza a mezzanotte: {kwh} kWh ({pct} %), livello attuale in mancanza del piano del giorno",
+        "expected": "il piano della sera prima ({time}) prevedeva {kwh} kWh ({pct} %)"
+      },
+      "departure_badge": {
+        "ok": "come previsto",
+        "medium": "scarto",
+        "large": "scarto",
+        "reliable": "affidabile",
+        "approximate": "approssimativo"
+      },
+      "charge": {
+        "today": "Ultima carica completa: oggi",
+        "yesterday": "Ultima carica completa: ieri",
+        "days": "Ultima carica completa: {days} giorni fa",
+        "none": "Nessuna carica completa da {days} giorni",
+        "priority": "giorno prioritario per la carica"
+      },
+      "weather_title": "Meteo",
+      "weather": {
+        "quality": {
+          "sunny": "Giornata soleggiata",
+          "mixed": "Giornata variabile",
+          "cloudy": "Giornata nuvolosa",
+          "unknown": "Produzione"
+        },
+        "forecast": "{kwh} kWh previsti",
+        "measured": "{kwh} kWh misurati",
+        "share": "{pct} % del giorno migliore degli ultimi {days} giorni ({kwh} kWh)",
+        "vs_today": "{gap} % rispetto a oggi ({kwh} kWh previsti)",
+        "no_reading": "ancora nessuna lettura",
+        "reading": "alla lettura: {mes} kWh misurati, {gap}rispetto all'ultima previsione ({est} kWh)",
+        "day": "{gap}rispetto alla previsione delle {time} ({est} kWh)",
+        "badge": {
+          "reliable": "previsione affidabile",
+          "moderate": "scarto moderato",
+          "important": "scarto importante",
+          "too_early": "troppo presto per giudicare"
+        }
+      },
+      "equip_title": "Apparecchi",
+      "equip": {
+        "on_time": "{device} in orario ({time}), {kwh}",
+        "shifted": "{device} {shift} ({actual} invece di {planned}), {kwh}",
+        "no_cycle": "{device}: nessun ciclo ({start}–{end}, {kwh} kWh previsti)",
+        "planned": "{device} previsto alle {start}",
+        "unplanned": "{device} non previsto ({time}), {kwh} kWh",
+        "running": "in corso",
+        "none": "Nessun apparecchio previsto o avviato",
+        "badge": {
+          "on_time": "come previsto",
+          "shifted": "spostato"
+        }
+      }
+    },
+    "summary": {
+      "cards": {
+        "soc": "Livello di carica / capacità",
+        "soc_max": "Livello max.",
+        "battery": "Batteria",
+        "grid": "Rete",
+        "production": "Produzione"
+      },
+      "lines": {
+        "soc": "Livello di carica",
+        "soc_max": "Livello max.",
+        "charge": "Carica",
+        "discharge": "Scarica",
+        "grid_import": "Prelevato",
+        "grid_export": "Surplus",
+        "production": "Produzione"
+      },
+      "estimated": "Stimato",
+      "measured": "Misurato",
+      "forecast": "Previsto",
+      "at_reading": "Alla lettura",
+      "day": "Giornata"
+    },
+    "timeline": {
+      "title": "Pianificazione degli apparecchi",
+      "battery": "Batteria",
+      "charge": "carica",
+      "discharge": "scarica",
+      "mode": "modalità {mode}",
+      "tip_planned": "Previsto {start} → {end}: {what}, {kwh} kWh",
+      "tip_actual": "Reale {start} → {end}: {what}, {kwh} kWh",
+      "no_surplus": "Nessun surplus solare previsto (produzione {production} kWh, consumo {consumption} kWh): nessun apparecchio programmato.",
+      "nothing": "Nessun apparecchio programmato in questo giorno."
+    },
+    "indicators": {
+      "title": "Indicatori del piano",
+      "goal": "Il calcolo punta a {goal}.",
+      "cost_eur": "Costo (prelievo meno vendita)",
+      "import_kwh": "Prelievo dalla rete",
+      "export_kwh": "Surplus immesso in rete",
+      "self_consumption_percent": "Autoconsumo",
+      "co2_kg": "CO₂ dei prelievi",
+      "end_soc_percent": "Livello di carica a fine giornata",
+      "battery_throughput_kwh": "Energia passata dalla batteria",
+      "chosen": "Indicatore in evidenza scelto in «Personalizza»."
+    },
+    "explanations": {
+      "title": "Perché questo piano",
+      "recommendation": "Testo della raccomandazione"
+    },
+    "missing_week": "Ancora nessuna previsione per la settimana: sarà calcolata all'ora successiva, oppure prema «Calcola».",
+    "layout": {
+      "open": "Personalizza",
+      "title": "Personalizza la vista",
+      "hint": "Ordine e schede della vista «{view}», salvati per tutti i dispositivi della famiglia.",
+      "up": "Sposta su «{card}»",
+      "down": "Sposta giù «{card}»",
+      "hide": "Nascondi «{card}»",
+      "hide_short": "Nascondi",
+      "restore": "Mostra di nuovo «{card}»",
+      "restore_short": "Mostra",
+      "hidden": "Schede nascoste",
+      "indicators": "Indicatori del piano",
+      "highlight": "In evidenza:",
+      "highlight_goal": "secondo l'obiettivo del calcolo",
+      "failed": "Impossibile salvare la disposizione.",
+      "reset": "Torna alla disposizione predefinita",
+      "done": "Fatto",
+      "saving": "Salvataggio…",
+      "day": {
+        "summary": "Riepilogo (livello di carica, batteria, rete, produzione)",
+        "timeline": "Pianificazione degli apparecchi",
+        "soc": "Batteria (livello di carica)",
+        "grid": "Rete",
+        "energy": "Produzione e consumo",
+        "indicators": "Indicatori del piano",
+        "explanations": "Perché questo piano"
+      },
+      "week": {
+        "production": "Produzione prevista",
+        "consumption": "Consumo previsto",
+        "soc": "Batteria (livello di carica previsto)",
+        "days": "Schede dei giorni"
+      }
+    },
+    "agenda": {
+      "title": "Agenda della giornata",
+      "day_quality": "{day}, giornata {quality}",
+      "quality": {
+        "sunny": "soleggiata",
+        "mixed": "variabile",
+        "cloudy": "nuvolosa"
+      },
+      "sun_window": "{kwh} kWh di sole, soprattutto tra le {start} e le {end}",
+      "sun_none": "Nessuna produzione solare prevista.",
+      "cycle": "Avvii {device}",
+      "runtime": "{device}, {duration}",
+      "mode": "Velocità {mode}",
+      "battery_charge": "La batteria si carica",
+      "battery_discharge": "La batteria subentra",
+      "battery_max": "Batteria al massimo, {pct}%",
+      "until": "Fino alle {time}",
+      "empty": "Niente da avviare quel giorno.",
+      "now": "Adesso",
+      "why": "Perché questo piano",
+      "curves": "Curve dettagliate"
+    }
+  },
+  "requests": {
+    "title": "Le mie richieste",
+    "intro": "Chieda di far funzionare un apparecchio: il piano sceglie il momento migliore, il prima possibile o entro la data indicata.",
+    "device": "Apparecchio",
+    "latest": "Al più tardi il",
+    "ask": "Richiedi",
+    "hint": "Senza data: non appena il sole lo permette. Una nuova richiesta per lo stesso apparecchio ne cambia solo la data.",
+    "failed": "Impossibile salvare la richiesta.",
+    "error": "Impossibile leggere le richieste.",
+    "none": "Nessuna richiesta in corso.",
+    "open_list": "Richieste in corso",
+    "open_asap": "{device}: il prima possibile",
+    "open_latest": "{device}: al più tardi il {latest}",
+    "launched": "{device}: avviato oggi",
+    "done_item": "{device}: fatto",
+    "cancelled_item": "{device}: annullato",
+    "mark_done": "Fatto",
+    "cancel": "Annulla",
+    "recent": "Richieste recenti",
+    "loading": "Lettura degli apparecchi…",
+    "no_device": "Nessun apparecchio della casa si avvia su richiesta.",
+    "sheet_done": "Richiesta salvata: il prossimo calcolo la collocherà nel momento migliore.",
+    "sheet_close": "Fatto"
+  },
+  "settings": {
+    "loading": "Lettura delle impostazioni…",
+    "error": "Impossibile leggere le impostazioni.",
+    "title": "Impostazioni",
+    "intro": "Come funziona l'applicazione: da dove arrivano le richieste, dove inviare la raccomandazione del giorno, quando calcolare il piano.",
+    "not_connected": "Home Assistant non è connesso: gli elenchi sono vuoti, le impostazioni salvate restano valide.",
+    "none": "nessuno",
+    "unknown": "{id} (non trovato in Home Assistant)",
+    "tasks": {
+      "title": "Richieste da un elenco di attività",
+      "help": "Le attività di questo elenco di Home Assistant («avviare la lavatrice», con una scadenza) vengono considerate a ogni calcolo.",
+      "list": "Elenco di attività"
+    },
+    "notification": {
+      "title": "Notifiche",
+      "help": "Inviate da Home Assistant al dispositivo scelto (app companion) dopo ogni calcolo automatico. Niente è attivo per impostazione predefinita, per non duplicare la versione precedente finché invia notifiche.",
+      "service": "Dispositivo comune",
+      "other": "Altro servizio di notifica:",
+      "use": "Usa",
+      "language": "Lingua del messaggio",
+      "test": "Invia una prova",
+      "sending": "Invio…",
+      "sent": "Prova inviata: «{message}»",
+      "failure": {
+        "no_notify_service": "Scelga prima un dispositivo.",
+        "no_plan": "Ancora nessun piano del giorno: la prova invia la sua raccomandazione. Calcoli il piano dalla pagina iniziale.",
+        "not_connected": "Home Assistant non è connesso.",
+        "failed": "Invio non riuscito: controlli il servizio in Home Assistant."
+      },
+      "own_service": "Dispositivo",
+      "common_service": "il dispositivo comune",
+      "test_of": "Invia una prova: {name}",
+      "cadence": {
+        "label": "Frequenza",
+        "every_run": "dopo ogni calcolo (ogni ora, come la versione precedente)",
+        "when_changed": "solo quando il piano cambia",
+        "daily": "una volta al giorno",
+        "at": "dalle"
+      },
+      "quiet": {
+        "label": "Ore di silenzio",
+        "from": "dalle",
+        "to": "alle"
+      },
+      "kinds": {
+        "recommendation": {
+          "title": "Raccomandazione del giorno",
+          "help": "Il piano del giorno: apparecchi, batteria, piscina, bilancio e avvisi."
+        },
+        "device_now": {
+          "title": "«Avvii X ora»",
+          "help": "Quando il ciclo previsto di un apparecchio inizia entro l'ora e non è ancora stato avviato."
+        },
+        "plan_gap": {
+          "title": "Scostamento dal piano",
+          "help": "Un ciclo previsto non è iniziato 30 minuti dopo il suo orario, oppure la produzione solare si scosta di oltre il 25 % dalla previsione."
+        },
+        "battery_full": {
+          "title": "Batteria piena prima di mezzogiorno",
+          "help": "Il piano prevede la batteria piena prima di mezzogiorno: buon momento per avviare un apparecchio, perché il surplus successivo andrebbe in rete."
+        },
+        "forecast_drop": {
+          "title": "La previsione di domani cala",
+          "help": "La produzione prevista per domani cala di oltre il 30 % rispetto alla previsione più alta vista finora."
+        }
+      }
+    },
+    "forecast": {
+      "title": "Previsione solare di riserva",
+      "help": "Usata solo se la dashboard energia di Home Assistant non fornisce alcuna previsione: sensori che danno una previsione di potenza in watt (come l'integrazione Helios).",
+      "entities": "Sensori di previsione",
+      "none": "Nessun sensore di previsione compatibile trovato in Home Assistant."
+    },
+    "scheduler": {
+      "title": "Calcolo automatico",
+      "enabled": "Ricalcola il piano ogni ora",
+      "minute": "al minuto",
+      "next": "Prossimo calcolo: {time}"
+    },
+    "save": "Salva",
+    "saved": "Impostazioni salvate.",
+    "invalid": "Impostazione rifiutata: controlli il servizio di notifica (il nome inizia con «notify.») e il minuto (da 0 a 59).",
+    "failed": "Salvataggio non riuscito.",
+    "appearance": {
+      "title": "Lingua e visualizzazione",
+      "theme": "Tema",
+      "help": "In automatico, l'app segue l'impostazione chiara o scura del telefono, del browser o del computer. La scelta viene salvata su questo dispositivo.",
+      "themes": {
+        "auto": {
+          "name": "Automatico",
+          "help": "Avorio di giorno, Grafite la sera, come il dispositivo"
+        },
+        "ivory": {
+          "name": "Avorio",
+          "help": "Chiaro e caldo"
+        },
+        "graphite": {
+          "name": "Grafite",
+          "help": "Scuro"
+        },
+        "ocean": {
+          "name": "Oceano",
+          "help": "Chiaro e blu, vicino a Home Assistant"
+        },
+        "meadow": {
+          "name": "Prato",
+          "help": "Chiaro, verde salvia"
+        },
+        "dusk": {
+          "name": "Crepuscolo",
+          "help": "Scuro, viola e corallo"
+        }
+      }
+    }
+  },
+  "connection_page": {
+    "loading": "Lettura della connessione…",
+    "error": "Impossibile leggere la connessione.",
+    "title": "Connessione a Home Assistant",
+    "state": "Stato:",
+    "returned": {
+      "ok": "Connessione accettata da Home Assistant: l'applicazione si riavvia per applicarla.",
+      "failed": "Home Assistant ha rifiutato la connessione: riprovi.",
+      "expired": "La richiesta di connessione è scaduta: ricominci."
+    },
+    "restarting": "L'applicazione si riavvia per applicare la connessione (qualche secondo)…",
+    "timeout": "L'applicazione non risponde ancora: controlli che il suo container si riavvii da solo (restart: unless-stopped), poi ricarichi la pagina.",
+    "failure": {
+      "invalid_url": "Indirizzo non valido: inizia con http:// o https://.",
+      "token_refused": "Home Assistant ha rifiutato questo token.",
+      "unreachable": "Home Assistant non risponde a questo indirizzo dall'applicazione.",
+      "set_by_environment": "La connessione è definita da variabili d'ambiente.",
+      "addon_mode": "Come componente aggiuntivo, Home Assistant fornisce la connessione.",
+      "not_connected": "Nessuna connessione da dimenticare.",
+      "failed": "L'operazione non è riuscita."
+    },
+    "addon": "L'applicazione funziona come componente aggiuntivo: Home Assistant fornisce da sé la connessione.",
+    "environment": "La connessione è definita da variabili d'ambiente (HA_URL, HA_TOKEN): le tolga dal file .env per gestirla qui.",
+    "saved": {
+      "oauth": "Connesso a {url} con il suo account Home Assistant.",
+      "token": "Connesso a {url} con un token di accesso."
+    },
+    "disconnect": "Disconnetti",
+    "intro": "Inserisca l'indirizzo di Home Assistant, poi acceda con il suo account: Home Assistant le chiederà di confermare e la riporterà qui.",
+    "url": "Indirizzo di Home Assistant",
+    "url_hint": "Quello che apre nel browser; anche l'applicazione deve poterlo raggiungere.",
+    "oauth": "Accedi con Home Assistant",
+    "token_title": "Con un token di accesso (se il browser non raggiunge Home Assistant)",
+    "token_help": "Crei un token in Home Assistant: il suo profilo › Sicurezza › Token di accesso di lunga durata.",
+    "token": "Token",
+    "connect_token": "Connetti con questo token",
+    "security": "La connessione è conservata sul dispositivo dove gira l'applicazione, mai in un'esportazione o in un rapporto. Esponga l'applicazione solo sulla rete locale: non ha un accesso proprio."
+  },
+  "home": {
+    "title": "La mia casa",
+    "intro": "Ecco ciò che l'applicazione ha riconosciuto nella sua dashboard energia. Controlli gli apparecchi, li corregga se serve, poi salvi.",
+    "loading": "Lettura di Home Assistant…",
+    "error": {
+      "not_connected": "Home Assistant non è connesso: non è possibile proporre apparecchi.",
+      "failed": "Impossibile caricare le proposte."
+    },
+    "no_energy_dashboard": "La dashboard energia di Home Assistant non è configurata: l'applicazione non ha nulla da proporre.",
+    "issue_count": "{count} punto/i da controllare.",
+    "refresh": "Rileggi Home Assistant",
+    "include": "Mantieni",
+    "name": "Nome",
+    "kind": "Tipo",
+    "capacity": "Capacità (kWh)",
+    "resets_daily": "si azzera ogni giorno",
+    "save": "Salva",
+    "saved": "Casa salvata.",
+    "save_failed": "Salvataggio non riuscito.",
+    "keep_sensor": "Mantieni {entity}",
+    "capacity_source": "(letto in Home Assistant: {entity})",
+    "custom_kind": "{name} ({parent})",
+    "to_settings": "Impostazioni di pianificazione di questo apparecchio",
+    "add": {
+      "open": "Aggiungi un apparecchio",
+      "title": "Aggiungere un apparecchio assente dalla dashboard energia",
+      "intro": "Una presa intelligente, una pompa di calore…: scelga il tipo e i sensori di Home Assistant che lo misurano.",
+      "loading": "Lettura dei sensori di Home Assistant…",
+      "not_connected": "Home Assistant non è connesso: non è possibile scegliere i sensori.",
+      "failed": "Impossibile leggere i sensori di Home Assistant.",
+      "no_sensor": "nessuno",
+      "confirm": "Aggiungi",
+      "cancel": "Annulla"
+    },
+    "sensors_summary": "Sensori di Home Assistant collegati: {count}.",
+    "include_hint": "Tolga la spunta a un apparecchio proposto che non fa parte della casa.",
+    "kind_hint": "Il tipo decide che cosa il piano può fare con l'apparecchio."
+  },
+  "graph": {
+    "title": "La mia casa come grafo",
+    "show": "Mostra la casa come grafo",
+    "hide": "Nascondi il grafo",
+    "loading": "Caricamento del grafo…",
+    "error": "Impossibile leggere il modello della casa.",
+    "empty": "Ancora nessun apparecchio salvato.",
+    "hint": "Faccia clic su un elemento per vederne le proprietà e i problemi.",
+    "no_issue": "Nessun problema.",
+    "library": "Tipo della libreria",
+    "key": "Identificativo",
+    "parent": "Sotto il tipo",
+    "type": "Tipo",
+    "sensors": "Sensori",
+    "capacity": "Capacità",
+    "role": "Ruolo",
+    "entity": "Sensore di Home Assistant",
+    "subtype_of": "sottotipo di",
+    "is_a": "è un",
+    "has_sensor": "sensore"
+  },
+  "library": {
+    "loading": "Caricamento della libreria…",
+    "error": "Impossibile leggere i tipi di apparecchio.",
+    "title": "Libreria degli apparecchi",
+    "intro": "I tipi di apparecchio che l'applicazione conosce, e quelli che aggiunge per descrivere la sua casa.",
+    "library_types": "Tipi della libreria «Energia domestica»",
+    "type": "Tipo",
+    "behaviors": "Come la pianificazione può gestirlo",
+    "roles": "Sensori attesi",
+    "own_types": "I suoi tipi di apparecchio",
+    "own_intro": "Un tipo suo (pompa di calore, deumidificatore…) si colloca sotto un tipo della libreria: i suoi apparecchi vengono pianificati come quello.",
+    "none": "Ancora nessun tipo suo.",
+    "name": "Nome",
+    "parent": "Sotto il tipo",
+    "parent_of": "sotto «{parent}»",
+    "choose": "scegli…",
+    "rename": "Rinomina",
+    "delete": "Elimina",
+    "create": "Aggiungi il tipo",
+    "messages": {
+      "created": "Tipo aggiunto: lo scelga per un apparecchio nella scheda Casa.",
+      "renamed": "Tipo rinominato.",
+      "deleted": "Tipo eliminato.",
+      "in_use": "Un apparecchio usa questo tipo: ne cambi prima il tipo nella scheda Casa.",
+      "invalid": "Questo tipo non può essere aggiunto sotto quello.",
+      "failed": "L'operazione non è riuscita."
+    }
+  },
+  "kind": {
+    "SolarInstallation": "Produzione solare",
+    "GridConnection": "Rete",
+    "Battery": "Batteria",
+    "WaterHeater": "Scaldabagno",
+    "WashingMachine": "Lavatrice",
+    "Dryer": "Asciugatrice",
+    "Dishwasher": "Lavastoviglie",
+    "PoolPump": "Pompa della piscina",
+    "OtherLoad": "Altro consumo"
+  },
+  "role": {
+    "EnergyProduced": "Energia prodotta",
+    "PowerProduced": "Potenza prodotta",
+    "EnergyImported": "Energia prelevata dalla rete",
+    "EnergyExported": "Surplus immesso in rete",
+    "EnergyCharged": "Energia caricata",
+    "EnergyDischarged": "Energia scaricata",
+    "StateOfCharge": "Livello di carica (%)",
+    "EnergyConsumed": "Energia consumata",
+    "PowerConsumed": "Potenza assorbita"
+  },
+  "issue": {
+    "entity_missing": "{entity} non esiste in Home Assistant.",
+    "not_energy_unit": "{entity} non è un contatore di energia (unità: «{unit}»): lo tolga dalla dashboard energia o lo sostituisca.",
+    "unexpected_device_class": "{entity} è dichiarato come «{device_class}» in Home Assistant, che non è un contatore di energia.",
+    "not_power_unit": "{entity} non è una potenza (unità: «{unit}»).",
+    "not_percent_unit": "{entity} non è una percentuale (unità: «{unit}»).",
+    "no_power_sensor": "Nessuna potenza trovata per {entity}: serve a riconoscere i cicli dell'apparecchio.",
+    "battery_capacity_missing": "Capacità della batteria sconosciuta: la inserisca.",
+    "battery_soc_missing": "Manca il livello di carica della batteria nella dashboard energia.",
+    "not_proposed": "Apparecchio salvato non più presente nella dashboard energia.",
+    "name_suggests_cost": "{entity} sembra un costo (dal nome), non energia consumata: non viene mantenuto per impostazione predefinita. Rimetta la spunta se è davvero un contatore."
+  },
+  "configuration": {
+    "title": "Impostazioni di pianificazione",
+    "intro": "Per ogni apparecchio salvato: come la pianificazione lo gestisce e se deve programmarlo.",
+    "loading": "Lettura delle impostazioni…",
+    "error": "Impossibile leggere le impostazioni.",
+    "empty": "Salvi prima la sua casa: i suoi apparecchi compariranno qui.",
+    "behavior": "Comportamento",
+    "planned": "Programmato dalla pianificazione",
+    "default": "Impostazioni predefinite per questo tipo di apparecchio.",
+    "save": "Salva le impostazioni",
+    "saved": "Impostazioni salvate.",
+    "save_failed": "Salvataggio delle impostazioni non riuscito.",
+    "issue": {
+      "unsupported_version": "La versione di configurazione {version} non è supportata (attesa: {expected}).",
+      "unknown_device": "{device}: non è un apparecchio della casa salvata.",
+      "duplicate_device": "{device}: impostato due volte.",
+      "behavior_not_allowed": "{device}: questo comportamento non è possibile per questo tipo di apparecchio.",
+      "observed_automation": "{device}: un apparecchio solo osservato può essere mostrato, non raccomandato.",
+      "automation_not_available": "{device}: la conferma e il comando automatico arriveranno in una versione successiva.",
+      "tariff_without_bands": "Tariffa: nessuna fascia oraria.",
+      "bands_not_used": "Tariffa: questo tipo di tariffa non usa fasce.",
+      "band_empty": "Tariffa: la fascia {band} è vuota (fine prima dell'inizio).",
+      "band_weekday": "Tariffa: giorno della settimana impossibile nella fascia {band}.",
+      "band_month": "Tariffa: mese impossibile nella fascia {band}.",
+      "tariff_without_colors": "Tariffa: nessun colore dichiarato.",
+      "tariff_without_color_entity": "Tariffa: manca il sensore del colore del giorno.",
+      "color_twice": "Tariffa: un colore è dichiarato due volte.",
+      "tariff_without_price_entity": "Tariffa: manca il sensore del prezzo.",
+      "battery_active_range_empty": "Batteria: la fascia di funzionamento è vuota.",
+      "runtime_not_used": "{device}: impostazioni di durata di funzionamento per un altro comportamento.",
+      "panels_not_used": "{device}: i pannelli solari si possono descrivere solo su un impianto solare.",
+      "runtime_speed_names": "{device}: ogni velocità richiede un nome diverso (e non «spento»).",
+      "runtime_seasons": "{device}: stagione sconosciuta o valore negativo.",
+      "runtime_too_long": "{device}: più di 24 ore al giorno.",
+      "need_not_used": "{device}: fabbisogno di energia impostato per un altro comportamento.",
+      "need_window_empty": "{device}: la scadenza deve venire dopo l'ora più precoce.",
+      "need_too_large": "{device}: troppa energia per {hours} h alla potenza massima.",
+      "constraints_not_used": "{device}: vincoli orari per un apparecchio che la pianificazione non programma.",
+      "constraint_range_empty": "{device}: la fascia vietata {constraint} è vuota.",
+      "constraints_leave_no_time": "{device}: i vincoli rigidi vietano l'intera giornata.",
+      "after_not_used": "{device}: «inizia dopo» impostato per un apparecchio che non è un ciclo.",
+      "after_unknown": "{device}: l'apparecchio da seguire ({after}) non è nella casa.",
+      "delay_not_used": "{device}: tolleranza di rinvio impostata per un apparecchio che non è un ciclo.",
+      "battery_floor_range_empty": "Batteria: una fascia di minimo è vuota ({range}).",
+      "recurrence_not_used": "{device}: ripetizione impostata per un apparecchio che non è un ciclo.",
+      "recurrence_rule": "{device}: regola di ripetizione non supportata ({rule}): {reason}.",
+      "objective_weights_unused": "Obiettivo: pesi indicati per un'impostazione predefinita che non li usa.",
+      "objective_weights_missing": "Obiettivo: pesi liberi senza alcun peso positivo.",
+      "objective_co2_without_entity": "Obiettivo: la CO₂ richiede un sensore di intensità di carbonio della rete.",
+      "import_format": "Questo file non è un'esportazione di casa di WattSlot.",
+      "import_version": "Versione del file non supportata: {reason}.",
+      "import_invalid": "File non valido ({field}): {reason}."
+    },
+    "import_rules": "Importa le regole delle attività di Home Assistant",
+    "rules": {
+      "applied": "Regole importate dalle descrizioni delle attività: le controlli, poi salvi.",
+      "none": "Nessuna regola da importare dalle attività di Home Assistant.",
+      "not_connected": "Home Assistant non è connesso.",
+      "failed": "Impossibile leggere le attività di Home Assistant."
+    },
+    "to_device": "Apparecchio e sensori",
+    "behavior_hints": {
+      "CycleBehavior": "Un programma che funziona per un po' una volta avviato: il piano le dice quando avviarlo.",
+      "EnergyByDeadlineBehavior": "Una quantità di energia da fornire entro un'ora (ricarica di un'auto, scaldabagno regolato in potenza).",
+      "RuntimeBehavior": "Un numero di ore di funzionamento da distribuire nella giornata (filtrazione della piscina, pompa di calore).",
+      "StorageBehavior": "Accumula il surplus solare e lo restituisce quando la casa ne ha bisogno.",
+      "UncontrolledBehavior": "Consumo osservato ma non spostato dal piano.",
+      "ProductionBehavior": "Produzione dei pannelli, osservata per prevederla.",
+      "GridBehavior": "Prelievo dalla rete e surplus immesso in rete."
+    },
+    "planned_hint": "Tolga la spunta per osservare l'apparecchio senza che il piano lo collochi."
+  },
+  "templates": {
+    "error": "Impossibile leggere i modelli.",
+    "title": "Partire da un modello",
+    "intro": "Un modello imposta in una volta il comportamento dei suoi apparecchi secondo il loro tipo, la tariffa e l'obiettivo. Apparecchi e sensori non cambiano; può regolare tutto dopo.",
+    "no_home": "Salvi prima la sua casa: il modello si applica ai suoi apparecchi.",
+    "choose": "Modelli",
+    "devices": "Imposterebbe: {devices}.",
+    "no_devices": "Imposterebbe solo la tariffa.",
+    "preview": "Vedi che cosa cambierebbe",
+    "preview_title": "Che cosa cambierebbe",
+    "nothing": "Niente: la sua configurazione corrisponde già a questo modello.",
+    "change": {
+      "behavior": "{device}: {before} → {after}",
+      "settings": "{device}: impostazioni modificate",
+      "tariff": "Tariffa elettrica sostituita (prezzi indicativi, da regolare)",
+      "objective": "Obiettivo del calcolo sostituito",
+      "battery": "Impostazioni della batteria sostituite"
+    },
+    "keep": "Gli apparecchi che il modello non conosce e le impostazioni della batteria restano come sono.",
+    "apply": "Applica il modello",
+    "applied": "Modello applicato: controlli i prezzi della tariffa qui sotto.",
+    "failed": "Impossibile applicare il modello."
+  },
+  "tariff": {
+    "title": "Tariffa elettrica",
+    "none": "Nessuna tariffa: il piano ipotizza un prezzo unico di {price} €/kWh e cerca solo di prelevare il meno possibile dalla rete.",
+    "use": {
+      "SingleTariff": "Imposta un prezzo unico",
+      "TimeOfUseTariff": "Imposta fasce fuori punta e di punta",
+      "DayColorTariff": "Imposta una tariffa per colore del giorno (Tempo)",
+      "DynamicTariff": "Imposta un prezzo dinamico"
+    },
+    "kind": "Tipo di tariffa",
+    "kinds": {
+      "SingleTariff": "Prezzo unico",
+      "TimeOfUseTariff": "Fasce fuori punta e di punta",
+      "DayColorTariff": "Colore del giorno (Tempo)",
+      "DynamicTariff": "Prezzo dinamico"
+    },
+    "base_single": "Prezzo per kWh",
+    "base_time_of_use": "Prezzo fuori dalle fasce (ore di punta)",
+    "base_unknown": "Prezzo quando non è noto",
+    "band": "Fascia {number}",
+    "from": "Dalle",
+    "to": "alle",
+    "price": "prezzo",
+    "limited": "limitata ad alcuni giorni o mesi",
+    "remove_band": "Rimuovi",
+    "add_band": "Aggiungi una fascia",
+    "color_entity": "Sensore del colore del giorno",
+    "color_tomorrow_entity": "Sensore del colore di domani",
+    "color_day_start": "Il giorno di colore inizia alle",
+    "colors_hint": "Ogni colore: il suo nome (come lo mostra il sensore), il suo prezzo fuori dalle fasce e le sue fasce. Il primo si usa quando il colore è sconosciuto.",
+    "color_named": "Colore {color}",
+    "color": "Colore",
+    "base_color": "prezzo fuori dalle fasce",
+    "remove_color": "Rimuovi il colore",
+    "add_color": "Aggiungi un colore",
+    "unit": "Unità dei prezzi letti in Home Assistant",
+    "price_entity": "Sensore del prezzo",
+    "export": "Prezzo di vendita del surplus",
+    "export_unknown": "Prezzo di vendita quando non è noto",
+    "export_entity": "Sensore del prezzo di vendita (facoltativo)",
+    "propose": "Proponi dalla dashboard energia",
+    "proposal": {
+      "none": "La dashboard energia non dichiara alcun prezzo.",
+      "not_connected": "Home Assistant non è connesso: impossibile leggere la dashboard energia.",
+      "failed": "Impossibile leggere la proposta."
+    },
+    "reset": "Torna al prezzo predefinito",
+    "color_entity_hint": "Sensore di Home Assistant che fornisce il colore del giorno (per esempio l'integrazione RTE Tempo).",
+    "kind_hints": {
+      "SingleTariff": "Lo stesso prezzo a qualsiasi ora.",
+      "TimeOfUseTariff": "Un prezzo più basso nelle fasce fuori punta del suo contratto.",
+      "DayColorTariff": "Il prezzo dipende dal colore del giorno (Tempo) e dall'ora.",
+      "DynamicTariff": "Il prezzo cambia ogni ora ed è letto da un sensore di Home Assistant."
+    },
+    "price_entity_hint": "Sensore di Home Assistant che fornisce il prezzo dell'ora attuale e delle prossime.",
+    "export_hint": "Quanto le rende un kWh di surplus immesso in rete; 0 se non lo vende."
+  },
+  "battery": {
+    "title": "Batteria",
+    "intro": "La pianificazione vede le batterie della casa come una sola, da {capacity} kWh.",
+    "defaults": "Impostazioni predefinite: le modifichi perché corrispondano alla sua batteria.",
+    "charge": "Potenza massima di carica",
+    "discharge": "Potenza massima di scarica",
+    "power_hint": "Lasciato vuoto: abbastanza per caricare o svuotare metà batteria in un'ora.",
+    "floor": "Non scaricare mai sotto",
+    "active": "La batteria carica e scarica",
+    "from": "dalle",
+    "to": "alle",
+    "full_charge": "Cercare regolarmente una carica completa (la batteria ricalibra la sua misura)",
+    "every": "almeno ogni",
+    "days": "giorni",
+    "reset": "Torna alle impostazioni predefinite",
+    "floor_ranges": "Minimo più alto in alcune fasce",
+    "floor_range": "Fascia di minimo {number}",
+    "not_below": "non sotto",
+    "remove_range": "Rimuovi",
+    "add_range": "Aggiungi una fascia con minimo più alto",
+    "floor_hint": "La batteria non scende mai sotto: una riserva per la notte o per un'interruzione di corrente."
+  },
+  "objective": {
+    "title": "Obiettivo del calcolo",
+    "defaults": "Nessun obiettivo impostato: prima il costo.",
+    "preset": "Il calcolo punta a",
+    "presets": {
+      "cost": "il costo più basso",
+      "autonomy": "l'autonomia (prelevare il meno possibile dalla rete)",
+      "self_consumption": "l'autoconsumo (immettere in rete il minor surplus possibile)",
+      "co2": "la minor CO₂ possibile (intensità della rete)",
+      "custom": "un compromesso (pesi liberi)"
+    },
+    "hints": {
+      "cost": "Bolletta più bassa: prelevare nelle ore più economiche, consumare il surplus invece di venderlo a basso prezzo.",
+      "autonomy": "Il minimo di energia presa dalla rete, anche se un po' più cara.",
+      "self_consumption": "Consumare sul posto quanta più produzione possibile, anche prelevando nelle ore di punta.",
+      "co2": "Prelevare nelle ore in cui l'elettricità della rete emette meno CO₂.",
+      "custom": "Compromesso tra i criteri, secondo i pesi qui sotto."
+    },
+    "weights": "Pesi dei criteri",
+    "weights_hint": "In equivalente euro: un kWh prelevato o immesso in rete vale il prezzo medio del giorno. Conta solo la proporzione tra i pesi.",
+    "weight": {
+      "cost": "Costo",
+      "grid_import": "Prelievo dalla rete",
+      "grid_export": "Surplus immesso in rete",
+      "co2": "CO₂",
+      "battery": "Cura della batteria"
+    },
+    "co2_entity": "Intensità di carbonio della rete (sensore di Home Assistant, g/kWh)",
+    "co2_hint": "La sua previsione se la fornisce, altrimenti il suo valore attuale per tutta la giornata: il piano è allora quello dell'autonomia, con la CO₂ come indicatore."
+  },
+  "runtime": {
+    "title": "Durata di funzionamento di {device}",
+    "measured": "Nessuna velocità impostata: una sola, con la potenza misurata negli ultimi 30 giorni.",
+    "speed": "Velocità {number}",
+    "speed_name": "Nome",
+    "power": "Potenza",
+    "remove_speed": "Rimuovi",
+    "add_speed": "Aggiungi una velocità",
+    "minimum_hours": "Ore minime al giorno:",
+    "skip_days": "Giorni che si possono saltare (se la batteria ha bisogno della carica completa):",
+    "seasons": {
+      "summer": "estate",
+      "mid_season": "mezza stagione",
+      "winter": "inverno"
+    },
+    "max_starts": "Avvii al giorno al massimo",
+    "reset": "Torna alle impostazioni predefinite",
+    "minimum_hours_hint": "Il piano colloca almeno queste ore ogni giorno, quando il sole produce di più."
+  },
+  "need": {
+    "title": "Fabbisogno di energia di {device}",
+    "unset": "Nessun fabbisogno impostato: l'apparecchio è trattato come un ciclo da avviare.",
+    "energy": "Energia da fornire",
+    "max_power": "Potenza massima",
+    "earliest": "Non prima delle",
+    "deadline": "Entro le",
+    "steps": "A gradini (tutto o niente alla potenza massima)",
+    "daily": "Ogni giorno (altrimenti quando un'attività lo chiede)",
+    "reset": "Rimuovi il fabbisogno",
+    "hint": "L'energia è fornita entro l'ora indicata, senza superare la potenza massima (quella della presa o del caricatore)."
+  },
+  "panels": {
+    "title": "Pannelli di {device}",
+    "unset": "Non descritti. Senza previsione nella dashboard energia di Home Assistant, descriva i pannelli: l'applicazione calcolerà una previsione con Open-Meteo.",
+    "describe": "Descrivi i pannelli",
+    "help": "Serve per una previsione calcolata con Open-Meteo, solo se la dashboard energia di Home Assistant non ne fornisce. Un campo per orientamento (una falda del tetto, una pergola…).",
+    "array": "Campo {number}",
+    "kwp": "Potenza di picco",
+    "tilt": "Inclinazione",
+    "orientation": "Orientamento",
+    "orientations": {
+      "north": "Nord",
+      "north_east": "Nord-est",
+      "east": "Est",
+      "south_east": "Sud-est",
+      "south": "Sud",
+      "south_west": "Sud-ovest",
+      "west": "Ovest",
+      "north_west": "Nord-ovest"
+    },
+    "degrees": "{degrees}°",
+    "azimuth": "Campo {number}: orientamento in gradi (180 = sud)",
+    "remove": "Rimuovi",
+    "add": "Aggiungi un campo",
+    "inverter": "Potenza massima dell'inverter",
+    "no_inverter": "nessuna",
+    "efficiency": "Rendimento (cavi, inverter, sporcizia)",
+    "clear": "Smetti di descrivere i pannelli",
+    "arrays_hint": "Un campo per orientamento: la potenza di picco (kWp) è sulla fattura o sul contratto dell'installatore."
+  },
+  "cycle": {
+    "title": "Regole del ciclo di {device}",
+    "after": "Inizia dopo la fine di",
+    "no_after": "nessun apparecchio",
+    "delay": "Può essere rinviato di",
+    "days": "giorni al massimo (vuoto: 2)",
+    "recurrence": "Si ripete",
+    "modes": {
+      "none": "secondo le attività di Home Assistant",
+      "daily": "ogni N giorni",
+      "weekly": "in alcuni giorni della settimana",
+      "custom": "regola avanzata (formato iCalendar)"
+    },
+    "every": "ogni",
+    "days_since": "giorni dall'ultimo ciclo",
+    "weekdays": {
+      "MO": "lun",
+      "TU": "mar",
+      "WE": "mer",
+      "TH": "gio",
+      "FR": "ven",
+      "SA": "sab",
+      "SU": "dom"
+    },
+    "rule": "Regola",
+    "replaces_tasks": "Le attività ricorrenti di Home Assistant di questo apparecchio vengono allora ignorate; un'occorrenza mancata resta dovuta fino al ciclo successivo.",
+    "after_hint": "Per esempio l'asciugatrice dopo la lavatrice: è collocata dopo la fine dell'altra, nello stesso giorno."
+  },
+  "constraint": {
+    "title": "Vincoli orari di {device}",
+    "none": "Nessun vincolo: la pianificazione sceglie liberamente l'orario.",
+    "item": "Vincolo {number}",
+    "kinds": {
+      "forbidden": "Vietato",
+      "not_before": "Non prima delle",
+      "finish_before": "Finito entro le"
+    },
+    "from": "dalle",
+    "to": "alle",
+    "soft": "Flessibile (rispettato se possibile; altrimenti il piano lo segnala)",
+    "remove": "Rimuovi",
+    "add": {
+      "forbidden": "Aggiungi una fascia vietata",
+      "not_before": "Aggiungi «non prima delle»",
+      "finish_before": "Aggiungi «finito entro le»"
+    }
+  },
+  "behavior": {
+    "CycleBehavior": "Ciclo da avviare",
+    "EnergyByDeadlineBehavior": "Fabbisogno di energia entro una scadenza",
+    "RuntimeBehavior": "Durata di funzionamento da programmare",
+    "StorageBehavior": "Accumulo",
+    "UncontrolledBehavior": "Consumo solo osservato",
+    "ProductionBehavior": "Produzione",
+    "GridBehavior": "Scambio con la rete"
+  },
+  "diagnostic": {
+    "title": "Diagnostica",
+    "loading": "Lettura dello stato dell'applicazione…",
+    "error": "Impossibile leggere lo stato.",
+    "generated_at": "Stato alle {time}.",
+    "refresh": "Aggiorna",
+    "ingestion": "Acquisizione in tempo reale",
+    "ingestion_summary": "{entities} entità seguite; {received} letture ricevute, {written} scritte, {pending} in attesa; ultima scrittura {age}.",
+    "entity": "Entità",
+    "role": "Ruolo",
+    "last_value": "Ultimo valore",
+    "age": "Ricevuto",
+    "today": "Letture di oggi",
+    "aggregation": "Aggregati",
+    "period": {
+      "PT15M": "Quarti d'ora",
+      "PT1H": "Ore"
+    },
+    "complete_until": "calcolato fino alle {time}",
+    "history_since": "storico dal {time}",
+    "history_imported": "Storico di Home Assistant importato per {count} entità; {written} aggregati scritti dall'avvio.",
+    "storage": "Archiviazione e manutenzione",
+    "disk_raw": "Letture grezze",
+    "disk_graph": "Archivio principale (modello, aggregati)",
+    "disk_database": "Database delle impostazioni",
+    "memory": "Memoria dell'applicazione",
+    "disk_written": "Scritto su disco",
+    "disk_written_summary": "{total} dall'avvio ({since}), cioè {per_day} GB al giorno",
+    "megabytes": "{value} MB",
+    "next_maintenance": "Prossima manutenzione",
+    "last_maintenance": "Ultima manutenzione",
+    "last_maintenance_summary": "{time}: {days} giorno/i grezzo/i rimosso/i, {duration} s",
+    "planning": "Calcoli del piano",
+    "next_plan": "Prossimo calcolo",
+    "plan_disabled": "calcoli automatici disattivati",
+    "last_plan": "Ultimo calcolo riuscito",
+    "last_plan_summary": "{time}: {today} s per oggi, {total} s in tutto",
+    "configuration": "Configurazione della dashboard energia",
+    "issue_of": "{device}: {issue}",
+    "technical": "Dettaglio tecnico"
+  },
+  "problems": {
+    "title": "Cosa non va",
+    "loading": "Ricerca dei problemi…",
+    "error": "Impossibile leggere i problemi.",
+    "none": "Niente da segnalare: tutto funziona.",
+    "refresh": "Ricontrolla",
+    "open": "Vai",
+    "doc": "Documentazione",
+    "ticket": "Segnala il problema",
+    "severity": {
+      "blocking": "Blocca il piano",
+      "degraded": "Piano meno preciso",
+      "watch": "Da tenere d'occhio"
+    },
+    "component": {
+      "ingestion": "la lettura delle misure",
+      "aggregation": "il calcolo delle medie",
+      "maintenance": "la pulizia delle misure vecchie",
+      "planning": "il calcolo del piano"
+    },
+    "code": {
+      "ha_not_configured": "L'applicazione non conosce l'indirizzo di Home Assistant.",
+      "ha_disconnected": "Home Assistant non risponde. {error}",
+      "no_energy_dashboard": "La dashboard energia di Home Assistant non è configurata.",
+      "home_not_saved": "La sua casa non è ancora salvata.",
+      "no_forecast": "Nessuna previsione solare: nessun piano possibile.",
+      "sensor_missing": "{device}: il sensore «{role}» ({entity}) non esiste più in Home Assistant.",
+      "sensor_unavailable": "{device}: il sensore «{role}» ({entity}) non è disponibile in Home Assistant.",
+      "sensor_silent": "{device}: il sensore «{role}» ({entity}) non invia nulla da un giorno.",
+      "internal_error": "Errore durante {component}: {error}",
+      "writes_behind": "{count} misure attendono di essere salvate: il dispositivo non riesce più a stare al passo.",
+      "no_statistics": "Nessuno storico in Home Assistant per: {devices}.",
+      "plan_stale": "Da più di 2 ore non è stato possibile calcolare alcun piano.",
+      "energy_dashboard_issue": "{device}: {issue}"
+    },
+    "action": {
+      "ha_not_configured": "Componente aggiuntivo: lo riavvii. Docker: indichi l'indirizzo di Home Assistant e un token di accesso di lunga durata.",
+      "ha_disconnected": "Controlli che Home Assistant funzioni e che il token di accesso sia ancora valido.",
+      "no_energy_dashboard": "Dichiari lì la produzione solare e il contatore (Impostazioni › Plance › Energia).",
+      "home_not_saved": "Controlli gli apparecchi proposti e salvi la sua casa.",
+      "no_forecast": "Aggiunga una previsione alla dashboard energia di Home Assistant oppure descriva i pannelli.",
+      "sensor_missing": "Lo sostituisca in La mia casa, oppure rilegga Home Assistant se l'apparecchio è stato rinominato.",
+      "sensor_unavailable": "Controlli l'apparecchio o la sua integrazione in Home Assistant.",
+      "sensor_silent": "Controlli che l'apparecchio sia acceso e connesso.",
+      "internal_error": "Se l'errore persiste, alleghi il rapporto qui sotto a una segnalazione di errore.",
+      "writes_behind": "Se dura, alleghi il rapporto a una segnalazione di errore.",
+      "no_statistics": "Questi sensori non hanno statistiche in Home Assistant: il piano non parte dal loro storico.",
+      "plan_stale": "Guardi gli altri problemi, oppure avvii un calcolo dalla pagina iniziale.",
+      "configuration_issue": "Corregga l'impostazione in La mia casa."
+    }
+  },
+  "report": {
+    "title": "Rapporto per una segnalazione di errore",
+    "intro": "Un file che descrive lo stato dell'applicazione, senza nomi di apparecchi, identificativi dei sensori né posizione: da allegare a una segnalazione di errore.",
+    "prepare": "Prepara un rapporto",
+    "error": "Impossibile preparare il rapporto.",
+    "preview": "Ecco tutto ciò che contiene il rapporto:",
+    "preview_label": "Anteprima del rapporto",
+    "download": "Scarica"
+  },
+  "forecast_comparison": {
+    "title": "Previsione Open-Meteo e produzione misurata",
+    "loading": "Confronto in corso…",
+    "error": "Impossibile leggere il confronto.",
+    "intro": "Previsione calcolata dai suoi pannelli per gli ultimi 7 giorni, confrontata con ciò che i pannelli hanno prodotto. Uno scarto grande: controlli la descrizione dei pannelli, oppure installi un'integrazione di previsione nella dashboard energia di Home Assistant.",
+    "day": "Giorno",
+    "forecast": "Previsto",
+    "measured": "Misurato",
+    "ratio": "In questi giorni la produzione misurata è il {percent} % della previsione.",
+    "no_ratio": "Non c'è ancora abbastanza produzione misurata per confrontare.",
+    "reason": {
+      "no_panels": "Nessun pannello descritto: nessuna previsione Open-Meteo da confrontare.",
+      "no_position": "Posizione di Home Assistant sconosciuta (o Home Assistant non connesso): nessuna previsione Open-Meteo.",
+      "unavailable": "Open-Meteo per ora non risponde."
+    }
+  },
+  "exchange": {
+    "title": "Salvare o condividere la casa",
+    "intro": "Il modello della casa e le sue impostazioni stanno in un file: per salvarli, condividerli o partire da un esempio. Un'importazione sostituisce la casa e le impostazioni attuali.",
+    "export": "Esporta (JSON)",
+    "export_turtle": "Esporta per l'ontologia (Turtle)",
+    "import": "Importa un file",
+    "valid": "File valido: può applicarlo.",
+    "unknown_entities": "Sensori assenti da Home Assistant (da sostituire dopo): {entities}.",
+    "apply": "Applica l'importazione",
+    "applied": "Importazione applicata: la casa e le sue impostazioni sono state sostituite.",
+    "unreadable": "Questo file non è un JSON leggibile.",
+    "failed": "L'importazione non è riuscita."
+  },
+  "advanced": {
+    "title": "Impostazioni avanzate",
+    "modified": "Impostazioni avanzate (modificate)"
+  },
+  "glossary": {
+    "title": "Glossario",
+    "terms": {
+      "grid_import": {
+        "term": "Prelievo dalla rete",
+        "definition": "L'elettricità che la casa prende dalla rete quando sole e batteria non bastano."
+      },
+      "surplus": {
+        "term": "Surplus immesso in rete",
+        "definition": "La produzione solare che la casa non usa e che la batteria non può accumulare."
+      },
+      "self_consumption": {
+        "term": "Autoconsumo",
+        "definition": "La parte della sua produzione solare consumata sul posto."
+      },
+      "autonomy": {
+        "term": "Autonomia",
+        "definition": "La parte del suo consumo coperta senza prelevare dalla rete."
+      },
+      "off_peak": {
+        "term": "Ore fuori punta",
+        "definition": "Le ore in cui il suo contratto fa pagare meno il kWh."
+      },
+      "kwh": {
+        "term": "kWh e kW",
+        "definition": "Il kWh misura l'energia (ciò che paga); il kW misura la potenza (l'energia all'ora)."
+      },
+      "kwp": {
+        "term": "kWp (kilowatt di picco)",
+        "definition": "La potenza dei pannelli solari in pieno sole, indicata dall'installatore."
+      },
+      "cycle": {
+        "term": "Ciclo",
+        "definition": "Un programma di un apparecchio (lavaggio, asciugatura…) che funziona per un po' una volta avviato."
+      },
+      "floor": {
+        "term": "Minimo della batteria",
+        "definition": "Il livello di carica sotto il quale la batteria non scende."
+      },
+      "energy_dashboard": {
+        "term": "Dashboard energia",
+        "definition": "La pagina di Home Assistant dove sono dichiarati i suoi pannelli, il contatore e gli apparecchi misurati."
+      },
+      "sensor": {
+        "term": "Sensore",
+        "definition": "Una misura di Home Assistant (energia, potenza, livello di carica) collegata a un apparecchio."
+      }
+    }
+  },
+  "assistant": {
+    "title": "Assistente vocale",
+    "intro": "Faccia domande sulla sua energia all'Assist di Home Assistant, con il modello linguistico che ha già (Ollama sulla sua rete, o un servizio online). Il piano resta calcolato dall'applicazione; l'assistente lo legge e lo spiega.",
+    "copy": "Copia",
+    "copied": "Copiato",
+    "copy_address": "Copia l'indirizzo del server MCP",
+    "copy_prompt": "Copia il prompt",
+    "step1": {
+      "title": "1. Collegare l'applicazione in Home Assistant",
+      "help": "In Home Assistant: Impostazioni › Dispositivi e servizi › Aggiungi integrazione › «Model Context Protocol», con questo indirizzo:",
+      "addon": "Indirizzo sulla rete interna di Home Assistant: solo Home Assistant può raggiungerlo.",
+      "standalone": "Indirizzo dell'applicazione sulla sua rete locale: Home Assistant deve poterlo raggiungere. L'applicazione non ha un accesso proprio: non la esponga su Internet."
+    },
+    "step2": {
+      "title": "2. Scegliere l'agente di conversazione",
+      "agent": "Aggiunga un agente di conversazione: l'integrazione Ollama (modello sulla sua rete) o quella di un servizio online.",
+      "model": "Scelga un modello che sappia chiamare strumenti, con una dimensione del contesto di almeno 8192 token.",
+      "api": "Nelle opzioni dell'agente, scelga il server MCP dell'applicazione come API LLM, poi usi questo agente nell'Assist."
+    },
+    "step3": {
+      "title": "3. Incollare il prompt consigliato",
+      "help": "Incolli questo testo nelle istruzioni dell'agente di conversazione: gli dice quale strumento usare e di non inventare nulla."
+    },
+    "prompt_label": "Prompt consigliato",
+    "prompt_error": "Impossibile leggere il prompt consigliato.",
+    "check": {
+      "title": "Verificare il server",
+      "run": "Verifica",
+      "checking": "Verifica in corso…",
+      "ok": "Il server MCP risponde: {tools} strumenti.",
+      "failed": "Il server MCP non risponde ({detail})."
+    },
+    "examples": {
+      "title": "Domande di esempio",
+      "why": "«Perché la lavatrice è prevista alle 11?»",
+      "yesterday": "«Quanto hanno prodotto ieri i pannelli?»",
+      "battery": "«La batteria sarà piena oggi?»",
+      "request": "«Avvia la lavastoviglie nel momento migliore entro domani sera.»"
+    },
+    "security": "L'assistente legge il piano, le misure e la previsione; da solo fa una sola cosa: presentare una richiesta, dopo averla confermata con lei. Non avvia alcun calcolo e non cambia alcuna impostazione.",
+    "setup": "Collegare Assist passo per passo",
+    "state": {
+      "ready": "Pronto per l'Assist di Home Assistant",
+      "down": "Il server dell'assistente non risponde",
+      "checking": "Verifica dell'assistente…"
+    }
+  },
+  "ui": {
+    "title": "Componenti dell'interfaccia",
+    "intro": "Ogni componente di base in ogni tema, per controllarli a colpo d'occhio.",
+    "close": "Chiudi",
+    "card_eyebrow": "In questo momento",
+    "card_title": "Il sole copre l'82% della casa",
+    "card_body": "I pannelli producono più di quanto consuma la casa.",
+    "sun": "Pannelli 1,8 kW",
+    "battery": "Batteria 64%",
+    "primary": "È partito",
+    "secondary": "Ricordamelo",
+    "quiet": "Vedi dettagli",
+    "row": "Notifiche",
+    "row_help": "2 attive, sul telefono",
+    "switch": "Animazioni",
+    "switch_help": "Ridotte se il dispositivo lo chiede",
+    "sheet_title": "Richiedi un apparecchio",
+    "sheet_body": "Scegli l'apparecchio e l'ora limite."
+  },
+  "today": {
+    "loading": "Lettura del piano del giorno…",
+    "no_plan": "Ancora nessun piano per oggi: arriva con il prossimo calcolo.",
+    "error": "Impossibile leggere il piano del giorno.",
+    "now": {
+      "eyebrow": "In questo momento",
+      "no_flows": "Il piano del giorno",
+      "panels": "Pannelli",
+      "home": "Casa",
+      "battery": "Batteria",
+      "grid": "Rete",
+      "charging": "carica {kw}",
+      "discharging": "fornisce {kw}",
+      "buying": "prelievo {kw}",
+      "selling": "surplus {kw}",
+      "idle": "niente",
+      "measured": "Media dalle {start} alle {end}"
+    },
+    "next": {
+      "eyebrow": "Prossima azione",
+      "title": "Avvii {device}",
+      "slot": "Tra le {start} e le {end}.",
+      "launched": "È partito",
+      "remind": "Ricordamelo",
+      "reminder_set": "Promemoria previsto",
+      "remind_failed": "Impossibile salvare il promemoria.",
+      "none": "Niente da avviare entro stasera",
+      "none_help": "Il piano la avviserà del prossimo apparecchio da avviare."
+    },
+    "battery": {
+      "eyebrow": "Batteria",
+      "title": "{pct}% in questo momento",
+      "max": "Al massimo verso le {time}: {pct}%.",
+      "end": "Stasera a mezzanotte: {pct}%."
+    },
+    "sun": {
+      "eyebrow": "Sole",
+      "title": "{kwh} kWh previsti oggi",
+      "done": "{kwh} kWh già prodotti.",
+      "none": "Ancora nessuna produzione misurata."
+    }
+  },
+  "home_summary": {
+    "title": "La mia casa in breve",
+    "loading": "Lettura della casa…",
+    "error": "Impossibile leggere la casa.",
+    "details": "Impostazioni dettagliate",
+    "priority": "La mia priorità",
+    "presets": {
+      "cost": "Pagare il meno possibile",
+      "autonomy": "Comprare il meno possibile dalla rete",
+      "self_consumption": "Usare il mio sole",
+      "co2": "Meno CO₂ possibile",
+      "custom": "La mia impostazione"
+    },
+    "contract": {
+      "title": "Il mio contratto",
+      "single": "Prezzo unico, {price} €/kWh",
+      "off_peak": "Fascia economica {ranges}",
+      "colors": "Prezzo secondo il colore del giorno",
+      "dynamic": "Prezzo che cambia ogni ora"
+    },
+    "panels": {
+      "title": "Pannelli",
+      "fields": "{count} campo/i, {directions} · {kwp} kWp",
+      "undescribed": "Pannelli non ancora descritti"
+    },
+    "direction": {
+      "north": "nord",
+      "north_east": "nord-est",
+      "east": "est",
+      "south_east": "sud-est",
+      "south": "sud",
+      "south_west": "sud-ovest",
+      "west": "ovest",
+      "north_west": "nord-ovest"
+    },
+    "battery": {
+      "title": "Batteria",
+      "floor": "{kwh} kWh, mai sotto il {pct}%",
+      "full_charge": "piena almeno ogni {days} giorni"
+    },
+    "placed": "Collocati nel momento migliore",
+    "followed": "Solo seguiti",
+    "followed_more": "{names} e altri {count}",
+    "followed_help": "Misurati, non collocati dal calcolo",
+    "and": "{items} e {last}",
+    "on_request": "quando un'attività di Home Assistant o una richiesta lo prevede",
+    "after": "sempre dopo {device}",
+    "daily": "tutti i giorni",
+    "every_days": "ogni {count} giorni",
+    "weekly": "ogni settimana",
+    "weekly_on": "ogni settimana, il {days}",
+    "every_weeks": "ogni {count} settimane, {days}",
+    "recurring": "secondo una ricorrenza",
+    "energy_daily": "{kwh} kWh prima delle {deadline}, tutti i giorni",
+    "energy_requested": "{kwh} kWh prima delle {deadline}, quando un'attività di Home Assistant o una richiesta lo prevede",
+    "season": {
+      "summer": "{hours} h d'estate",
+      "mid_season": "{hours} h a mezza stagione",
+      "winter": "{hours} h d'inverno"
+    },
+    "season_none": {
+      "summer": "niente d'estate",
+      "mid_season": "niente a mezza stagione",
+      "winter": "niente d'inverno"
+    },
+    "constraint": {
+      "forbidden": "mai tra le {start} e le {end}",
+      "not_before": "non prima delle {start}",
+      "finish_before": "finito prima delle {end}"
+    },
+    "add": "Aggiungi un apparecchio"
+  },
+  "settings_home": {
+    "notifications_none": "Nessuna attiva",
+    "notifications_on": "{count} attiva/e, su {device}",
+    "notifications_count": "{count} attiva/e",
+    "assistant": "Assistente vocale",
+    "assistant_help": "L'Assist di Home Assistant risponde sulla tua energia",
+    "requests_open": "{count} in corso",
+    "requests_none": "Nessuna in corso",
+    "scheduler_on": "Ogni ora, al minuto {minute}",
+    "scheduler_off": "Disattivato: calcolo a mano"
+  },
+  "onboarding": {
+    "progress": "Passo {step} di {count}",
+    "back": "Indietro",
+    "skip": "Salta",
+    "continue": "Va bene, continua",
+    "failed": "Salvataggio non riuscito, riprova.",
+    "all_steps": "Vedi tutti i passi",
+    "connection": {
+      "title": "Collega l'app a Home Assistant",
+      "help": "L'app legge i contatori e gli apparecchi in Home Assistant. Collegala una volta, al resto pensa lei.",
+      "open": "Collegarsi a Home Assistant"
+    },
+    "home": {
+      "title": "Ecco cosa abbiamo trovato a casa tua",
+      "help": "Letto nel pannello Energia di Home Assistant. Togli la spunta a ciò che non va considerato.",
+      "missing": "Manca un apparecchio?",
+      "kinds": {
+        "SolarInstallation": "Produzione seguita",
+        "GridConnection": "Prelievi e surplus seguiti",
+        "Battery": "Caricata nel momento migliore",
+        "battery_capacity": "{kwh} kWh, caricata nel momento migliore",
+        "WaterHeater": "Riscaldato nel momento migliore",
+        "WashingMachine": "Avviato nel momento migliore",
+        "Dryer": "Avviato nel momento migliore",
+        "Dishwasher": "Avviato nel momento migliore",
+        "PoolPump": "Filtrazione nel momento migliore",
+        "OtherLoad": "Solo seguito"
+      }
+    },
+    "tariff": {
+      "title": "Qual è il tuo contratto di elettricità?",
+      "help": "Scegli il modello più vicino: tariffa, batteria e apparecchi impostati in un colpo. Tutto resta modificabile.",
+      "loading": "Lettura dei modelli…",
+      "apply": "Usa questo modello",
+      "later": "Lo imposterò più tardi",
+      "entities": "Questo modello richiede entità di Home Assistant (colore del giorno, prezzo): impostalo in"
+    },
+    "first_plan": {
+      "title": "Tutto pronto",
+      "help": "L'app calcola il tuo primo piano: quando avviare gli apparecchi, quando caricare la batteria. Poi si ricalcola da sola.",
+      "run": "Calcola il mio primo piano"
+    }
+  },
+  "state": {
+    "retry": "Riprova",
+    "error_hint": "Verifica che l'app e Home Assistant siano avviati e raggiungibili, poi riprova."
+  }
+}

@@ -1,0 +1,173 @@
+# Publication d'une version (phase 6 ter, lots 6t.1 et 6t.2), sur une étiquette Git `vX.Y.Z` posée
+# sur un commit de `main`. Rien n'est reconstruit : l'image `sha-…` de ce commit, construite et
+# publiée par les contrôles de `main` (v2.yml, job « publish »), reçoit les étiquettes `X.Y.Z`
+# et `latest`. Une version publiée n'est jamais réécrite : le Supervisor de Home Assistant ne
+# verrait pas la mise à jour.
+#
+#   python app/scripts/version.py X.Y.Z   →  PR, fusion dans main, CI verte
+#   git tag vX.Y.Z <commit de la fusion> && git push origin vX.Y.Z
+#
+# Ordre : image, puis branche `addon` (suivie par le Supervisor : il ne doit jamais voir une
+# version dont l'image n'existe pas), puis release GitHub. Lancement manuel (« Run workflow »,
+# étiquette en entrée) : branche `addon` seule, pour une version déjà publiée (rattrapage de la
+# 0.7.0, réparation).
+name: Publication d'une version
+
+on:
+  push:
+    tags: ["v[0-9]+.[0-9]+.[0-9]+"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Étiquette déjà publiée (vX.Y.Z) à mettre sur la branche addon"
+        required: true
+
+permissions:
+  contents: write # branche addon, release GitHub
+  packages: write # étiquettes de l'image
+
+env:
+  IMAGE: ghcr.io/${{ github.repository_owner }}/wattslot
+  TAG: ${{ inputs.tag || github.ref_name }}
+
+jobs:
+  image:
+    name: Image ${{ github.ref_name }}
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Version de l'étiquette
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Étiquette posée sur main, à la version de l'application
+        run: |
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main \
+            || { echo "::error::L'étiquette doit être posée sur un commit de main."; exit 1; }
+          python3 app/scripts/version.py --check
+          found=$(grep '^version:' ha-addon/wattslot/config.yaml | cut -d'"' -f2)
+          [ "$found" = "${{ steps.version.outputs.version }}" ] \
+            || { echo "::error::Étiquette ${GITHUB_REF_NAME}, mais version $found dans les fichiers."; exit 1; }
+
+      - name: Section du changelog écrite
+        run: |
+          python3 - "${{ steps.version.outputs.version }}" <<'PY'
+          import re, sys
+          version = sys.argv[1]
+          text = open("ha-addon/wattslot/CHANGELOG.md", encoding="utf-8").read()
+          match = re.search(rf"^## {re.escape(version)}\n(.*?)(?=^## |\Z)", text, re.M | re.S)
+          if not match or "(to write)" in match.group(1) or not match.group(1).strip():
+              sys.exit(f"Section « {version} » absente ou à écrire dans CHANGELOG.md")
+          PY
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Version jamais republiée
+        run: |
+          if docker buildx imagetools inspect "$IMAGE:${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
+            echo "::error::L'image ${{ steps.version.outputs.version }} existe déjà : choisir une nouvelle version."
+            exit 1
+          fi
+
+      - name: Étiquettes de version sur l'image du commit
+        run: |
+          source="$IMAGE:sha-$(git rev-parse --short=7 "$GITHUB_SHA")"
+          docker buildx imagetools inspect "$source" >/dev/null \
+            || { echo "::error::Image $source absente : attendre la fin des contrôles de main pour ce commit."; exit 1; }
+          docker buildx imagetools create \
+            --tag "$IMAGE:${{ steps.version.outputs.version }}" \
+            --tag "$IMAGE:latest" \
+            "$source"
+          docker buildx imagetools inspect "$IMAGE:${{ steps.version.outputs.version }}"
+
+  addon:
+    # Dépôt d'extensions suivi par le Supervisor (adresse `…#addon`) : seulement `repository.yaml`
+    # et `ha-addon/` de l'étiquette, un commit par version, jamais de push forcé.
+    name: Branche addon ${{ inputs.tag || github.ref_name }}
+    needs: image
+    if: ${{ !cancelled() && (github.event_name == 'workflow_dispatch' || needs.image.result == 'success') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Étiquette valide
+        run: |
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] \
+            || { echo "::error::Étiquette invalide : $TAG (attendu vX.Y.Z)."; exit 1; }
+          echo "VERSION=${TAG#v}" >> "$GITHUB_ENV"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+          fetch-depth: 0
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Image de la version publiée
+        run: |
+          docker buildx imagetools inspect "$IMAGE:$VERSION" >/dev/null \
+            || { echo "::error::Image $VERSION absente : publier la version d'abord."; exit 1; }
+          found=$(grep '^version:' ha-addon/wattslot/config.yaml | cut -d'"' -f2)
+          [ "$found" = "$VERSION" ] \
+            || { echo "::error::Étiquette $TAG, mais version $found dans config.yaml."; exit 1; }
+
+      - name: Publication sur la branche addon
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          dir="$RUNNER_TEMP/addon"
+          if git ls-remote --exit-code --heads origin addon >/dev/null; then
+            git fetch -q origin addon
+            git worktree add -B addon "$dir" FETCH_HEAD
+            # Jamais de retour en arrière : le Supervisor ne propose pas une version plus ancienne.
+            published=$(grep '^version:' "$dir/ha-addon/wattslot/config.yaml" | cut -d'"' -f2)
+            newest=$(printf '%s\n%s\n' "$published" "$VERSION" | sort -V | tail -1)
+            [ "$newest" = "$VERSION" ] \
+              || { echo "::error::La branche addon est déjà en $published, plus récente que $VERSION."; exit 1; }
+          else
+            git worktree add --orphan -b addon "$dir"
+          fi
+          git -C "$dir" rm -rq --ignore-unmatch .
+          git archive "$TAG" repository.yaml ha-addon | tar -x -C "$dir"
+          git -C "$dir" add -A
+          if git -C "$dir" diff --cached --quiet; then
+            echo "Branche addon déjà en $VERSION."
+            exit 0
+          fi
+          git -C "$dir" commit -q -m "Version $VERSION"
+          git -C "$dir" push origin HEAD:refs/heads/addon
+          git -C "$dir" log --stat -1
+
+  release:
+    name: Release GitHub ${{ github.ref_name }}
+    needs: addon
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Notes de version (CHANGELOG de l'extension)
+        run: |
+          python3 - "${GITHUB_REF_NAME#v}" > notes.md <<'PY'
+          import re, sys
+          version = sys.argv[1]
+          text = open("ha-addon/wattslot/CHANGELOG.md", encoding="utf-8").read()
+          match = re.search(rf"^## {re.escape(version)}\n(.*?)(?=^## |\Z)", text, re.M | re.S)
+          print(match.group(1).strip())
+          PY
+          cat notes.md
+
+      - name: Release GitHub
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create "$GITHUB_REF_NAME" --title "${GITHUB_REF_NAME#v}" --notes-file notes.md --verify-tag

@@ -1,0 +1,61 @@
+# The screens
+
+*[Version française](fr/screens.md) · [User guide](README.md)*
+
+Five sections, in the menu at the bottom of the screen on a phone, on the left on a computer (it folds into icons with the arrow at its top). Two things are always at hand: the **status dot** (green: all good; orange: needs a look; red: planning is blocked) and **Request an appliance** (the `+` button).
+
+## Today
+
+What you need right now.
+
+![Today on a computer](images/en/today-desktop-light.png)
+
+- **Right now**: the average of the last quarter hour for the panels, the home, the battery (charging or supplying) and the grid (buying or surplus).
+- **Next action**: the next appliance to start and its slot, for instance *Start the washing machine, between 11:15 and 13:30*. **It's started** tells the app you did it; **Remind me** sends a notification at the right time (see [Notifications](notifications.md)).
+- **Battery** and **Sun**: the charge now, its highest point and its level at midnight; the solar energy expected and already produced.
+- **Appliance schedule**: one line per device, the planned slot on top (dotted) and what was measured below (filled), with the energy of each block. Tap a block for its details.
+
+![Today in the dark theme](images/en/today-phone-dark.png)
+
+## Planning
+
+The plan in detail, for **Yesterday**, **Today**, **Tomorrow** and the **Week**.
+
+![Planning](images/en/planning-desktop-light.png)
+
+- At the top, the computation time, **Compute** (recalculate now) and **Refresh actual data**.
+- Banners for what matters: warnings, the battery at midnight, the forecast production compared with what was measured.
+- **The day as an agenda**: what happens and when.
+- **Why this plan**: the explanation of each decision, in plain words.
+- **Detailed charts** (folded): summary cards (battery, grid, production, estimated against measured), the appliance schedule, the battery charge, the grid exchanges and the production and consumption curves, planned (dotted) and measured.
+- **Customize** chooses which cards appear and their order.
+- **Week**: one card per day with its sun, the appliances planned and the battery, then the week's charts.
+
+![Planning in the dark theme](images/en/planning-desktop-dark.png)
+
+## My home
+
+Your home in plain sentences: your priority (pay as little as possible, use my own sun…), your contract, your panels, your battery, the appliances placed at the best time and those only monitored.
+
+![My home](images/en/home-desktop-light.png)
+
+- **Detailed settings** (folded) opens every setting: see [Your home and its rules](your-home.md), [Tariffs](tariffs.md) and [Battery](battery.md).
+- **Going further**: **Appliances and sensors** (the devices read from Home Assistant, add a device), **Ready-made templates**, **Back up or share** (export or import your home as a file), **Home graph** and **Appliance library** (for the curious).
+
+## Assistant
+
+**My requests** (appliances you asked for, with or without a deadline) and the setup of the **voice assistant**: see [Voice assistant](assistant.md).
+
+![Assistant](images/en/assistant-desktop-light.png)
+
+## Settings
+
+![Settings](images/en/settings-desktop-light.png)
+
+- **Notifications**: which messages, on which device, quiet hours ([Notifications](notifications.md)).
+- **Automatic calculation**: every hour at a given minute (59 by default), or by hand; the Home Assistant to-do list whose tasks become requests.
+- **Language and display**: six languages, five themes (Ivory, Graphite, Ocean, Meadow, Dusk) or **Automatic**, which follows your device's light or dark mode.
+- **App status**: what is wrong, if anything, and how to fix it; the version, and whether a new one exists; links to support the project; a report to attach to a bug report ([Troubleshooting](troubleshooting.md)).
+- **Home Assistant connection** (standalone mode).
+
+![App status](images/en/status-desktop-light.png)

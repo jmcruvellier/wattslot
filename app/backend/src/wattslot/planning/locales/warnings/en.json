@@ -1,0 +1,53 @@
+{
+  "_meta": {
+    "status": "reviewed"
+  },
+  "avertissement": {
+    "profil_indisponible_du": "{equipement} is due today but its profile is unavailable (status={status}): unable to size a time slot, schedule it manually.",
+    "heures_insuffisantes_du": "{equipement} is due today but there is not enough time left for a full cycle ({duree_min} from {debut_min}): not scheduled. If it has already run, check off the task in Home Assistant.",
+    "profil_indisponible_attente": "{equipement} is pending but its profile is unavailable (status={status}): not scheduled.",
+    "dependance_non_placee": "{equipement} must follow {depend_de}, which could not be scheduled today: not scheduled.",
+    "heures_insuffisantes_attente": "{equipement} is pending but there is not enough time left for a full cycle ({duree_min} from {debut_min}): not scheduled.",
+    "contrainte_impossible": "{equipement}: no time slot meets its time constraints ({contraintes}): not scheduled or minimum runtime not met.",
+    "contrainte_non_respectee": "{equipement}: soft constraint not met ({contraintes}) to keep the rest of the plan.",
+    "prevision_open_meteo": "Solar forecast computed by Open-Meteo from your panels: less accurate than a forecast integration in the Home Assistant Energy dashboard.",
+    "prevision_horaire_indisponible": "Hourly solar forecast unavailable or incomplete: falling back on the average shape of the last {jours} days, less faithful to today's weather.",
+    "panneau_sans_historique": "Panel {panneau}: not enough history ({jours} days), falling back on the average terrace shape.",
+    "soc_depart_approximatif": "Approximate starting SoC for tomorrow's forecast: current actual SoC used, as no usable plan for today is cached yet. It will be refined by later runs during the day.",
+    "regle_recurrence_non_geree": "{equipement}: unsupported recurrence rule, only its due date is used in the forecasts for the following days.",
+    "horizon_interrompu": "Forecasts stopped before {jour}: {raison}.",
+    "tache_reportee": "{equipement} postponed to {jour}: {pct_jour}% covered by solar, versus {pct_auj}% today.",
+    "tache_reportee_sans_creneau": "{equipement} postponed to {jour}: not enough time left today for a full cycle."
+  },
+  "date": {
+    "format": "{jour}, {mois} {num}, {annee}",
+    "jour_0": "Monday",
+    "jour_1": "Tuesday",
+    "jour_2": "Wednesday",
+    "jour_3": "Thursday",
+    "jour_4": "Friday",
+    "jour_5": "Saturday",
+    "jour_6": "Sunday",
+    "mois_1": "January",
+    "mois_2": "February",
+    "mois_3": "March",
+    "mois_4": "April",
+    "mois_5": "May",
+    "mois_6": "June",
+    "mois_7": "July",
+    "mois_8": "August",
+    "mois_9": "September",
+    "mois_10": "October",
+    "mois_11": "November",
+    "mois_12": "December",
+    "format_sans_annee": "{jour}, {mois} {num}"
+  },
+  "equipement": {
+    "Batterie": "Battery",
+    "Chauffe-eau": "Water heater",
+    "Lave-linge": "Washing machine",
+    "Sèche-linge": "Dryer",
+    "Lave-vaisselle": "Dishwasher",
+    "Piscine (filtration)": "Pool"
+  }
+}

@@ -1,0 +1,221 @@
+# Formes SHACL de la configuration de la maison (phase 2 bis, lot 2b.4).
+#
+# Les règles de configuration.validate (et des modules de réglages) écrites en SHACL, chacune
+# portant le code de l'anomalie qu'elle produit (<#issueCode>, catalogues de l'application).
+# S'appliquent au graphe de la maison et à celui de la configuration réunis. L'application
+# applique les mêmes règles en Python, sans rdflib ; un test vérifie en CI (pyshacl) que les deux
+# donnent les mêmes anomalies. Les règles qui demandent un calcul (règle de récurrence, durées
+# par saison, heures laissées libres par les contraintes, somme des poids…) restent en Python.
+#
+# IRI relatives, résolues avec BASE (wattslot/ontology/__init__.py).
+
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<ontology/schema/shapes> a owl:Ontology ;
+    rdfs:label "Formes du schéma de WattSlot"@fr, "WattSlot schema shapes"@en ;
+    owl:imports <ontology/schema>, <ontology/library/home-energy/shapes> ;
+    sh:declare [ sh:prefix "wattslot" ; sh:namespace "https://w3id.org/wattslot/ontology#"^^xsd:anyURI ] .
+
+# --- Réglages d'un équipement ----------------------------------------------------------------
+
+<#DeviceSettingsShape> a sh:NodeShape ;
+    sh:targetClass <#DeviceSettings> ;
+    # Un équipement de la maison : rattaché à elle (avec l'inférence RDFS, la portée de forDevice
+    # ferait de n'importe quelle IRI un équipement).
+    sh:property [
+        sh:path ( <#forDevice> [ sh:inversePath <#hasDevice> ] ) ; sh:minCount 1 ;
+        <#issueCode> "unknown_device"
+    ] ;
+    sh:property [
+        sh:path <#automation> ;
+        sh:in ( <#InformAutomation> <#RecommendAutomation> ) ;
+        <#issueCode> "automation_not_available"
+    ] .
+
+# Un équipement observé seulement (production, réseau, consommation non pilotable) n'a pas
+# d'autre niveau d'automatisation que l'information.
+<#ObservedAutomationShape> a sh:NodeShape ;
+    sh:targetClass <#DeviceSettings> ;
+    <#issueCode> "observed_automation" ;
+    sh:or (
+        [ sh:path <#behavior> ;
+          sh:in ( <#CycleBehavior> <#EnergyByDeadlineBehavior> <#RuntimeBehavior> <#StorageBehavior> ) ]
+        [ sh:path <#automation> ; sh:hasValue <#InformAutomation> ]
+    ) .
+
+# Comportements permis selon le type de l'équipement (configuration.BEHAVIORS).
+<#SolarBehaviorShape> a sh:NodeShape ;
+    sh:targetClass <#SolarInstallation> ;
+    sh:property [
+        sh:path ( [ sh:inversePath <#forDevice> ] <#behavior> ) ;
+        sh:in ( <#ProductionBehavior> ) ;
+        <#issueCode> "behavior_not_allowed"
+    ] .
+<#GridBehaviorShape> a sh:NodeShape ;
+    sh:targetClass <#GridConnection> ;
+    sh:property [
+        sh:path ( [ sh:inversePath <#forDevice> ] <#behavior> ) ;
+        sh:in ( <#GridBehavior> ) ;
+        <#issueCode> "behavior_not_allowed"
+    ] .
+<#BatteryBehaviorShape> a sh:NodeShape ;
+    sh:targetClass <#Battery> ;
+    sh:property [
+        sh:path ( [ sh:inversePath <#forDevice> ] <#behavior> ) ;
+        sh:in ( <#StorageBehavior> ) ;
+        <#issueCode> "behavior_not_allowed"
+    ] .
+<#WaterHeaterBehaviorShape> a sh:NodeShape ;
+    sh:targetClass <#WaterHeater> ;
+    sh:property [
+        sh:path ( [ sh:inversePath <#forDevice> ] <#behavior> ) ;
+        sh:in ( <#CycleBehavior> <#EnergyByDeadlineBehavior> <#UncontrolledBehavior> ) ;
+        <#issueCode> "behavior_not_allowed"
+    ] .
+<#CycleApplianceBehaviorShape> a sh:NodeShape ;
+    sh:targetClass <#WashingMachine>, <#Dryer>, <#Dishwasher> ;
+    sh:property [
+        sh:path ( [ sh:inversePath <#forDevice> ] <#behavior> ) ;
+        sh:in ( <#CycleBehavior> <#UncontrolledBehavior> ) ;
+        <#issueCode> "behavior_not_allowed"
+    ] .
+<#PoolPumpBehaviorShape> a sh:NodeShape ;
+    sh:targetClass <#PoolPump> ;
+    sh:property [
+        sh:path ( [ sh:inversePath <#forDevice> ] <#behavior> ) ;
+        sh:in ( <#RuntimeBehavior> <#UncontrolledBehavior> ) ;
+        <#issueCode> "behavior_not_allowed"
+    ] .
+<#OtherLoadBehaviorShape> a sh:NodeShape ;
+    sh:targetClass <#OtherLoad> ;
+    sh:property [
+        sh:path ( [ sh:inversePath <#forDevice> ] <#behavior> ) ;
+        sh:in ( <#UncontrolledBehavior> <#CycleBehavior> <#EnergyByDeadlineBehavior> <#RuntimeBehavior> ) ;
+        <#issueCode> "behavior_not_allowed"
+    ] .
+
+# Réglages propres à un comportement, posés sur un équipement qui en a un autre.
+<#RuntimeUsedShape> a sh:NodeShape ;
+    sh:targetSubjectsOf <#hasRuntimeSettings> ;
+    sh:property [ sh:path <#behavior> ; sh:hasValue <#RuntimeBehavior> ; <#issueCode> "runtime_not_used" ] .
+<#PanelsUsedShape> a sh:NodeShape ;
+    sh:targetSubjectsOf <#hasSolarPanels> ;
+    sh:property [
+        sh:path <#behavior> ; sh:hasValue <#ProductionBehavior> ; <#issueCode> "panels_not_used"
+    ] .
+<#NeedUsedShape> a sh:NodeShape ;
+    sh:targetSubjectsOf <#hasEnergyNeed> ;
+    sh:property [
+        sh:path <#behavior> ; sh:hasValue <#EnergyByDeadlineBehavior> ; <#issueCode> "need_not_used"
+    ] .
+<#ConstraintsUsedShape> a sh:NodeShape ;
+    sh:targetSubjectsOf <#hasTimeConstraint> ;
+    sh:property [
+        sh:path <#behavior> ;
+        sh:in ( <#CycleBehavior> <#EnergyByDeadlineBehavior> <#RuntimeBehavior> ) ;
+        <#issueCode> "constraints_not_used"
+    ] .
+<#AfterUsedShape> a sh:NodeShape ;
+    sh:targetSubjectsOf <#startsAfterKey> ;
+    sh:property [ sh:path <#behavior> ; sh:hasValue <#CycleBehavior> ; <#issueCode> "after_not_used" ] .
+<#DelayUsedShape> a sh:NodeShape ;
+    sh:targetSubjectsOf <#maxDelayDays> ;
+    sh:property [ sh:path <#behavior> ; sh:hasValue <#CycleBehavior> ; <#issueCode> "delay_not_used" ] .
+<#RecurrenceUsedShape> a sh:NodeShape ;
+    sh:targetSubjectsOf <#hasRecurrence> ;
+    sh:property [
+        sh:path <#behavior> ; sh:hasValue <#CycleBehavior> ; <#issueCode> "recurrence_not_used"
+    ] .
+
+# « Démarre après la fin de » un autre équipement de la maison.
+<#AfterKnownShape> a sh:NodeShape ;
+    sh:targetSubjectsOf <#startsAfterKey> ;
+    <#issueCode> "after_unknown" ;
+    sh:sparql [
+        sh:prefixes <ontology/schema/shapes> ;
+        sh:select """
+            SELECT $this WHERE {
+              $this wattslot:startsAfterKey ?after ; wattslot:key ?key .
+              FILTER (?after = ?key || NOT EXISTS { ?device wattslot:key ?after ; ^wattslot:hasDevice ?home })
+            }
+        """
+    ] .
+
+# --- Besoin d'énergie, contraintes, batterie, tarif -------------------------------------------
+
+<#EnergyNeedShape> a sh:NodeShape ;
+    sh:targetClass <#EnergyNeed> ;
+    sh:property [
+        sh:path <#earliestHour> ; sh:lessThan <#deadlineHour> ; <#issueCode> "need_window_empty"
+    ] .
+
+<#TimeConstraintShape> a sh:NodeShape ;
+    sh:targetClass <#TimeConstraint> ;
+    <#issueCode> "constraint_range_empty" ;
+    sh:or (
+        [ sh:path <#constraintKind> ; sh:in ( "not_before" "finish_before" ) ]
+        [ sh:path <#constraintStartHour> ; sh:disjoint <#constraintEndHour> ]
+    ) .
+
+<#BatterySettingsShape> a sh:NodeShape ;
+    sh:targetClass <#BatterySettings> ;
+    sh:property [
+        sh:path <#activeFromHour> ; sh:lessThan <#activeToHour> ;
+        <#issueCode> "battery_active_range_empty"
+    ] .
+
+<#FloorRangeShape> a sh:NodeShape ;
+    sh:targetClass <#FloorRange> ;
+    sh:property [
+        sh:path <#floorStartHour> ; sh:disjoint <#floorEndHour> ;
+        <#issueCode> "battery_floor_range_empty"
+    ] .
+
+<#PriceBandShape> a sh:NodeShape ;
+    sh:targetClass <#PriceBand> ;
+    sh:property [ sh:path <#startHour> ; sh:lessThan <#endHour> ; <#issueCode> "band_empty" ] .
+
+<#TimeOfUseShape> a sh:NodeShape ;
+    sh:targetClass <#TimeOfUseTariff> ;
+    sh:property [ sh:path <#hasPriceBand> ; sh:minCount 1 ; <#issueCode> "tariff_without_bands" ] .
+
+<#DayColorShape> a sh:NodeShape ;
+    sh:targetClass <#DayColorTariff> ;
+    sh:property [ sh:path <#hasColorPrices> ; sh:minCount 1 ; <#issueCode> "tariff_without_colors" ] ;
+    sh:property [
+        sh:path <#colorEntity> ; sh:minCount 1 ; <#issueCode> "tariff_without_color_entity"
+    ] .
+
+<#DynamicShape> a sh:NodeShape ;
+    sh:targetClass <#DynamicTariff> ;
+    sh:property [
+        sh:path <#priceEntity> ; sh:minCount 1 ; <#issueCode> "tariff_without_price_entity"
+    ] .
+
+# --- Objectif --------------------------------------------------------------------------------
+
+<#ObjectiveWeightsShape> a sh:NodeShape ;
+    sh:targetClass <#Objective> ;
+    <#issueCode> "objective_weights_unused" ;
+    sh:or (
+        [ sh:path <#objectivePreset> ; sh:hasValue "custom" ]
+        [ sh:path <#costWeight> ; sh:maxCount 0 ]
+    ) .
+
+<#ObjectiveCo2Shape> a sh:NodeShape ;
+    sh:targetClass <#Objective> ;
+    <#issueCode> "objective_co2_without_entity" ;
+    sh:sparql [
+        sh:prefixes <ontology/schema/shapes> ;
+        sh:select """
+            SELECT $this WHERE {
+              { $this wattslot:objectivePreset "co2" }
+              UNION
+              { $this wattslot:objectivePreset "custom" ; wattslot:co2Weight ?weight . FILTER (?weight > 0) }
+              FILTER NOT EXISTS { $this wattslot:co2Entity ?entity }
+            }
+        """
+    ] .

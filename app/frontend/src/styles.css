@@ -1,0 +1,1844 @@
+/* Mise en page et éléments communs. Les couleurs viennent des thèmes (theme/themes.css,
+   lot 6b.1) ; téléphone d'abord : rien ne dépasse 360 px de large. */
+
+:root {
+  font-family: var(--font);
+  line-height: 1.45;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* Colonne de 90rem centrée par le remplissage de main, et non par des marges automatiques sur
+   chaque bloc : une règle de bloc (`margin: 0.75rem 0`…) écrasait ce centrage et décalait le
+   bloc vers la gauche. Les blocs gardent ainsi le même bord gauche quelles que soient leurs
+   marges (styles.test.ts). */
+main {
+  --main-gutter: 1rem;
+  min-width: 0;
+  padding: 1rem 0 6rem;
+  padding-inline: max(var(--main-gutter), (100% - 90rem) / 2);
+}
+
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 0.5rem;
+}
+
+h2 {
+  font-size: 1.2rem;
+  margin: 1.25rem 0 0.5rem;
+}
+
+h3 {
+  font-size: 1.05rem;
+  margin: 1rem 0 0.4rem;
+}
+
+a {
+  color: var(--link);
+}
+
+small,
+.dim {
+  color: var(--text-dim);
+}
+
+button {
+  font: inherit;
+  font-weight: 600;
+  min-height: 2.75rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 0.75rem;
+  padding: 0.45rem 0.9rem;
+  cursor: pointer;
+}
+
+button:focus-visible,
+a:focus-visible,
+summary:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+}
+
+button:hover:not(:disabled) {
+  border-color: var(--primary);
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+button[aria-current="page"],
+button[aria-selected="true"] {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-text);
+}
+
+input,
+select,
+textarea {
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  padding: 0.45rem 0.6rem;
+  max-width: 100%;
+  accent-color: var(--accent);
+}
+
+/* Champs de saisie à 44 px, comme les boutons (lot 6b.7) ; cases et boutons radio à leur taille. */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+select {
+  min-height: 2.75rem;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  width: 1.15rem;
+  height: 1.15rem;
+  vertical-align: middle;
+}
+
+fieldset {
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  margin: 0.75rem 0;
+  padding: 0.75rem 1rem;
+}
+
+/* Formulaires des écrans experts (réglages détaillés, appareils et capteurs) : une carte par
+   appareil ou par section, un champ par ligne (libellé à gauche, unité à droite), l'aide dessous. */
+.expert-form .expert-card {
+  margin: 0.75rem 0;
+}
+
+.expert-form .expert-card > button.link {
+  display: block;
+}
+
+.expert-form label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  margin: 0.75rem 0 0;
+}
+
+.expert-form small {
+  display: block;
+  flex-basis: 100%;
+  margin-top: 0.25rem;
+  color: var(--text-dim);
+}
+
+/* Le saut de ligne de l'aide (« Hint ») est porté par « small » ci-dessus. */
+.expert-form br {
+  display: none;
+}
+
+/* Champs groupés dans un paragraphe ou une plage (« de … à … ») : côte à côte, repliés au besoin. */
+.expert-form p > label,
+.expert-form li > label {
+  display: inline-flex;
+  margin: 0.25rem 0.75rem 0.25rem 0;
+}
+
+/* Case à cocher : le texte suit la case et se replie dessous, sans passer seul à la ligne. */
+.expert-form label:has(> input[type="checkbox"]) {
+  display: block;
+}
+
+.expert-form input[type="number"] {
+  width: 8rem;
+}
+
+.expert-form .expert-card ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+.expert-form .expert-card li + li {
+  margin-top: 0.5rem;
+}
+
+details > summary {
+  cursor: pointer;
+  color: var(--text-dim);
+  margin: 0.5rem 0;
+}
+
+table {
+  border-collapse: collapse;
+  max-width: 100%;
+  display: block;
+  overflow-x: auto;
+}
+
+th,
+td {
+  padding: 0.25rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+
+[role="alert"],
+.issue {
+  color: var(--danger);
+}
+
+[role="status"] {
+  color: var(--ok);
+}
+
+pre {
+  background: var(--surface-alt);
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+}
+
+/* Grille de cartes des vues du plan (lot 5.2) : une colonne au téléphone, plusieurs ensuite. */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+  gap: var(--gap);
+}
+
+/* Cartes des graphiques et des encarts : chaque ligne tient toute la largeur de la section, sans
+ * case vide — deux cartes en deux moitiés, trois en trois tiers, la dernière d'une ligne
+ * incomplète s'élargit ; une carte large prend toute la ligne. */
+.cards-fill {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.cards-fill > * {
+  flex: 1 1 min(100%, 20rem);
+}
+
+.cards-fill > .card-wide {
+  flex-basis: 100%;
+}
+
+/* Segments de cartes d'une vue (résumé, grilles, cartes des jours) : le même écart entre deux
+ * segments qu'entre deux cartes. */
+.card-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+/* Cartes de la phase 5, à l'apparence des cartes du lot 6b.1 (ui-card). */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  padding: 1.1rem 1.25rem;
+  min-width: 0;
+}
+
+.card-wide {
+  grid-column: 1 / -1;
+}
+
+.card h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0;
+  font-weight: 800;
+}
+
+.view-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.view-tabs .spacer {
+  flex: 1;
+}
+
+.chart {
+  width: 100%;
+  height: 16rem;
+}
+
+/* Vues du plan (lot 5.3) : en-tête, bandeaux, cartes de résumé. */
+.view-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.view-header .spacer {
+  flex: 1;
+}
+
+.view-header p {
+  margin: 0;
+}
+
+.banners,
+.notices {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0.75rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pill {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  padding: 0.65rem 0.9rem;
+  margin: 0;
+}
+
+.pill > .icon {
+  margin-top: 0.1rem;
+  color: var(--text-dim);
+}
+
+.pill > span:nth-child(2),
+.pill > ul {
+  flex: 1;
+  min-width: 0;
+}
+
+.pill-warning {
+  border-color: var(--warning);
+}
+
+.pill-warning > .icon {
+  color: var(--warning);
+}
+
+.pill ul.equip {
+  margin: 0;
+  padding-left: 1rem;
+}
+
+.badge {
+  font-size: 0.8rem;
+  border-radius: 999px;
+  padding: 0.1rem 0.55rem;
+  white-space: nowrap;
+  border: 1px solid currentColor;
+}
+
+.badge-ok,
+.trend-good {
+  color: var(--ok);
+}
+
+.badge-medium {
+  color: var(--warning);
+}
+
+.badge-bad,
+.trend-bad {
+  color: var(--danger);
+}
+
+.badge-neutral,
+.trend-neutral {
+  color: var(--text-dim);
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: auto 1fr 1fr auto;
+  gap: 0.2rem 0.6rem;
+  align-items: baseline;
+}
+
+.stat-row {
+  display: contents;
+}
+
+.stat-sep {
+  grid-column: 1 / -1;
+  color: var(--text-dim);
+  border-top: 1px solid var(--border);
+  padding-top: 0.2rem;
+}
+
+.stat-value {
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-detail {
+  display: block;
+}
+
+.stat-big {
+  font-size: 1.35rem;
+  margin: 0.2rem 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.trend {
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+/* Cartes de résumé : aucune ligne avec un vide. Une carte par ligne au téléphone ; deux entre
+   768 et 1 100 px, la dernière seule prenant toute la ligne ; au-delà, six colonnes où les cartes
+   de la batterie en prennent deux et Réseau et Production (summary-half) trois. */
+.cards.summary-cards {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 768px) and (max-width: 1099.98px) {
+  .cards.summary-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .summary-cards > .card:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 1100px) {
+  .cards.summary-cards {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .summary-cards > .card {
+    grid-column: span 2;
+  }
+
+  .summary-cards > .summary-half {
+    grid-column: span 3;
+  }
+}
+
+/* Planning des équipements (lot 5.3). */
+.tl {
+  display: grid;
+  grid-template-columns: minmax(5rem, max-content) 1fr;
+  gap: 0.3rem 0.5rem;
+}
+
+.tl-row {
+  display: contents;
+}
+
+.tl-label {
+  font-size: 0.9rem;
+  align-self: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tl-track {
+  position: relative;
+  background: repeating-linear-gradient(
+    to right,
+    var(--surface-alt) 0,
+    var(--surface-alt) calc(100% / 24 - 1px),
+    var(--border) calc(100% / 24 - 1px),
+    var(--border) calc(100% / 24)
+  );
+  border-radius: 0.3rem;
+  height: 3.25rem;
+}
+
+/* Barres ajustées à la piste : on neutralise la hauteur et le remplissage des boutons globaux. */
+.tl-bar {
+  position: absolute;
+  box-sizing: border-box;
+  min-height: 0;
+  height: auto;
+  margin: 0;
+  padding: 0 0.25rem;
+  border-radius: 0.25rem;
+  min-width: 3px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  color: var(--text);
+  font: inherit;
+}
+
+/* Deux couloirs (lot 7.1) : le prévu en haut, le réel en bas. */
+.tl-track > .tl-planned {
+  top: 0.15rem;
+  bottom: calc(50% + 0.1rem);
+}
+
+.tl-track > .tl-actual {
+  top: calc(50% + 0.1rem);
+  bottom: 0.15rem;
+}
+
+.tl-planned {
+  background: transparent;
+  border: 2px dashed var(--bar, var(--cycle));
+}
+
+/* Teinte adoucie : le texte garde le contraste du thème. */
+.tl-actual {
+  background: color-mix(in srgb, var(--bar, var(--cycle)) 30%, var(--surface));
+  border: 0;
+}
+
+/* Énergie centrée sur la plus grande partie visible du bloc (TimelineCard.tsx). */
+.tl-value {
+  position: absolute;
+  transform: translateX(-50%);
+}
+
+.tl-value {
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.tl-now {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--text-dim);
+}
+
+.tl-axis {
+  position: relative;
+  height: 1.2rem;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+.tl-axis span {
+  position: absolute;
+  transform: translateX(-50%);
+}
+
+.tl-axis span:first-child {
+  transform: none;
+}
+
+.tl-axis span:last-child {
+  transform: translateX(-100%);
+}
+
+/* Téléphone : le nom de l'équipement au-dessus de sa piste, qui prend toute la largeur (lot 7.1). */
+@media (max-width: 40rem) {
+  .tl {
+    grid-template-columns: 1fr;
+    gap: 0.15rem;
+  }
+
+  .tl-label {
+    margin-top: 0.35rem;
+  }
+
+  .tl-row > span:empty {
+    display: none;
+  }
+}
+
+/* Piste étroite (téléphone) : une graduation sur deux (0h, 8h, 16h, 24h) pour que les libellés ne se touchent pas. */
+@media (max-width: 40rem) {
+  .tl-axis span:nth-child(even) {
+    display: none;
+  }
+}
+
+/* Indicateurs du plan : celui de l'objectif du calcul en avant (lot 5.3). */
+.indicators {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+}
+
+.indicator {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+.indicator dt {
+  min-width: 0;
+}
+
+/* Valeur alignée à droite, jamais coupée de son unité. */
+.indicator dd {
+  margin: 0;
+  flex: none;
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.indicator-main {
+  font-weight: 600;
+  font-size: 1.1rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.explanations {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.explanations strong {
+  display: block;
+}
+
+.recommendation {
+  white-space: pre-line;
+}
+
+/* Vue Semaine (lot 5.4) : une carte par jour ; défilement horizontal sur téléphone. */
+.week-days {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(15rem, 85%);
+  gap: var(--gap);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 0.5rem;
+}
+
+.week-day {
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+@media (min-width: 48rem) {
+  .week-days {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+    overflow-x: visible;
+  }
+}
+
+.week-today {
+  border-color: var(--battery);
+}
+
+.week-day header h3 {
+  margin: 0;
+  text-transform: capitalize;
+}
+
+.week-tag {
+  margin-left: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  text-transform: none;
+}
+
+.week-day h4 {
+  margin: 0.25rem 0 0;
+}
+
+.week-figures {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.15rem 1rem;
+  margin: 0;
+}
+
+.week-figures dd {
+  margin: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.week-figures .sub {
+  padding-left: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+.week-devices {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.week-devices li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.week-day button.link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+  align-self: flex-start;
+  margin-top: auto;
+}
+
+.week-legend {
+  margin: -0.5rem 0 0.25rem;
+  font-size: 0.85rem;
+}
+
+.week-legend::first-letter {
+  color: var(--grid-import);
+}
+
+/* Panneau « Personnaliser » (lot 5.5). */
+.layout-editor {
+  margin-bottom: var(--gap);
+}
+
+.layout-cards {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.layout-cards li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.layout-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.layout-actions button {
+  min-width: 2.5rem;
+}
+
+.layout-indicators {
+  margin-top: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: grid;
+  gap: 0.35rem;
+}
+
+.layout-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.layout-buttons .spacer {
+  flex: 1;
+}
+
+/* Réglages des notifications (lot 5.6). */
+.notification-rule {
+  margin: 0.75rem 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.notification-rule legend {
+  font-weight: 600;
+}
+
+/* Page « Assistant » (lot 6.3). */
+.assistant-address {
+  word-break: break-all;
+}
+
+.assistant-prompt {
+  white-space: pre-wrap;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.75rem;
+  max-width: 60rem;
+}
+
+/* Choix du thème (lot 6b.1) : chaque pastille montre le fond et la couleur d'action du thème,
+   quel que soit le thème affiché. */
+.theme-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  gap: 0.5rem;
+}
+
+.theme-option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 3.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.theme-option:has(input:checked) {
+  border: 2px solid var(--text);
+}
+
+.theme-option:has(input:focus-visible) {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+}
+
+.theme-option input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.theme-option small {
+  display: block;
+}
+
+.theme-swatch {
+  flex: 0 0 auto;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  border: 3px solid var(--swatch-accent);
+  background: var(--swatch-bg);
+}
+
+.theme-option-auto .theme-swatch {
+  border: 1px solid var(--border);
+  background: linear-gradient(90deg, #f6f5f1 50%, #121417 50%);
+}
+
+.theme-option-ivory {
+  --swatch-bg: #f6f5f1;
+  --swatch-accent: #e8a23a;
+}
+
+.theme-option-graphite {
+  --swatch-bg: #121417;
+  --swatch-accent: #f2c26b;
+}
+
+.theme-option-ocean {
+  --swatch-bg: #eef4fa;
+  --swatch-accent: #0b5cad;
+}
+
+.theme-option-meadow {
+  --swatch-bg: #f1f5ef;
+  --swatch-accent: #2f6b45;
+}
+
+.theme-option-dusk {
+  --swatch-bg: #1a1530;
+  --swatch-accent: #f29e6b;
+}
+
+/* Composants de base (lot 6b.1, src/ui). */
+.icon {
+  flex: 0 0 auto;
+}
+
+.ui-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.6rem 1.1rem;
+  border-radius: 0.75rem;
+  font-weight: 700;
+  transition: background-color 0.15s, border-color 0.15s, transform 0.1s;
+}
+
+.ui-button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.ui-button-primary,
+.ui-button-primary:hover:not(:disabled) {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+.ui-button-secondary {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.ui-button-quiet {
+  background: transparent;
+  border-color: transparent;
+  color: var(--link);
+}
+
+.ui-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  border-radius: 50%;
+  border-color: transparent;
+  background: transparent;
+  color: var(--text-dim);
+}
+
+:where(.ui-button, .ui-icon-button, .ui-switch, .ui-setting-row-open):focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+}
+
+.ui-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  padding: 1.1rem 1.25rem;
+}
+
+.ui-card-sun {
+  background: var(--sun-soft);
+  border-color: transparent;
+}
+
+.ui-card-battery {
+  background: var(--battery-soft);
+  border-color: transparent;
+}
+
+.ui-eyebrow {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.ui-card-title {
+  margin: 0.25rem 0 0.5rem;
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.ui-setting-list {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  padding: 0 1.1rem;
+}
+
+.ui-setting-row,
+.ui-switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  min-height: 3.6rem;
+  padding: 0.5rem 0;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+}
+
+.ui-setting-list > :last-child {
+  border-bottom: 0;
+}
+
+.ui-setting-row-open .icon {
+  color: var(--text-dim);
+}
+
+.ui-row-label {
+  display: block;
+  font-weight: 700;
+}
+
+.ui-row-help {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+.ui-switch {
+  min-height: 0;
+  position: relative;
+  flex: 0 0 auto;
+  width: 2.9rem;
+  height: 1.75rem;
+  padding: 0;
+  border: 0;
+  border-radius: 1rem;
+  background: var(--border);
+  transition: background-color 0.15s;
+}
+
+.ui-switch[aria-checked="true"] {
+  background: var(--go);
+}
+
+.ui-switch-thumb {
+  position: absolute;
+  top: 0.2rem;
+  left: 0.2rem;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 50%;
+  background: #ffffff;
+  transition: transform 0.15s;
+}
+
+.ui-switch[aria-checked="true"] .ui-switch-thumb {
+  transform: translateX(1.15rem);
+}
+
+.ui-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgb(0 0 0 / 0.4);
+  animation: ui-fade 0.15s ease-out;
+}
+
+.ui-sheet {
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 0.75rem 1.25rem 1.5rem;
+  border-radius: 1.5rem 1.5rem 0 0;
+  background: var(--bg);
+  color: var(--text);
+  animation: ui-rise 0.2s ease-out;
+}
+
+.ui-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.ui-sheet-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+@media (min-width: 768px) {
+  .ui-sheet-backdrop {
+    align-items: center;
+  }
+
+  .ui-sheet {
+    width: min(32rem, 100% - 2rem);
+    border-radius: 1.5rem;
+  }
+}
+
+@keyframes ui-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes ui-rise {
+  from {
+    transform: translateY(2rem);
+    opacity: 0;
+  }
+}
+
+/* Moins d'animations quand le système le demande. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Écran de démonstration des composants (#/ui) : un panneau par thème. */
+.ui-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+  gap: 1rem;
+}
+
+.ui-gallery-theme {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 1.5rem;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.ui-gallery-theme h2 {
+  margin: 0;
+}
+
+.ui-gallery-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  color: var(--text);
+}
+
+/* Coquille de l'application (lot 6b.2) : menu en bas sur téléphone, latéral et repliable sur
+   ordinateur (76 px replié) ; le contenu prend la place libérée. */
+.top-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.top-bar h1 {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-height: 2.75rem;
+  font-weight: 700;
+  text-decoration: none;
+  color: var(--text);
+}
+
+.more-links {
+  margin-bottom: 1rem;
+}
+
+a.ui-setting-row {
+  text-decoration: none;
+}
+
+.main-menu {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 5;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 0.4rem 0.25rem calc(0.6rem + env(safe-area-inset-bottom));
+}
+
+.main-menu-head,
+.main-menu .request-button,
+.main-menu .status-pill {
+  display: none;
+}
+
+.top-bar-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.top-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* Pastille d'état (lot 6b.2). */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0 0.75rem;
+  border-radius: 1.5rem;
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.status-dot {
+  flex: 0 0 auto;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: var(--ok);
+}
+
+.status-pill[data-level="degraded"] .status-dot {
+  background: var(--warning);
+}
+
+.status-pill[data-level="blocking"] .status-dot {
+  background: var(--danger);
+}
+
+.status-pill[data-level="blocking"] {
+  color: var(--danger);
+}
+
+.top-bar-actions .status-pill[data-level="ok"] .status-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.status-pill:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+}
+
+.main-menu ul {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.main-menu a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  min-height: 2.75rem;
+  padding: 0.3rem 0.1rem;
+  border-radius: 0.75rem;
+  color: var(--text-dim);
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+}
+
+.main-menu a[aria-current="page"] {
+  color: var(--text);
+  font-weight: 800;
+}
+
+.main-menu a:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+}
+
+@media (min-width: 768px) {
+  .app-shell {
+    display: grid;
+    grid-template-columns: 15.5rem minmax(0, 1fr);
+    min-height: 100vh;
+    transition: grid-template-columns 0.2s ease;
+  }
+
+  .app-shell[data-menu="collapsed"] {
+    grid-template-columns: 4.75rem minmax(0, 1fr);
+  }
+
+  main {
+    --main-gutter: 2rem;
+    padding-block: 1.5rem 2rem;
+  }
+
+  .main-menu {
+    position: sticky;
+    inset: 0 auto auto 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1rem 0.75rem;
+    border-top: 0;
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+  }
+
+  .top-bar-actions {
+    display: none;
+  }
+
+  .main-menu .request-button {
+    display: inline-flex;
+    width: 100%;
+    white-space: nowrap;
+  }
+
+  .main-menu .status-pill {
+    display: inline-flex;
+    margin-top: auto;
+  }
+
+  .main-menu-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .main-menu-brand {
+    font-weight: 800;
+    font-size: 1.05rem;
+    padding-left: 0.5rem;
+  }
+
+  .main-menu ul {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .main-menu a {
+    flex-direction: row;
+    gap: 0.75rem;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.95rem;
+    text-align: left;
+  }
+
+  .main-menu a[aria-current="page"] {
+    background: var(--surface-alt);
+  }
+
+  .app-shell[data-menu="collapsed"] .main-menu-brand,
+  .app-shell[data-menu="collapsed"] .main-menu-label,
+  .app-shell[data-menu="collapsed"] .status-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .app-shell[data-menu="collapsed"] .main-menu-head,
+  .app-shell[data-menu="collapsed"] .main-menu a {
+    justify-content: center;
+  }
+
+  .app-shell[data-menu="collapsed"] .request-button {
+    padding: 0;
+  }
+}
+
+/* Écran Aujourd'hui (lot 6b.3). */
+.today {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.today-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 1rem;
+}
+
+.setup-card {
+  margin-bottom: 1rem;
+}
+
+.setup-card summary {
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.now-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 0.6rem;
+  margin: 0.75rem 0 0.5rem;
+}
+
+.now-tile {
+  margin: 0;
+  padding: 0.7rem 0.85rem;
+  border-radius: 0.9rem;
+  background: var(--surface-alt);
+}
+
+.now-tile-sun {
+  background: var(--sun-soft);
+}
+
+.now-tile-battery {
+  background: var(--battery-soft);
+}
+
+.now-tile dt {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+.now-tile dd {
+  margin: 0.1rem 0 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.next-action {
+  padding: 1.1rem 1.25rem;
+  border-radius: 1.25rem;
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+.next-action .ui-eyebrow {
+  color: inherit;
+  opacity: 0.85;
+}
+
+.next-action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.next-action .ui-button-primary,
+.next-action .ui-button-primary:hover:not(:disabled) {
+  background: var(--accent-text);
+  border-color: var(--accent-text);
+  color: var(--accent);
+}
+
+.next-action .ui-button-secondary {
+  background: transparent;
+  border-color: var(--accent-text);
+  color: var(--accent-text);
+}
+
+/* Planning en agenda (lot 6b.4). */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.view-tabs[role="tablist"] {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  width: 100%;
+  max-width: 30rem;
+  gap: 0.2rem;
+  padding: 0.25rem;
+  border-radius: 0.9rem;
+  background: var(--surface-alt);
+}
+
+.view-tabs button[role="tab"] {
+  min-height: 2.5rem;
+  padding: 0.4rem 0.25rem;
+  font-size: 0.85rem;
+  border: 0;
+  border-radius: 0.7rem;
+  background: transparent;
+  color: var(--text-dim);
+  font-weight: 700;
+}
+
+.view-tabs button[role="tab"][aria-selected="true"] {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.08);
+}
+
+.plan-agenda {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0.75rem 0 1rem;
+}
+
+.agenda {
+  margin: 0;
+  padding: 0.25rem 1.1rem;
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+}
+
+.agenda-entry {
+  display: grid;
+  grid-template-columns: 3.5rem 1fr;
+  gap: 0.75rem;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.agenda-entry:last-child {
+  border-bottom: 0;
+}
+
+.agenda-time {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.agenda-title {
+  display: block;
+  font-weight: 700;
+}
+
+.agenda-detail {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--text-dim);
+}
+
+.agenda-entry[data-kind="cycle"] .agenda-time {
+  color: var(--ok);
+}
+
+.agenda-past {
+  opacity: 0.55;
+}
+
+.agenda-now {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+  color: var(--danger);
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.agenda-now::after {
+  content: "";
+  flex: 1;
+  height: 2px;
+  background: var(--danger);
+}
+
+.plan-more {
+  margin: 0.75rem 0;
+}
+
+.plan-more > summary {
+  padding: 0.75rem 0;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Semaine en agenda (lot 6b.4). */
+.week-agenda {
+  margin: 0.75rem 0 1rem;
+  padding: 0.25rem 1.1rem;
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+}
+
+.week-row {
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.week-row:last-child {
+  border-bottom: 0;
+}
+
+.week-row-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.25rem 0.75rem;
+}
+
+.week-row-day {
+  font-weight: 800;
+}
+
+.week-row-day::first-letter {
+  text-transform: uppercase;
+}
+
+.week-row-sun {
+  color: var(--text-dim);
+  font-weight: 600;
+}
+
+.week-row p {
+  margin: 0.25rem 0 0;
+}
+
+.week-row-devices {
+  font-weight: 600;
+}
+
+.week-row-today .week-row-day {
+  color: var(--link);
+}
+
+/* Ma maison en phrases (lot 6b.5). */
+.home-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.home-summary-heading {
+  margin: 0.75rem 0.25rem 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+/* Liste des Réglages (lot 6b.6). */
+.settings-home {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.settings-home-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.status-dot[data-level="degraded"] {
+  background: var(--warning);
+}
+
+.status-dot[data-level="blocking"] {
+  background: var(--danger);
+}
+
+/* Assistant en cartes (lot 6b.6). */
+.assistant {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.assistant .ui-card > section > h2:first-child,
+.assistant .ui-card > h2 {
+  margin-top: 0;
+}
+
+/* « Mes demandes » ne rend rien sans appareil à demander : pas de carte vide. */
+.assistant .ui-card:empty {
+  display: none;
+}
+
+/* Premiers pas guidés (lot 6b.6). */
+.onboarding {
+  margin-bottom: 1rem;
+}
+
+.onboarding-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.onboarding-devices,
+.onboarding-templates {
+  margin: 0.75rem 0;
+  padding: 0;
+  list-style: none;
+  border: 0;
+}
+
+.onboarding-devices label,
+.onboarding-templates label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 3.25rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.onboarding-devices input,
+.onboarding-templates input {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: 0 0 auto;
+}
+
+/* Bouton qui se présente comme un lien (navigation interne, lots 6b.4 à 6b.6). */
+button.link {
+  min-height: 2.75rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--link);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+button.link:hover:not(:disabled) {
+  border-color: transparent;
+}
+
+/* États d'un écran (lot 6b.7) : chargement, rien à afficher, erreur. */
+.state-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin: 0.5rem 0 1rem;
+  color: var(--text-dim);
+}
+
+.state-empty,
+.state-error {
+  padding: 1rem 1.1rem;
+  border-radius: 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.state-error {
+  border-color: var(--danger);
+}
+
+.state-error > .icon {
+  color: var(--danger);
+}
+
+.state-message p {
+  margin: 0;
+}
+
+.state-title {
+  font-weight: 700;
+}
+
+.state-hint {
+  margin: 0.25rem 0 0.75rem !important;
+  color: var(--text-dim);
+}
+
+.state-loading {
+  align-items: center;
+}
+
+.state-spinner {
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  animation: state-spin 0.8s linear infinite;
+}
+
+@keyframes state-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Messages des écrans experts, pas encore passés au composant commun : lisibles, à la couleur
+   du sens (lot 6b.7). */
+p[role="alert"]:not(.state-message) {
+  padding: 0.6rem 0.85rem;
+  border-left: 3px solid var(--danger);
+  border-radius: 0.5rem;
+  background: var(--surface);
+  color: var(--danger);
+  font-weight: 600;
+}
+
+p[role="status"]:not(.state-message) {
+  font-weight: 600;
+}
+
+/* Nouvelle version disponible (lot 7.1) : point sur « Réglages » et encadré d'État de l'application. */
+.update-dot {
+  flex: 0 0 auto;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.main-menu .update-dot {
+  margin-left: auto;
+}
+
+.update-banner {
+  margin-bottom: 1rem;
+  border-left: 4px solid var(--accent);
+}
+
+.update-banner p {
+  margin: 0 0 0.35rem;
+}
+
+.update-command {
+  display: block;
+  margin-top: 0.25rem;
+  overflow-x: auto;
+}

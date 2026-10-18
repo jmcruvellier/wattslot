@@ -1,0 +1,52 @@
+name: Bug report
+description: Something does not work as expected.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! You can write in English or French.
+        Please check first that it has not already been reported.
+  - type: input
+    id: version
+    attributes:
+      label: WattSlot version
+      description: Shown in Settings → App status.
+      placeholder: "0.9.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Installation mode
+      options:
+        - Home Assistant app (add-on)
+        - Standalone (Docker)
+    validations:
+      required: true
+  - type: input
+    id: home_assistant
+    attributes:
+      label: Home Assistant version
+      placeholder: "2026.10.2"
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+      description: Steps to reproduce, the screen concerned, screenshots if useful.
+    validations:
+      required: true
+  - type: textarea
+    id: report
+    attributes:
+      label: Anonymised report
+      description: |
+        Settings → App status → Prepare a report, then paste or attach the file. It contains no
+        device name, sensor ID or location.
+      render: json
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: The app's log around the problem (Settings → Apps → WattSlot → Log, or `docker logs wattslot`).
+      render: text

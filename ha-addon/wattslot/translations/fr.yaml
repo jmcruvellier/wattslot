@@ -1,0 +1,14 @@
+configuration:
+  log_level:
+    name: Niveau des journaux
+    description: Détail du journal de l'extension. « debug » ne sert qu'à chercher un problème.
+  raw_days:
+    name: Relevés détaillés (jours)
+    description: >-
+      Durée de conservation des relevés détaillés, de 1 à 30 jours. Ils ne sont pas inclus dans
+      les sauvegardes.
+  quarter_days:
+    name: Quarts d'heure (jours)
+    description: >-
+      Durée de conservation de l'historique par quart d'heure, de 31 à 3660 jours. Les cycles des
+      appareils s'apprennent sur les 30 derniers jours.

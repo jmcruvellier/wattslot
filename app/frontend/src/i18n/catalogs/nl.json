@@ -1,0 +1,1402 @@
+{
+  "_meta": {
+    "status": "to_review"
+  },
+  "app": {
+    "title": "WattSlot",
+    "language": "Taal",
+    "screen_loading": "Pagina wordt geladen…",
+    "to_review": "{name} (na te lezen)"
+  },
+  "health": {
+    "loading": "Verbinding met de toepassing…",
+    "error": "De toepassing reageert niet ({status}).",
+    "version": "Versie {version}",
+    "support": "Het project steunen",
+    "mode": "Modus",
+    "home_assistant": "Home Assistant",
+    "home_assistant_version": "Home Assistant {version}",
+    "home_assistant_error": "Laatste fout: {error}"
+  },
+  "mode": {
+    "addon": "Home Assistant-add-on",
+    "standalone": "Zelfstandig"
+  },
+  "updates": {
+    "menu": "Nieuwe versie beschikbaar",
+    "row": "Nieuwe versie {version}",
+    "available": "Versie {version} is beschikbaar.",
+    "notes": "Release-opmerkingen",
+    "addon": "Werk haar bij via Instellingen → Apps van Home Assistant.",
+    "standalone": "Werk haar bij op de host, in de map van de installatie:",
+    "current": "Dit is de nieuwste versie.",
+    "unavailable": "Nieuwe versies kunnen nu niet worden gecontroleerd."
+  },
+  "connection": {
+    "not_configured": "niet ingesteld",
+    "connecting": "verbinden…",
+    "connected": "verbonden",
+    "error": "verbindingsfout"
+  },
+  "nav": {
+    "main": "Hoofdnavigatie",
+    "today": "Vandaag",
+    "planning": "Planning",
+    "home": "Mijn huis",
+    "assistant": "Assistent",
+    "settings": "Instellingen",
+    "library": "Apparatenbibliotheek",
+    "status": "Status van de app",
+    "connection": "Verbinding met Home Assistant",
+    "more": "Verder gaan",
+    "collapse": "Menu inklappen",
+    "expand": "Menu uitklappen",
+    "request": "Apparaat aanvragen",
+    "status_ok": "Alles werkt",
+    "status_degraded": "Controleren",
+    "status_blocking": "De berekening is geblokkeerd",
+    "devices": "Apparaten en sensoren",
+    "templates": "Kant-en-klare sjablonen",
+    "backup": "Back-up maken of delen",
+    "graph": "Grafiek van het huis",
+    "notifications": "Meldingen",
+    "display": "Taal en weergave",
+    "calculation": "Automatische berekening"
+  },
+  "setup": {
+    "loading": "Inrichting wordt gelezen…",
+    "error": "De inrichting kan niet worden gelezen.",
+    "title": "Aan de slag",
+    "intro": "Wat er nog moet gebeuren voor uw eerste plan. De essentiële stappen staan eerst; de andere verbeteren het plan.",
+    "required": "essentieel",
+    "open": "Openen",
+    "run_now": "Plan nu berekenen",
+    "running": "Bezig met berekenen…",
+    "refresh": "Opnieuw controleren",
+    "all_done": "Inrichting voltooid",
+    "some_left": "Inrichting: nog {count} optionele stap(pen)",
+    "states": {
+      "done": "klaar",
+      "todo": "te doen",
+      "waiting": "bezig",
+      "blocked": "na de vorige stappen",
+      "not_applicable": "niet van toepassing"
+    },
+    "steps": {
+      "connection": "Verbinding met Home Assistant",
+      "energy_dashboard": "Energiedashboard van Home Assistant",
+      "home": "Uw huis",
+      "forecast": "Zonneprognose",
+      "history": "Verbruiksgeschiedenis",
+      "first_plan": "Eerste plan",
+      "tariff": "Elektriciteitstarief",
+      "battery": "Batterij",
+      "notification": "Melding",
+      "template": "Kant-en-klaar sjabloon"
+    },
+    "reason": {
+      "ha_not_configured": "De toepassing kent het adres van Home Assistant niet.",
+      "ha_disconnected": "Home Assistant reageert niet. {error}",
+      "needs_connection": "Mogelijk zodra Home Assistant verbonden is.",
+      "no_energy_dashboard": "Het energiedashboard van Home Assistant is niet ingesteld: geef daar uw zonneproductie en uw meter op (Instellingen › Dashboards › Energie).",
+      "home_not_saved": "Controleer de voorgestelde apparaten en sla uw huis op.",
+      "no_forecast": "Geen zonneprognose: voeg er een toe aan het energiedashboard van Home Assistant (Forecast.Solar, Solcast, Open-Meteo…) of beschrijf uw panelen (vermogen, hellingshoek, oriëntatie) voor een prognose die de toepassing berekent.",
+      "history_importing": "De geschiedenis van Home Assistant wordt geïmporteerd (nog {count} meter(s)): niets te doen.",
+      "no_plan_yet": "Alles klaar: het plan wordt op het volgende hele uur berekend, of meteen.",
+      "needs_previous_steps": "Mogelijk zodra de essentiële stappen klaar zijn.",
+      "tariff_default": "Er wordt een vaste prijs van € 0,25/kWh aangenomen: stel uw tarief in voor een nauwkeuriger plan.",
+      "battery_default": "Standaardinstellingen van de batterij: pas ze aan de uwe aan.",
+      "no_notification": "Kies een apparaat dat elke dag het advies van het plan ontvangt.",
+      "needs_home": "Mogelijk zodra uw huis is opgeslagen.",
+      "template_suggested": "Begin met een sjabloon (daluren, Tempo, dynamische prijs…) dat uw apparaten en uw tarief in één keer instelt, en pas daarna aan."
+    }
+  },
+  "plan": {
+    "title": "Dagplan",
+    "tabs": {
+      "yesterday": "Gisteren",
+      "today": "Vandaag",
+      "tomorrow": "Morgen",
+      "week": "Week"
+    },
+    "loading": "Plan wordt gelezen…",
+    "error": "Het plan kan niet worden gelezen.",
+    "missing": "Nog geen plan voor deze weergave: het wordt op het volgende hele uur berekend.",
+    "missing_yesterday": "Geen archief voor gisteren.",
+    "cards": {
+      "energy": "Productie en verbruik",
+      "soc": "Batterij (laadniveau)",
+      "grid": "Net"
+    },
+    "series": {
+      "production": "Voorspelde productie",
+      "production_actual": "Gemeten productie",
+      "consumption": "Voorspeld verbruik",
+      "consumption_actual": "Gemeten verbruik",
+      "soc": "Gepland laadniveau",
+      "soc_actual": "Gemeten laadniveau",
+      "floor": "Ondergrens {pct} %",
+      "import_actual": "Gemeten afname",
+      "export_actual": "Gemeten overschot",
+      "grid": "Gepland net (afname − overschot)"
+    },
+    "week": {
+      "title": "Week van {start} tot {end}",
+      "computed": "Periode berekend om {time} ({how})",
+      "seconds": "berekend in {seconds} s",
+      "production": "Productie",
+      "soc": "Laadniveau",
+      "soc_value": "{start} → {end} %",
+      "soc_max": "maximum",
+      "import": "Afname van het net",
+      "import_peak": "waarvan piekuren",
+      "export": "Overschot",
+      "devices": "Apparaten",
+      "no_device": "Geen apparaat gepland",
+      "detail": "Details bekijken",
+      "waiting": "Taken zonder datum worden voorlopig alleen op morgen gepland: de verdeling over de week volgt later.",
+      "weather": {
+        "sunny": "zonnig",
+        "mixed": "wisselvallig",
+        "cloudy": "bewolkt"
+      },
+      "charts": {
+        "production": "Geplande productie",
+        "consumption": "Gepland verbruik",
+        "soc": "Batterij (gepland laadniveau)"
+      },
+      "series": {
+        "production": "Productie",
+        "consumption": "Verbruik",
+        "soc": "Laadniveau",
+        "surplus": "Overschot"
+      },
+      "off_peak": "Daluren",
+      "agenda": "Weekagenda",
+      "battery_line": "Batterij: {start}%, tot {max}%, {end}% 's avonds",
+      "open_day": "{day} openen"
+    },
+    "header": {
+      "computed": "Berekend om {time} ({how})",
+      "manual": "handmatig",
+      "auto": "automatisch",
+      "never": "Nog nooit berekend",
+      "reading": "laatste meting om {time}",
+      "compute": "Berekenen",
+      "running": "Bezig met berekenen…",
+      "refresh": "Meetgegevens vernieuwen",
+      "failed": "De bewerking is mislukt: zie de diagnose."
+    },
+    "freshness": {
+      "stale_today": "⚠️ Laatste berekening {hours} u {minutes} geleden: de automatische berekeningen lijken onderbroken.",
+      "stopped_yesterday": "⚠️ De berekeningen van gisteren stopten om {time}: de automatische berekeningen zijn waarschijnlijk onderbroken."
+    },
+    "notices": "Waarschuwingen bij het plan",
+    "banner": {
+      "departure_title": "Batterij bij het begin van de dag",
+      "departure": {
+        "measured": "Stand om middernacht: {kwh} kWh ({pct} %) gemeten",
+        "plan": "Stand om middernacht: {kwh} kWh ({pct} %) volgens het plan",
+        "tonight": "Stand om middernacht: {kwh} kWh ({pct} %), laadniveau verwacht vannacht om middernacht",
+        "now": "Stand om middernacht: {kwh} kWh ({pct} %), huidig laadniveau bij gebrek aan dagplan",
+        "expected": "het plan van de vorige avond ({time}) verwachtte {kwh} kWh ({pct} %)"
+      },
+      "departure_badge": {
+        "ok": "zoals verwacht",
+        "medium": "afwijking",
+        "large": "afwijking",
+        "reliable": "betrouwbaar",
+        "approximate": "bij benadering"
+      },
+      "charge": {
+        "today": "Laatste volledige lading: vandaag",
+        "yesterday": "Laatste volledige lading: gisteren",
+        "days": "Laatste volledige lading: {days} dagen geleden",
+        "none": "Geen volledige lading sinds {days} dagen",
+        "priority": "voorrangsdag voor het laden"
+      },
+      "weather_title": "Weer",
+      "weather": {
+        "quality": {
+          "sunny": "Zonnige dag",
+          "mixed": "Wisselvallige dag",
+          "cloudy": "Bewolkte dag",
+          "unknown": "Productie"
+        },
+        "forecast": "{kwh} kWh voorspeld",
+        "measured": "{kwh} kWh gemeten",
+        "share": "{pct} % van de beste dag van de laatste {days} dagen ({kwh} kWh)",
+        "vs_today": "{gap} % ten opzichte van vandaag ({kwh} kWh voorspeld)",
+        "no_reading": "nog geen meting",
+        "reading": "bij de meting: {mes} kWh gemeten, {gap}ten opzichte van de laatste prognose ({est} kWh)",
+        "day": "{gap}ten opzichte van de prognose van {time} ({est} kWh)",
+        "badge": {
+          "reliable": "betrouwbare prognose",
+          "moderate": "matige afwijking",
+          "important": "grote afwijking",
+          "too_early": "te vroeg om te beoordelen"
+        }
+      },
+      "equip_title": "Apparaten",
+      "equip": {
+        "on_time": "{device} op tijd ({time}), {kwh}",
+        "shifted": "{device} {shift} ({actual} in plaats van {planned}), {kwh}",
+        "no_cycle": "{device}: geen cyclus ({start}–{end}, {kwh} kWh gepland)",
+        "planned": "{device} gepland om {start}",
+        "unplanned": "{device} niet gepland ({time}), {kwh} kWh",
+        "running": "bezig",
+        "none": "Geen apparaat gepland of gestart",
+        "badge": {
+          "on_time": "volgens plan",
+          "shifted": "verschoven"
+        }
+      }
+    },
+    "summary": {
+      "cards": {
+        "soc": "Laadniveau / capaciteit",
+        "soc_max": "Max. laadniveau",
+        "battery": "Batterij",
+        "grid": "Net",
+        "production": "Productie"
+      },
+      "lines": {
+        "soc": "Laadniveau",
+        "soc_max": "Max. laadniveau",
+        "charge": "Laden",
+        "discharge": "Ontladen",
+        "grid_import": "Afgenomen",
+        "grid_export": "Overschot",
+        "production": "Productie"
+      },
+      "estimated": "Geschat",
+      "measured": "Gemeten",
+      "forecast": "Prognose",
+      "at_reading": "Bij de meting",
+      "day": "Dag"
+    },
+    "timeline": {
+      "title": "Apparatenplanning",
+      "battery": "Batterij",
+      "charge": "laden",
+      "discharge": "ontladen",
+      "mode": "modus {mode}",
+      "tip_planned": "Gepland {start} → {end}: {what}, {kwh} kWh",
+      "tip_actual": "Werkelijk {start} → {end}: {what}, {kwh} kWh",
+      "no_surplus": "Geen zonne-overschot verwacht (productie {production} kWh, verbruik {consumption} kWh): geen apparaat gepland.",
+      "nothing": "Geen apparaat gepland op deze dag."
+    },
+    "indicators": {
+      "title": "Kengetallen van het plan",
+      "goal": "De berekening streeft naar {goal}.",
+      "cost_eur": "Kosten (afname min verkoop)",
+      "import_kwh": "Afname van het net",
+      "export_kwh": "Overschot naar het net",
+      "self_consumption_percent": "Eigen verbruik",
+      "co2_kg": "CO₂ van de afname",
+      "end_soc_percent": "Laadniveau aan het eind van de dag",
+      "battery_throughput_kwh": "Energie door de batterij",
+      "chosen": "Uitgelicht kengetal gekozen in „Aanpassen”."
+    },
+    "explanations": {
+      "title": "Waarom dit plan",
+      "recommendation": "Tekst van het advies"
+    },
+    "missing_week": "Nog geen prognose voor de week: die wordt op het volgende hele uur berekend, of klik op „Berekenen”.",
+    "layout": {
+      "open": "Aanpassen",
+      "title": "Weergave aanpassen",
+      "hint": "Volgorde en kaarten van de weergave „{view}”, bewaard voor alle apparaten van het huishouden.",
+      "up": "„{card}” omhoog",
+      "down": "„{card}” omlaag",
+      "hide": "„{card}” verbergen",
+      "hide_short": "Verbergen",
+      "restore": "„{card}” terugzetten",
+      "restore_short": "Terugzetten",
+      "hidden": "Verborgen kaarten",
+      "indicators": "Kengetallen van het plan",
+      "highlight": "Uitgelicht:",
+      "highlight_goal": "volgens het doel van de berekening",
+      "failed": "De indeling kon niet worden opgeslagen.",
+      "reset": "Terug naar de standaardindeling",
+      "done": "Klaar",
+      "saving": "Bezig met opslaan…",
+      "day": {
+        "summary": "Overzicht (laadniveau, batterij, net, productie)",
+        "timeline": "Apparatenplanning",
+        "soc": "Batterij (laadniveau)",
+        "grid": "Net",
+        "energy": "Productie en verbruik",
+        "indicators": "Kengetallen van het plan",
+        "explanations": "Waarom dit plan"
+      },
+      "week": {
+        "production": "Geplande productie",
+        "consumption": "Gepland verbruik",
+        "soc": "Batterij (gepland laadniveau)",
+        "days": "Dagkaarten"
+      }
+    },
+    "agenda": {
+      "title": "Dagagenda",
+      "day_quality": "{day}, {quality} dag",
+      "quality": {
+        "sunny": "zonnige",
+        "mixed": "wisselende",
+        "cloudy": "bewolkte"
+      },
+      "sun_window": "{kwh} kWh zon, vooral tussen {start} en {end} uur",
+      "sun_none": "Geen zonne-opwekking verwacht.",
+      "cycle": "Start {device}",
+      "runtime": "{device}, {duration}",
+      "mode": "Stand {mode}",
+      "battery_charge": "De batterij laadt",
+      "battery_discharge": "De batterij neemt het over",
+      "battery_max": "Batterij op het hoogst, {pct}%",
+      "until": "Tot {time}",
+      "empty": "Niets te starten die dag.",
+      "now": "Nu",
+      "why": "Waarom dit plan",
+      "curves": "Gedetailleerde grafieken"
+    }
+  },
+  "requests": {
+    "title": "Mijn verzoeken",
+    "intro": "Vraag om een apparaat te laten draaien: het plan kiest het beste moment, zo snel mogelijk of vóór de opgegeven datum.",
+    "device": "Apparaat",
+    "latest": "Uiterlijk op",
+    "ask": "Aanvragen",
+    "hint": "Zonder datum: zodra de zon het toelaat. Een nieuw verzoek voor hetzelfde apparaat wijzigt alleen de datum.",
+    "failed": "Het verzoek kon niet worden opgeslagen.",
+    "error": "De verzoeken kunnen niet worden gelezen.",
+    "none": "Geen lopend verzoek.",
+    "open_list": "Lopende verzoeken",
+    "open_asap": "{device}: zo snel mogelijk",
+    "open_latest": "{device}: uiterlijk op {latest}",
+    "launched": "{device}: vandaag gestart",
+    "done_item": "{device}: klaar",
+    "cancelled_item": "{device}: geannuleerd",
+    "mark_done": "Klaar",
+    "cancel": "Annuleren",
+    "recent": "Recente verzoeken",
+    "loading": "Apparaten worden gelezen…",
+    "no_device": "Geen enkel apparaat in je huis kan op aanvraag starten.",
+    "sheet_done": "Aanvraag opgeslagen: de volgende berekening plant hem op het beste moment.",
+    "sheet_close": "Klaar"
+  },
+  "settings": {
+    "loading": "Instellingen worden gelezen…",
+    "error": "De instellingen kunnen niet worden gelezen.",
+    "title": "Instellingen",
+    "intro": "Hoe de toepassing werkt: waar de verzoeken vandaan komen, waar het dagadvies naartoe gaat, wanneer het plan wordt berekend.",
+    "not_connected": "Home Assistant is niet verbonden: de lijsten zijn leeg, de opgeslagen instellingen blijven geldig.",
+    "none": "geen",
+    "unknown": "{id} (niet gevonden in Home Assistant)",
+    "tasks": {
+      "title": "Verzoeken uit een takenlijst",
+      "help": "De taken van deze Home Assistant-lijst („de wasmachine laten draaien”, met een vervaldatum) worden bij elke berekening meegenomen.",
+      "list": "Takenlijst"
+    },
+    "notification": {
+      "title": "Meldingen",
+      "help": "Door Home Assistant na elke automatische berekening naar het gekozen apparaat verstuurd (companion-app). Standaard staat niets aan, om de vorige versie niet te dubbelen zolang die nog meldingen stuurt.",
+      "service": "Gemeenschappelijk apparaat",
+      "other": "Andere meldingsdienst:",
+      "use": "Gebruiken",
+      "language": "Taal van het bericht",
+      "test": "Test versturen",
+      "sending": "Bezig met versturen…",
+      "sent": "Test verstuurd: „{message}”",
+      "failure": {
+        "no_notify_service": "Kies eerst een apparaat.",
+        "no_plan": "Nog geen dagplan: de test verstuurt het advies daarvan. Bereken het plan vanaf de startpagina.",
+        "not_connected": "Home Assistant is niet verbonden.",
+        "failed": "Versturen mislukt: controleer de dienst in Home Assistant."
+      },
+      "own_service": "Apparaat",
+      "common_service": "het gemeenschappelijke apparaat",
+      "test_of": "Test versturen: {name}",
+      "cadence": {
+        "label": "Frequentie",
+        "every_run": "na elke berekening (elk uur, zoals de vorige versie)",
+        "when_changed": "alleen als het plan verandert",
+        "daily": "eenmaal per dag",
+        "at": "vanaf"
+      },
+      "quiet": {
+        "label": "Stille uren",
+        "from": "van",
+        "to": "tot"
+      },
+      "kinds": {
+        "recommendation": {
+          "title": "Dagadvies",
+          "help": "Het dagplan: apparaten, batterij, zwembad, balans en waarschuwingen."
+        },
+        "device_now": {
+          "title": "„Start X nu”",
+          "help": "Wanneer de geplande cyclus van een apparaat binnen het uur begint en het nog niet gestart is."
+        },
+        "plan_gap": {
+          "title": "Afwijking van het plan",
+          "help": "Een geplande cyclus is 30 minuten na zijn tijdstip niet begonnen, of de zonneproductie wijkt meer dan 25 % af van de prognose."
+        },
+        "battery_full": {
+          "title": "Batterij vol vóór de middag",
+          "help": "Het plan verwacht een volle batterij vóór de middag: een goed moment om een apparaat te starten, want het volgende overschot zou naar het net gaan."
+        },
+        "forecast_drop": {
+          "title": "Prognose voor morgen daalt",
+          "help": "De geplande productie voor morgen daalt met meer dan 30 % ten opzichte van de hoogste prognose tot nu toe."
+        }
+      }
+    },
+    "forecast": {
+      "title": "Reserve-zonneprognose",
+      "help": "Alleen gebruikt als het energiedashboard van Home Assistant geen prognose geeft: sensoren met een vermogensprognose in watt (zoals de integratie Helios).",
+      "entities": "Prognosesensoren",
+      "none": "Geen geschikte prognosesensor gevonden in Home Assistant."
+    },
+    "scheduler": {
+      "title": "Automatische berekening",
+      "enabled": "Het plan elk uur opnieuw berekenen",
+      "minute": "op minuut",
+      "next": "Volgende berekening: {time}"
+    },
+    "save": "Opslaan",
+    "saved": "Instellingen opgeslagen.",
+    "invalid": "Instelling geweigerd: controleer de meldingsdienst (de naam begint met „notify.”) en de minuut (0 tot 59).",
+    "failed": "Opslaan mislukt.",
+    "appearance": {
+      "title": "Taal en weergave",
+      "theme": "Thema",
+      "help": "Automatisch volgt de app de lichte of donkere instelling van je telefoon, browser of computer. Je keuze wordt op dit apparaat bewaard.",
+      "themes": {
+        "auto": {
+          "name": "Automatisch",
+          "help": "Ivoor overdag, Grafiet 's avonds, zoals je apparaat"
+        },
+        "ivory": {
+          "name": "Ivoor",
+          "help": "Licht en warm"
+        },
+        "graphite": {
+          "name": "Grafiet",
+          "help": "Donker"
+        },
+        "ocean": {
+          "name": "Oceaan",
+          "help": "Licht en blauw, dicht bij Home Assistant"
+        },
+        "meadow": {
+          "name": "Weide",
+          "help": "Licht, saliegroen"
+        },
+        "dusk": {
+          "name": "Schemering",
+          "help": "Donker, paars en koraal"
+        }
+      }
+    }
+  },
+  "connection_page": {
+    "loading": "Verbinding wordt gelezen…",
+    "error": "De verbinding kan niet worden gelezen.",
+    "title": "Verbinding met Home Assistant",
+    "state": "Status:",
+    "returned": {
+      "ok": "Verbinding geaccepteerd door Home Assistant: de toepassing start opnieuw om die toe te passen.",
+      "failed": "Home Assistant heeft de verbinding geweigerd: probeer het opnieuw.",
+      "expired": "Het verbindingsverzoek is verlopen: begin opnieuw."
+    },
+    "restarting": "De toepassing start opnieuw om de verbinding toe te passen (enkele seconden)…",
+    "timeout": "De toepassing reageert nog niet: controleer of de container vanzelf herstart (restart: unless-stopped) en laad de pagina daarna opnieuw.",
+    "failure": {
+      "invalid_url": "Ongeldig adres: het begint met http:// of https://.",
+      "token_refused": "Home Assistant heeft dit token geweigerd.",
+      "unreachable": "Home Assistant reageert niet op dit adres, gezien vanuit de toepassing.",
+      "set_by_environment": "De verbinding wordt ingesteld via omgevingsvariabelen.",
+      "addon_mode": "Als add-on levert Home Assistant de verbinding.",
+      "not_connected": "Geen verbinding om te vergeten.",
+      "failed": "De bewerking is mislukt."
+    },
+    "addon": "De toepassing draait als add-on: Home Assistant levert zelf de verbinding.",
+    "environment": "De verbinding wordt ingesteld via omgevingsvariabelen (HA_URL, HA_TOKEN): verwijder ze uit het bestand .env om haar hier te beheren.",
+    "saved": {
+      "oauth": "Verbonden met {url} via uw Home Assistant-account.",
+      "token": "Verbonden met {url} via een toegangstoken."
+    },
+    "disconnect": "Verbinding verbreken",
+    "intro": "Voer het adres van Home Assistant in en meld u aan met uw account: Home Assistant vraagt om bevestiging en brengt u daarna hier terug.",
+    "url": "Adres van Home Assistant",
+    "url_hint": "Het adres dat u in uw browser opent; de toepassing moet het ook kunnen bereiken.",
+    "oauth": "Aanmelden met Home Assistant",
+    "token_title": "Met een toegangstoken (als de browser Home Assistant niet kan bereiken)",
+    "token_help": "Maak een token aan in Home Assistant: uw profiel › Beveiliging › Langlevende toegangstokens.",
+    "token": "Token",
+    "connect_token": "Verbinden met dit token",
+    "security": "De verbinding wordt bewaard op het apparaat waarop de toepassing draait, nooit in een export of rapport. Stel de toepassing alleen open op uw lokale netwerk: ze heeft geen eigen aanmelding."
+  },
+  "home": {
+    "title": "Mijn huis",
+    "intro": "Dit heeft de toepassing in uw energiedashboard herkend. Controleer de apparaten, corrigeer ze indien nodig en sla daarna op.",
+    "loading": "Home Assistant wordt gelezen…",
+    "error": {
+      "not_connected": "Home Assistant is niet verbonden: er kunnen geen apparaten worden voorgesteld.",
+      "failed": "De voorstellen konden niet worden geladen."
+    },
+    "no_energy_dashboard": "Het energiedashboard van Home Assistant is niet ingesteld: de toepassing heeft niets voor te stellen.",
+    "issue_count": "{count} punt(en) te controleren.",
+    "refresh": "Home Assistant opnieuw lezen",
+    "include": "Behouden",
+    "name": "Naam",
+    "kind": "Type",
+    "capacity": "Capaciteit (kWh)",
+    "resets_daily": "wordt elke dag teruggezet",
+    "save": "Opslaan",
+    "saved": "Huis opgeslagen.",
+    "save_failed": "Opslaan mislukt.",
+    "keep_sensor": "{entity} behouden",
+    "capacity_source": "(gelezen in Home Assistant: {entity})",
+    "custom_kind": "{name} ({parent})",
+    "to_settings": "Planningsinstellingen van dit apparaat",
+    "add": {
+      "open": "Een apparaat toevoegen",
+      "title": "Een apparaat toevoegen dat in het energiedashboard ontbreekt",
+      "intro": "Een slimme stekker, een warmtepomp…: kies het type en de sensoren van Home Assistant die het meten.",
+      "loading": "Sensoren van Home Assistant worden gelezen…",
+      "not_connected": "Home Assistant is niet verbonden: de sensoren kunnen niet worden gekozen.",
+      "failed": "De sensoren van Home Assistant kunnen niet worden gelezen.",
+      "no_sensor": "geen",
+      "confirm": "Toevoegen",
+      "cancel": "Annuleren"
+    },
+    "sensors_summary": "Gekoppelde Home Assistant-sensoren: {count}.",
+    "include_hint": "Vink een voorgesteld apparaat uit dat niet bij het huis hoort.",
+    "kind_hint": "Het type bepaalt wat het plan met het apparaat kan doen."
+  },
+  "graph": {
+    "title": "Mijn huis als graaf",
+    "show": "Het huis als graaf tonen",
+    "hide": "Graaf verbergen",
+    "loading": "Graaf wordt geladen…",
+    "error": "Het model van het huis kan niet worden gelezen.",
+    "empty": "Nog geen apparaat opgeslagen.",
+    "hint": "Klik op een element om de eigenschappen en problemen te zien.",
+    "no_issue": "Geen probleem.",
+    "library": "Type van de bibliotheek",
+    "key": "Kenmerk",
+    "parent": "Onder het type",
+    "type": "Type",
+    "sensors": "Sensoren",
+    "capacity": "Capaciteit",
+    "role": "Rol",
+    "entity": "Home Assistant-sensor",
+    "subtype_of": "subtype van",
+    "is_a": "is een",
+    "has_sensor": "sensor"
+  },
+  "library": {
+    "loading": "Bibliotheek wordt geladen…",
+    "error": "De apparaattypen kunnen niet worden gelezen.",
+    "title": "Apparatenbibliotheek",
+    "intro": "De apparaattypen die de toepassing kent, en de typen die u toevoegt om uw huis te beschrijven.",
+    "library_types": "Typen van de bibliotheek „Huishoudelijke energie”",
+    "type": "Type",
+    "behaviors": "Hoe de planning ermee kan omgaan",
+    "roles": "Verwachte sensoren",
+    "own_types": "Uw apparaattypen",
+    "own_intro": "Een eigen type (warmtepomp, ontvochtiger…) valt onder een type van de bibliotheek: de apparaten ervan worden zoals dat type gepland.",
+    "none": "Nog geen eigen type.",
+    "name": "Naam",
+    "parent": "Onder het type",
+    "parent_of": "onder „{parent}”",
+    "choose": "kiezen…",
+    "rename": "Hernoemen",
+    "delete": "Verwijderen",
+    "create": "Type toevoegen",
+    "messages": {
+      "created": "Type toegevoegd: kies het voor een apparaat op het tabblad Huis.",
+      "renamed": "Type hernoemd.",
+      "deleted": "Type verwijderd.",
+      "in_use": "Een apparaat gebruikt dit type: wijzig eerst het type ervan op het tabblad Huis.",
+      "invalid": "Dit type kan niet onder dat type worden toegevoegd.",
+      "failed": "De bewerking is mislukt."
+    }
+  },
+  "kind": {
+    "SolarInstallation": "Zonneproductie",
+    "GridConnection": "Net",
+    "Battery": "Batterij",
+    "WaterHeater": "Boiler",
+    "WashingMachine": "Wasmachine",
+    "Dryer": "Droger",
+    "Dishwasher": "Vaatwasser",
+    "PoolPump": "Zwembadpomp",
+    "OtherLoad": "Overig verbruik"
+  },
+  "role": {
+    "EnergyProduced": "Geproduceerde energie",
+    "PowerProduced": "Geproduceerd vermogen",
+    "EnergyImported": "Van het net afgenomen energie",
+    "EnergyExported": "Overschot naar het net",
+    "EnergyCharged": "Geladen energie",
+    "EnergyDischarged": "Ontladen energie",
+    "StateOfCharge": "Laadniveau (%)",
+    "EnergyConsumed": "Verbruikte energie",
+    "PowerConsumed": "Opgenomen vermogen"
+  },
+  "issue": {
+    "entity_missing": "{entity} bestaat niet in Home Assistant.",
+    "not_energy_unit": "{entity} is geen energiemeter (eenheid: „{unit}”): verwijder hem uit het energiedashboard of vervang hem.",
+    "unexpected_device_class": "{entity} is in Home Assistant aangemeld als „{device_class}”, wat geen energiemeter is.",
+    "not_power_unit": "{entity} is geen vermogen (eenheid: „{unit}”).",
+    "not_percent_unit": "{entity} is geen percentage (eenheid: „{unit}”).",
+    "no_power_sensor": "Geen vermogen gevonden voor {entity}: dat dient om de cycli van het apparaat te herkennen.",
+    "battery_capacity_missing": "Capaciteit van de batterij onbekend: vul die in.",
+    "battery_soc_missing": "Laadniveau van de batterij ontbreekt in het energiedashboard.",
+    "not_proposed": "Opgeslagen apparaat dat niet meer in het energiedashboard staat.",
+    "name_suggests_cost": "{entity} lijkt naar zijn naam een kostenpost, geen verbruikte energie: hij wordt standaard niet behouden. Vink hem weer aan als het echt een meter is."
+  },
+  "configuration": {
+    "title": "Planningsinstellingen",
+    "intro": "Voor elk opgeslagen apparaat: hoe de planning ermee omgaat en of ze het moet inplannen.",
+    "loading": "Instellingen worden gelezen…",
+    "error": "De instellingen konden niet worden gelezen.",
+    "empty": "Sla eerst uw huis op: de apparaten verschijnen dan hier.",
+    "behavior": "Gedrag",
+    "planned": "Door de planning ingepland",
+    "default": "Standaardinstellingen voor dit soort apparaat.",
+    "save": "Instellingen opslaan",
+    "saved": "Instellingen opgeslagen.",
+    "save_failed": "Opslaan van de instellingen mislukt.",
+    "issue": {
+      "unsupported_version": "Configuratieversie {version} wordt niet ondersteund (verwacht: {expected}).",
+      "unknown_device": "{device}: geen apparaat van het opgeslagen huis.",
+      "duplicate_device": "{device}: twee keer ingesteld.",
+      "behavior_not_allowed": "{device}: dit gedrag is niet mogelijk voor dit soort apparaat.",
+      "observed_automation": "{device}: een apparaat dat alleen gevolgd wordt, kan alleen getoond worden, niet aanbevolen.",
+      "automation_not_available": "{device}: bevestiging en automatische aansturing komen in een latere versie.",
+      "tariff_without_bands": "Tarief: geen tijdvak.",
+      "bands_not_used": "Tarief: dit soort tarief gebruikt geen tijdvakken.",
+      "band_empty": "Tarief: tijdvak {band} is leeg (einde vóór begin).",
+      "band_weekday": "Tarief: onmogelijke weekdag in tijdvak {band}.",
+      "band_month": "Tarief: onmogelijke maand in tijdvak {band}.",
+      "tariff_without_colors": "Tarief: geen kleur opgegeven.",
+      "tariff_without_color_entity": "Tarief: de sensor van de dagkleur ontbreekt.",
+      "color_twice": "Tarief: een kleur is twee keer opgegeven.",
+      "tariff_without_price_entity": "Tarief: de prijssensor ontbreekt.",
+      "battery_active_range_empty": "Batterij: de werkperiode is leeg.",
+      "runtime_not_used": "{device}: looptijdinstellingen voor een ander gedrag.",
+      "panels_not_used": "{device}: zonnepanelen kunnen alleen bij een zonne-installatie worden beschreven.",
+      "runtime_speed_names": "{device}: elke stand heeft een andere naam nodig (en niet „uit”).",
+      "runtime_seasons": "{device}: onbekend seizoen of negatieve waarde.",
+      "runtime_too_long": "{device}: meer dan 24 uur per dag.",
+      "need_not_used": "{device}: energiebehoefte ingesteld voor een ander gedrag.",
+      "need_window_empty": "{device}: de deadline moet na het vroegste uur liggen.",
+      "need_too_large": "{device}: te veel energie voor {hours} u bij maximaal vermogen.",
+      "constraints_not_used": "{device}: tijdsbeperkingen voor een apparaat dat de planning niet inplant.",
+      "constraint_range_empty": "{device}: de verboden periode {constraint} is leeg.",
+      "constraints_leave_no_time": "{device}: de strikte beperkingen verbieden de hele dag.",
+      "after_not_used": "{device}: „begint na” ingesteld voor een apparaat dat geen cyclus is.",
+      "after_unknown": "{device}: het te volgen apparaat ({after}) hoort niet bij het huis.",
+      "delay_not_used": "{device}: uitsteltolerantie ingesteld voor een apparaat dat geen cyclus is.",
+      "battery_floor_range_empty": "Batterij: een periode met ondergrens is leeg ({range}).",
+      "recurrence_not_used": "{device}: herhaling ingesteld voor een apparaat dat geen cyclus is.",
+      "recurrence_rule": "{device}: niet-ondersteunde herhalingsregel ({rule}): {reason}.",
+      "objective_weights_unused": "Doel: gewichten opgegeven voor een voorinstelling die ze niet gebruikt.",
+      "objective_weights_missing": "Doel: vrije gewichten zonder enig positief gewicht.",
+      "objective_co2_without_entity": "Doel: CO₂ vereist een sensor voor de koolstofintensiteit van het net.",
+      "import_format": "Dit bestand is geen export van een huis van WattSlot.",
+      "import_version": "Niet-ondersteunde bestandsversie: {reason}.",
+      "import_invalid": "Ongeldig bestand ({field}): {reason}."
+    },
+    "import_rules": "De regels van de Home Assistant-taken overnemen",
+    "rules": {
+      "applied": "Regels overgenomen uit de beschrijvingen van de taken: controleer ze en sla daarna op.",
+      "none": "Geen regel over te nemen uit de Home Assistant-taken.",
+      "not_connected": "Home Assistant is niet verbonden.",
+      "failed": "De taken van Home Assistant kunnen niet worden gelezen."
+    },
+    "to_device": "Apparaat en sensoren",
+    "behavior_hints": {
+      "CycleBehavior": "Een programma dat na het starten een tijd draait: het plan zegt u wanneer u het moet starten.",
+      "EnergyByDeadlineBehavior": "Een hoeveelheid energie die vóór een tijdstip geleverd moet worden (een auto laden, een op vermogen geregelde boiler).",
+      "RuntimeBehavior": "Een aantal draaiuren om over de dag te verdelen (zwembadfiltratie, warmtepomp).",
+      "StorageBehavior": "Slaat het zonne-overschot op en geeft het terug als het huis het nodig heeft.",
+      "UncontrolledBehavior": "Verbruik dat gevolgd wordt maar dat het plan niet verschuift.",
+      "ProductionBehavior": "Productie van de panelen, gevolgd om haar te voorspellen.",
+      "GridBehavior": "Afname van het net en overschot naar het net."
+    },
+    "planned_hint": "Vink uit om het apparaat te volgen zonder dat het plan het inplant."
+  },
+  "templates": {
+    "error": "De sjablonen kunnen niet worden gelezen.",
+    "title": "Beginnen met een sjabloon",
+    "intro": "Een sjabloon stelt in één keer het gedrag van uw apparaten volgens hun type, het tarief en het doel in. Uw apparaten en hun sensoren veranderen niet; u kunt daarna alles aanpassen.",
+    "no_home": "Sla eerst uw huis op: het sjabloon geldt voor de apparaten ervan.",
+    "choose": "Sjablonen",
+    "devices": "Zou instellen: {devices}.",
+    "no_devices": "Zou alleen het tarief instellen.",
+    "preview": "Bekijken wat er zou veranderen",
+    "preview_title": "Wat er zou veranderen",
+    "nothing": "Niets: uw configuratie komt al overeen met dit sjabloon.",
+    "change": {
+      "behavior": "{device}: {before} → {after}",
+      "settings": "{device}: instellingen gewijzigd",
+      "tariff": "Elektriciteitstarief vervangen (indicatieve prijzen, aan te passen)",
+      "objective": "Doel van de berekening vervangen",
+      "battery": "Batterij-instellingen vervangen"
+    },
+    "keep": "Apparaten die het sjabloon niet kent en de batterij-instellingen blijven zoals ze zijn.",
+    "apply": "Sjabloon toepassen",
+    "applied": "Sjabloon toegepast: controleer de tariefprijzen hieronder.",
+    "failed": "Het sjabloon kon niet worden toegepast."
+  },
+  "tariff": {
+    "title": "Elektriciteitstarief",
+    "none": "Geen tarief: het plan neemt een vaste prijs van {price} €/kWh aan en probeert alleen zo weinig mogelijk van het net af te nemen.",
+    "use": {
+      "SingleTariff": "Een vaste prijs instellen",
+      "TimeOfUseTariff": "Dal- en piekuren instellen",
+      "DayColorTariff": "Een tarief per dagkleur instellen (Tempo)",
+      "DynamicTariff": "Een dynamische prijs instellen"
+    },
+    "kind": "Soort tarief",
+    "kinds": {
+      "SingleTariff": "Vaste prijs",
+      "TimeOfUseTariff": "Dal- en piekuren",
+      "DayColorTariff": "Dagkleur (Tempo)",
+      "DynamicTariff": "Dynamische prijs"
+    },
+    "base_single": "Prijs per kWh",
+    "base_time_of_use": "Prijs buiten de tijdvakken (piekuren)",
+    "base_unknown": "Prijs als die niet bekend is",
+    "band": "Tijdvak {number}",
+    "from": "Van",
+    "to": "tot",
+    "price": "prijs",
+    "limited": "beperkt tot bepaalde dagen of maanden",
+    "remove_band": "Verwijderen",
+    "add_band": "Een tijdvak toevoegen",
+    "color_entity": "Sensor van de dagkleur",
+    "color_tomorrow_entity": "Sensor van de kleur van morgen",
+    "color_day_start": "De kleurdag begint om",
+    "colors_hint": "Elke kleur: haar naam (zoals de sensor die toont), haar prijs buiten de tijdvakken en haar tijdvakken. De eerste geldt als de kleur onbekend is.",
+    "color_named": "Kleur {color}",
+    "color": "Kleur",
+    "base_color": "prijs buiten de tijdvakken",
+    "remove_color": "De kleur verwijderen",
+    "add_color": "Een kleur toevoegen",
+    "unit": "Eenheid van de prijzen gelezen in Home Assistant",
+    "price_entity": "Prijssensor",
+    "export": "Vergoeding voor het overschot",
+    "export_unknown": "Vergoeding als die niet bekend is",
+    "export_entity": "Sensor van de terugleververgoeding (optioneel)",
+    "propose": "Voorstellen vanuit het energiedashboard",
+    "proposal": {
+      "none": "Het energiedashboard geeft geen prijs op.",
+      "not_connected": "Home Assistant is niet verbonden: het energiedashboard kan niet worden gelezen.",
+      "failed": "Het voorstel kon niet worden gelezen."
+    },
+    "reset": "Terug naar de standaardprijs",
+    "color_entity_hint": "Home Assistant-sensor die de dagkleur geeft (bijvoorbeeld de integratie RTE Tempo).",
+    "kind_hints": {
+      "SingleTariff": "Dezelfde prijs op elk uur.",
+      "TimeOfUseTariff": "Een lagere prijs tijdens de daluren van uw contract.",
+      "DayColorTariff": "De prijs hangt af van de dagkleur (Tempo) en het uur.",
+      "DynamicTariff": "De prijs verandert elk uur en wordt gelezen uit een Home Assistant-sensor."
+    },
+    "price_entity_hint": "Home Assistant-sensor die de prijs van het huidige en de komende uren geeft.",
+    "export_hint": "Wat een kWh overschot naar het net u oplevert; 0 als u het niet verkoopt."
+  },
+  "battery": {
+    "title": "Batterij",
+    "intro": "De planning ziet de batterijen van het huis als één batterij van {capacity} kWh.",
+    "defaults": "Standaardinstellingen: wijzig ze zodat ze bij uw batterij passen.",
+    "charge": "Maximaal laadvermogen",
+    "discharge": "Maximaal ontlaadvermogen",
+    "power_hint": "Leeg gelaten: genoeg om de halve batterij in één uur te laden of te legen.",
+    "floor": "Nooit ontladen onder",
+    "active": "De batterij laadt en ontlaadt",
+    "from": "van",
+    "to": "tot",
+    "full_charge": "Regelmatig een volledige lading nastreven (de batterij kalibreert haar meting opnieuw)",
+    "every": "minstens elke",
+    "days": "dagen",
+    "reset": "Terug naar de standaardinstellingen",
+    "floor_ranges": "Hogere ondergrens in bepaalde periodes",
+    "floor_range": "Periode met ondergrens {number}",
+    "not_below": "niet onder",
+    "remove_range": "Verwijderen",
+    "add_range": "Een periode met hogere ondergrens toevoegen",
+    "floor_hint": "De batterij gaat er nooit onder: een reserve voor de nacht of een stroomstoring."
+  },
+  "objective": {
+    "title": "Doel van de berekening",
+    "defaults": "Geen doel ingesteld: eerst de kosten.",
+    "preset": "De berekening streeft naar",
+    "presets": {
+      "cost": "de laagste kosten",
+      "autonomy": "autonomie (zo weinig mogelijk afname van het net)",
+      "self_consumption": "eigen verbruik (zo weinig mogelijk overschot naar het net)",
+      "co2": "zo weinig mogelijk CO₂ (intensiteit van het net)",
+      "custom": "een compromis (vrije gewichten)"
+    },
+    "hints": {
+      "cost": "Laagste rekening: afnemen op de goedkoopste uren, het overschot gebruiken in plaats van het goedkoop te verkopen.",
+      "autonomy": "Zo weinig mogelijk energie van het net, ook als die iets duurder is.",
+      "self_consumption": "Zoveel mogelijk van de productie ter plaatse gebruiken, ook als u daarvoor in piekuren afneemt.",
+      "co2": "Afnemen op de uren waarop de stroom van het net het minst CO₂ uitstoot.",
+      "custom": "Compromis tussen de criteria, volgens de gewichten hieronder."
+    },
+    "weights": "Gewichten van de criteria",
+    "weights_hint": "In euro-equivalent: een afgenomen of teruggeleverde kWh telt tegen de gemiddelde prijs van de dag. Alleen de verhouding tussen de gewichten telt.",
+    "weight": {
+      "cost": "Kosten",
+      "grid_import": "Afname van het net",
+      "grid_export": "Overschot naar het net",
+      "co2": "CO₂",
+      "battery": "Ontzien van de batterij"
+    },
+    "co2_entity": "Koolstofintensiteit van het net (Home Assistant-sensor, g/kWh)",
+    "co2_hint": "Haar prognose als ze die geeft, anders haar huidige waarde voor de hele dag: het plan is dan dat van de autonomie, met CO₂ als kengetal."
+  },
+  "runtime": {
+    "title": "Looptijd van {device}",
+    "measured": "Geen stand ingesteld: één stand, met het vermogen gemeten over de laatste 30 dagen.",
+    "speed": "Stand {number}",
+    "speed_name": "Naam",
+    "power": "Vermogen",
+    "remove_speed": "Verwijderen",
+    "add_speed": "Een stand toevoegen",
+    "minimum_hours": "Minimum aantal uren per dag:",
+    "skip_days": "Dagen die mogen wegvallen (als de batterij haar volledige lading nodig heeft):",
+    "seasons": {
+      "summer": "zomer",
+      "mid_season": "tussenseizoen",
+      "winter": "winter"
+    },
+    "max_starts": "Hoogstens starts per dag",
+    "reset": "Terug naar de standaardinstellingen",
+    "minimum_hours_hint": "Het plan zet elke dag minstens deze uren in, wanneer de zon het meest levert."
+  },
+  "need": {
+    "title": "Energiebehoefte van {device}",
+    "unset": "Geen behoefte ingesteld: het apparaat wordt behandeld als een te starten cyclus.",
+    "energy": "Te leveren energie",
+    "max_power": "Maximaal vermogen",
+    "earliest": "Niet vóór",
+    "deadline": "Vóór",
+    "steps": "In stappen (alles of niets bij maximaal vermogen)",
+    "daily": "Elke dag (anders wanneer een taak erom vraagt)",
+    "reset": "De behoefte verwijderen",
+    "hint": "De energie wordt vóór het opgegeven uur geleverd, zonder het maximale vermogen (dat van het stopcontact of de lader) te overschrijden."
+  },
+  "panels": {
+    "title": "Panelen van {device}",
+    "unset": "Niet beschreven. Zonder prognose in het energiedashboard van Home Assistant beschrijft u uw panelen: de toepassing berekent een prognose met Open-Meteo.",
+    "describe": "De panelen beschrijven",
+    "help": "Gebruikt voor een prognose berekend met Open-Meteo, alleen als het energiedashboard van Home Assistant er geen geeft. Eén veld per oriëntatie (een dakkant, een pergola…).",
+    "array": "Veld {number}",
+    "kwp": "Piekvermogen",
+    "tilt": "Hellingshoek",
+    "orientation": "Oriëntatie",
+    "orientations": {
+      "north": "Noord",
+      "north_east": "Noordoost",
+      "east": "Oost",
+      "south_east": "Zuidoost",
+      "south": "Zuid",
+      "south_west": "Zuidwest",
+      "west": "West",
+      "north_west": "Noordwest"
+    },
+    "degrees": "{degrees}°",
+    "azimuth": "Veld {number}: oriëntatie in graden (180 = zuid)",
+    "remove": "Verwijderen",
+    "add": "Een veld toevoegen",
+    "inverter": "Maximaal vermogen van de omvormer",
+    "no_inverter": "geen",
+    "efficiency": "Rendement (kabels, omvormer, vervuiling)",
+    "clear": "De panelen niet meer beschrijven",
+    "arrays_hint": "Eén veld per oriëntatie: het piekvermogen (kWp) staat op de factuur of het contract van de installateur."
+  },
+  "cycle": {
+    "title": "Cyclusregels van {device}",
+    "after": "Begint na het einde van",
+    "no_after": "geen apparaat",
+    "delay": "Mag worden uitgesteld met",
+    "days": "dagen hoogstens (leeg: 2)",
+    "recurrence": "Herhaalt zich",
+    "modes": {
+      "none": "volgens de Home Assistant-taken",
+      "daily": "elke N dagen",
+      "weekly": "op bepaalde dagen van de week",
+      "custom": "geavanceerde regel (iCalendar-formaat)"
+    },
+    "every": "elke",
+    "days_since": "dagen sinds de laatste cyclus",
+    "weekdays": {
+      "MO": "ma",
+      "TU": "di",
+      "WE": "wo",
+      "TH": "do",
+      "FR": "vr",
+      "SA": "za",
+      "SU": "zo"
+    },
+    "rule": "Regel",
+    "replaces_tasks": "De terugkerende Home Assistant-taken van dit apparaat worden dan genegeerd; een gemiste keer blijft verschuldigd tot de volgende cyclus.",
+    "after_hint": "Bijvoorbeeld de droger na de wasmachine: hij wordt ingepland na het einde van de andere, op dezelfde dag."
+  },
+  "constraint": {
+    "title": "Tijdsbeperkingen van {device}",
+    "none": "Geen beperking: de planning kiest het tijdstip vrij.",
+    "item": "Beperking {number}",
+    "kinds": {
+      "forbidden": "Verboden",
+      "not_before": "Niet vóór",
+      "finish_before": "Klaar vóór"
+    },
+    "from": "van",
+    "to": "tot",
+    "soft": "Zacht (indien mogelijk nageleefd; anders meldt het plan het)",
+    "remove": "Verwijderen",
+    "add": {
+      "forbidden": "Een verboden periode toevoegen",
+      "not_before": "„Niet vóór” toevoegen",
+      "finish_before": "„Klaar vóór” toevoegen"
+    }
+  },
+  "behavior": {
+    "CycleBehavior": "Te starten cyclus",
+    "EnergyByDeadlineBehavior": "Energiebehoefte vóór een deadline",
+    "RuntimeBehavior": "In te plannen looptijd",
+    "StorageBehavior": "Opslag",
+    "UncontrolledBehavior": "Alleen gevolgd verbruik",
+    "ProductionBehavior": "Productie",
+    "GridBehavior": "Uitwisseling met het net"
+  },
+  "diagnostic": {
+    "title": "Diagnose",
+    "loading": "Toestand van de toepassing wordt gelezen…",
+    "error": "De toestand kon niet worden gelezen.",
+    "generated_at": "Toestand om {time}.",
+    "refresh": "Vernieuwen",
+    "ingestion": "Realtime registratie",
+    "ingestion_summary": "{entities} entiteiten gevolgd; {received} metingen ontvangen, {written} geschreven, {pending} wachtend; laatste schrijfactie {age}.",
+    "entity": "Entiteit",
+    "role": "Rol",
+    "last_value": "Laatste waarde",
+    "age": "Ontvangen",
+    "today": "Metingen vandaag",
+    "aggregation": "Aggregaten",
+    "period": {
+      "PT15M": "Kwartieren",
+      "PT1H": "Uren"
+    },
+    "complete_until": "berekend tot {time}",
+    "history_since": "geschiedenis vanaf {time}",
+    "history_imported": "Geschiedenis van Home Assistant geïmporteerd voor {count} entiteiten; {written} aggregaten geschreven sinds de start.",
+    "storage": "Opslag en onderhoud",
+    "disk_raw": "Ruwe metingen",
+    "disk_graph": "Hoofdopslag (model, aggregaten)",
+    "disk_database": "Instellingendatabase",
+    "memory": "Geheugen van de toepassing",
+    "disk_written": "Naar schijf geschreven",
+    "disk_written_summary": "{total} sinds de start ({since}), dus {per_day} GB per dag",
+    "megabytes": "{value} MB",
+    "next_maintenance": "Volgend onderhoud",
+    "last_maintenance": "Laatste onderhoud",
+    "last_maintenance_summary": "{time}: {days} ruwe dag(en) verwijderd, {duration} s",
+    "planning": "Planberekeningen",
+    "next_plan": "Volgende berekening",
+    "plan_disabled": "automatische berekeningen uitgeschakeld",
+    "last_plan": "Laatste geslaagde berekening",
+    "last_plan_summary": "{time}: {today} s voor vandaag, {total} s in totaal",
+    "configuration": "Configuratie van het energiedashboard",
+    "issue_of": "{device}: {issue}",
+    "technical": "Technisch detail"
+  },
+  "problems": {
+    "title": "Wat er niet klopt",
+    "loading": "Problemen worden gezocht…",
+    "error": "De problemen kunnen niet worden gelezen.",
+    "none": "Niets te melden: alles werkt.",
+    "refresh": "Opnieuw controleren",
+    "open": "Openen",
+    "doc": "Documentatie",
+    "ticket": "Het probleem melden",
+    "severity": {
+      "blocking": "Blokkeert het plan",
+      "degraded": "Minder nauwkeurig plan",
+      "watch": "In de gaten houden"
+    },
+    "component": {
+      "ingestion": "het lezen van de metingen",
+      "aggregation": "het berekenen van de gemiddelden",
+      "maintenance": "het opruimen van oude metingen",
+      "planning": "het berekenen van het plan"
+    },
+    "code": {
+      "ha_not_configured": "De toepassing kent het adres van Home Assistant niet.",
+      "ha_disconnected": "Home Assistant reageert niet. {error}",
+      "no_energy_dashboard": "Het energiedashboard van Home Assistant is niet ingesteld.",
+      "home_not_saved": "Uw huis is nog niet opgeslagen.",
+      "no_forecast": "Geen zonneprognose: geen plan mogelijk.",
+      "sensor_missing": "{device}: de sensor „{role}” ({entity}) bestaat niet meer in Home Assistant.",
+      "sensor_unavailable": "{device}: de sensor „{role}” ({entity}) is niet beschikbaar in Home Assistant.",
+      "sensor_silent": "{device}: de sensor „{role}” ({entity}) heeft al een dag niets verstuurd.",
+      "internal_error": "Fout bij {component}: {error}",
+      "writes_behind": "{count} metingen wachten om opgeslagen te worden: het apparaat kan het niet meer bijhouden.",
+      "no_statistics": "Geen geschiedenis in Home Assistant voor: {devices}.",
+      "plan_stale": "Al meer dan 2 uur kon er geen plan worden berekend.",
+      "energy_dashboard_issue": "{device}: {issue}"
+    },
+    "action": {
+      "ha_not_configured": "Add-on: start hem opnieuw. Docker: geef het adres van Home Assistant en een langlevend toegangstoken op.",
+      "ha_disconnected": "Controleer of Home Assistant draait en of het toegangstoken nog geldig is.",
+      "no_energy_dashboard": "Geef daar uw zonneproductie en uw meter op (Instellingen › Dashboards › Energie).",
+      "home_not_saved": "Controleer de voorgestelde apparaten en sla uw huis op.",
+      "no_forecast": "Voeg een prognose toe aan het energiedashboard van Home Assistant of beschrijf uw panelen.",
+      "sensor_missing": "Vervang hem in Mijn huis, of lees Home Assistant opnieuw als het apparaat hernoemd is.",
+      "sensor_unavailable": "Controleer het apparaat of de integratie ervan in Home Assistant.",
+      "sensor_silent": "Controleer of het apparaat aanstaat en verbonden is.",
+      "internal_error": "Als de fout blijft, voeg dan het rapport hieronder toe aan een foutmelding.",
+      "writes_behind": "Als het aanhoudt, voeg dan het rapport toe aan een foutmelding.",
+      "no_statistics": "Deze sensoren hebben geen statistieken in Home Assistant: het plan gaat niet uit van hun geschiedenis.",
+      "plan_stale": "Bekijk de andere problemen, of start een berekening vanaf de startpagina.",
+      "configuration_issue": "Corrigeer de instelling in Mijn huis."
+    }
+  },
+  "report": {
+    "title": "Rapport voor een foutmelding",
+    "intro": "Een bestand dat de toestand van de toepassing beschrijft, zonder apparaatnamen, sensorkenmerken of locatie: om bij een foutmelding te voegen.",
+    "prepare": "Een rapport voorbereiden",
+    "error": "Het rapport kon niet worden voorbereid.",
+    "preview": "Dit is alles wat het rapport bevat:",
+    "preview_label": "Voorbeeld van het rapport",
+    "download": "Downloaden"
+  },
+  "forecast_comparison": {
+    "title": "Open-Meteo-prognose en gemeten productie",
+    "loading": "Bezig met vergelijken…",
+    "error": "De vergelijking kan niet worden gelezen.",
+    "intro": "Prognose berekend uit uw panelen voor de laatste 7 dagen, vergeleken met wat uw panelen produceerden. Een grote afwijking: controleer de beschrijving van de panelen, of installeer een prognose-integratie in het energiedashboard van Home Assistant.",
+    "day": "Dag",
+    "forecast": "Prognose",
+    "measured": "Gemeten",
+    "ratio": "Over deze dagen is de gemeten productie {percent} % van de prognose.",
+    "no_ratio": "Nog niet genoeg gemeten productie om te vergelijken.",
+    "reason": {
+      "no_panels": "Geen panelen beschreven: geen Open-Meteo-prognose om te vergelijken.",
+      "no_position": "Positie van Home Assistant onbekend (of Home Assistant niet verbonden): geen Open-Meteo-prognose.",
+      "unavailable": "Open-Meteo reageert op dit moment niet."
+    }
+  },
+  "exchange": {
+    "title": "Het huis bewaren of delen",
+    "intro": "Het model van het huis en de instellingen passen in één bestand: om ze te bewaren, te delen of uit te gaan van een voorbeeld. Een import vervangt het huidige huis en de instellingen.",
+    "export": "Exporteren (JSON)",
+    "export_turtle": "Exporteren voor de ontologie (Turtle)",
+    "import": "Een bestand importeren",
+    "valid": "Geldig bestand: u kunt het toepassen.",
+    "unknown_entities": "In Home Assistant ontbrekende sensoren (daarna te vervangen): {entities}.",
+    "apply": "De import toepassen",
+    "applied": "Import toegepast: het huis en de instellingen zijn vervangen.",
+    "unreadable": "Dit bestand is geen leesbare JSON.",
+    "failed": "De import is mislukt."
+  },
+  "advanced": {
+    "title": "Geavanceerde instellingen",
+    "modified": "Geavanceerde instellingen (gewijzigd)"
+  },
+  "glossary": {
+    "title": "Woordenlijst",
+    "terms": {
+      "grid_import": {
+        "term": "Afname van het net",
+        "definition": "De stroom die het huis van het net neemt als zon en batterij niet volstaan."
+      },
+      "surplus": {
+        "term": "Overschot naar het net",
+        "definition": "De zonneproductie die het huis niet gebruikt en die de batterij niet kan opslaan."
+      },
+      "self_consumption": {
+        "term": "Eigen verbruik",
+        "definition": "Het deel van uw zonneproductie dat ter plaatse wordt gebruikt."
+      },
+      "autonomy": {
+        "term": "Autonomie",
+        "definition": "Het deel van uw verbruik dat gedekt wordt zonder afname van het net."
+      },
+      "off_peak": {
+        "term": "Daluren",
+        "definition": "De uren waarop uw contract minder per kWh rekent."
+      },
+      "kwh": {
+        "term": "kWh en kW",
+        "definition": "De kWh meet energie (wat u betaalt); de kW meet vermogen (energie per uur)."
+      },
+      "kwp": {
+        "term": "kWp (kilowattpiek)",
+        "definition": "Het vermogen van zonnepanelen in volle zon, opgegeven door de installateur."
+      },
+      "cycle": {
+        "term": "Cyclus",
+        "definition": "Een programma van een apparaat (wassen, drogen…) dat na het starten een tijd draait."
+      },
+      "floor": {
+        "term": "Ondergrens van de batterij",
+        "definition": "Het laadniveau waar de batterij niet onder gaat."
+      },
+      "energy_dashboard": {
+        "term": "Energiedashboard",
+        "definition": "De pagina van Home Assistant waar uw panelen, uw meter en uw gemeten apparaten zijn opgegeven."
+      },
+      "sensor": {
+        "term": "Sensor",
+        "definition": "Een meting van Home Assistant (energie, vermogen, laadniveau) die aan een apparaat gekoppeld is."
+      }
+    }
+  },
+  "assistant": {
+    "title": "Spraakassistent",
+    "intro": "Stel de Assist van Home Assistant vragen over uw energie, met het taalmodel dat u al hebt (Ollama op uw netwerk, of een onlinedienst). Het plan wordt nog steeds door de toepassing berekend; de assistent leest en verklaart het.",
+    "copy": "Kopiëren",
+    "copied": "Gekopieerd",
+    "copy_address": "Adres van de MCP-server kopiëren",
+    "copy_prompt": "Prompt kopiëren",
+    "step1": {
+      "title": "1. De toepassing koppelen in Home Assistant",
+      "help": "In Home Assistant: Instellingen › Apparaten en diensten › Integratie toevoegen › „Model Context Protocol”, met dit adres:",
+      "addon": "Adres op het interne netwerk van Home Assistant: alleen Home Assistant kan het bereiken.",
+      "standalone": "Adres van de toepassing op uw lokale netwerk: Home Assistant moet het kunnen bereiken. De toepassing heeft geen eigen aanmelding: stel haar niet open op internet."
+    },
+    "step2": {
+      "title": "2. De gespreksagent kiezen",
+      "agent": "Voeg een gespreksagent toe: de integratie Ollama (model op uw netwerk) of die van een onlinedienst.",
+      "model": "Kies een model dat tools kan aanroepen, met een contextgrootte van minstens 8.192 tokens.",
+      "api": "Kies in de opties van de agent de MCP-server van de toepassing als LLM-API en neem deze agent in de Assist."
+    },
+    "step3": {
+      "title": "3. De aanbevolen prompt plakken",
+      "help": "Plak deze tekst in de instructies van de gespreksagent: hij zegt welke tool te gebruiken en dat hij niets mag verzinnen."
+    },
+    "prompt_label": "Aanbevolen prompt",
+    "prompt_error": "De aanbevolen prompt kan niet worden gelezen.",
+    "check": {
+      "title": "De server controleren",
+      "run": "Controleren",
+      "checking": "Bezig met controleren…",
+      "ok": "De MCP-server antwoordt: {tools} tools.",
+      "failed": "De MCP-server antwoordt niet ({detail})."
+    },
+    "examples": {
+      "title": "Voorbeeldvragen",
+      "why": "„Waarom is de wasmachine om 11 uur gepland?”",
+      "yesterday": "„Hoeveel hebben de panelen gisteren geproduceerd?”",
+      "battery": "„Is de batterij vandaag vol?”",
+      "request": "„Laat de vaatwasser op het beste moment draaien vóór morgenavond.”"
+    },
+    "security": "De assistent leest het plan, de metingen en de prognose; uit zichzelf doet hij maar één ding: een verzoek indienen, nadat hij het met u heeft bevestigd. Hij start geen berekening en wijzigt geen instelling.",
+    "setup": "Assist stap voor stap koppelen",
+    "state": {
+      "ready": "Klaar voor de Assist van Home Assistant",
+      "down": "De assistent-server reageert niet",
+      "checking": "Assistent wordt gecontroleerd…"
+    }
+  },
+  "ui": {
+    "title": "Onderdelen van de interface",
+    "intro": "Elk basisonderdeel in elk thema, om ze in één oogopslag te controleren.",
+    "close": "Sluiten",
+    "card_eyebrow": "Op dit moment",
+    "card_title": "De zon dekt 82% van het huis",
+    "card_body": "De panelen produceren meer dan het huis verbruikt.",
+    "sun": "Panelen 1,8 kW",
+    "battery": "Batterij 64%",
+    "primary": "Is gestart",
+    "secondary": "Herinner me",
+    "quiet": "Details bekijken",
+    "row": "Meldingen",
+    "row_help": "2 actief, op je telefoon",
+    "switch": "Animaties",
+    "switch_help": "Beperkt als je apparaat erom vraagt",
+    "sheet_title": "Apparaat aanvragen",
+    "sheet_body": "Kies het apparaat en het uiterste tijdstip."
+  },
+  "today": {
+    "loading": "Dagplan wordt gelezen…",
+    "no_plan": "Nog geen plan voor vandaag: het komt met de volgende berekening.",
+    "error": "Het dagplan kan niet worden gelezen.",
+    "now": {
+      "eyebrow": "Op dit moment",
+      "no_flows": "Het dagplan",
+      "panels": "Panelen",
+      "home": "Huis",
+      "battery": "Batterij",
+      "grid": "Net",
+      "charging": "laadt {kw}",
+      "discharging": "levert {kw}",
+      "buying": "afname {kw}",
+      "selling": "overschot {kw}",
+      "idle": "niets",
+      "measured": "Gemiddelde van {start} tot {end}"
+    },
+    "next": {
+      "eyebrow": "Volgende actie",
+      "title": "Start {device}",
+      "slot": "Tussen {start} en {end}.",
+      "launched": "Is gestart",
+      "remind": "Herinner me",
+      "reminder_set": "Herinnering gepland",
+      "remind_failed": "De herinnering kon niet worden opgeslagen.",
+      "none": "Niets te starten tot vanavond",
+      "none_help": "Het plan meldt het volgende apparaat dat moet starten."
+    },
+    "battery": {
+      "eyebrow": "Batterij",
+      "title": "{pct}% op dit moment",
+      "max": "Hoogste stand rond {time}: {pct}%.",
+      "end": "Vanavond om middernacht: {pct}%."
+    },
+    "sun": {
+      "eyebrow": "Zon",
+      "title": "{kwh} kWh verwacht vandaag",
+      "done": "{kwh} kWh al opgewekt.",
+      "none": "Nog geen opwekking gemeten."
+    }
+  },
+  "home_summary": {
+    "title": "Mijn huis in het kort",
+    "loading": "Huis wordt gelezen…",
+    "error": "Het huis kan niet worden gelezen.",
+    "details": "Gedetailleerde instellingen",
+    "priority": "Mijn prioriteit",
+    "presets": {
+      "cost": "Zo weinig mogelijk betalen",
+      "autonomy": "Zo weinig mogelijk van het net kopen",
+      "self_consumption": "Mijn eigen zon gebruiken",
+      "co2": "Zo weinig mogelijk CO₂",
+      "custom": "Mijn eigen instelling"
+    },
+    "contract": {
+      "title": "Mijn contract",
+      "single": "Eén prijs, {price} €/kWh",
+      "off_peak": "Daltarief {ranges}",
+      "colors": "Prijs volgens de kleur van de dag",
+      "dynamic": "Prijs die elk uur verandert"
+    },
+    "panels": {
+      "title": "Panelen",
+      "fields": "{count} veld(en), {directions} · {kwp} kWp",
+      "undescribed": "Panelen nog niet beschreven"
+    },
+    "direction": {
+      "north": "noord",
+      "north_east": "noordoost",
+      "east": "oost",
+      "south_east": "zuidoost",
+      "south": "zuid",
+      "south_west": "zuidwest",
+      "west": "west",
+      "north_west": "noordwest"
+    },
+    "battery": {
+      "title": "Batterij",
+      "floor": "{kwh} kWh, nooit onder {pct}%",
+      "full_charge": "minstens elke {days} dagen vol"
+    },
+    "placed": "Op het beste moment ingepland",
+    "followed": "Alleen gevolgd",
+    "followed_more": "{names} en {count} andere",
+    "followed_help": "Gemeten, niet ingepland door de berekening",
+    "and": "{items} en {last}",
+    "on_request": "wanneer een Home Assistant-taak of een verzoek erom vraagt",
+    "after": "altijd na {device}",
+    "daily": "elke dag",
+    "every_days": "elke {count} dagen",
+    "weekly": "elke week",
+    "weekly_on": "elke week, op {days}",
+    "every_weeks": "elke {count} weken, {days}",
+    "recurring": "volgens een schema",
+    "energy_daily": "{kwh} kWh vóór {deadline}, elke dag",
+    "energy_requested": "{kwh} kWh vóór {deadline}, wanneer een Home Assistant-taak of een verzoek erom vraagt",
+    "season": {
+      "summer": "{hours} u in de zomer",
+      "mid_season": "{hours} u in het tussenseizoen",
+      "winter": "{hours} u in de winter"
+    },
+    "season_none": {
+      "summer": "niets in de zomer",
+      "mid_season": "niets in het tussenseizoen",
+      "winter": "niets in de winter"
+    },
+    "constraint": {
+      "forbidden": "nooit tussen {start} en {end}",
+      "not_before": "niet vóór {start}",
+      "finish_before": "klaar vóór {end}"
+    },
+    "add": "Apparaat toevoegen"
+  },
+  "settings_home": {
+    "notifications_none": "Geen actief",
+    "notifications_on": "{count} actief, op {device}",
+    "notifications_count": "{count} actief",
+    "assistant": "Spraakassistent",
+    "assistant_help": "De Assist van Home Assistant antwoordt over je energie",
+    "requests_open": "{count} open",
+    "requests_none": "Geen open",
+    "scheduler_on": "Elk uur, op minuut {minute}",
+    "scheduler_off": "Uit: handmatig berekenen"
+  },
+  "onboarding": {
+    "progress": "Stap {step} van {count}",
+    "back": "Terug",
+    "skip": "Overslaan",
+    "continue": "Klopt, verder",
+    "failed": "Opslaan mislukt, probeer het opnieuw.",
+    "all_steps": "Alle stappen bekijken",
+    "connection": {
+      "title": "Koppel de app aan Home Assistant",
+      "help": "De app leest je meters en apparaten in Home Assistant. Eén keer koppelen, de rest doet zij.",
+      "open": "Verbinden met Home Assistant"
+    },
+    "home": {
+      "title": "Dit hebben we bij je gevonden",
+      "help": "Gelezen uit het Energie-dashboard van Home Assistant. Vink uit wat niet meegeteld moet worden.",
+      "missing": "Ontbreekt er een apparaat?",
+      "kinds": {
+        "SolarInstallation": "Opwekking gevolgd",
+        "GridConnection": "Afname en overschot gevolgd",
+        "Battery": "Op het beste moment geladen",
+        "battery_capacity": "{kwh} kWh, op het beste moment geladen",
+        "WaterHeater": "Op het beste moment verwarmd",
+        "WashingMachine": "Op het beste moment gestart",
+        "Dryer": "Op het beste moment gestart",
+        "Dishwasher": "Op het beste moment gestart",
+        "PoolPump": "Filtering op het beste moment",
+        "OtherLoad": "Alleen gevolgd"
+      }
+    },
+    "tariff": {
+      "title": "Wat is je stroomcontract?",
+      "help": "Kies het sjabloon dat het dichtst in de buurt komt: tarief, batterij en apparaten in één keer ingesteld. Alles blijft daarna aanpasbaar.",
+      "loading": "Sjablonen worden gelezen…",
+      "apply": "Dit sjabloon gebruiken",
+      "later": "Ik stel het later in",
+      "entities": "Dit sjabloon heeft entiteiten van Home Assistant nodig (kleur van de dag, prijs): stel het in bij"
+    },
+    "first_plan": {
+      "title": "Alles klaar",
+      "help": "De app berekent je eerste plan: wanneer je apparaten starten, wanneer de batterij laden. Daarna rekent ze vanzelf opnieuw.",
+      "run": "Mijn eerste plan berekenen"
+    }
+  },
+  "state": {
+    "retry": "Opnieuw proberen",
+    "error_hint": "Controleer of de app en Home Assistant draaien en bereikbaar zijn, en probeer het dan opnieuw."
+  }
+}

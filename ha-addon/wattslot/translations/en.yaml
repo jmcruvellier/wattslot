@@ -1,0 +1,13 @@
+configuration:
+  log_level:
+    name: Log level
+    description: Detail of the add-on log. "debug" is only useful to investigate a problem.
+  raw_days:
+    name: Raw readings (days)
+    description: >-
+      How long detailed readings are kept, from 1 to 30 days. They are not included in backups.
+  quarter_days:
+    name: Quarter-hours (days)
+    description: >-
+      How long the quarter-hour history is kept, from 31 to 3660 days. Appliance cycles are
+      learnt from the last 30 days.

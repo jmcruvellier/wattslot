@@ -1,0 +1,53 @@
+{
+  "_meta": {
+    "status": "to_review"
+  },
+  "avertissement": {
+    "profil_indisponible_du": "{equipement} toca hoy, pero su perfil no está disponible (status={status}): no se puede dimensionar una franja, colóquelo a mano.",
+    "heures_insuffisantes_du": "{equipement} toca hoy, pero no queda tiempo suficiente para un ciclo completo ({duree_min} a partir de las {debut_min}): no colocado. Si ya ha funcionado, marque la tarea en Home Assistant.",
+    "profil_indisponible_attente": "{equipement} está pendiente, pero su perfil no está disponible (status={status}): no colocado.",
+    "dependance_non_placee": "{equipement} debe ir después de {depend_de}, que no se ha podido colocar hoy: no colocado.",
+    "heures_insuffisantes_attente": "{equipement} está pendiente, pero no queda tiempo suficiente para un ciclo completo ({duree_min} a partir de las {debut_min}): no colocado.",
+    "contrainte_impossible": "{equipement}: ninguna franja respeta sus restricciones horarias ({contraintes}): no colocado o duración mínima no cumplida.",
+    "contrainte_non_respectee": "{equipement}: restricción flexible no respetada ({contraintes}) para mantener el resto del plan.",
+    "prevision_open_meteo": "Previsión solar calculada por Open-Meteo a partir de sus paneles: menos precisa que una integración de previsión en el panel de energía de Home Assistant.",
+    "prevision_horaire_indisponible": "Previsión solar horaria no disponible o incompleta: se usa la forma media de los últimos {jours} días, menos fiel al tiempo de hoy.",
+    "panneau_sans_historique": "Panel {panneau}: historial insuficiente ({jours} días), se usa la forma media de la terraza.",
+    "soc_depart_approximatif": "Nivel de carga inicial aproximado para la previsión de mañana: se usa el nivel real actual, a falta de un plan del día utilizable en caché. Se afinará en los próximos cálculos del día.",
+    "regle_recurrence_non_geree": "{equipement}: regla de repetición no compatible, solo se tiene en cuenta su fecha límite en las previsiones de los días siguientes.",
+    "horizon_interrompu": "Previsiones detenidas antes del {jour}: {raison}.",
+    "tache_reportee": "{equipement} aplazado al {jour}: {pct_jour} % cubierto por el sol, frente al {pct_auj} % hoy.",
+    "tache_reportee_sans_creneau": "{equipement} aplazado al {jour}: ya no queda tiempo hoy para un ciclo completo."
+  },
+  "date": {
+    "format": "{jour}, {num} de {mois} de {annee}",
+    "jour_0": "lunes",
+    "jour_1": "martes",
+    "jour_2": "miércoles",
+    "jour_3": "jueves",
+    "jour_4": "viernes",
+    "jour_5": "sábado",
+    "jour_6": "domingo",
+    "mois_1": "enero",
+    "mois_2": "febrero",
+    "mois_3": "marzo",
+    "mois_4": "abril",
+    "mois_5": "mayo",
+    "mois_6": "junio",
+    "mois_7": "julio",
+    "mois_8": "agosto",
+    "mois_9": "septiembre",
+    "mois_10": "octubre",
+    "mois_11": "noviembre",
+    "mois_12": "diciembre",
+    "format_sans_annee": "{jour}, {num} de {mois}"
+  },
+  "equipement": {
+    "Batterie": "Batería",
+    "Chauffe-eau": "Termo eléctrico",
+    "Lave-linge": "Lavadora",
+    "Sèche-linge": "Secadora",
+    "Lave-vaisselle": "Lavavajillas",
+    "Piscine (filtration)": "Piscina"
+  }
+}

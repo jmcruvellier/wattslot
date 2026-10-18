@@ -1,0 +1,15 @@
+{
+"noeud_affectation.equipements_lances:00e192b8a54401c51311468c": {"__set__": ["lavevaisselle"]},
+"noeud_affectation.equipements_lances:0c8b4e25a690993039cf13ce": {"__set__": []},
+"noeud_affectation.equipements_lances:27ac99a4c6a1d97a159b69e3": {"__set__": []},
+"noeud_affectation.equipements_lances:2eee6da561b460366d27ef6b": {"__set__": []},
+"noeud_affectation.equipements_lances:361a48ab8317da9baee1134a": {"__set__": ["chauffeeau", "lavelinge"]},
+"noeud_affectation.equipements_lances:4591546bbd7278103dce84df": {"__set__": []},
+"noeud_affectation.equipements_lances:89fe9e530139e5d3d661680f": {"__set__": ["lavevaisselle"]},
+"noeud_affectation.equipements_lances:9b3767dae0a98186b93b1535": {"__set__": []},
+"noeud_affectation.equipements_lances:adb128ea563685e5ede6eb62": {"__set__": []},
+"noeud_affectation.equipements_lances:afd041cabdcc9e33f8cfe2c1": {"__set__": ["lavevaisselle"]},
+"noeud_affectation.equipements_lances:c0c49cbfb67ead369615d12b": {"__set__": []},
+"noeud_affectation.equipements_lances:d8b46fe41e14676a6cfc40df": {"__set__": []},
+"noeud_affectation.equipements_lances:fa68d31e8575a4de2fc757b7": {"__set__": []}
+}

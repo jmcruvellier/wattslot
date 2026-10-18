@@ -1,0 +1,63 @@
+# Formes SHACL de la bibliothèque « Énergie domestique » (phase 2 bis, lot 2b.4).
+#
+# Ce qu'un modèle de maison doit respecter : équipements avec une clé et un type, capteurs avec
+# un rôle et une entité de HA. Contrôlées dans l'atelier VocBench et en CI (pyshacl, dépendance
+# de développement) ; l'application applique les mêmes règles en Python, sans rdflib.
+#
+# IRI relatives, résolues avec BASE (wattslot/ontology/__init__.py).
+
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<ontology/library/home-energy/shapes> a owl:Ontology ;
+    rdfs:label "Formes de la bibliothèque « Énergie domestique »"@fr, "Home energy library shapes"@en ;
+    owl:imports <ontology/library/home-energy> .
+
+<#issueCode> a owl:AnnotationProperty ;
+    rdfs:label "code de l'anomalie (catalogues de l'application)"@fr, "issue code"@en .
+
+# Les équipements de la maison (et non la classe : avec l'inférence RDFS, toute IRI citée comme
+# équipement par la configuration en serait une).
+<#DeviceShape> a sh:NodeShape ;
+    sh:targetObjectsOf <#hasDevice> ;
+    # Un type d'équipement de la bibliothèque (sh:class seul ne dirait rien : la portée de
+    # hasDevice fait de toute valeur un Device par inférence).
+    <#issueCode> "device_type" ;
+    sh:or (
+        [ sh:class <#SolarInstallation> ]
+        [ sh:class <#GridConnection> ]
+        [ sh:class <#Battery> ]
+        [ sh:class <#WaterHeater> ]
+        [ sh:class <#WashingMachine> ]
+        [ sh:class <#Dryer> ]
+        [ sh:class <#Dishwasher> ]
+        [ sh:class <#PoolPump> ]
+        [ sh:class <#OtherLoad> ]
+    ) ;
+    sh:property [
+        sh:path <#key> ; sh:datatype xsd:string ; sh:minCount 1 ; sh:maxCount 1 ;
+        <#issueCode> "device_key"
+    ] ;
+    sh:property [ sh:path <#hasSensor> ; sh:nodeKind sh:IRI ; <#issueCode> "sensor_type" ] .
+
+<#BatteryShape> a sh:NodeShape ;
+    sh:targetClass <#Battery> ;
+    sh:property [
+        sh:path <#capacityKwh> ; sh:datatype xsd:double ; sh:maxCount 1 ; sh:minInclusive 0 ;
+        <#issueCode> "battery_capacity"
+    ] .
+
+<#SensorShape> a sh:NodeShape ;
+    sh:targetClass <#Sensor> ;
+    sh:property [
+        sh:path <#role> ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:in ( <#EnergyProduced> <#PowerProduced> <#EnergyImported> <#EnergyExported> <#EnergyCharged> <#EnergyDischarged> <#StateOfCharge> <#EnergyConsumed> <#PowerConsumed> ) ;
+        <#issueCode> "sensor_role"
+    ] ;
+    sh:property [
+        sh:path <#haEntity> ; sh:datatype xsd:string ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:pattern "^[a-z_]+\\.[a-z0-9_]+$" ;
+        <#issueCode> "sensor_entity"
+    ] .

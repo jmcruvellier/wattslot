@@ -1,0 +1,90 @@
+# Environnement de développement de la v2 : un Home Assistant de test qui rejoue des journées,
+# et l'application en mode autonome connectée à ce HA. Aucune saisie : l'amorçage crée le
+# compte, le jeton, la liste de tâches et le tableau Énergie.
+#
+#   docker compose -f dev/docker-compose.yml up -d --build
+#   docker compose -f dev/docker-compose.yml run --rm simulator --speed 60
+#
+# Tout repartir de zéro : docker compose -f dev/docker-compose.yml down -v
+# Détail : dev/README.md.
+name: wattslot-dev
+
+x-tools: &tools
+  build: ../app
+  image: wattslot:dev
+  working_dir: /dev-tools
+  volumes:
+    - ./tools:/dev-tools/tools:ro
+    - ./donnees:/dev-tools/donnees:ro
+    - shared:/shared
+  environment:
+    HA_URL: http://homeassistant:8123
+    HA_TOKEN_FILE: /shared/ha_token
+
+services:
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:2026.9.4
+    volumes:
+      - ha-config:/config
+      - ./homeassistant/configuration.yaml:/config/configuration.yaml:ro
+    ports:
+      - "8123:8123"
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8123/manifest.json', timeout=4)"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+
+  bootstrap:
+    <<: *tools
+    entrypoint: ["python", "-m", "tools.bootstrap"]
+    environment:
+      HA_URL: http://homeassistant:8123
+      HA_TOKEN_FILE: /shared/ha_token
+      DEV_HA_USERNAME: ${DEV_HA_USERNAME:-dev}
+      DEV_HA_PASSWORD: ${DEV_HA_PASSWORD:-dev-password}
+    depends_on:
+      homeassistant:
+        condition: service_healthy
+
+  app:
+    image: wattslot:dev
+    pull_policy: never  # image construite par les services d'outils (même Dockerfile)
+    environment:
+      HA_URL: http://homeassistant:8123
+      HA_TOKEN_FILE: /shared/ha_token
+    volumes:
+      - shared:/shared:ro
+      - app-data:/data
+    ports:
+      - "8100:8100"
+    depends_on:
+      bootstrap:
+        condition: service_completed_successfully
+
+  simulator:
+    <<: *tools
+    # Module dans le point d'entrée : les options de « docker compose run simulator … »
+    # s'ajoutent à la suite au lieu de remplacer la commande.
+    entrypoint: ["python", "-m", "tools.simulator"]
+    profiles: [simulation]
+    depends_on:
+      bootstrap:
+        condition: service_completed_successfully
+
+  check:
+    <<: *tools
+    entrypoint: ["python", "-m", "tools.check"]
+    profiles: [check]
+    environment:
+      HA_URL: http://homeassistant:8123
+      HA_TOKEN_FILE: /shared/ha_token
+      APP_URL: http://app:8100
+    depends_on:
+      bootstrap:
+        condition: service_completed_successfully
+
+volumes:
+  ha-config:
+  app-data:
+  shared:

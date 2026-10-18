@@ -1,0 +1,18 @@
+name: Translation
+description: Review or fix a translation (German, Dutch, Spanish, Italian…).
+labels: ["translation"]
+body:
+  - type: dropdown
+    id: language
+    attributes:
+      label: Language
+      options: [German, Dutch, Spanish, Italian, English, French, Other]
+    validations:
+      required: true
+  - type: textarea
+    id: changes
+    attributes:
+      label: Texts to change
+      description: The screen, the current text and your proposal. A pull request on `app/frontend/src/i18n/catalogs/` is welcome too.
+    validations:
+      required: true

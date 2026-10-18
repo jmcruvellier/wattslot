@@ -1,0 +1,291 @@
+# Schéma de l'application (phase 3).
+#
+# Ce que l'application enregistre dans le graphe de la configuration : réglages des équipements,
+# tarif, batterie, durées à placer, besoins d'énergie, contraintes, récurrences, objectif. Il
+# suit le code qui le lit et l'écrit, PR par PR ; la bibliothèque du domaine est à part, dans
+# library/home-energy.ttl (décision 1).
+#
+# Les IRI <#…> sont relatives, résolues avec BASE (wattslot/ontology/__init__.py).
+
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix sosa: <http://www.w3.org/ns/sosa/> .
+@prefix saref: <https://saref.etsi.org/core/> .
+
+<ontology/schema> a owl:Ontology ;
+    rdfs:label "Schéma de WattSlot"@fr, "WattSlot schema"@en ;
+    owl:versionInfo "0.1" ;
+    owl:imports <ontology/library/home-energy> .
+
+# --- Configuration de la maison (phase 3, lot 3.1) --------------------------------------------
+#
+# Ce que l'utilisateur règle sur ses équipements, dans un graphe à part du modèle de la maison :
+# le comportement de chacun pour le calcul (types génériques),
+# son niveau d'automatisation et sa prise en compte par le calcul.
+
+<#Configuration> a owl:Class ;
+    rdfs:label "Configuration de la maison"@fr, "Home configuration"@en .
+<#DeviceSettings> a owl:Class ;
+    rdfs:label "Réglages d'un équipement"@fr, "Device settings"@en .
+
+<#Behavior> a owl:Class ;
+    rdfs:label "Comportement d'un équipement"@fr, "Device behavior"@en .
+<#CycleBehavior> a <#Behavior> ;
+    rdfs:label "Cycle à démarrer"@fr, "Cycle to start"@en ;
+    rdfs:comment "Durée et forme mesurées, démarrage à choisir, interruption impossible."@fr .
+<#EnergyByDeadlineBehavior> a <#Behavior> ;
+    rdfs:label "Besoin d'énergie avant une échéance"@fr, "Energy needed by a deadline"@en .
+<#RuntimeBehavior> a <#Behavior> ;
+    rdfs:label "Durée de fonctionnement à placer"@fr, "Runtime to schedule"@en .
+<#StorageBehavior> a <#Behavior> ;
+    rdfs:label "Stockage"@fr, "Storage"@en .
+<#UncontrolledBehavior> a <#Behavior> ;
+    rdfs:label "Consommation seulement suivie"@fr, "Tracked consumption only"@en .
+<#ProductionBehavior> a <#Behavior> ;
+    rdfs:label "Production"@fr, "Production"@en .
+<#GridBehavior> a <#Behavior> ;
+    rdfs:label "Échanges avec le réseau"@fr, "Grid exchange"@en .
+
+<#AutomationLevel> a owl:Class ;
+    rdfs:label "Niveau d'automatisation"@fr, "Automation level"@en .
+<#InformAutomation> a <#AutomationLevel> ; rdfs:label "Information"@fr, "Inform"@en .
+<#RecommendAutomation> a <#AutomationLevel> ; rdfs:label "Recommandation"@fr, "Recommend"@en .
+<#ConfirmAutomation> a <#AutomationLevel> ;
+    rdfs:label "Demande de confirmation"@fr, "Ask for confirmation"@en .
+<#ControlAutomation> a <#AutomationLevel> ;
+    rdfs:label "Pilotage automatique"@fr, "Automatic control"@en .
+
+<#hasConfiguration> a owl:ObjectProperty ; rdfs:domain <#Home> ; rdfs:range <#Configuration> ;
+    rdfs:label "a pour configuration"@fr, "has configuration"@en .
+<#configurationVersion> a owl:DatatypeProperty ; rdfs:domain <#Configuration> ;
+    rdfs:range xsd:integer ;
+    rdfs:label "version du format de la configuration"@fr, "configuration format version"@en .
+<#hasDeviceSettings> a owl:ObjectProperty ;
+    rdfs:domain <#Configuration> ; rdfs:range <#DeviceSettings> ;
+    rdfs:label "a pour réglages d'équipement"@fr, "has device settings"@en .
+<#forDevice> a owl:ObjectProperty ; rdfs:domain <#DeviceSettings> ; rdfs:range <#Device> ;
+    rdfs:label "réglages de l'équipement"@fr, "settings of device"@en .
+<#behavior> a owl:ObjectProperty ; rdfs:domain <#DeviceSettings> ; rdfs:range <#Behavior> ;
+    rdfs:label "comportement"@fr, "behavior"@en .
+<#automation> a owl:ObjectProperty ; rdfs:domain <#DeviceSettings> ;
+    rdfs:range <#AutomationLevel> ;
+    rdfs:label "niveau d'automatisation"@fr, "automation level"@en .
+<#planned> a owl:DatatypeProperty ; rdfs:domain <#DeviceSettings> ; rdfs:range xsd:boolean ;
+    rdfs:label "pris en compte par le calcul"@fr, "planned by the engine"@en .
+
+# --- Tarif (phase 3, lot 3.2) -------------------------------------------------------------------
+
+<#Tariff> a owl:Class ; rdfs:label "Tarif de l'électricité"@fr, "Electricity tariff"@en .
+<#SingleTariff> a owl:Class ; rdfs:subClassOf <#Tariff> ;
+    rdfs:label "Prix unique"@fr, "Single price"@en .
+<#TimeOfUseTariff> a owl:Class ; rdfs:subClassOf <#Tariff> ;
+    rdfs:label "Prix par plages horaires"@fr, "Time-of-use prices"@en .
+<#PriceBand> a owl:Class ;
+    rdfs:label "Plage horaire de prix"@fr, "Price band"@en .
+
+<#hasTariff> a owl:ObjectProperty ; rdfs:domain <#Configuration> ; rdfs:range <#Tariff> ;
+    rdfs:label "a pour tarif"@fr, "has tariff"@en .
+<#basePriceEurKwh> a owl:DatatypeProperty ; rdfs:domain <#Tariff> ; rdfs:range xsd:double ;
+    rdfs:label "prix de base (€/kWh)"@fr, "base price (€/kWh)"@en .
+<#exportPriceEurKwh> a owl:DatatypeProperty ; rdfs:domain <#Tariff> ; rdfs:range xsd:double ;
+    rdfs:label "prix de revente (€/kWh)"@fr, "export price (€/kWh)"@en .
+<#hasPriceBand> a owl:ObjectProperty ; rdfs:domain <#Tariff> ; rdfs:range <#PriceBand> ;
+    rdfs:label "a pour plage horaire"@fr, "has price band"@en .
+<#order> a owl:DatatypeProperty ; rdfs:range xsd:integer ;
+    rdfs:label "rang"@fr, "order"@en .
+<#startHour> a owl:DatatypeProperty ; rdfs:domain <#PriceBand> ; rdfs:range xsd:integer ;
+    rdfs:label "heure de début"@fr, "start hour"@en .
+<#endHour> a owl:DatatypeProperty ; rdfs:domain <#PriceBand> ; rdfs:range xsd:integer ;
+    rdfs:label "heure de fin (exclue)"@fr, "end hour (excluded)"@en .
+<#priceEurKwh> a owl:DatatypeProperty ; rdfs:domain <#PriceBand> ; rdfs:range xsd:double ;
+    rdfs:label "prix (€/kWh)"@fr, "price (€/kWh)"@en .
+<#weekday> a owl:DatatypeProperty ; rdfs:domain <#PriceBand> ; rdfs:range xsd:integer ;
+    rdfs:label "jour de la semaine (0 lundi)"@fr, "weekday (0 Monday)"@en .
+<#month> a owl:DatatypeProperty ; rdfs:domain <#PriceBand> ; rdfs:range xsd:integer ;
+    rdfs:label "mois"@fr, "month"@en .
+
+<#DayColorTariff> a owl:Class ; rdfs:subClassOf <#Tariff> ;
+    rdfs:label "Prix par couleur de jour"@fr, "Day-color prices"@en .
+<#DynamicTariff> a owl:Class ; rdfs:subClassOf <#Tariff> ;
+    rdfs:label "Prix dynamique"@fr, "Dynamic prices"@en .
+<#ColorPrices> a owl:Class ;
+    rdfs:label "Prix d'une couleur de jour"@fr, "Prices of a day color"@en .
+<#hasColorPrices> a owl:ObjectProperty ; rdfs:domain <#Tariff> ; rdfs:range <#ColorPrices> ;
+    rdfs:label "a pour prix d'une couleur"@fr, "has color prices"@en .
+<#color> a owl:DatatypeProperty ; rdfs:domain <#ColorPrices> ; rdfs:range xsd:string ;
+    rdfs:label "couleur"@fr, "color"@en .
+<#colorEntity> a owl:DatatypeProperty ; rdfs:domain <#Tariff> ; rdfs:range xsd:string ;
+    rdfs:label "entité de la couleur du jour"@fr, "day color entity"@en .
+<#colorTomorrowEntity> a owl:DatatypeProperty ; rdfs:domain <#Tariff> ; rdfs:range xsd:string ;
+    rdfs:label "entité de la couleur du lendemain"@fr, "tomorrow color entity"@en .
+<#colorDayStartHour> a owl:DatatypeProperty ; rdfs:domain <#Tariff> ; rdfs:range xsd:integer ;
+    rdfs:label "heure de début du jour de couleur"@fr, "color day start hour"@en .
+<#priceEntity> a owl:DatatypeProperty ; rdfs:domain <#Tariff> ; rdfs:range xsd:string ;
+    rdfs:label "entité de prix"@fr, "price entity"@en .
+<#exportPriceEntity> a owl:DatatypeProperty ; rdfs:domain <#Tariff> ; rdfs:range xsd:string ;
+    rdfs:label "entité de prix de revente"@fr, "export price entity"@en .
+<#priceFactor> a owl:DatatypeProperty ; rdfs:domain <#Tariff> ; rdfs:range xsd:double ;
+    rdfs:label "facteur d'unité des prix lus"@fr, "price unit factor"@en .
+
+# --- Batterie (phase 3, lot 3.3) ------------------------------------------------------------------
+
+<#BatterySettings> a owl:Class ;
+    rdfs:label "Réglages de la batterie"@fr, "Battery settings"@en .
+<#hasBatterySettings> a owl:ObjectProperty ; rdfs:domain <#Configuration> ;
+    rdfs:range <#BatterySettings> ;
+    rdfs:label "a pour réglages de batterie"@fr, "has battery settings"@en .
+<#chargeMaxW> a owl:DatatypeProperty ; rdfs:domain <#BatterySettings> ; rdfs:range xsd:double ;
+    rdfs:label "puissance de charge maximale (W)"@fr, "maximum charge power (W)"@en .
+<#dischargeMaxW> a owl:DatatypeProperty ; rdfs:domain <#BatterySettings> ; rdfs:range xsd:double ;
+    rdfs:label "puissance de décharge maximale (W)"@fr, "maximum discharge power (W)"@en .
+<#floorPercent> a owl:DatatypeProperty ; rdfs:domain <#BatterySettings> ; rdfs:range xsd:double ;
+    rdfs:label "plancher de décharge (%)"@fr, "discharge floor (%)"@en .
+<#activeFromHour> a owl:DatatypeProperty ; rdfs:domain <#BatterySettings> ;
+    rdfs:range xsd:integer ;
+    rdfs:label "début de la plage active"@fr, "active range start"@en .
+<#activeToHour> a owl:DatatypeProperty ; rdfs:domain <#BatterySettings> ; rdfs:range xsd:integer ;
+    rdfs:label "fin de la plage active (exclue)"@fr, "active range end (excluded)"@en .
+<#fullChargeEveryDays> a owl:DatatypeProperty ; rdfs:domain <#BatterySettings> ;
+    rdfs:range xsd:integer ;
+    rdfs:label "charge complète au moins tous les (jours)"@fr, "full charge at least every (days)"@en .
+
+# --- Durée de fonctionnement à placer (phase 3, lot 3.4) ------------------------------------------
+
+<#RuntimeSettings> a owl:Class ;
+    rdfs:label "Réglages d'une durée de fonctionnement"@fr, "Runtime settings"@en .
+<#hasRuntimeSettings> a owl:ObjectProperty ; rdfs:domain <#DeviceSettings> ;
+    rdfs:range <#RuntimeSettings> ;
+    rdfs:label "a pour réglages de durée de fonctionnement"@fr, "has runtime settings"@en .
+<#maxStarts> a owl:DatatypeProperty ; rdfs:domain <#RuntimeSettings> ; rdfs:range xsd:integer ;
+    rdfs:label "démarrages par jour au plus"@fr, "maximum starts per day"@en .
+<#hasSpeed> a owl:ObjectProperty ; rdfs:domain <#RuntimeSettings> ;
+    rdfs:label "a pour vitesse"@fr, "has speed"@en .
+<#speedName> a owl:DatatypeProperty ; rdfs:range xsd:string ;
+    rdfs:label "nom de la vitesse"@fr, "speed name"@en .
+<#powerKw> a owl:DatatypeProperty ; rdfs:range xsd:double ;
+    rdfs:label "puissance (kW)"@fr, "power (kW)"@en .
+<#minimumHours> a owl:ObjectProperty ; rdfs:domain <#RuntimeSettings> ;
+    rdfs:label "heures minimales par saison"@fr, "minimum hours per season"@en .
+<#skipDays> a owl:ObjectProperty ; rdfs:domain <#RuntimeSettings> ;
+    rdfs:label "jours sautables par saison"@fr, "days that can be skipped per season"@en .
+<#season> a owl:DatatypeProperty ; rdfs:range xsd:string ;
+    rdfs:label "saison"@fr, "season"@en .
+<#value> a owl:DatatypeProperty ; rdfs:range xsd:integer ;
+    rdfs:label "valeur"@fr, "value"@en .
+
+# --- Panneaux d'une installation solaire (phase 4, lot 4.4) ---------------------------------------
+
+<#SolarPanels> a owl:Class ;
+    rdfs:label "Panneaux solaires"@fr, "Solar panels"@en .
+<#hasSolarPanels> a owl:ObjectProperty ; rdfs:domain <#DeviceSettings> ; rdfs:range <#SolarPanels> ;
+    rdfs:label "a pour panneaux"@fr, "has panels"@en .
+<#panelsEfficiency> a owl:DatatypeProperty ; rdfs:domain <#SolarPanels> ; rdfs:range xsd:double ;
+    rdfs:label "rendement global (hors température)"@fr, "overall efficiency (excluding temperature)"@en .
+<#inverterKw> a owl:DatatypeProperty ; rdfs:domain <#SolarPanels> ; rdfs:range xsd:double ;
+    rdfs:label "puissance de l'onduleur (kW)"@fr, "inverter power (kW)"@en .
+<#PanelArray> a owl:Class ;
+    rdfs:label "Champ de panneaux"@fr, "Panel array"@en .
+<#hasPanelArray> a owl:ObjectProperty ; rdfs:domain <#SolarPanels> ; rdfs:range <#PanelArray> ;
+    rdfs:label "a pour champ"@fr, "has array"@en .
+<#arrayIndex> a owl:DatatypeProperty ; rdfs:domain <#PanelArray> ; rdfs:range xsd:integer ;
+    rdfs:label "rang du champ"@fr, "array index"@en .
+<#peakPowerKw> a owl:DatatypeProperty ; rdfs:domain <#PanelArray> ; rdfs:range xsd:double ;
+    rdfs:label "puissance crête (kWc)"@fr, "peak power (kWp)"@en .
+<#tiltDegrees> a owl:DatatypeProperty ; rdfs:domain <#PanelArray> ; rdfs:range xsd:double ;
+    rdfs:label "inclinaison (°)"@fr, "tilt (°)"@en .
+<#azimuthDegrees> a owl:DatatypeProperty ; rdfs:domain <#PanelArray> ; rdfs:range xsd:double ;
+    rdfs:label "orientation (°, 180 = sud)"@fr, "azimuth (°, 180 = south)"@en .
+
+# --- Besoin d'énergie avant une échéance (phase 3, lot 3.4) ---------------------------------------
+
+<#EnergyNeed> a owl:Class ;
+    rdfs:label "Besoin d'énergie avant une échéance"@fr, "Energy need by a deadline"@en .
+<#hasEnergyNeed> a owl:ObjectProperty ; rdfs:domain <#DeviceSettings> ; rdfs:range <#EnergyNeed> ;
+    rdfs:label "a pour besoin d'énergie"@fr, "has energy need"@en .
+<#needEnergyKwh> a owl:DatatypeProperty ; rdfs:domain <#EnergyNeed> ; rdfs:range xsd:double ;
+    rdfs:label "énergie à fournir (kWh)"@fr, "energy to deliver (kWh)"@en .
+<#earliestHour> a owl:DatatypeProperty ; rdfs:domain <#EnergyNeed> ; rdfs:range xsd:integer ;
+    rdfs:label "heure au plus tôt"@fr, "earliest hour"@en .
+<#deadlineHour> a owl:DatatypeProperty ; rdfs:domain <#EnergyNeed> ; rdfs:range xsd:integer ;
+    rdfs:label "échéance (heure, exclue)"@fr, "deadline (hour, excluded)"@en .
+<#maxKw> a owl:DatatypeProperty ; rdfs:domain <#EnergyNeed> ; rdfs:range xsd:double ;
+    rdfs:label "puissance maximale (kW)"@fr, "maximum power (kW)"@en .
+<#steps> a owl:DatatypeProperty ; rdfs:domain <#EnergyNeed> ; rdfs:range xsd:boolean ;
+    rdfs:label "par paliers (tout ou rien)"@fr, "in steps (all or nothing)"@en .
+<#daily> a owl:DatatypeProperty ; rdfs:domain <#EnergyNeed> ; rdfs:range xsd:boolean ;
+    rdfs:label "chaque jour"@fr, "daily"@en .
+
+# --- Contraintes horaires (phase 3, lot 3.5) ------------------------------------------------------
+
+<#TimeConstraint> a owl:Class ;
+    rdfs:label "Contrainte horaire"@fr, "Time constraint"@en .
+<#hasTimeConstraint> a owl:ObjectProperty ; rdfs:domain <#DeviceSettings> ;
+    rdfs:range <#TimeConstraint> ;
+    rdfs:label "a pour contrainte horaire"@fr, "has time constraint"@en .
+<#constraintKind> a owl:DatatypeProperty ; rdfs:domain <#TimeConstraint> ; rdfs:range xsd:string ;
+    rdfs:label "sorte (forbidden, not_before, finish_before)"@fr,
+        "kind (forbidden, not_before, finish_before)"@en .
+<#constraintStartHour> a owl:DatatypeProperty ; rdfs:domain <#TimeConstraint> ;
+    rdfs:range xsd:integer ;
+    rdfs:label "heure de début (plage interdite, pas avant)"@fr,
+        "start hour (forbidden range, not before)"@en .
+<#constraintEndHour> a owl:DatatypeProperty ; rdfs:domain <#TimeConstraint> ;
+    rdfs:range xsd:integer ;
+    rdfs:label "heure de fin, exclue (plage interdite, terminé avant)"@fr,
+        "end hour, excluded (forbidden range, finish before)"@en .
+<#hard> a owl:DatatypeProperty ; rdfs:domain <#TimeConstraint> ; rdfs:range xsd:boolean ;
+    rdfs:label "dure (jamais violée)"@fr, "hard (never violated)"@en .
+
+# --- Contraintes entre tâches, plancher par plage, report (phase 3, lot 3.5) -----------------------
+
+<#startsAfterKey> a owl:DatatypeProperty ; rdfs:domain <#DeviceSettings> ; rdfs:range xsd:string ;
+    rdfs:label "démarre après la fin du cycle de (clé de l'équipement)"@fr,
+        "starts after the cycle of (device key)"@en .
+<#maxDelayDays> a owl:DatatypeProperty ; rdfs:domain <#DeviceSettings> ; rdfs:range xsd:integer ;
+    rdfs:label "tolérance de report (jours)"@fr, "postponement tolerance (days)"@en .
+<#FloorRange> a owl:Class ;
+    rdfs:label "Plage de plancher de la batterie"@fr, "Battery floor range"@en .
+<#hasFloorRange> a owl:ObjectProperty ; rdfs:domain <#BatterySettings> ; rdfs:range <#FloorRange> ;
+    rdfs:label "a pour plage de plancher"@fr, "has floor range"@en .
+<#floorStartHour> a owl:DatatypeProperty ; rdfs:domain <#FloorRange> ; rdfs:range xsd:integer ;
+    rdfs:label "début de la plage"@fr, "range start"@en .
+<#floorEndHour> a owl:DatatypeProperty ; rdfs:domain <#FloorRange> ; rdfs:range xsd:integer ;
+    rdfs:label "fin de la plage (exclue)"@fr, "range end (excluded)"@en .
+<#floorRangePercent> a owl:DatatypeProperty ; rdfs:domain <#FloorRange> ; rdfs:range xsd:double ;
+    rdfs:label "plancher sur la plage (%)"@fr, "floor over the range (%)"@en .
+
+# --- Récurrence d'un cycle (phase 3, lot 3.5) ------------------------------------------------------
+
+<#Recurrence> a owl:Class ;
+    rdfs:label "Récurrence d'un cycle"@fr, "Cycle recurrence"@en .
+<#hasRecurrence> a owl:ObjectProperty ; rdfs:domain <#DeviceSettings> ; rdfs:range <#Recurrence> ;
+    rdfs:label "a pour récurrence"@fr, "has recurrence"@en .
+<#recurrenceRule> a owl:DatatypeProperty ; rdfs:domain <#Recurrence> ; rdfs:range xsd:string ;
+    rdfs:label "règle (RFC 5545)"@fr, "rule (RFC 5545)"@en .
+<#recurrenceStart> a owl:DatatypeProperty ; rdfs:domain <#Recurrence> ; rdfs:range xsd:date ;
+    rdfs:label "semaine de départ"@fr, "starting week"@en .
+
+# --- Objectif du calcul (phase 3, lot 3.6) ---------------------------------------------------------
+
+<#Objective> a owl:Class ;
+    rdfs:label "Objectif du calcul"@fr, "Planning objective"@en .
+<#hasObjective> a owl:ObjectProperty ; rdfs:domain <#Configuration> ; rdfs:range <#Objective> ;
+    rdfs:label "a pour objectif"@fr, "has objective"@en .
+<#objectivePreset> a owl:DatatypeProperty ; rdfs:domain <#Objective> ; rdfs:range xsd:string ;
+    rdfs:label "préréglage (cost, autonomy, self_consumption, custom)"@fr,
+        "preset (cost, autonomy, self_consumption, custom)"@en .
+<#costWeight> a owl:DatatypeProperty ; rdfs:domain <#Objective> ; rdfs:range xsd:double ;
+    rdfs:label "poids du coût"@fr, "cost weight"@en .
+<#importWeight> a owl:DatatypeProperty ; rdfs:domain <#Objective> ; rdfs:range xsd:double ;
+    rdfs:label "poids du soutirage (équivalent euros)"@fr, "import weight (euro equivalent)"@en .
+<#exportWeight> a owl:DatatypeProperty ; rdfs:domain <#Objective> ; rdfs:range xsd:double ;
+    rdfs:label "poids de l'injection (équivalent euros)"@fr, "export weight (euro equivalent)"@en .
+<#co2Entity> a owl:DatatypeProperty ; rdfs:domain <#Objective> ; rdfs:range xsd:string ;
+    rdfs:label "entité d'intensité carbone du réseau (g/kWh)"@fr,
+        "grid carbon intensity entity (g/kWh)"@en .
+<#co2Weight> a owl:DatatypeProperty ; rdfs:domain <#Objective> ; rdfs:range xsd:double ;
+    rdfs:label "poids du CO₂ (équivalent euros)"@fr, "CO₂ weight (euro equivalent)"@en .
+<#batteryWeight> a owl:DatatypeProperty ; rdfs:domain <#Objective> ; rdfs:range xsd:double ;
+    rdfs:label "poids du ménagement de la batterie (équivalent euros)"@fr,
+        "battery care weight (euro equivalent)"@en .

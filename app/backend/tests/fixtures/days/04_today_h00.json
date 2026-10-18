@@ -1,0 +1,977 @@
+{
+ "format": 1,
+ "entree": {
+  "date_cible": {
+   "__date__": "2025-10-14"
+  },
+  "heure_execution": 0,
+  "soc_override_pct": 53.5,
+  "historique_recent": {
+   "derniere_charge_complete": "2025-10-13",
+   "jours_sans_filtration": 0,
+   "nb_jours": 14
+  },
+  "production_reelle_cumul_kwh": 0.0,
+  "heure_releve": 0.9833333333333333,
+  "equipements_geles": [],
+  "piscine_passee": {},
+  "surplus_horaire": {
+   "__dict__": [
+    [
+     9,
+     0.054336215452862435
+    ],
+    [
+     10,
+     0.23165103159844763
+    ],
+    [
+     11,
+     0.4151415818491622
+    ],
+    [
+     12,
+     0.46367270175321806
+    ],
+    [
+     13,
+     0.4559642259301066
+    ],
+    [
+     14,
+     0.3726644378204916
+    ],
+    [
+     15,
+     0.12728829318459928
+    ],
+    [
+     16,
+     0.041979838005271664
+    ]
+   ]
+  },
+  "net_horaire_signe": {
+   "__dict__": [
+    [
+     0,
+     -0.35356049848717885
+    ],
+    [
+     1,
+     -0.3283961779086707
+    ],
+    [
+     2,
+     -0.332977133542421
+    ],
+    [
+     3,
+     -0.33906567891568945
+    ],
+    [
+     4,
+     -0.3354969860662443
+    ],
+    [
+     5,
+     -0.3312053172358805
+    ],
+    [
+     6,
+     -0.35479282526414657
+    ],
+    [
+     7,
+     -0.4192286238877832
+    ],
+    [
+     8,
+     -0.2792979136621127
+    ],
+    [
+     9,
+     0.054336215452862435
+    ],
+    [
+     10,
+     0.23165103159844763
+    ],
+    [
+     11,
+     0.4151415818491622
+    ],
+    [
+     12,
+     0.46367270175321806
+    ],
+    [
+     13,
+     0.4559642259301066
+    ],
+    [
+     14,
+     0.3726644378204916
+    ],
+    [
+     15,
+     0.12728829318459928
+    ],
+    [
+     16,
+     0.041979838005271664
+    ],
+    [
+     17,
+     -0.13693044024846499
+    ],
+    [
+     18,
+     -0.39028032581289873
+    ],
+    [
+     19,
+     -0.6022022443729894
+    ],
+    [
+     20,
+     -0.6598134244036166
+    ],
+    [
+     21,
+     -0.530233661685095
+    ],
+    [
+     22,
+     -0.46758616099268996
+    ],
+    [
+     23,
+     -0.42395555196120777
+    ]
+   ]
+  },
+  "production_solaire_horaire": {
+   "__dict__": [
+    [
+     0,
+     0.0
+    ],
+    [
+     1,
+     0.0
+    ],
+    [
+     2,
+     0.0
+    ],
+    [
+     3,
+     0.0
+    ],
+    [
+     4,
+     0.0
+    ],
+    [
+     5,
+     0.0
+    ],
+    [
+     6,
+     0.0
+    ],
+    [
+     7,
+     0.0
+    ],
+    [
+     8,
+     0.1492
+    ],
+    [
+     9,
+     0.3811
+    ],
+    [
+     10,
+     0.5442
+    ],
+    [
+     11,
+     0.7325
+    ],
+    [
+     12,
+     0.7973
+    ],
+    [
+     13,
+     0.6961
+    ],
+    [
+     14,
+     0.5953
+    ],
+    [
+     15,
+     0.4497
+    ],
+    [
+     16,
+     0.28
+    ],
+    [
+     17,
+     0.171
+    ],
+    [
+     18,
+     0.0384
+    ],
+    [
+     19,
+     0.0
+    ],
+    [
+     20,
+     0.0
+    ],
+    [
+     21,
+     0.0
+    ],
+    [
+     22,
+     0.0
+    ],
+    [
+     23,
+     0.0
+    ]
+   ]
+  },
+  "consommation_baseline_horaire": {
+   "__dict__": [
+    [
+     0,
+     0.35356049848717885
+    ],
+    [
+     1,
+     0.3283961779086707
+    ],
+    [
+     2,
+     0.332977133542421
+    ],
+    [
+     3,
+     0.33906567891568945
+    ],
+    [
+     4,
+     0.3354969860662443
+    ],
+    [
+     5,
+     0.3312053172358805
+    ],
+    [
+     6,
+     0.35479282526414657
+    ],
+    [
+     7,
+     0.4192286238877832
+    ],
+    [
+     8,
+     0.4284979136621127
+    ],
+    [
+     9,
+     0.32676378454713756
+    ],
+    [
+     10,
+     0.3125489684015524
+    ],
+    [
+     11,
+     0.3173584181508378
+    ],
+    [
+     12,
+     0.33362729824678194
+    ],
+    [
+     13,
+     0.24013577406989345
+    ],
+    [
+     14,
+     0.22263556217950847
+    ],
+    [
+     15,
+     0.3224117068154007
+    ],
+    [
+     16,
+     0.23802016199472836
+    ],
+    [
+     17,
+     0.307930440248465
+    ],
+    [
+     18,
+     0.4286803258128987
+    ],
+    [
+     19,
+     0.6022022443729894
+    ],
+    [
+     20,
+     0.6598134244036166
+    ],
+    [
+     21,
+     0.530233661685095
+    ],
+    [
+     22,
+     0.46758616099268996
+    ],
+    [
+     23,
+     0.42395555196120777
+    ]
+   ]
+  },
+  "avertissements_prevision": [],
+  "taches_placees": [
+   {
+    "summary": "Lave-vaisselle",
+    "uid": "78e51061-7311-48a3-82ce-6f447ed4d57b",
+    "status": "needs_action",
+    "due": "2025-10-14",
+    "description": {
+     "type": "a_la_demande",
+     "besoin_detecte": "2025-09-26"
+    }
+   }
+  ],
+  "taches_en_attente": [],
+  "profils_equipements": {
+   "Lave-vaisselle": {
+    "status": "ok",
+    "appliance": "lave_vaisselle",
+    "period_days": 14,
+    "instant_power_w": {
+     "latest": 0.0,
+     "latest_time": "2025-10-13 15:30:22",
+     "avg": 289.2,
+     "max": 2165.8,
+     "min": 0.0
+    },
+    "energy_total_kwh": {
+     "latest": 171.257,
+     "latest_time": "2025-10-13 15:30:22"
+    },
+    "daily_consumption_kwh": {
+     "total_over_period": 3.863,
+     "avg": 0.297,
+     "max": 0.922,
+     "min": 0.0,
+     "days_with_data": 13,
+     "days_requested": 14,
+     "details": [
+      {
+       "date": "2025-10-01",
+       "kwh": 0.922
+      },
+      {
+       "date": "2025-10-02",
+       "kwh": 0.01
+      },
+      {
+       "date": "2025-10-03",
+       "kwh": 0.647
+      },
+      {
+       "date": "2025-10-04",
+       "kwh": 0.01
+      },
+      {
+       "date": "2025-10-05",
+       "kwh": 0.01
+      },
+      {
+       "date": "2025-10-06",
+       "kwh": 0.7
+      },
+      {
+       "date": "2025-10-07",
+       "kwh": 0.01
+      },
+      {
+       "date": "2025-10-08",
+       "kwh": 0.01
+      },
+      {
+       "date": "2025-10-09",
+       "kwh": 0.773
+      },
+      {
+       "date": "2025-10-10",
+       "kwh": 0.01
+      },
+      {
+       "date": "2025-10-11",
+       "kwh": 0.751
+      },
+      {
+       "date": "2025-10-12",
+       "kwh": 0.0
+      },
+      {
+       "date": "2025-10-13",
+       "kwh": 0.01
+      },
+      {
+       "date": "2025-10-14",
+       "kwh": null
+      }
+     ]
+    },
+    "daily_consumption_warning": "Données journalières disponibles pour 13/14 jours seulement — 'total_over_period', les moyennes et les max/min ne portent donc que sur ces 13 jours (voir 'details' pour le détail jour par jour)."
+   }
+  },
+  "profils_cycles": {
+   "Lave-vaisselle": {
+    "status": "ok",
+    "energie_kwh": 0.68,
+    "duree_min": 117,
+    "nb_cycles": 7,
+    "cycles": [
+     {
+      "debut_iso": "2025-09-26T11:20:36.283000+02:00",
+      "fin_iso": "2025-09-26T13:17:31.991000+02:00",
+      "energie_kwh": 0.68,
+      "forme": [
+       0.010760200914611509,
+       0.008253438992143555,
+       0.5479177409805758,
+       0.013305722853359639,
+       0.016461880236265884,
+       0.016566675948096278,
+       0.01150930763838864,
+       0.3752250324365587
+      ],
+      "source_energie": "compteur",
+      "duree_min": 117
+     },
+     {
+      "debut_iso": "2025-09-28T14:03:30.411000+02:00",
+      "fin_iso": "2025-09-28T16:02:00.006000+02:00",
+      "energie_kwh": 0.68,
+      "forme": [
+       0.009142479846317273,
+       0.08247256464317539,
+       0.4578691137932428,
+       0.01314617954603613,
+       0.012195133165170693,
+       0.013158923548571908,
+       0.00784703479897051,
+       0.4041685706585153
+      ],
+      "source_energie": "compteur",
+      "duree_min": 118
+     },
+     {
+      "debut_iso": "2025-10-01T12:05:08.417000+02:00",
+      "fin_iso": "2025-10-01T13:00:19.636000+02:00",
+      "energie_kwh": 0.91,
+      "forme": [
+       0.33257725170176333,
+       0.01399922889502604,
+       0.41173518374657353,
+       0.24168833565663708
+      ],
+      "source_energie": "compteur",
+      "duree_min": 55
+     },
+     {
+      "debut_iso": "2025-10-03T10:57:14.074000+02:00",
+      "fin_iso": "2025-10-03T12:54:18.239000+02:00",
+      "energie_kwh": 0.66,
+      "forme": [
+       0.011034325466515612,
+       0.007834344809022595,
+       0.4370937723807319,
+       0.010976039006737059,
+       0.011276049705513944,
+       0.01122773897654921,
+       0.009721917507962202,
+       0.5008358121469675
+      ],
+      "source_energie": "compteur",
+      "duree_min": 117
+     },
+     {
+      "debut_iso": "2025-10-06T11:57:02.735000+02:00",
+      "fin_iso": "2025-10-06T13:54:33.403000+02:00",
+      "energie_kwh": 0.7,
+      "forme": [
+       0.01532544130815476,
+       0.020473106685796147,
+       0.572744042041295,
+       0.01618018347432447,
+       0.014029638679591883,
+       0.01649505906973918,
+       0.01148120914730954,
+       0.333271319593789
+      ],
+      "source_energie": "compteur",
+      "duree_min": 118
+     },
+     {
+      "debut_iso": "2025-10-09T10:05:03.011000+02:00",
+      "fin_iso": "2025-10-09T12:04:54.754000+02:00",
+      "energie_kwh": 0.75,
+      "forme": [
+       0.011018293110494813,
+       0.04858478395634995,
+       0.40902011539722327,
+       0.009609701654183605,
+       0.010813050439854774,
+       0.010550656397046929,
+       0.01024498314343308,
+       0.4901584159014136
+      ],
+      "source_energie": "compteur",
+      "duree_min": 120
+     },
+     {
+      "debut_iso": "2025-10-11T11:02:50.024000+02:00",
+      "fin_iso": "2025-10-11T13:00:02.683000+02:00",
+      "energie_kwh": 0.67,
+      "forme": [
+       0.011190087572734691,
+       0.01196681497991039,
+       0.3965979981586971,
+       0.011109834148537086,
+       0.011157713479957629,
+       0.010672029331507814,
+       0.010617248443789043,
+       0.5366882738848663
+      ],
+      "source_energie": "compteur",
+      "duree_min": 117
+     }
+    ],
+    "forme_quart_heure": [
+     0.0573,
+     0.0277,
+     0.4619,
+     0.0451,
+     0.0108,
+     0.0112,
+     0.0088,
+     0.3772
+    ]
+   }
+  },
+  "cycles_reels": {
+   "segments": {
+    "Chauffe-eau": [],
+    "Lave-linge": [],
+    "Sèche-linge": [],
+    "Lave-vaisselle": [],
+    "Piscine (filtration)": []
+   },
+   "heure_maj_iso": "2025-10-14T00:59:01.885156+02:00"
+  },
+  "soc_percent": 53.5,
+  "stored_energy_kwh": 2.84085,
+  "capacite_batterie_kwh": 5.31,
+  "puissance_charge_max_w": 2350.0,
+  "puissance_decharge_max_w": 2350.0,
+  "rendement_round_trip_percent": 75.7,
+  "rendements_batterie": {
+   "status": "ok",
+   "rendement_charge_percent": 89.3,
+   "rendement_decharge_percent": 92.8,
+   "energie_chargee_kwh": 41.65,
+   "energie_dechargee_kwh": 44.49,
+   "nb_heures_charge": 88,
+   "nb_heures_decharge": 122,
+   "nb_jours": 21.8,
+   "rendement_charge_brut_percent": 89.3,
+   "rendement_decharge_brut_percent": 92.8
+  },
+  "schedules_batterie_actifs": [
+   {
+    "index": 1,
+    "enabled": true,
+    "enabled_time": "2025-10-13 15:29:52",
+    "mode": -1,
+    "mode_time": "2025-10-13 15:29:52",
+    "start": {
+     "valeur_brute": 600,
+     "heure": 6,
+     "minute": 0
+    },
+    "start_time": "2025-10-13 15:29:52",
+    "end": {
+     "valeur_brute": 2200,
+     "heure": 22,
+     "minute": 0
+    },
+    "end_time": "2025-10-13 15:29:52"
+   }
+  ]
+ },
+ "sortie": {
+  "planning": [
+   {
+    "equipement": "Lave-vaisselle",
+    "heure_debut": 12,
+    "heure_fin": 14,
+    "debut_min": 720,
+    "fin_min": 837,
+    "energie_kwh": 0.68,
+    "duree_cycle_min": 117,
+    "forme_quart_heure": [
+     0.0573,
+     0.0277,
+     0.4619,
+     0.0451,
+     0.0108,
+     0.0112,
+     0.0088,
+     0.3772
+    ],
+    "priorite": 3,
+    "justification": "Placé sur le pic de production solaire disponible."
+   },
+   {
+    "equipement": "Batterie",
+    "mouvements": [
+     {
+      "heure": 6,
+      "action": "decharge",
+      "energie_kwh": 0.355
+     },
+     {
+      "heure": 7,
+      "action": "decharge",
+      "energie_kwh": 0.419
+     },
+     {
+      "heure": 8,
+      "action": "decharge",
+      "energie_kwh": 0.279
+     },
+     {
+      "heure": 9,
+      "action": "charge",
+      "energie_kwh": 0.054
+     },
+     {
+      "heure": 10,
+      "action": "charge",
+      "energie_kwh": 0.232
+     },
+     {
+      "heure": 11,
+      "action": "charge",
+      "energie_kwh": 0.415
+     },
+     {
+      "heure": 12,
+      "action": "decharge",
+      "energie_kwh": 0.069
+     },
+     {
+      "heure": 13,
+      "action": "charge",
+      "energie_kwh": 0.179
+     },
+     {
+      "heure": 14,
+      "action": "charge",
+      "energie_kwh": 0.373
+     },
+     {
+      "heure": 15,
+      "action": "charge",
+      "energie_kwh": 0.127
+     },
+     {
+      "heure": 16,
+      "action": "charge",
+      "energie_kwh": 0.042
+     },
+     {
+      "heure": 17,
+      "action": "decharge",
+      "energie_kwh": 0.137
+     },
+     {
+      "heure": 18,
+      "action": "decharge",
+      "energie_kwh": 0.39
+     },
+     {
+      "heure": 19,
+      "action": "decharge",
+      "energie_kwh": 0.602
+     },
+     {
+      "heure": 20,
+      "action": "decharge",
+      "energie_kwh": 0.66
+     },
+     {
+      "heure": 21,
+      "action": "decharge",
+      "energie_kwh": 0.312
+     }
+    ],
+    "soc_horaire_kwh": {
+     "__dict__": [
+      [
+       0,
+       2.841
+      ],
+      [
+       1,
+       2.841
+      ],
+      [
+       2,
+       2.841
+      ],
+      [
+       3,
+       2.841
+      ],
+      [
+       4,
+       2.841
+      ],
+      [
+       5,
+       2.841
+      ],
+      [
+       6,
+       2.459
+      ],
+      [
+       7,
+       2.007
+      ],
+      [
+       8,
+       1.706
+      ],
+      [
+       9,
+       1.754
+      ],
+      [
+       10,
+       1.961
+      ],
+      [
+       11,
+       2.332
+      ],
+      [
+       12,
+       2.258
+      ],
+      [
+       13,
+       2.417
+      ],
+      [
+       14,
+       2.75
+      ],
+      [
+       15,
+       2.864
+      ],
+      [
+       16,
+       2.901
+      ],
+      [
+       17,
+       2.753
+      ],
+      [
+       18,
+       2.333
+      ],
+      [
+       19,
+       1.684
+      ],
+      [
+       20,
+       0.973
+      ],
+      [
+       21,
+       0.637
+      ],
+      [
+       22,
+       0.637
+      ],
+      [
+       23,
+       0.637
+      ]
+     ]
+    },
+    "energie_chargee_kwh": 1.422,
+    "energie_dechargee_kwh": 3.223,
+    "soc_initial_kwh": 2.841,
+    "soc_final_kwh": 0.637,
+    "priorite": 2,
+    "justification": "Simulation heure par heure (à partir de 0h) sur le net TOTAL (production − baseline − tous les équipements simultanés, piscine incluse), pertes de conversion AC/DC incluses (rendements mesurés sur 21.8 jours : charge 89.3%, décharge 92.8%). SoC à 0h : 53.5%, 2.84085 kWh. Plage active (schedules réels) : 6h-22h."
+   },
+   {
+    "equipement": "Piscine (filtration)",
+    "segments": [
+     {
+      "heure_debut": 0,
+      "heure_fin": 12,
+      "mode": "off"
+     },
+     {
+      "heure_debut": 12,
+      "heure_fin": 13,
+      "mode": "silence"
+     },
+     {
+      "heure_debut": 13,
+      "heure_fin": 24,
+      "mode": "off"
+     }
+    ],
+    "priorite": 4,
+    "justification": "Bloc réduit à la durée minimale saisonnière (1h, saison mi_saison) : la batterie n'atteindrait pas 100 % de sa capacité même sans la piscine — priorité batterie, minimum hygiène du bassin néanmoins garanti."
+   }
+  ],
+  "avertissements": [],
+  "residu_reseau_horaire": {
+   "__dict__": [
+    [
+     0,
+     -0.35356049848717885
+    ],
+    [
+     1,
+     -0.3283961779086707
+    ],
+    [
+     2,
+     -0.332977133542421
+    ],
+    [
+     3,
+     -0.33906567891568945
+    ],
+    [
+     4,
+     -0.3354969860662443
+    ],
+    [
+     5,
+     -0.3312053172358805
+    ],
+    [
+     6,
+     0.0
+    ],
+    [
+     7,
+     0.0
+    ],
+    [
+     8,
+     0.0
+    ],
+    [
+     9,
+     0.0
+    ],
+    [
+     10,
+     0.0
+    ],
+    [
+     11,
+     0.0
+    ],
+    [
+     12,
+     0.0
+    ],
+    [
+     13,
+     0.0
+    ],
+    [
+     14,
+     0.0
+    ],
+    [
+     15,
+     0.0
+    ],
+    [
+     16,
+     0.0
+    ],
+    [
+     17,
+     0.0
+    ],
+    [
+     18,
+     0.0
+    ],
+    [
+     19,
+     0.0
+    ],
+    [
+     20,
+     0.0
+    ],
+    [
+     21,
+     -0.21860586476440552
+    ],
+    [
+     22,
+     -0.46758616099268996
+    ],
+    [
+     23,
+     -0.42395555196120777
+    ]
+   ]
+  }
+ }
+}

@@ -1,0 +1,45 @@
+# Extension Home Assistant de l'application v2 (décision 1).
+# Même image que le mode Docker autonome (app/Dockerfile), publiée par la CI ; le Supervisor
+# la télécharge sous l'étiquette « version » ci-dessous.
+name: WattSlot
+version: "0.8.0"
+slug: wattslot
+description: Plans the use of household appliances and the home battery around solar production and electricity prices.
+url: https://github.com/jmcruvellier/wattslot
+arch:
+  - amd64
+  - aarch64
+image: ghcr.io/jmcruvellier/wattslot
+# Interface dans la barre latérale de HA, servie par l'ingress (aucun port publié).
+ingress: true
+ingress_port: 8100
+panel_icon: mdi:calendar-clock
+panel_title: WattSlot
+# Accès à l'API de Home Assistant par le Supervisor (ws://supervisor/core/websocket).
+homeassistant_api: true
+# Sauvegarde à chaud (backend/src/wattslot/backup.py) : backup_pre fige une copie de la
+# base et du graphe dans /data/backup, seule sauvegardée ; backup_post la supprime. Fichiers
+# vivants exclus (ils écrivent pendant la copie de HA) ; relevés bruts (/data/raw) exclus :
+# volumineux, gardés 3 jours, et recalculables depuis l'historique de HA.
+backup_pre: python -m wattslot.backup prepare
+backup_post: python -m wattslot.backup finish
+backup_exclude:
+  - raw
+  - oxigraph
+  - wattslot.db*
+# Surveillance : HEALTHCHECK de l'image (app/Dockerfile) sur /api/health, depuis la machine
+# elle-même (admise par ingress.py) ; le Supervisor relance l'extension quand Docker la déclare
+# malade (option « Watchdog » de la page de l'extension). La clé « watchdog » est obsolète.
+# Arrêt : 30 s pour vider le brut, les agrégats et SQLite (uvicorn ferme les connexions en 10 s).
+timeout: 30
+# Options réglées dans HA (backend/src/wattslot/addon_options.py), traduites dans
+# translations/ ; elles l'emportent à chaque démarrage sur la conservation en base.
+options:
+  log_level: info
+  raw_days: 3
+  quarter_days: 35
+schema:
+  log_level: list(debug|info|warning|error)
+  raw_days: int(1,30)
+  quarter_days: int(31,3660)
+stage: experimental

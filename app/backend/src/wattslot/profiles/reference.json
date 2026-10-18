@@ -1,0 +1,122 @@
+{
+  "format": "wattslot/home",
+  "version": 2,
+  "name": "reference",
+  "description": "Maison de référence (celle de la v1) : solaire sur deux installations, achat au réseau en heures pleines et creuses (0 h-6 h et 22 h-24 h, prix indicatifs), batterie de 5,12 kWh, chauffe-eau, lave-linge, sèche-linge, lave-vaisselle et piscine.",
+  "home": {
+    "devices": [
+      {
+        "key": "solar",
+        "kind": "SolarInstallation",
+        "name": "Production solaire",
+        "sensors": [
+          {"entity_id": "sensor.solar_roof_energy", "role": "EnergyProduced"},
+          {"entity_id": "sensor.solar_shed_energy", "role": "EnergyProduced"}
+        ]
+      },
+      {
+        "key": "grid",
+        "kind": "GridConnection",
+        "name": "Réseau",
+        "sensors": [
+          {"entity_id": "sensor.grid_import_peak", "role": "EnergyImported"},
+          {"entity_id": "sensor.grid_import_off_peak", "role": "EnergyImported"},
+          {"entity_id": "sensor.grid_export", "role": "EnergyExported"}
+        ]
+      },
+      {
+        "key": "battery",
+        "kind": "Battery",
+        "name": "Batterie",
+        "capacity_kwh": 5.12,
+        "sensors": [
+          {"entity_id": "sensor.battery_charged", "role": "EnergyCharged"},
+          {"entity_id": "sensor.battery_discharged", "role": "EnergyDischarged"},
+          {"entity_id": "sensor.battery_soc", "role": "StateOfCharge"}
+        ]
+      },
+      {
+        "key": "water_heater",
+        "kind": "WaterHeater",
+        "name": "Chauffe-eau",
+        "sensors": [
+          {"entity_id": "sensor.water_heater_power", "role": "PowerConsumed"},
+          {"entity_id": "sensor.water_heater_energy", "role": "EnergyConsumed"}
+        ]
+      },
+      {
+        "key": "washing_machine",
+        "kind": "WashingMachine",
+        "name": "Lave-linge",
+        "sensors": [
+          {"entity_id": "sensor.washing_machine_power", "role": "PowerConsumed"},
+          {"entity_id": "sensor.washing_machine_energy", "role": "EnergyConsumed"}
+        ]
+      },
+      {
+        "key": "dryer",
+        "kind": "Dryer",
+        "name": "Sèche-linge",
+        "sensors": [
+          {"entity_id": "sensor.dryer_power", "role": "PowerConsumed"},
+          {"entity_id": "sensor.dryer_energy", "role": "EnergyConsumed"}
+        ]
+      },
+      {
+        "key": "dishwasher",
+        "kind": "Dishwasher",
+        "name": "Lave-vaisselle",
+        "sensors": [
+          {"entity_id": "sensor.dishwasher_power", "role": "PowerConsumed"},
+          {"entity_id": "sensor.dishwasher_energy", "role": "EnergyConsumed"}
+        ]
+      },
+      {
+        "key": "pool",
+        "kind": "PoolPump",
+        "name": "Piscine (filtration)",
+        "sensors": [
+          {"entity_id": "sensor.pool_power", "role": "PowerConsumed"}
+        ]
+      }
+    ]
+  },
+  "configuration": {
+    "version": 1,
+    "devices": [
+      {"key": "water_heater", "behavior": "CycleBehavior", "automation": "RecommendAutomation", "planned": true, "recurrence": {"rule": "FREQ=DAILY;INTERVAL=2"}},
+      {"key": "washing_machine", "behavior": "CycleBehavior", "automation": "RecommendAutomation", "planned": true},
+      {"key": "dryer", "behavior": "CycleBehavior", "automation": "RecommendAutomation", "planned": true, "after": "washing_machine"},
+      {"key": "dishwasher", "behavior": "CycleBehavior", "automation": "RecommendAutomation", "planned": true},
+      {
+        "key": "pool",
+        "behavior": "RuntimeBehavior",
+        "automation": "RecommendAutomation",
+        "planned": true,
+        "runtime": {
+          "speeds": [{"name": "silence", "kw": 0.13}, {"name": "eco", "kw": 0.415}],
+          "minimum_hours": {"summer": 2, "mid_season": 1, "winter": 0},
+          "skip_days": {"summer": 1, "mid_season": 2, "winter": 365},
+          "max_starts": 2
+        }
+      }
+    ],
+    "tariff": {
+      "kind": "TimeOfUseTariff",
+      "base_eur_kwh": 0.27,
+      "bands": [
+        {"start_hour": 0, "end_hour": 6, "eur_kwh": 0.21},
+        {"start_hour": 22, "end_hour": 24, "eur_kwh": 0.21}
+      ],
+      "export_eur_kwh": 0.0
+    },
+    "battery": {
+      "charge_max_w": 2500,
+      "discharge_max_w": 800,
+      "floor_percent": 12,
+      "active_from_hour": 6,
+      "active_to_hour": 24,
+      "full_charge_every_days": 6
+    }
+  }
+}

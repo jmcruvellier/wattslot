@@ -1,0 +1,53 @@
+{
+  "_meta": {
+    "status": "to_review"
+  },
+  "avertissement": {
+    "profil_indisponible_du": "{equipement} ist heute fällig, aber sein Profil ist nicht verfügbar (status={status}): kein Zeitfenster bestimmbar, bitte von Hand einplanen.",
+    "heures_insuffisantes_du": "{equipement} ist heute fällig, aber die verbleibende Zeit reicht nicht für einen vollen Zyklus ({duree_min} ab {debut_min}): nicht eingeplant. Wenn es schon gelaufen ist, haken Sie die Aufgabe in Home Assistant ab.",
+    "profil_indisponible_attente": "{equipement} wartet, aber sein Profil ist nicht verfügbar (status={status}): nicht eingeplant.",
+    "dependance_non_placee": "{equipement} muss nach {depend_de} laufen, das heute nicht eingeplant werden konnte: nicht eingeplant.",
+    "heures_insuffisantes_attente": "{equipement} wartet, aber die verbleibende Zeit reicht nicht für einen vollen Zyklus ({duree_min} ab {debut_min}): nicht eingeplant.",
+    "contrainte_impossible": "{equipement}: kein Zeitfenster erfüllt seine Zeitvorgaben ({contraintes}): nicht eingeplant oder Mindestlaufzeit nicht erreicht.",
+    "contrainte_non_respectee": "{equipement}: weiche Vorgabe nicht eingehalten ({contraintes}), um den restlichen Plan zu halten.",
+    "prevision_open_meteo": "Von Open-Meteo aus Ihren Modulen berechnete Solarprognose: weniger genau als eine Prognoseintegration im Energie-Dashboard von Home Assistant.",
+    "prevision_horaire_indisponible": "Stündliche Solarprognose nicht verfügbar oder unvollständig: Rückgriff auf den mittleren Verlauf der letzten {jours} Tage, weniger nah am heutigen Wetter.",
+    "panneau_sans_historique": "Modul {panneau}: zu wenig Verlauf ({jours} Tage), Rückgriff auf den mittleren Verlauf der Terrasse.",
+    "soc_depart_approximatif": "Ungefährer Anfangsladestand für die Prognose von morgen: aktueller gemessener Ladestand verwendet, da noch kein nutzbarer Tagesplan zwischengespeichert ist. Er wird bei den nächsten Berechnungen des Tages verfeinert.",
+    "regle_recurrence_non_geree": "{equipement}: nicht unterstützte Wiederholungsregel, nur seine Fälligkeit zählt in den Prognosen der folgenden Tage.",
+    "horizon_interrompu": "Prognosen vor dem {jour} beendet: {raison}.",
+    "tache_reportee": "{equipement} auf {jour} verschoben: {pct_jour} % durch Solarstrom gedeckt, gegenüber {pct_auj} % heute.",
+    "tache_reportee_sans_creneau": "{equipement} auf {jour} verschoben: heute nicht mehr genug Zeit für einen vollen Zyklus."
+  },
+  "date": {
+    "format": "{jour}, {num}. {mois} {annee}",
+    "jour_0": "Montag",
+    "jour_1": "Dienstag",
+    "jour_2": "Mittwoch",
+    "jour_3": "Donnerstag",
+    "jour_4": "Freitag",
+    "jour_5": "Samstag",
+    "jour_6": "Sonntag",
+    "mois_1": "Januar",
+    "mois_2": "Februar",
+    "mois_3": "März",
+    "mois_4": "April",
+    "mois_5": "Mai",
+    "mois_6": "Juni",
+    "mois_7": "Juli",
+    "mois_8": "August",
+    "mois_9": "September",
+    "mois_10": "Oktober",
+    "mois_11": "November",
+    "mois_12": "Dezember",
+    "format_sans_annee": "{jour}, {num}. {mois}"
+  },
+  "equipement": {
+    "Batterie": "Batterie",
+    "Chauffe-eau": "Warmwasserbereiter",
+    "Lave-linge": "Waschmaschine",
+    "Sèche-linge": "Trockner",
+    "Lave-vaisselle": "Geschirrspüler",
+    "Piscine (filtration)": "Pool"
+  }
+}

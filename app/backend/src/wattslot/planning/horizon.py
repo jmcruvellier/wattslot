@@ -1,0 +1,123 @@
+"""Horizon de planification : les jours qui suivent le premier jour prévu (demain).
+
+Réécriture de ``horizon.py`` (v1) sur le moteur de la v2. Le premier jour est la
+prévision de demain, calculée comme aujourd'hui ; les suivants en reprennent les tâches, les
+profils et la batterie, et ne changent que la prévision solaire et la ligne de base. Chaque
+jour part du SoC prévu en fin du jour précédent.
+
+Tâches : les tâches datées qui concernent le jour (une tâche récurrente revient selon sa
+règle, ``recurrence.py``) ; les tâches en attente seulement le jour auquel elles sont
+affectées (``assignment.py``), sans quoi un lave-linge serait placé chaque jour.
+
+Si la prévision d'un jour manque, l'horizon s'arrête au dernier jour calculé, avec un
+avertissement : les jours suivants dépendent de son SoC.
+"""
+
+import time
+from collections.abc import Awaitable, Callable, Mapping
+from dataclasses import dataclass, field, replace
+from datetime import date, timedelta
+from typing import Any
+
+from wattslot.planning.engine import Goal, Objective, Result, plan_day
+from wattslot.planning.inputs import PlanningInput
+from wattslot.planning.problem import from_input
+from wattslot.planning.recurrence import tasks_of_day
+
+HORIZON_DAYS = 6  # demain et les 5 jours suivants (prévisions sur 7 jours)
+
+
+@dataclass(frozen=True)
+class DayForecast:
+    """Prévision d'un jour : net (production moins ligne de base) et production, par heure."""
+
+    net_kwh: Mapping[int, float]
+    production_kwh: Mapping[int, float]
+    warnings: tuple[dict[str, Any], ...] = ()
+
+
+ForecastOf = Callable[[date], Awaitable[DayForecast]]
+
+
+@dataclass
+class Horizon:
+    days: list[tuple[PlanningInput, Result]]
+    warnings: list[dict[str, Any]] = field(default_factory=list)
+    seconds: list[float] = field(default_factory=list)
+
+
+def end_soc_kwh(result: Result) -> float | None:
+    battery = result.day.battery
+    return battery.end_kwh if battery else None
+
+
+def next_day_input(
+    first: PlanningInput, day: date, forecast: DayForecast, start_soc_kwh: float
+) -> PlanningInput:
+    """Entrée d'un jour de l'horizon au-delà du premier."""
+    tasks, unsupported = tasks_of_day(list(first.due_tasks), day)
+    assignments = first.assignments or {}
+    capacity = first.battery.capacity_kwh
+    return PlanningInput(
+        day=day,
+        first_hour=0,
+        net_kwh={h: forecast.net_kwh.get(h, 0.0) for h in range(24)},
+        production_kwh={h: forecast.production_kwh.get(h, 0.0) for h in range(24)},
+        battery=replace(
+            first.battery,
+            stored_kwh=start_soc_kwh,
+            soc_percent=start_soc_kwh / capacity * 100 if capacity > 0 else 0.0,
+        ),
+        due_tasks=tuple(tasks),
+        waiting_tasks=tuple(
+            t for t in first.waiting_tasks if t.uid is not None and assignments.get(t.uid) == day
+        ),
+        assignments=first.assignments,
+        runtimes=tuple(replace(r, past={}) for r in first.runtimes),
+        needs=tuple(n for n in first.needs if n.daily),
+        constraints=first.constraints,
+        max_delay_days=first.max_delay_days,
+        southern=first.southern,
+        tariff=first.tariff,
+        tariff_context=first.tariff_context,
+        co2=first.co2,
+        cycle_profiles=first.cycle_profiles,
+        daily_profiles=first.daily_profiles,
+        profile_status=first.profile_status,
+        forecast_warnings=tuple(forecast.warnings)
+        + tuple(
+            {"code": "regle_recurrence_non_geree", "params": {"equipement": name}}
+            for name in dict.fromkeys(unsupported)
+        ),
+    )
+
+
+async def compute_horizon(
+    first: PlanningInput,
+    first_result: Result,
+    forecast_of: ForecastOf,
+    objective: Goal = Objective.COST,
+    days: int = HORIZON_DAYS,
+) -> Horizon:
+    """Le premier jour tel quel, puis au plus ``days - 1`` jours calculés à la suite."""
+    horizon = Horizon(days=[(first, first_result)])
+    for offset in range(1, days):
+        day = first.day + timedelta(days=offset)
+        soc = end_soc_kwh(horizon.days[-1][1])
+        if soc is None:
+            horizon.warnings.append(_interrupted(day, "SoC de fin de journée inconnu"))
+            break
+        began = time.perf_counter()
+        try:
+            forecast = await forecast_of(day)
+        except Exception as exc:  # noqa: BLE001 — l'horizon s'arrête au dernier jour connu
+            horizon.warnings.append(_interrupted(day, f"{type(exc).__name__} : {exc}"))
+            break
+        data = next_day_input(first, day, forecast, soc)
+        horizon.days.append((data, plan_day(from_input(data), objective, explained=False)))
+        horizon.seconds.append(round(time.perf_counter() - began, 1))
+    return horizon
+
+
+def _interrupted(day: date, reason: str) -> dict[str, Any]:
+    return {"code": "horizon_interrompu", "params": {"jour": day.isoformat(), "raison": reason}}
