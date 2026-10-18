@@ -4,6 +4,7 @@
 .github/
 .gitignore
 CODE_OF_CONDUCT.md
+CLAUDE.md
 CONTRIBUTING.md
 LICENSE
 NOTICE

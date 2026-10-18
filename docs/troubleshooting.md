@@ -41,4 +41,4 @@
 
 **How much does it write to the disk?** A few GB per day at most in normal use; the first history import writes more, once. Use an SSD rather than an SD card.
 
-**Where do I ask a question?** On the Home Assistant community forum (WattSlot thread), or in a [GitHub issue](https://github.com/jmcruvellier/wattslot/issues/new/choose).
+**Where do I ask a question?** In the [Discussions](https://github.com/jmcruvellier/wattslot/discussions); for a bug, open a [GitHub issue](https://github.com/jmcruvellier/wattslot/issues/new/choose).

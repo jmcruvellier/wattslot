@@ -56,6 +56,7 @@ Open `http://<host>:8100` and sign in with Home Assistant from the connection pa
 
 ## Support and contributing
 
+- **Questions and ideas**: ask in the [Discussions](https://github.com/jmcruvellier/wattslot/discussions).
 - **Bugs and ideas**: [open an issue](https://github.com/jmcruvellier/wattslot/issues/new/choose). For a bug, attach the anonymised report from **Settings → App status → Prepare a report**.
 - **Contributing** (code, translations): see [CONTRIBUTING.md](CONTRIBUTING.md).
 - **Security**: see [SECURITY.md](SECURITY.md).
