@@ -21,6 +21,47 @@ import {
 
 const HOURS = Array.from({ length: 25 }, (_, hour) => hour);
 
+// Contrat (lot 7.3) : abonnement mensuel et puissance souscrite, quel que soit le tarif.
+function Contract({ tariff, onChange }: { tariff: Tariff; onChange: (tariff: Tariff) => void }) {
+  const { t } = useI18n();
+  return (
+    <>
+      <p>
+        <label>
+          {t("tariff.subscription")}{" "}
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            value={tariff.subscription_eur_month}
+            onChange={(event) =>
+              onChange({ ...tariff, subscription_eur_month: event.target.value === "" ? 0 : Number(event.target.value) })
+            }
+          />{" "}
+          {t("tariff.per_month")}
+        </label>
+        <Hint text={t("tariff.subscription_hint")} />
+      </p>
+      <p>
+        <label>
+          {t("tariff.contract_kva")}{" "}
+          <input
+            type="number"
+            min="0.1"
+            step="0.1"
+            value={tariff.contract_kva ?? ""}
+            onChange={(event) =>
+              onChange({ ...tariff, contract_kva: event.target.value === "" ? null : Number(event.target.value) })
+            }
+          />{" "}
+          kVA
+        </label>
+        <Hint text={t("tariff.contract_kva_hint")} />
+      </p>
+    </>
+  );
+}
+
 function Price({ label, value, onChange }: { label: string; value: number; onChange: (value: number) => void }) {
   return (
     <label>
@@ -245,7 +286,13 @@ export default function TariffEditor({ tariff, onChange }: { tariff: Tariff | nu
           value={tariff.kind}
           onChange={(event) => {
             const kind = event.target.value as TariffKind;
-            onChange({ ...TARIFF_TEMPLATES[kind], export_eur_kwh: tariff.export_eur_kwh, export_entity: tariff.export_entity });
+            onChange({
+              ...TARIFF_TEMPLATES[kind],
+              export_eur_kwh: tariff.export_eur_kwh,
+              export_entity: tariff.export_entity,
+              subscription_eur_month: tariff.subscription_eur_month,
+              contract_kva: tariff.contract_kva,
+            });
           }}
         >
           {TARIFF_KINDS.map((kind) => (
@@ -286,6 +333,7 @@ export default function TariffEditor({ tariff, onChange }: { tariff: Tariff | nu
         </p>
         {tariff.kind !== "DynamicTariff" && tariff.export_entity !== null && <p>{unitSelect}</p>}
       </Advanced>
+      <Contract tariff={tariff} onChange={onChange} />
       <ProposeButton onChange={onChange} />{" "}
       <button type="button" onClick={() => onChange(null)}>
         {t("tariff.reset")}

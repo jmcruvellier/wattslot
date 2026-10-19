@@ -297,7 +297,8 @@
       "co2_kg": "CO₂ de las compras",
       "end_soc_percent": "Nivel de carga al final del día",
       "battery_throughput_kwh": "Energía que pasa por la batería",
-      "chosen": "Indicador destacado elegido en «Personalizar»."
+      "chosen": "Indicador destacado elegido en «Personalizar».",
+      "subscription_part": "incluido término fijo {amount}"
     },
     "explanations": {
       "title": "Por qué este plan",
@@ -807,7 +808,12 @@
       "DynamicTariff": "El precio cambia cada hora y se lee en un sensor de Home Assistant."
     },
     "price_entity_hint": "Sensor de Home Assistant que da el precio de la hora actual y de las siguientes.",
-    "export_hint": "Lo que le aporta un kWh de excedente vertido a la red; 0 si no lo vende."
+    "export_hint": "Lo que le aporta un kWh de excedente vertido a la red; 0 si no lo vende.",
+    "subscription": "Término fijo",
+    "per_month": "€/mes",
+    "subscription_hint": "El precio mensual del término fijo, sin los kWh: se divide por los días del mes y se suma al coste de cada día. 0 para no contarlo.",
+    "contract_kva": "Potencia contratada",
+    "contract_kva_hint": "La potencia de su contrato, por encima de la cual salta el interruptor general (por ejemplo 6, 9 o 12 kVA). El plan evita consumir más en una hora. Vacío si no la conoce."
   },
   "battery": {
     "title": "Batería",

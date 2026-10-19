@@ -297,7 +297,8 @@
       "co2_kg": "CO₂ of imports",
       "end_soc_percent": "SoC at end of day",
       "battery_throughput_kwh": "Battery throughput",
-      "chosen": "Highlighted indicator chosen in “Customize”."
+      "chosen": "Highlighted indicator chosen in “Customize”.",
+      "subscription_part": "including subscription {amount}"
     },
     "explanations": {
       "title": "Why this plan",
@@ -807,7 +808,12 @@
       "DynamicTariff": "The price changes every hour, read from a Home Assistant sensor."
     },
     "price_entity_hint": "Home Assistant sensor giving the price of the current and coming hours.",
-    "export_hint": "What a kWh of surplus sent to the grid earns you; 0 if you do not sell it."
+    "export_hint": "What a kWh of surplus sent to the grid earns you; 0 if you do not sell it.",
+    "subscription": "Subscription",
+    "per_month": "€/month",
+    "subscription_hint": "The monthly standing charge, without the kWh: it is divided by the number of days in the month and added to the cost of each day. 0 to leave it out.",
+    "contract_kva": "Contract power",
+    "contract_kva_hint": "The power of your contract, above which the main breaker trips (for example 6, 9 or 12 kVA). The plan avoids drawing more in an hour. Leave empty if you do not know it."
   },
   "battery": {
     "title": "Battery",

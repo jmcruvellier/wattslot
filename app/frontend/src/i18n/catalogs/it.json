@@ -297,7 +297,8 @@
       "co2_kg": "CO₂ dei prelievi",
       "end_soc_percent": "Livello di carica a fine giornata",
       "battery_throughput_kwh": "Energia passata dalla batteria",
-      "chosen": "Indicatore in evidenza scelto in «Personalizza»."
+      "chosen": "Indicatore in evidenza scelto in «Personalizza».",
+      "subscription_part": "di cui quota fissa {amount}"
     },
     "explanations": {
       "title": "Perché questo piano",
@@ -807,7 +808,12 @@
       "DynamicTariff": "Il prezzo cambia ogni ora ed è letto da un sensore di Home Assistant."
     },
     "price_entity_hint": "Sensore di Home Assistant che fornisce il prezzo dell'ora attuale e delle prossime.",
-    "export_hint": "Quanto le rende un kWh di surplus immesso in rete; 0 se non lo vende."
+    "export_hint": "Quanto le rende un kWh di surplus immesso in rete; 0 se non lo vende.",
+    "subscription": "Quota fissa",
+    "per_month": "€/mese",
+    "subscription_hint": "Il costo mensile della quota fissa, senza i kWh: è diviso per i giorni del mese e aggiunto al costo di ogni giorno. 0 per non contarla.",
+    "contract_kva": "Potenza impegnata",
+    "contract_kva_hint": "La potenza del contratto, oltre la quale il contatore stacca (per esempio 3, 4,5 o 6 kVA). Il piano evita di prelevare di più in un'ora. Vuoto se non la conosce."
   },
   "battery": {
     "title": "Batteria",

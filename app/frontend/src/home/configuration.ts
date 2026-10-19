@@ -139,6 +139,8 @@ export interface Tariff {
   price_entity: string | null;
   export_entity: string | null;
   price_factor: number; // unité des entités vers €/kWh
+  subscription_eur_month: number; // abonnement, ajouté au coût de chaque jour au prorata du mois
+  contract_kva: number | null; // puissance souscrite ; null : inconnue
 }
 
 export interface BatterySettings {
@@ -215,6 +217,8 @@ const BLANK: Omit<Tariff, "kind" | "base_eur_kwh"> = {
   price_entity: null,
   export_entity: null,
   price_factor: 1,
+  subscription_eur_month: 0,
+  contract_kva: null,
 };
 
 // Modèles de départ du formulaire (prix et entités à remplacer par ceux de l'installation).

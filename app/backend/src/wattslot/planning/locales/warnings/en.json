@@ -17,7 +17,8 @@
     "regle_recurrence_non_geree": "{equipement}: unsupported recurrence rule, only its due date is used in the forecasts for the following days.",
     "horizon_interrompu": "Forecasts stopped before {jour}: {raison}.",
     "tache_reportee": "{equipement} postponed to {jour}: {pct_jour}% covered by solar, versus {pct_auj}% today.",
-    "tache_reportee_sans_creneau": "{equipement} postponed to {jour}: not enough time left today for a full cycle."
+    "tache_reportee_sans_creneau": "{equipement} postponed to {jour}: not enough time left today for a full cycle.",
+    "puissance_souscrite_depassee": "Planned grid draw above the contract power ({kva} kVA) at hours {heures}: base consumption and appliances exceed what the contract allows, even after moving the appliances. The main breaker may trip."
   },
   "date": {
     "format": "{jour}, {mois} {num}, {annee}",

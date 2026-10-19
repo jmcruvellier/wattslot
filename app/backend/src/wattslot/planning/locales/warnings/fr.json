@@ -17,7 +17,8 @@
     "regle_recurrence_non_geree": "{equipement} : règle de récurrence non gérée, seule son échéance est prise en compte dans les prévisions des jours suivants.",
     "horizon_interrompu": "Prévisions arrêtées avant le {jour} : {raison}.",
     "tache_reportee": "{equipement} reporté au {jour} : {pct_jour} % couvert par le solaire, contre {pct_auj} % aujourd'hui.",
-    "tache_reportee_sans_creneau": "{equipement} reporté au {jour} : plus assez de temps aujourd'hui pour un cycle complet."
+    "tache_reportee_sans_creneau": "{equipement} reporté au {jour} : plus assez de temps aujourd'hui pour un cycle complet.",
+    "puissance_souscrite_depassee": "Soutirage prévu au-delà de la puissance souscrite ({kva} kVA) aux heures {heures} : la consommation de base et les appareils dépassent ce que le contrat permet, même en décalant les appareils. Risque de coupure du disjoncteur."
   },
   "date": {
     "format": "{jour} {num} {mois} {annee}",

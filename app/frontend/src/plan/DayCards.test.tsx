@@ -84,6 +84,12 @@ describe("cartes d'une vue de jour", () => {
     expect(within(card).queryByText(/CO₂/)).toBeNull(); // sans intensité du réseau
   });
 
+  it("coût du jour avec la part de l'abonnement", () => {
+    renderCards({ ...TODAY, indicators: { ...TODAY.indicators!, cost_eur: 1.73, subscription_eur: 0.5 } });
+    const card = screen.getByRole("article", { name: "Indicateurs du plan" });
+    expect(card).toHaveTextContent(/1,73\s€\s*dont abonnement 0,50\s€/);
+  });
+
   it("poids libres : aucun indicateur mis en avant", () => {
     renderCards({ ...TOMORROW, objective: "custom" });
     const card = screen.getByRole("article", { name: "Indicateurs du plan" });

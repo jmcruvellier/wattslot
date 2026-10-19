@@ -156,7 +156,8 @@ export interface Timeline {
 export type ObjectivePreset = "cost" | "autonomy" | "self_consumption" | "co2" | "custom";
 
 export interface Indicators {
-  cost_eur: number;
+  cost_eur: number; // abonnement compris
+  subscription_eur?: number; // part de l'abonnement du jour (lot 7.3)
   import_kwh: number;
   export_kwh: number;
   self_consumption_percent: number | null;

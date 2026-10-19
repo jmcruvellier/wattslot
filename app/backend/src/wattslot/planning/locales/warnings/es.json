@@ -17,7 +17,8 @@
     "regle_recurrence_non_geree": "{equipement}: regla de repetición no compatible, solo se tiene en cuenta su fecha límite en las previsiones de los días siguientes.",
     "horizon_interrompu": "Previsiones detenidas antes del {jour}: {raison}.",
     "tache_reportee": "{equipement} aplazado al {jour}: {pct_jour} % cubierto por el sol, frente al {pct_auj} % hoy.",
-    "tache_reportee_sans_creneau": "{equipement} aplazado al {jour}: ya no queda tiempo hoy para un ciclo completo."
+    "tache_reportee_sans_creneau": "{equipement} aplazado al {jour}: ya no queda tiempo hoy para un ciclo completo.",
+    "puissance_souscrite_depassee": "Consumo de red previsto por encima de la potencia contratada ({kva} kVA) a las {heures} h: el consumo base y los aparatos superan lo que permite el contrato, incluso moviendo los aparatos. Puede saltar el interruptor general."
   },
   "date": {
     "format": "{jour}, {num} de {mois} de {annee}",

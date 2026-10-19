@@ -293,6 +293,10 @@ wattslot:constraintStartHour a owl:DatatypeProperty ;
 	rdfs:domain wattslot:TimeConstraint ;
 	rdfs:label "heure de début (plage interdite, pas avant)"@fr , "start hour (forbidden range, not before)"@en ;
 	rdfs:range xsd:integer .
+wattslot:contractKva a owl:DatatypeProperty ;
+	rdfs:domain wattslot:Tariff ;
+	rdfs:label "contract power (kVA)"@en , "puissance souscrite (kVA)"@fr ;
+	rdfs:range xsd:double .
 wattslot:costWeight a owl:DatatypeProperty ;
 	rdfs:domain wattslot:Objective ;
 	rdfs:label "cost weight"@en , "poids du coût"@fr ;
@@ -565,6 +569,10 @@ wattslot:steps a owl:DatatypeProperty ;
 	rdfs:domain wattslot:EnergyNeed ;
 	rdfs:label "in steps (all or nothing)"@en , "par paliers (tout ou rien)"@fr ;
 	rdfs:range xsd:boolean .
+wattslot:subscriptionEurMonth a owl:DatatypeProperty ;
+	rdfs:domain wattslot:Tariff ;
+	rdfs:label "abonnement mensuel (€)"@fr , "monthly subscription (€)"@en ;
+	rdfs:range xsd:double .
 wattslot:tiltDegrees a owl:DatatypeProperty ;
 	rdfs:domain wattslot:PanelArray ;
 	rdfs:label "inclinaison (°)"@fr , "tilt (°)"@en ;

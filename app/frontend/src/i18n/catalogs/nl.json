@@ -297,7 +297,8 @@
       "co2_kg": "CO₂ van de afname",
       "end_soc_percent": "Laadniveau aan het eind van de dag",
       "battery_throughput_kwh": "Energie door de batterij",
-      "chosen": "Uitgelicht kengetal gekozen in „Aanpassen”."
+      "chosen": "Uitgelicht kengetal gekozen in „Aanpassen”.",
+      "subscription_part": "waarvan vastrecht {amount}"
     },
     "explanations": {
       "title": "Waarom dit plan",
@@ -807,7 +808,12 @@
       "DynamicTariff": "De prijs verandert elk uur en wordt gelezen uit een Home Assistant-sensor."
     },
     "price_entity_hint": "Home Assistant-sensor die de prijs van het huidige en de komende uren geeft.",
-    "export_hint": "Wat een kWh overschot naar het net u oplevert; 0 als u het niet verkoopt."
+    "export_hint": "Wat een kWh overschot naar het net u oplevert; 0 als u het niet verkoopt.",
+    "subscription": "Vastrecht",
+    "per_month": "€/maand",
+    "subscription_hint": "Het maandelijkse vastrecht, zonder de kWh: het wordt gedeeld door het aantal dagen van de maand en opgeteld bij de kosten van elke dag. 0 om het niet mee te tellen.",
+    "contract_kva": "Gecontracteerd vermogen",
+    "contract_kva_hint": "Het vermogen van uw contract, waarboven de hoofdschakelaar uitvalt (bijvoorbeeld 6, 9 of 12 kVA). De planning vermijdt om in een uur meer af te nemen. Leeg laten als u het niet weet."
   },
   "battery": {
     "title": "Batterij",

@@ -17,7 +17,8 @@
     "regle_recurrence_non_geree": "{equipement}: regola di ripetizione non gestita, nelle previsioni dei giorni seguenti conta solo la sua scadenza.",
     "horizon_interrompu": "Previsioni interrotte prima del {jour}: {raison}.",
     "tache_reportee": "{equipement} rinviato a {jour}: {pct_jour} % coperto dal solare, contro il {pct_auj} % di oggi.",
-    "tache_reportee_sans_creneau": "{equipement} rinviato a {jour}: oggi non resta abbastanza tempo per un ciclo completo."
+    "tache_reportee_sans_creneau": "{equipement} rinviato a {jour}: oggi non resta abbastanza tempo per un ciclo completo.",
+    "puissance_souscrite_depassee": "Prelievo dalla rete previsto oltre la potenza impegnata ({kva} kVA) alle ore {heures}: il consumo di base e gli apparecchi superano il contratto, anche spostando gli apparecchi. Il contatore può staccare."
   },
   "date": {
     "format": "{jour} {num} {mois} {annee}",

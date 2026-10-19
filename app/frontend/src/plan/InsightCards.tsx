@@ -50,7 +50,15 @@ export function IndicatorsCard({ view, layout }: { view: DayView; layout: Indica
         {sorted.map((key) => (
           <div key={key} className={key === main ? "indicator indicator-main" : "indicator"}>
             <dt>{t(`plan.indicators.${key}`)}</dt>
-            <dd>{value(key, indicators)}</dd>
+            <dd>
+              {value(key, indicators)}
+              {key === "cost_eur" && (indicators.subscription_eur ?? 0) > 0 && (
+                <small className="dim">
+                  {" "}
+                  {t("plan.indicators.subscription_part", { amount: `${kwh(indicators.subscription_eur)}\u00a0€` })}
+                </small>
+              )}
+            </dd>
           </div>
         ))}
       </dl>
