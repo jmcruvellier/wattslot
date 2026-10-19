@@ -273,6 +273,24 @@ pre {
   margin-bottom: 0.75rem;
 }
 
+/* Onglets des vues et bouton aligné à droite (section Courbes). */
+.view-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.view-toolbar > .view-tabs {
+  margin-bottom: 0;
+}
+
+.view-toolbar > button {
+  margin-left: auto;
+}
+
 .view-tabs .spacer {
   flex: 1;
 }
@@ -1582,11 +1600,12 @@ a.ui-setting-row {
   cursor: pointer;
 }
 
-/* « Pourquoi ce plan » et indicateurs du plan : côte à côte quand la largeur le permet. */
+/* « Pourquoi ce plan » et indicateurs du plan : côte à côte et de même hauteur quand la
+   largeur le permet. */
 .plan-insights {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
-  align-items: start;
+  align-items: stretch;
   gap: 0.75rem;
   margin: 0.75rem 0 1rem;
 }

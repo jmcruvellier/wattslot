@@ -127,4 +127,15 @@ describe("CurvesScreen", () => {
     expect(screen.getByRole("group", { name: "Indicateurs du plan" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Masquer « Indicateurs du plan »" })).toBeNull();
   });
+
+  it("range « Personnaliser » sur la ligne des onglets, après eux", async () => {
+    mockApi(() => ({ yesterday: null, today: 1, tomorrow: null, week: null }));
+    renderScreen();
+
+    const button = await screen.findByRole("button", { name: "Personnaliser" });
+    const tabs = screen.getByRole("tablist", { name: "Courbes" });
+    expect(button.parentElement).toHaveClass("view-toolbar");
+    expect(tabs.parentElement).toBe(button.parentElement);
+    expect(tabs.compareDocumentPosition(button)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+  });
 });
