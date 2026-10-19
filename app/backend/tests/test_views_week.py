@@ -108,6 +108,32 @@ def test_the_v2_horizon_starts_after_tomorrow() -> None:
     assert [d.day for d in without_tomorrow.days] == [d["date_cible"] for d in after]
 
 
+def test_the_days_the_horizon_did_not_reach_are_listed() -> None:
+    """Horizon arrêté (lot 7.3) : le jour sans plan et les suivants, jusqu'au dernier jour prévu
+    (J+6), sont listés pour être affichés sans données."""
+    _, days = horizon_of(4)
+    today = state_of(STATES[0])
+    day = today["date_cible"]
+    stop = day + timedelta(days=5)
+    horizon = {
+        "jours": days[1:],
+        "avertissements": [
+            {"code": "horizon_sans_solution", "params": {"jour": stop.isoformat(), "raison": "x"}}
+        ],
+        "duree_s": 12.0,
+        "derniere_execution": {"heure_iso": f"{day.isoformat()}T20:59:00+02:00", "manuel": False},
+    }
+
+    view = week.build_week(horizon, days[0], today, CONTEXT)
+
+    assert view.days[-1].day == day + timedelta(days=4)
+    assert view.missing_days == [stop, day + timedelta(days=6)]
+    assert [n.code for n in view.notices] == ["horizon_sans_solution"]
+    assert view.notices[0].text.startswith("Pas de plan à partir du")
+    full = week.build_week({**horizon, "avertissements": []}, days[0], today, CONTEXT)
+    assert full.missing_days == []
+
+
 def test_route(tmp_path: Path) -> None:
     horizon, days = horizon_of(2)
     with TestClient(create_app(_settings(tmp_path))) as api:

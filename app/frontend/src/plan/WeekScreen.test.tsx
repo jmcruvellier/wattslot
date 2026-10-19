@@ -121,4 +121,16 @@ describe("vue Semaine", () => {
     const chart = screen.getByRole("article", { name: "Batterie (SoC prévu)" });
     expect(region.compareDocumentPosition(chart) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
+
+  it("affiche les jours que le calcul n'a pas atteints, sans données", () => {
+    renderWeek({ ...WEEK, missing_days: ["2026-10-20", "2026-10-21"] });
+
+    const agenda = screen.getByRole("list", { name: "Agenda de la semaine" });
+    const rows = within(agenda).getAllByRole("listitem");
+    expect(rows.at(-2)).toHaveTextContent("mardi 20");
+    expect(rows.at(-1)).toHaveTextContent("mercredi 21");
+    expect(rows.at(-1)).toHaveTextContent("Pas de plan pour ce jour : le calcul s'est arrêté avant");
+    const card = screen.getByRole("article", { name: "mardi 20" });
+    expect(card).toHaveTextContent("La cause est expliquée dans Planning, onglet Semaine.");
+  });
 });

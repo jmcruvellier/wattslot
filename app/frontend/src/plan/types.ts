@@ -261,6 +261,7 @@ export interface WeekView {
   now_index: number | null;
   notices: Notice[];
   waiting_not_assigned: boolean;
+  missing_days: string[]; // jours de l'horizon que le calcul n'a pas atteints (cause dans notices)
 }
 
 export type Versions = Record<ViewKind, number | null>;

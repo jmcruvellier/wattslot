@@ -175,7 +175,9 @@
       "off_peak": "Horas valle",
       "agenda": "Agenda de la semana",
       "battery_line": "Batería: {start} %, hasta {max} %, {end} % por la noche",
-      "open_day": "Abrir {day}"
+      "open_day": "Abrir {day}",
+      "missing": "Sin plan para este día: el cálculo se detuvo antes, consulte el mensaje al principio de la semana.",
+      "missing_curves": "Sin plan para este día: el cálculo se detuvo antes. La causa se explica en Planificación, pestaña Semana."
     },
     "header": {
       "computed": "Calculado a las {time} ({how})",
