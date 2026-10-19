@@ -3,7 +3,7 @@
 // équipements placés ce jour-là, avertissements), avertissements du calcul de l'horizon ;
 // graphiques de la production, de la consommation de base et du SoC sur toute la semaine.
 // Section Planning (lot 6b.4) : la semaine d'abord en agenda, une ligne par jour (`WeekAgenda`) ;
-// les cartes des jours et les graphiques (`WeekDetails`) vont sous « Courbes détaillées ».
+// les cartes des jours et les graphiques (`WeekDetails`) vont dans la section Courbes.
 
 import { Suspense, useState } from "react";
 

@@ -13,6 +13,12 @@ export const PATHS = {
       <path d="M3.5 10h17M8 3v4M16 3v4" />
     </>
   ),
+  curves: (
+    <>
+      <path d="M4 4v16h16" />
+      <path d="M7.5 15l3.5-4 3 2.5 5-6" />
+    </>
+  ),
   home: (
     <>
       <path d="M4 11l8-6.5 8 6.5V20H4z" />

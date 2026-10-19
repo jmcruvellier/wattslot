@@ -1247,7 +1247,7 @@ a.ui-setting-row {
 
 .main-menu ul {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   margin: 0;
   padding: 0;
   list-style: none;
@@ -1580,6 +1580,15 @@ a.ui-setting-row {
   padding: 0.75rem 0;
   font-weight: 700;
   cursor: pointer;
+}
+
+/* « Pourquoi ce plan » et indicateurs du plan : côte à côte quand la largeur le permet. */
+.plan-insights {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+  align-items: start;
+  gap: 0.75rem;
+  margin: 0.75rem 0 1rem;
 }
 
 /* Semaine en agenda (lot 6b.4). */

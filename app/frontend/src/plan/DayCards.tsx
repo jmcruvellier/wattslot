@@ -62,16 +62,18 @@ export default function DayCards({
   view,
   layout,
   indicators,
+  available = availableDayCards(view),
 }: {
   view: DayView;
   layout: ViewLayout;
   indicators: IndicatorLayout;
+  available?: DayCardId[]; // par défaut, toutes celles que le plan justifie
 }) {
   const render = useRenderers(indicators);
   // Le résumé est un groupe de cartes à lui seul : les autres cartes se rangent dans des grilles
   // avant ou après lui.
   const segments: DayCardId[][] = [];
-  for (const id of shownCards(layout, availableDayCards(view))) {
+  for (const id of shownCards(layout, available)) {
     const last = segments[segments.length - 1];
     if (id !== "summary" && last && last[0] !== "summary") last.push(id);
     else segments.push([id]);

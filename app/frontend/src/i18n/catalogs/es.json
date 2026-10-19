@@ -42,6 +42,7 @@
     "main": "Navegación principal",
     "today": "Hoy",
     "planning": "Planificación",
+    "curves": "Gráficos",
     "home": "Mi casa",
     "assistant": "Asistente",
     "settings": "Ajustes",
@@ -355,9 +356,7 @@
       "battery_max": "Batería al máximo, {pct} %",
       "until": "Hasta las {time}",
       "empty": "Nada que poner ese día.",
-      "now": "Ahora",
-      "why": "Por qué este plan",
-      "curves": "Curvas detalladas"
+      "now": "Ahora"
     }
   },
   "requests": {

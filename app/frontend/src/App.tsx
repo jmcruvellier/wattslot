@@ -35,6 +35,8 @@ type HealthState =
 // restent dans le fichier principal (budget vérifié par scripts/check-size.mjs).
 const AssistantScreen = lazy(() => import("./assistant/AssistantScreen"));
 const ConnectionScreen = lazy(() => import("./connection/ConnectionScreen"));
+// Section Courbes : les graphiques sortis de Planning, chargés seulement quand on l'ouvre.
+const CurvesScreen = lazy(() => import("./plan/CurvesScreen"));
 const DiagnosticScreen = lazy(() => import("./diagnostic/DiagnosticScreen"));
 const HomeScreen = lazy(() => import("./home/HomeScreen"));
 import type { HomePage } from "./home/HomeScreen";
@@ -48,7 +50,7 @@ const RequestSheet = lazy(() => import("./start/RequestSheet"));
 // URL relative : l'application est servie sous un préfixe variable derrière l'ingress de HA.
 const HEALTH_URL = "api/health";
 
-// Cinq sections (lot 6b.2) ; l'accueil (mise en route puis plan du jour) s'ouvre par défaut, la
+// Six sections (lot 6b.2, puis Courbes) ; l'accueil (mise en route puis plan du jour) s'ouvre par défaut, la
 // connexion au retour de Home Assistant (lot 4.6).
 const CONNECTION_ROUTE: Route = { section: "settings", sub: "connection" };
 
@@ -144,6 +146,7 @@ export default function App() {
             {route.section === "ui" && <UiGallery />}
             {route.section === "today" && <StartScreen onNavigate={navigate} />}
             {route.section === "planning" && <PlanScreen />}
+            {route.section === "curves" && <CurvesScreen />}
             {route.section === "home" && route.sub !== "library" && (
               <HomeScreen
                 page={(route.sub ?? "main") as HomePage}
