@@ -63,6 +63,16 @@ class Objective(StrEnum):
 Goal = Objective | Weights
 
 
+class NoPlanError(RuntimeError):
+    """HiGHS ne rend pas de plan ; garde le problème et l'objectif pour le rejouer (capture du
+    lot 7.3, ``planning/capture.py``)."""
+
+    def __init__(self, status: str, problem: Problem, objective: Goal) -> None:
+        super().__init__(f"pas de plan : {status}")
+        self.problem = problem
+        self.objective = objective
+
+
 @dataclass(frozen=True)
 class Plan:
     starts: dict[str, int]  # tâche → départ (minutes depuis minuit) ; absente : non placée
@@ -323,7 +333,7 @@ def solve(problem: Problem, objective: Goal = Objective.COST, time_limit_s: floa
         h.run()
         status = h.getModelStatus()
     if status not in (highspy.HighsModelStatus.kOptimal, highspy.HighsModelStatus.kTimeLimit):
-        raise RuntimeError(f"pas de plan : {h.modelStatusToString(status)}")
+        raise NoPlanError(h.modelStatusToString(status), problem, objective)
     return Plan(
         starts={
             name: max(options, key=lambda s: h.val(options[s]))

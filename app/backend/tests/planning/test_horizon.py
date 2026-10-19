@@ -9,7 +9,8 @@ from typing import Any
 import pytest
 
 from tests.v1_oracle import STATES, V1Raised, load, state_named, v1
-from wattslot.planning.engine import plan_day
+from wattslot.planning import horizon
+from wattslot.planning.engine import Goal, NoPlanError, Result, plan_day
 from wattslot.planning.horizon import (
     DayForecast,
     compute_horizon,
@@ -17,7 +18,7 @@ from wattslot.planning.horizon import (
     next_day_input,
 )
 from wattslot.planning.inputs import from_v1
-from wattslot.planning.problem import from_input
+from wattslot.planning.problem import Problem, from_input
 from wattslot.planning.recurrence import UnsupportedRule, occurrences, tasks_of_day
 
 DAY = date(2026, 10, 12)
@@ -157,3 +158,46 @@ def test_horizon_chains_the_battery_and_stops_without_forecast() -> None:
         }
     ]
     assert len(result.seconds) == 3
+
+
+def test_horizon_stops_at_the_day_without_plan_and_hands_it_over(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Un jour que HiGHS déclare impossible arrête l'horizon, comme une prévision manquante :
+    les jours calculés restent, le problème est passé à ``on_no_plan`` (lot 7.3)."""
+    first_state, _ = load(state_named("tomorrow_laundry"))
+    first = from_v1(first_state)
+    rng = random.Random(0)
+    available = {first.day + timedelta(days=k): forecast(rng) for k in range(1, 6)}
+    failing = first.day + timedelta(days=3)
+
+    async def forecast_of(day: date) -> DayForecast:
+        surplus = available[day]
+        return DayForecast(surplus["net_horaire_signe"], surplus["production_solaire_horaire"])
+
+    def plan_or_fail(problem: Problem, objective: Goal, explained: bool = True) -> Result:
+        if problem.day == failing:
+            raise NoPlanError("Infeasible", problem, objective)
+        return plan_day(problem, objective, explained)
+
+    first_result = plan_day(from_input(first))
+    monkeypatch.setattr(horizon, "plan_day", plan_or_fail)
+    captured: list[NoPlanError] = []
+
+    result = asyncio.run(
+        compute_horizon(first, first_result, forecast_of, days=6, on_no_plan=captured.append)
+    )
+
+    assert [data.day for data, _ in result.days] == [
+        first.day + timedelta(days=k) for k in range(3)
+    ]
+    assert result.warnings == [
+        {
+            "code": "horizon_interrompu",
+            "params": {
+                "jour": failing.isoformat(),
+                "raison": "NoPlanError : pas de plan : Infeasible",
+            },
+        }
+    ]
+    assert [error.problem.day for error in captured] == [failing]

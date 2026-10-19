@@ -24,6 +24,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass, replace
 from datetime import UTC, date, datetime, timedelta
 from datetime import time as day_time
+from pathlib import Path
 from typing import Any
 
 from pydantic import BaseModel
@@ -35,11 +36,11 @@ from wattslot.detection import DeviceKind, Role
 from wattslot.home_assistant import HomeAssistantClient
 from wattslot.home_model import HomeModel
 from wattslot.objective_settings import Preset
-from wattslot.planning import open_meteo, past
+from wattslot.planning import capture, open_meteo, past
 from wattslot.planning.actual import actual_day
 from wattslot.planning.assemble import build_input, to_v1
 from wattslot.planning.assignment import decide, launched_keys
-from wattslot.planning.engine import Goal, Objective, Result, plan_day
+from wattslot.planning.engine import Goal, NoPlanError, Objective, Result, plan_day
 from wattslot.planning.horizon import DayForecast, compute_horizon, end_soc_kwh
 from wattslot.planning.inputs import FrozenCycle, PlanningInput, RecentHistory
 from wattslot.planning.journal import CycleJournal, cycle_appliances
@@ -72,6 +73,12 @@ class Context:
     # Configuration enregistrée de la maison ; ``None`` : comme en phase 2 (toutes les
     # tâches, filtration planifiée).
     configuration: Configuration | None = None
+    # Dossier des données : capture des problèmes sans plan (lot 7.3) ; ``None`` : sans capture.
+    data_dir: Path | None = None
+
+    def capture_no_plan(self, error: NoPlanError) -> None:
+        if self.data_dir is not None:
+            capture.save(self.data_dir, error)
 
 
 class RunReport(BaseModel):
@@ -387,7 +394,11 @@ async def run(ctx: Context, now: datetime, manual: bool = False) -> RunReport:
     user_requests.mark_launched(
         ctx.database, cycle_appliances(ctx.model, ctx.configuration), launched_keys(data), today
     )
-    result = plan_day(from_input(data), objective)
+    try:
+        result = plan_day(from_input(data), objective)
+    except NoPlanError as exc:
+        ctx.capture_no_plan(exc)
+        raise
     state = plan_state(
         data,
         result,
@@ -486,6 +497,8 @@ async def run(ctx: Context, now: datetime, manual: bool = False) -> RunReport:
         store.save("tomorrow", tomorrow, state_t, time.perf_counter() - began, manual)
         report.seconds_tomorrow = round(time.perf_counter() - began, 2)
     except Exception as exc:
+        if isinstance(exc, NoPlanError):
+            ctx.capture_no_plan(exc)
         logger.exception("Prévision de demain impossible")
         report.errors.append(f"demain : {type(exc).__name__}: {exc}")
         return report
@@ -496,7 +509,9 @@ async def run(ctx: Context, now: datetime, manual: bool = False) -> RunReport:
         async def forecast_of(day: date) -> DayForecast:
             return await day_forecast(forecasts, ctx, day, today)
 
-        horizon = await compute_horizon(data_t, result_t, forecast_of, objective)
+        horizon = await compute_horizon(
+            data_t, result_t, forecast_of, objective, on_no_plan=ctx.capture_no_plan
+        )
         days = [plan_state(d, r) for d, r in horizon.days[1:]]
         store.save(
             "horizon",
