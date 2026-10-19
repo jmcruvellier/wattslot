@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.9.0
+
+Public beta, under the new name WattSlot.
+
+- New name, icon and logo: WattSlot is a new app in Home Assistant (`wattslot`), installed from a public repository without any token.
+- Homes without solar panels: off-peak, day colour or dynamic tariffs work on their own, without solar forecast.
+- New version notice in Settings and Application status.
+- Planning of appliances: taller tracks without legend, planned above and measured below, energy written in each block.
+- History import writes about 5 times less to disk.
+- Solver retries once differently when it wrongly reports a plan as impossible; the "battery full" bonus only breaks ties.
+- Fixes: first-step "Notification" check, today's real data right after the update, start times of today's real cycles, hour axis of daily charts, stale warning of an appliance already placed in today's plan.
+- The old v1 dashboard is removed.
+- User documentation in English and French, links to support the project.
+
 ## 0.8.0
 
 Home Assistant app quality: updates, backups and options.
