@@ -1057,7 +1057,9 @@
       "writes_behind": "{count} measurements are waiting to be saved: the device can no longer keep up.",
       "no_statistics": "No history in Home Assistant for: {devices}.",
       "plan_stale": "No plan could be computed for more than 2 hours.",
-      "energy_dashboard_issue": "{device}: {issue}"
+      "energy_dashboard_issue": "{device}: {issue}",
+      "impossible_data": "Forecasts stopped before {day}: the sensor \"{device}\" ({entity}) counted {source_kwh} kWh in one hour on {when} at {when_hour}, probably a sensor outage. The consumption expected at {hour} ({kwh} kWh) is more than the home can draw ({limit} kWh); forecasts for this weekday stay wrong until {until}.",
+      "impossible_data_unknown": "Forecasts stopped before {day}: the consumption expected at {hour} ({kwh} kWh) is more than the home can draw in an hour ({limit} kWh)."
     },
     "action": {
       "ha_not_configured": "Add-on: restart it. Docker: set the Home Assistant address and a long-lived access token.",
@@ -1072,8 +1074,11 @@
       "writes_behind": "If it lasts, attach the report to a bug report.",
       "no_statistics": "These sensors have no statistics in Home Assistant: the plan does not start from their history.",
       "plan_stale": "Look at the other problems, or run a computation from the home page.",
-      "configuration_issue": "Fix the setting in My home."
-    }
+      "configuration_issue": "Fix the setting in My home.",
+      "impossible_data": "Check the history of this sensor in Home Assistant at that time.",
+      "impossible_data_unknown": "A meter jump probably distorts the base consumption: check the history of your energy meters in Home Assistant."
+    },
+    "hour": "{hour}:00"
   },
   "report": {
     "title": "Report for a bug report",

@@ -18,7 +18,9 @@
     "horizon_interrompu": "Previsioni interrotte prima del {jour}: {raison}.",
     "tache_reportee": "{equipement} rinviato a {jour}: {pct_jour} % coperto dal solare, contro il {pct_auj} % di oggi.",
     "tache_reportee_sans_creneau": "{equipement} rinviato a {jour}: oggi non resta abbastanza tempo per un ciclo completo.",
-    "puissance_souscrite_depassee": "Prelievo dalla rete previsto oltre la potenza impegnata ({kva} kVA) alle ore {heures}: il consumo di base e gli apparecchi superano il contratto, anche spostando gli apparecchi. Il contatore può staccare."
+    "puissance_souscrite_depassee": "Prelievo dalla rete previsto oltre la potenza impegnata ({kva} kVA) alle ore {heures}: il consumo di base e gli apparecchi superano il contratto, anche spostando gli apparecchi. Il contatore può staccare.",
+    "donnees_impossibles": "Previsioni interrotte prima del {jour}: il consumo previsto alle {heure} ({kwh} kWh) supera ciò che la casa può prelevare in un'ora ({limite} kWh). Viene da un salto del sensore «{capteur}» ({entite}) il {jour_source} alle {heure_source}: {kwh_source} kWh contati in un'ora, probabilmente un'interruzione del sensore. Le previsioni di questo giorno della settimana resteranno falsate fino al {jour_fin}.",
+    "donnees_impossibles_sans_origine": "Previsioni interrotte prima del {jour}: il consumo previsto alle {heure} ({kwh} kWh) supera ciò che la casa può prelevare in un'ora ({limite} kWh). Probabilmente un salto del contatore falsa il consumo di base: controlli lo storico dei contatori di energia in Home Assistant."
   },
   "date": {
     "format": "{jour} {num} {mois} {annee}",

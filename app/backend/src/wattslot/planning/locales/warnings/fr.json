@@ -18,7 +18,9 @@
     "horizon_interrompu": "Prévisions arrêtées avant le {jour} : {raison}.",
     "tache_reportee": "{equipement} reporté au {jour} : {pct_jour} % couvert par le solaire, contre {pct_auj} % aujourd'hui.",
     "tache_reportee_sans_creneau": "{equipement} reporté au {jour} : plus assez de temps aujourd'hui pour un cycle complet.",
-    "puissance_souscrite_depassee": "Soutirage prévu au-delà de la puissance souscrite ({kva} kVA) aux heures {heures} : la consommation de base et les appareils dépassent ce que le contrat permet, même en décalant les appareils. Risque de coupure du disjoncteur."
+    "puissance_souscrite_depassee": "Soutirage prévu au-delà de la puissance souscrite ({kva} kVA) aux heures {heures} : la consommation de base et les appareils dépassent ce que le contrat permet, même en décalant les appareils. Risque de coupure du disjoncteur.",
+    "donnees_impossibles": "Prévisions arrêtées avant le {jour} : la consommation prévue à {heure} ({kwh} kWh) dépasse ce que votre maison peut tirer en une heure ({limite} kWh). Elle vient d'un saut du capteur « {capteur} » ({entite}) le {jour_source} à {heure_source} : {kwh_source} kWh comptés en une heure, sans doute une coupure du capteur. Les prévisions de ce jour de la semaine resteront faussées jusqu'au {jour_fin}.",
+    "donnees_impossibles_sans_origine": "Prévisions arrêtées avant le {jour} : la consommation prévue à {heure} ({kwh} kWh) dépasse ce que votre maison peut tirer en une heure ({limite} kWh). Un saut de compteur fausse sans doute la consommation de base : vérifiez l'historique de vos compteurs d'énergie dans Home Assistant."
   },
   "date": {
     "format": "{jour} {num} {mois} {annee}",

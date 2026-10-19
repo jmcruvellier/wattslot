@@ -2,7 +2,7 @@
 
 import asyncio
 import json
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -21,6 +21,7 @@ from wattslot.home_model import HomeDevice, HomeModel, HomeSensor
 from wattslot.ingestion import EntityStatus, IngestionStatus
 from wattslot.main import create_app
 from wattslot.objective_settings import ObjectiveSettings, Preset
+from wattslot.planning.runner import ImpossibleData, RunReport
 from wattslot.planning.scheduler import SchedulerStatus
 from wattslot.planning.sources import PlanningSettings
 from wattslot.problems import Problem, Severity, collect
@@ -294,4 +295,56 @@ def test_a_missing_forecast_is_not_an_internal_error() -> None:
         Configuration(),
         None,
     )
+    assert "internal_error" not in codes(found)
+
+
+def test_an_impossible_day_names_the_meter_jump() -> None:
+    """Jour non calculé, consommation de base impossible (lot 7.3) : le saut de compteur à
+    l'origine, ou seulement l'heure s'il n'est pas retrouvé."""
+    paris = ZoneInfo("Europe/Paris")
+    found_jump = ImpossibleData(
+        day=date(2026, 10, 23),
+        hour=20,
+        consumption_kwh=10674.1,
+        limit_kwh=11.5,
+        device="Réseau",
+        entity_id="sensor.grid_import",
+        source_start=datetime(2026, 10, 16, 20, tzinfo=paris),
+        source_kwh=64045.0,
+        until=date(2026, 11, 27),
+    )
+    unknown = ImpossibleData(day=date(2026, 10, 24), hour=7, consumption_kwh=80.0, limit_kwh=11.5)
+    last = RunReport(
+        day=date(2026, 10, 19),
+        started_at=NOW,
+        manual=False,
+        seconds_today=1.0,
+        impossible=[found_jump, unknown],
+    )
+    planning = SchedulerStatus(running=True, enabled=True, last_report=last)
+
+    found = collect(
+        _ready(),
+        Diagnostic(generated_at=NOW, planning=planning),
+        HomeModel(),
+        Configuration(),
+        None,
+    )
+
+    jump, bare = (p for p in found if p.code.startswith("impossible_data"))
+    assert (jump.code, jump.severity) == ("impossible_data", Severity.DEGRADED)
+    assert jump.params == {
+        "day": "2026-10-23",
+        "hour": "20",
+        "kwh": "10674.1",
+        "limit": "11.5",
+        "device": "Réseau",
+        "entity": "sensor.grid_import",
+        "when": "2026-10-16",
+        "when_hour": "20",
+        "source_kwh": "64045",
+        "until": "2026-11-27",
+    }
+    assert bare.code == "impossible_data_unknown"
+    assert bare.params == {"day": "2026-10-24", "hour": "7", "kwh": "80", "limit": "11.5"}
     assert "internal_error" not in codes(found)

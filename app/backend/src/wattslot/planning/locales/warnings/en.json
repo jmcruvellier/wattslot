@@ -18,7 +18,9 @@
     "horizon_interrompu": "Forecasts stopped before {jour}: {raison}.",
     "tache_reportee": "{equipement} postponed to {jour}: {pct_jour}% covered by solar, versus {pct_auj}% today.",
     "tache_reportee_sans_creneau": "{equipement} postponed to {jour}: not enough time left today for a full cycle.",
-    "puissance_souscrite_depassee": "Planned grid draw above the contract power ({kva} kVA) at hours {heures}: base consumption and appliances exceed what the contract allows, even after moving the appliances. The main breaker may trip."
+    "puissance_souscrite_depassee": "Planned grid draw above the contract power ({kva} kVA) at hours {heures}: base consumption and appliances exceed what the contract allows, even after moving the appliances. The main breaker may trip.",
+    "donnees_impossibles": "Forecasts stopped before {jour}: the consumption expected at {heure} ({kwh} kWh) is more than your home can draw in an hour ({limite} kWh). It comes from a jump of the sensor \"{capteur}\" ({entite}) on {jour_source} at {heure_source}: {kwh_source} kWh counted in one hour, probably a sensor outage. Forecasts for this weekday will stay wrong until {jour_fin}.",
+    "donnees_impossibles_sans_origine": "Forecasts stopped before {jour}: the consumption expected at {heure} ({kwh} kWh) is more than your home can draw in an hour ({limite} kWh). A meter jump probably distorts the base consumption: check the history of your energy meters in Home Assistant."
   },
   "date": {
     "format": "{jour}, {mois} {num}, {annee}",

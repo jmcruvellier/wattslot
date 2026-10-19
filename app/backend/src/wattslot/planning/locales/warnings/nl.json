@@ -18,7 +18,9 @@
     "horizon_interrompu": "Prognoses gestopt vóór {jour}: {raison}.",
     "tache_reportee": "{equipement} uitgesteld naar {jour}: {pct_jour} % gedekt door zonne-energie, tegenover {pct_auj} % vandaag.",
     "tache_reportee_sans_creneau": "{equipement} uitgesteld naar {jour}: vandaag niet meer genoeg tijd voor een volledige cyclus.",
-    "puissance_souscrite_depassee": "Gepland netverbruik boven het gecontracteerde vermogen ({kva} kVA) om {heures} uur: basisverbruik en apparaten overschrijden het contract, ook na het verschuiven van de apparaten. De hoofdschakelaar kan uitvallen."
+    "puissance_souscrite_depassee": "Gepland netverbruik boven het gecontracteerde vermogen ({kva} kVA) om {heures} uur: basisverbruik en apparaten overschrijden het contract, ook na het verschuiven van de apparaten. De hoofdschakelaar kan uitvallen.",
+    "donnees_impossibles": "Prognoses gestopt vóór {jour}: het verwachte verbruik om {heure} ({kwh} kWh) is meer dan uw huis in een uur kan afnemen ({limite} kWh). Het komt van een sprong van de sensor \"{capteur}\" ({entite}) op {jour_source} om {heure_source}: {kwh_source} kWh in één uur geteld, waarschijnlijk een storing van de sensor. De prognoses voor deze weekdag blijven onjuist tot {jour_fin}.",
+    "donnees_impossibles_sans_origine": "Prognoses gestopt vóór {jour}: het verwachte verbruik om {heure} ({kwh} kWh) is meer dan uw huis in een uur kan afnemen ({limite} kWh). Waarschijnlijk vertekent een metersprong het basisverbruik: controleer de geschiedenis van uw energiemeters in Home Assistant."
   },
   "date": {
     "format": "{jour} {num} {mois} {annee}",

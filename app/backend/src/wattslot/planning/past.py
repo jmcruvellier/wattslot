@@ -119,6 +119,59 @@ def series(
     return dict(found)
 
 
+ENERGY_ROLES = (
+    Role.ENERGY_PRODUCED,
+    Role.ENERGY_IMPORTED,
+    Role.ENERGY_EXPORTED,
+    Role.ENERGY_CHARGED,
+    Role.ENERGY_DISCHARGED,
+    Role.ENERGY_CONSUMED,
+)
+
+
+@dataclass(frozen=True)
+class Spike:
+    """Agrégat horaire d'énergie impossible d'un capteur (lot 7.3) : saut de compteur."""
+
+    entity_id: str
+    device: str
+    start: datetime  # heure locale
+    energy_kwh: float
+
+
+def spike(
+    model: HomeModel,
+    reader: AggregateReader,
+    target: date,
+    hour: int,
+    today: date,
+    zone: ZoneInfo,
+    limit_kwh: float,
+    occurrences: int = SAME_WEEKDAY_OCCURRENCES,
+) -> Spike | None:
+    """Origine d'une consommation de base impossible à ``hour`` le jour ``target`` : le plus
+    fort agrégat horaire au-delà de ``limit_kwh``, parmi les capteurs d'énergie, sur la fenêtre
+    de ``baseline`` ; à la même heure d'un même jour de la semaine d'abord."""
+    start, end = window(today, (occurrences + SAFETY_WEEKS) * 7, zone)
+    found: list[tuple[bool, float, Spike]] = []
+    for device in model.devices:
+        for sensor in device.sensors:
+            if sensor.role not in ENERGY_ROLES:
+                continue
+            for aggregate in reader.read(sensor.entity_id, HOUR, start, end):
+                energy = aggregate.energy_kwh
+                if energy is None or abs(energy) <= limit_kwh:
+                    continue
+                local = aggregate.start.astimezone(zone)
+                same = local.hour == hour and local.weekday() == target.weekday()
+                found.append(
+                    (same, abs(energy), Spike(sensor.entity_id, device.name, local, energy))
+                )
+    if not found:
+        return None
+    return max(found, key=lambda f: (f[0], f[1]))[2]
+
+
 def baseline(
     model: HomeModel,
     reader: AggregateReader,

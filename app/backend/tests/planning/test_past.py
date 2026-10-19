@@ -20,6 +20,7 @@ from wattslot.planning.past import (
     best_production,
     efficiencies_from_hours,
     recent_history,
+    spike,
 )
 
 PARIS = ZoneInfo("Europe/Paris")
@@ -283,3 +284,22 @@ def test_battery_efficiencies_read_the_soc_at_the_end_of_each_hour() -> None:
     assert result.charge_percent == pytest.approx(90.0, abs=0.1)
     assert result.discharge_percent == pytest.approx(95.0, abs=0.1)
     assert not battery_efficiencies(MODEL, reader, TODAY, PARIS).ok  # capacité inconnue
+
+
+def test_the_meter_jump_behind_an_impossible_baseline_is_found() -> None:
+    """Un compteur coupé un instant puis revenu à son index : tout l'index compté en une heure
+    un vendredi à 20 h fausse la base des vendredis suivants (lot 7.3)."""
+    reader = FakeReader()
+    fill(reader, days_back(63), lambda d, h: 0.4)
+    jump_day = TODAY - timedelta(days=7)
+    reader.add("sensor.imp_hp", jump_day, 20, energy_kwh=64045.0)
+    reader.add("sensor.tv", TODAY - timedelta(days=3), 20, energy_kwh=-90.0)  # autre jour
+    friday = TODAY + timedelta(days=7)
+
+    found = spike(MODEL, reader, friday, 20, TODAY, PARIS, limit_kwh=11.5)
+
+    assert found is not None
+    assert (found.entity_id, found.device, found.energy_kwh) == ("sensor.imp_hp", "grid", 64045.0)
+    assert found.start == datetime.combine(jump_day, time(20), PARIS)
+    assert baseline(MODEL, reader, friday, TODAY, PARIS)[20] > 10000  # la base en dépend
+    assert spike(MODEL, reader, friday, 20, TODAY, PARIS, limit_kwh=1e6) is None

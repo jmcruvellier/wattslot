@@ -20,6 +20,7 @@ import math
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
+from datetime import date
 from enum import StrEnum
 from typing import Any
 
@@ -52,6 +53,9 @@ SOFT_PENALTY = 1.0  # contrainte souple violée, par heure (ou par créneau d'un
 # Par kWh soutiré au-delà de la puissance souscrite (lot 7.3) : plus qu'une tâche non placée,
 # le disjoncteur coupant toute la maison ; souple, le problème reste toujours soluble.
 CONTRACT_PENALTY = 1000.0
+# Puissance supposée sans puissance souscrite saisie, pour le seul contrôle des données
+# impossibles : 36 kVA, le plus fort contrat résidentiel en France (lot 7.3).
+DEFAULT_CONTRACT_KWH = 36.0
 BIG_KWH = 50.0
 
 
@@ -74,6 +78,35 @@ class NoPlanError(RuntimeError):
         super().__init__(f"pas de plan : {status}")
         self.problem = problem
         self.objective = objective
+
+
+class ImpossibleDataError(RuntimeError):
+    """Une heure du jour demande plus que la maison ne peut tirer : réseau (puissance
+    souscrite), décharge de la batterie et production réunis (lot 7.3). Presque toujours un
+    saut de compteur dans l'historique, qui fausse la consommation de base."""
+
+    def __init__(self, day: date, hour: int, consumption_kwh: float, limit_kwh: float) -> None:
+        super().__init__(
+            f"données impossibles : {consumption_kwh:.1f} kWh consommés à {hour} h le {day}, "
+            f"pour {limit_kwh:.1f} kWh au plus"
+        )
+        self.day, self.hour = day, hour
+        self.consumption_kwh, self.limit_kwh = consumption_kwh, limit_kwh
+
+
+def impossible_hour(problem: Problem) -> ImpossibleDataError | None:
+    """La première heure dont la consommation (de base et cycles lancés) dépasse ce que la
+    maison peut tirer, ou ``None``."""
+    battery = problem.battery
+    contract = problem.contract_kwh if problem.contract_kwh is not None else DEFAULT_CONTRACT_KWH
+    for hour in problem.hours:
+        production = max(0.0, problem.production_kwh.get(hour, 0.0))
+        consumption = production - problem.net_kwh.get(hour, 0.0) + problem.fixed_kwh.get(hour, 0.0)
+        active = battery.capacity_kwh > 0 and battery.active_from <= hour < battery.active_to
+        limit = contract + production + (battery.discharge_max_kw if active else 0.0)
+        if consumption > limit + 1e-6:
+            return ImpossibleDataError(problem.day, hour, consumption, limit)
+    return None
 
 
 @dataclass(frozen=True)
@@ -148,6 +181,9 @@ def _terms(problem: Problem, objective: Goal) -> tuple[dict[int, float], dict[in
 
 
 def solve(problem: Problem, objective: Goal = Objective.COST, time_limit_s: float = 30.0) -> Plan:
+    impossible = impossible_hour(problem)
+    if impossible is not None:
+        raise impossible
     h = highspy.Highs()  # type: ignore[no-untyped-call]
     h.setOptionValue("output_flag", False)
     h.setOptionValue("time_limit", time_limit_s)
