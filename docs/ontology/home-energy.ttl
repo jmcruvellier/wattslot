@@ -1,0 +1,215 @@
+# WattSlot ontology: https://w3id.org/wattslot/ontology/library/home-energy
+#
+# Generated from the application's files by dev/tools/ontology_files.py; do not edit.
+# License: Apache-2.0, https://github.com/jmcruvellier/wattslot
+
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix wattslot: <https://w3id.org/wattslot/ontology#> .
+@prefix s4ener: <https://saref.etsi.org/saref4ener/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix saref: <https://saref.etsi.org/core/> .
+@prefix sosa: <http://www.w3.org/ns/sosa/> .
+@prefix ssn: <http://www.w3.org/ns/ssn/> .
+wattslot:ACPower a owl:Class ;
+	rdfs:label "AC power"@en , "Puissance alternative (AC)"@fr ;
+	rdfs:subClassOf wattslot:Power .
+wattslot:Aggregate a owl:Class ;
+	rdfs:comment "Synthèse des relevés d'un capteur sur une période (quart d'heure, heure)."@fr ;
+	rdfs:label "Aggregate"@en , "Agrégat"@fr ;
+	rdfs:subClassOf sosa:Observation .
+wattslot:Appliance a owl:Class ;
+	rdfs:label "Appareil"@fr , "Appliance"@en ;
+	rdfs:subClassOf wattslot:Device .
+wattslot:Battery a owl:Class ;
+	rdfs:label "Batterie"@fr , "Battery"@en ;
+	rdfs:subClassOf wattslot:Device .
+wattslot:ChargeLevel a owl:Class ;
+	rdfs:label "Charge level"@en , "Niveau de charge"@fr ;
+	rdfs:subClassOf wattslot:Quantity .
+wattslot:CumulativeEnergy a owl:Class ;
+	rdfs:comment "Compteur qui ne fait qu'augmenter"@fr ;
+	rdfs:label "Cumulative energy"@en , "Énergie cumulée"@fr ;
+	rdfs:subClassOf wattslot:Energy .
+wattslot:DCPower a owl:Class ;
+	rdfs:label "DC power"@en , "Puissance continue (DC)"@fr ;
+	rdfs:subClassOf wattslot:Power .
+wattslot:DailyEnergy a owl:Class ;
+	rdfs:comment "Compteur remis à zéro chaque jour"@fr ;
+	rdfs:label "Daily energy"@en , "Énergie quotidienne"@fr ;
+	rdfs:subClassOf wattslot:Energy .
+wattslot:Device a owl:Class ;
+	rdfs:label "Device"@en , "Équipement"@fr ;
+	rdfs:subClassOf sosa:Platform , saref:Device .
+wattslot:Dishwasher a owl:Class ;
+	rdfs:label "Dishwasher"@en , "Lave-vaisselle"@fr ;
+	rdfs:subClassOf wattslot:Appliance .
+wattslot:Dryer a owl:Class ;
+	rdfs:label "Dryer"@en , "Sèche-linge"@fr ;
+	rdfs:subClassOf wattslot:Appliance .
+wattslot:Efficiency a owl:Class ;
+	rdfs:label "Efficiency"@en , "Rendement"@fr ;
+	rdfs:subClassOf wattslot:Quantity .
+wattslot:ElectricCurrent a owl:Class ;
+	rdfs:label "Electric current"@en , "Intensité"@fr ;
+	rdfs:subClassOf wattslot:Quantity .
+wattslot:ElectricityMeter a owl:Class ;
+	rdfs:comment "Compteur du raccordement au réseau"@fr ;
+	rdfs:label "Compteur électrique"@fr , "Electricity meter"@en ;
+	rdfs:subClassOf saref:Meter , wattslot:Device .
+wattslot:Energy a owl:Class ;
+	rdfs:label "Energy"@en , "Énergie"@fr ;
+	rdfs:subClassOf wattslot:Quantity .
+wattslot:EnergyCharged a wattslot:Role ;
+	rdfs:label "Energy charged"@en , "Énergie chargée"@fr ;
+	wattslot:quantity wattslot:Energy .
+wattslot:EnergyConsumed a wattslot:Role ;
+	rdfs:label "Energy consumed"@en , "Énergie consommée"@fr ;
+	wattslot:quantity wattslot:Energy .
+wattslot:EnergyDischarged a wattslot:Role ;
+	rdfs:label "Energy discharged"@en , "Énergie déchargée"@fr ;
+	wattslot:quantity wattslot:Energy .
+wattslot:EnergyExported a wattslot:Role ;
+	rdfs:label "Energy exported"@en , "Énergie injectée"@fr ;
+	wattslot:quantity wattslot:Energy .
+wattslot:EnergyImported a wattslot:Role ;
+	rdfs:label "Energy imported"@en , "Énergie soutirée"@fr ;
+	wattslot:quantity wattslot:Energy .
+wattslot:EnergyProduced a wattslot:Role ;
+	rdfs:label "Energy produced"@en , "Énergie produite"@fr ;
+	wattslot:quantity wattslot:Energy .
+wattslot:ExportedEnergy a owl:Class ;
+	rdfs:label "Exported energy"@en , "Énergie injectée"@fr ;
+	rdfs:subClassOf wattslot:Energy .
+wattslot:ForecastEnergy a owl:Class ;
+	rdfs:label "Forecast energy"@en , "Énergie prévue"@fr ;
+	rdfs:subClassOf wattslot:Energy .
+wattslot:GridConnection a owl:Class ;
+	rdfs:label "Grid connection"@en , "Raccordement au réseau"@fr ;
+	rdfs:subClassOf wattslot:Device .
+wattslot:Home a owl:Class ;
+	rdfs:label "Home"@en , "Maison"@fr .
+wattslot:Irradiance a owl:Class ;
+	rdfs:label "Irradiance"@en , "Irradiance"@fr ;
+	rdfs:subClassOf wattslot:Quantity .
+wattslot:Microinverter a owl:Class ;
+	rdfs:comment "Un par panneau ou groupe de panneaux d'une production solaire"@fr ;
+	rdfs:label "Micro-onduleur"@fr , "Microinverter"@en ;
+	rdfs:subClassOf wattslot:Device .
+wattslot:OtherLoad a owl:Class ;
+	rdfs:label "Autre consommation"@fr , "Other consumption"@en ;
+	rdfs:subClassOf wattslot:Appliance .
+wattslot:PoolPump a owl:Class ;
+	rdfs:label "Filtration de piscine"@fr , "Pool pump"@en ;
+	rdfs:subClassOf wattslot:Appliance .
+wattslot:Power a owl:Class ;
+	rdfs:label "Power"@en , "Puissance"@fr ;
+	rdfs:subClassOf wattslot:Quantity .
+wattslot:PowerConsumed a wattslot:Role ;
+	rdfs:label "Power consumed"@en , "Puissance consommée"@fr ;
+	wattslot:quantity wattslot:Power .
+wattslot:PowerProduced a wattslot:Role ;
+	rdfs:label "Power produced"@en , "Puissance produite"@fr ;
+	wattslot:quantity wattslot:Power .
+wattslot:Quantity a owl:Class ;
+	rdfs:label "Grandeur"@fr , "Quantity"@en ;
+	rdfs:subClassOf sosa:ObservableProperty .
+wattslot:Role a owl:Class ;
+	rdfs:label "Rôle d'un capteur"@fr , "Sensor role"@en .
+wattslot:Room a owl:Class ;
+	rdfs:label "Pièce"@fr , "Room"@en .
+wattslot:Sensor a owl:Class ;
+	rdfs:label "Capteur"@fr , "Sensor"@en ;
+	rdfs:subClassOf sosa:Sensor .
+wattslot:SmartPlug a owl:Class ;
+	rdfs:comment "Porte les capteurs de l'appareil branché"@fr ;
+	rdfs:label "Prise connectée"@fr , "Smart plug"@en ;
+	rdfs:subClassOf wattslot:Device .
+wattslot:SolarInstallation a owl:Class ;
+	rdfs:label "Production solaire"@fr , "Solar production"@en ;
+	rdfs:subClassOf wattslot:Device .
+wattslot:StateOfCharge a wattslot:Role ;
+	rdfs:label "State of charge"@en , "État de charge"@fr ;
+	wattslot:quantity wattslot:ChargeLevel .
+wattslot:Temperature a owl:Class ;
+	rdfs:label "Temperature"@en , "Température"@fr ;
+	rdfs:subClassOf wattslot:Quantity .
+wattslot:UninterruptiblePowerSupply a owl:Class ;
+	rdfs:label "Onduleur (alimentation sans interruption)"@fr , "Uninterruptible power supply"@en ;
+	rdfs:subClassOf wattslot:Device .
+wattslot:Voltage a owl:Class ;
+	rdfs:label "Tension"@fr , "Voltage"@en ;
+	rdfs:subClassOf wattslot:Quantity .
+wattslot:WashingMachine a owl:Class ;
+	rdfs:label "Lave-linge"@fr , "Washing machine"@en ;
+	rdfs:subClassOf wattslot:Appliance .
+wattslot:WaterHeater a owl:Class ;
+	rdfs:label "Chauffe-eau"@fr , "Water heater"@en ;
+	rdfs:subClassOf wattslot:Appliance .
+wattslot:capacityKwh a owl:DatatypeProperty ;
+	rdfs:domain wattslot:Battery ;
+	rdfs:label "capacity (kWh)"@en , "capacité (kWh)"@fr ;
+	rdfs:range xsd:double .
+wattslot:energyKwh a owl:DatatypeProperty ;
+	rdfs:domain wattslot:Aggregate ;
+	rdfs:label "energy over the period (kWh)"@en , "énergie de la période (kWh)"@fr ;
+	rdfs:range xsd:double .
+wattslot:haEntity a owl:DatatypeProperty ;
+	rdfs:domain wattslot:Sensor ;
+	rdfs:label "Home Assistant entity"@en , "entité Home Assistant"@fr ;
+	rdfs:range xsd:string .
+wattslot:hasDevice a owl:ObjectProperty ;
+	rdfs:domain wattslot:Home ;
+	rdfs:label "a pour équipement"@fr , "has device"@en ;
+	rdfs:range wattslot:Device .
+wattslot:hasSensor a owl:ObjectProperty ;
+	rdfs:domain wattslot:Device ;
+	rdfs:label "a pour capteur"@fr , "has sensor"@en ;
+	rdfs:range wattslot:Sensor ;
+	rdfs:subPropertyOf sosa:hosts .
+wattslot:key a owl:DatatypeProperty ;
+	rdfs:domain wattslot:Device ;
+	rdfs:label "clé stable de l'équipement"@fr , "stable device key"@en ;
+	rdfs:range xsd:string .
+wattslot:last a owl:DatatypeProperty ;
+	rdfs:domain wattslot:Aggregate ;
+	rdfs:label "valeur en fin de période"@fr , "value at the end of the period"@en ;
+	rdfs:range xsd:double .
+wattslot:locatedIn a owl:ObjectProperty ;
+	rdfs:domain wattslot:Device ;
+	rdfs:label "est situé dans"@fr , "located in"@en ;
+	rdfs:range wattslot:Room .
+wattslot:max a owl:DatatypeProperty ;
+	rdfs:domain wattslot:Aggregate ;
+	rdfs:label "maximum"@en , "maximum"@fr ;
+	rdfs:range xsd:double .
+wattslot:mean a owl:DatatypeProperty ;
+	rdfs:domain wattslot:Aggregate ;
+	rdfs:label "moyenne pondérée par la durée"@fr , "time-weighted mean"@en ;
+	rdfs:range xsd:double .
+wattslot:period a owl:DatatypeProperty ;
+	rdfs:domain wattslot:Aggregate ;
+	rdfs:label "period (ISO 8601 duration)"@en , "période (durée ISO 8601)"@fr ;
+	rdfs:range xsd:string .
+wattslot:quantity a owl:AnnotationProperty ;
+	rdfs:label "grandeur observée"@fr , "observed quantity"@en .
+wattslot:resetsDaily a owl:DatatypeProperty ;
+	rdfs:domain wattslot:Sensor ;
+	rdfs:label "remis à zéro chaque jour"@fr , "resets daily"@en ;
+	rdfs:range xsd:boolean .
+wattslot:role a owl:ObjectProperty ;
+	rdfs:domain wattslot:Sensor ;
+	rdfs:label "role"@en , "rôle"@fr ;
+	rdfs:range wattslot:Role .
+wattslot:start a owl:DatatypeProperty ;
+	rdfs:domain wattslot:Aggregate ;
+	rdfs:label "début de la période"@fr , "period start"@en ;
+	rdfs:range xsd:dateTime .
+wattslot:typeKey a owl:DatatypeProperty ;
+	rdfs:comment "Type propre à une installation : sous-classe d'un type de la bibliothèque, déclarée dans le graphe de la maison."@fr ;
+	rdfs:label "clé stable d'un type d'équipement propre"@fr , "stable key of a custom device type"@en ;
+	rdfs:range xsd:string .
+<https://w3id.org/wattslot/ontology/library/home-energy> a owl:Ontology ;
+	rdfs:label "Home energy"@en , "Énergie domestique"@fr ;
+	owl:imports sosa: , ssn: , saref: , s4ener: ;
+	owl:versionInfo "0.2" .
