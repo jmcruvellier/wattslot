@@ -140,16 +140,23 @@ def battery_cost(problem: Problem, objective: Goal) -> float:
     if isinstance(objective, Objective) or objective.battery <= 0:
         return 0.0
     hours = list(problem.hours)
-    price = problem.prices_eur_kwh
+    price = _scaled(problem.prices_eur_kwh, problem)
     return objective.battery * sum(price[h] for h in hours) / len(hours) if hours else 0.0
+
+
+def _scaled(prices: dict[int, float], problem: Problem) -> dict[int, float]:
+    """Prix ramenés à l'échelle de l'euro (``Problem.price_scale``), pour l'objectif seul."""
+    if problem.price_scale == 1.0:
+        return prices
+    return {hour: value / problem.price_scale for hour, value in prices.items()}
 
 
 def _terms(problem: Problem, objective: Goal) -> tuple[dict[int, float], dict[int, float], float]:
     """(poids d'un kWh soutiré, d'un kWh injecté, par heure ; valeur d'un kWh restant stocké à
     minuit avant rendement) selon l'objectif."""
     hours = list(problem.hours)
-    price = problem.prices_eur_kwh
-    export_price = problem.export_prices_eur_kwh
+    price = _scaled(problem.prices_eur_kwh, problem)
+    export_price = _scaled(problem.export_prices_eur_kwh, problem)
     lowest = min(price.values())
     if objective is Objective.COST:
         weight = {hour: price[hour] + IMPORT_TIE_EUR for hour in hours}
@@ -684,8 +691,9 @@ def output(problem: Problem, plan: Plan, run: BatteryRun) -> dict[str, Any]:
     return day_plan(problem, plan, run).to_v1()
 
 
-def _score(objective: Goal) -> Callable[[Indicators], float]:
-    """Note d'un plan selon l'objectif (plus bas : meilleur), pour choisir une alternative."""
+def _score(objective: Goal, price_scale: float = 1.0) -> Callable[[Indicators], float]:
+    """Note d'un plan selon l'objectif (plus bas : meilleur), pour choisir une alternative ; le
+    coût est ramené à l'échelle de l'euro (``Problem.price_scale``) face aux kWh valorisés."""
     if objective is Objective.COST:
         return lambda found: found.cost_eur
     if objective is Objective.IMPORT:
@@ -697,7 +705,7 @@ def _score(objective: Goal) -> Callable[[Indicators], float]:
     assert isinstance(objective, Weights)
     weights = objective
     return lambda found: (
-        weights.cost * found.cost_eur
+        weights.cost * found.cost_eur / price_scale
         + (weights.grid_import + weights.co2) * found.import_kwh * 0.2
         + weights.grid_export * found.export_kwh * 0.2
         + weights.battery * found.battery_throughput_kwh * 0.2
@@ -719,7 +727,13 @@ def plan_day(problem: Problem, objective: Goal = Objective.COST, explained: bool
 
         name = objective.value if isinstance(objective, Objective) else "custom"
         day = explain(
-            problem, day, plan.starts, load_kwh(problem, plan), name, evaluate, _score(objective)
+            problem,
+            day,
+            plan.starts,
+            load_kwh(problem, plan),
+            name,
+            evaluate,
+            _score(objective, problem.price_scale),
         )
     return Result(
         plan=plan,

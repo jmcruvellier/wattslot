@@ -26,6 +26,10 @@ class Currency:
     symbol: str
     before_in_english: bool = False  # « $1.73 » en anglais, « 1,73 $ » ailleurs
     decimals: int = 2
+    # Ordre de grandeur d'un euro dans la devise : les pénalités et départages du moteur, réglés
+    # en euros, comparent des prix ramenés à cette échelle (``scale``). Approché à dessein : il
+    # ne sert qu'à garder les mêmes priorités, jamais à convertir un montant.
+    per_euro: float = 1.0
 
 
 # Devises proposées dans les réglages ; une autre (code ISO 4217) s'affiche par son code.
@@ -34,18 +38,18 @@ CURRENCIES: dict[str, Currency] = {
     "CHF": Currency("CHF"),
     "GBP": Currency("£", before_in_english=True),
     "USD": Currency("$", before_in_english=True),
-    "CAD": Currency("CA$", before_in_english=True),
-    "AUD": Currency("A$", before_in_english=True),
-    "NZD": Currency("NZ$", before_in_english=True),
-    "SEK": Currency("kr"),
-    "NOK": Currency("kr"),
-    "DKK": Currency("kr."),
-    "PLN": Currency("zł"),
-    "CZK": Currency("Kč"),
-    "HUF": Currency("Ft", decimals=0),
-    "RON": Currency("lei"),
-    "BGN": Currency("лв"),
-    "JPY": Currency("¥", before_in_english=True, decimals=0),
+    "CAD": Currency("CA$", before_in_english=True, per_euro=1.5),
+    "AUD": Currency("A$", before_in_english=True, per_euro=1.7),
+    "NZD": Currency("NZ$", before_in_english=True, per_euro=1.8),
+    "SEK": Currency("kr", per_euro=11),
+    "NOK": Currency("kr", per_euro=11),
+    "DKK": Currency("kr.", per_euro=7.5),
+    "PLN": Currency("zł", per_euro=4.3),
+    "CZK": Currency("Kč", per_euro=25),
+    "HUF": Currency("Ft", decimals=0, per_euro=400),
+    "RON": Currency("lei", per_euro=5),
+    "BGN": Currency("лв", per_euro=2),
+    "JPY": Currency("¥", before_in_english=True, decimals=0, per_euro=160),
 }
 
 
@@ -105,6 +109,12 @@ def state() -> CurrencyState:
     return CurrencyState(
         code=_saved, home_assistant=_home_assistant, effective=active(), choices=list(CURRENCIES)
     )
+
+
+def scale(code: str | None = None) -> float:
+    """Ordre de grandeur d'un euro dans la devise ; 1 pour une devise inconnue."""
+    found = CURRENCIES.get(code or active())
+    return found.per_euro if found else 1.0
 
 
 def symbol(code: str | None = None) -> str:

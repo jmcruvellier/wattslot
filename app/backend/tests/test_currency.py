@@ -51,3 +51,11 @@ def test_the_currency_api_saves_and_survives_a_restart(tmp_path: Path) -> None:
         followed = api.put("/api/settings/currency", json={"code": None}).json()
         assert (followed["code"], followed["effective"]) == (None, "EUR")
         assert currency.load(database).code is None
+
+
+def test_the_scale_of_the_currency() -> None:
+    assert currency.scale("EUR") == currency.scale("USD") == 1.0
+    assert currency.scale("JPY") == 160
+    assert currency.scale("XYZ") == 1.0  # inconnue : comme l'euro
+    currency.use_saved("SEK")
+    assert currency.scale() == 11

@@ -20,6 +20,7 @@ from dataclasses import dataclass, field
 from datetime import date, datetime
 from typing import Any
 
+from wattslot import currency
 from wattslot.battery_settings import floor_percent_at
 from wattslot.planning.cycles import (
     DAY_MIN,
@@ -161,6 +162,9 @@ class Problem:
     # puissance souscrite à 1 kW par kVA), ``None`` : inconnu.
     subscription_eur: float = 0.0
     contract_kwh: float | None = None
+    # Ordre de grandeur d'un euro dans la devise de la maison (lot 7.3) : les prix sont ramenés à
+    # l'échelle de l'euro dans l'objectif, où pénalités et départages sont réglés en euros.
+    price_scale: float = 1.0
 
     @property
     def hours(self) -> range:
@@ -453,6 +457,7 @@ def from_input(data: PlanningInput, reference: Reference = REFERENCE) -> Problem
         export_prices_eur_kwh=data.tariff.export_hourly(day, data.tariff_context),
         subscription_eur=data.tariff.subscription_eur(day),
         contract_kwh=data.tariff.contract_kva,
+        price_scale=currency.scale(),
         co2_g_kwh=data.co2.hourly(day),
     )
 

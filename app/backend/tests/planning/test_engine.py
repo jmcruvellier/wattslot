@@ -13,8 +13,10 @@ import pytest
 
 from tests.planning import evaluation
 from tests.v1_oracle import STATES, load, state_named, v1
+from wattslot.objective_settings import Weights
 from wattslot.planning.engine import (
     DEFAULT_CONTRACT_KWH,
+    Goal,
     ImpossibleDataError,
     Objective,
     Plan,
@@ -305,3 +307,63 @@ def test_an_impossible_baseline_stops_the_calculation_with_its_hour() -> None:
     assert impossible_hour(unknown).limit_kwh == pytest.approx(  # type: ignore[union-attr]
         error.limit_kwh - 9.0 + DEFAULT_CONTRACT_KWH
     )
+
+
+# --- Devise de la maison (lot 7.3) : mêmes priorités quelle que soit l'échelle des prix -------
+
+
+def _in_yen(problem: Problem) -> Problem:
+    """La même journée en yens : prix et abonnement multipliés par 160, échelle de la devise 160."""
+    return replace(
+        problem,
+        prices_eur_kwh={h: p * 160 for h, p in problem.prices_eur_kwh.items()},
+        export_prices_eur_kwh={h: p * 160 for h, p in problem.export_prices_eur_kwh.items()},
+        subscription_eur=problem.subscription_eur * 160,
+        price_scale=160.0,
+    )
+
+
+@pytest.mark.parametrize("path", STATES, ids=[p.stem for p in STATES])
+@pytest.mark.parametrize(
+    "objective",
+    [Objective.COST, Weights(cost=1.0, grid_import=0.5, battery=0.2)],
+    ids=["cost", "weights"],
+)
+def test_the_plan_does_not_depend_on_the_currency(path: Path, objective: Goal) -> None:
+    """Pénalités et départages réglés en euros : des prix 160 fois plus grands (yen), ramenés
+    à l'échelle de l'euro, donnent un plan aussi bon (un plan équivalent peut être choisi à la
+    tolérance de HiGHS près), au coût 160 fois plus grand."""
+    problem = from_input(from_v1(load(path)[0]))
+    in_yen = _in_yen(problem)
+
+    euro = _indicators(problem, solve(problem, objective))
+    yen = _indicators(problem, solve(in_yen, objective))  # évalué en euros
+
+    assert set(solve(in_yen, objective).starts) == set(solve(problem, objective).starts)
+    assert yen.cost_eur == pytest.approx(euro.cost_eur, abs=0.005)
+    assert yen.import_kwh == pytest.approx(euro.import_kwh, abs=0.05)
+    assert _indicators(in_yen, solve(in_yen, objective)).cost_eur == pytest.approx(
+        yen.cost_eur * 160, abs=0.2
+    )
+
+
+def test_an_expensive_currency_does_not_skip_appliances() -> None:
+    """Journée 01 sans soleil, en forints (prix multipliés par 400) : sans l'échelle de la devise,
+    chauffer l'eau coûtait plus que la pénalité d'une tâche non placée, et le chauffe-eau
+    n'était plus placé."""
+    problem = from_input(from_v1(load(state_named("today_h06_no_measured_efficiency"))[0]))
+    dark = replace(
+        problem,
+        net_kwh=dict.fromkeys(problem.hours, -0.4),
+        production_kwh=dict.fromkeys(problem.hours, 0.0),
+        battery=replace(problem.battery, stored_kwh=problem.battery.floor_kwh),
+    )
+    in_forint = replace(
+        dark,
+        prices_eur_kwh={h: p * 400 for h, p in dark.prices_eur_kwh.items()},
+        export_prices_eur_kwh={h: p * 400 for h, p in dark.export_prices_eur_kwh.items()},
+        price_scale=400.0,
+    )
+
+    assert set(solve(in_forint).starts) == set(solve(dark).starts) == {"Chauffe-eau"}
+    assert solve(replace(in_forint, price_scale=1.0)).starts == {}  # le défaut corrigé
