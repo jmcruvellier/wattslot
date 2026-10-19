@@ -1253,6 +1253,23 @@
       "ready": "Pronto per l'Assist di Home Assistant",
       "down": "Il server dell'assistente non risponde",
       "checking": "Verifica dell'assistente…"
+    },
+    "chat": {
+      "title": "Parla con l'assistente",
+      "restart": "Nuova conversazione",
+      "agent": "Rispondi con",
+      "default_agent": "Agente dell'assistente preferito",
+      "preferred": "{name} (assistente preferito)",
+      "you": "Tu",
+      "assistant": "Assistente",
+      "thinking": "L'assistente sta pensando…",
+      "input": "Il tuo messaggio",
+      "placeholder": "Quanto hanno prodotto i pannelli ieri?",
+      "send": "Invia",
+      "help": "Invio per inviare, Maiusc+Invio per andare a capo. La conversazione non viene salvata.",
+      "empty": "L'assistente non ha risposto nulla.",
+      "failed": "L'assistente non ha risposto, riprova.",
+      "not_connected": "Home Assistant non è connesso: la chat non è disponibile."
     }
   },
   "ui": {

@@ -1253,6 +1253,23 @@
       "ready": "Bereit für den Assist von Home Assistant",
       "down": "Der Assistent-Server antwortet nicht",
       "checking": "Assistent wird geprüft…"
+    },
+    "chat": {
+      "title": "Mit dem Assistenten chatten",
+      "restart": "Neue Unterhaltung",
+      "agent": "Antworten mit",
+      "default_agent": "Agent des bevorzugten Assistenten",
+      "preferred": "{name} (bevorzugter Assistent)",
+      "you": "Sie",
+      "assistant": "Assistent",
+      "thinking": "Der Assistent denkt nach…",
+      "input": "Ihre Nachricht",
+      "placeholder": "Wie viel haben die Module gestern erzeugt?",
+      "send": "Senden",
+      "help": "Eingabe zum Senden, Umschalt+Eingabe für eine neue Zeile. Die Unterhaltung wird nicht gespeichert.",
+      "empty": "Der Assistent hat nichts geantwortet.",
+      "failed": "Der Assistent hat nicht geantwortet, versuchen Sie es erneut.",
+      "not_connected": "Home Assistant ist nicht verbunden: Der Chat ist nicht verfügbar."
     }
   },
   "ui": {

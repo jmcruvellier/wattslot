@@ -107,6 +107,18 @@ describe("page « Assistant »", () => {
     expect((screen.getByText("Brancher l'Assist pas à pas").closest("details") as HTMLDetailsElement).open).toBe(true);
   });
 
+  it("une question d'exemple remplit la zone de saisie du chat, sans ses guillemets", async () => {
+    mockApi();
+    renderScreen();
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole("button", { name: "« Combien les panneaux ont-ils produit hier ? »" }));
+
+    const input = screen.getByLabelText("Votre message");
+    expect(input).toHaveValue("Combien les panneaux ont-ils produit hier ?");
+    expect(input).toHaveFocus();
+  });
+
   it.each(LANGUAGES)("%s : aucune clé brute", async (language) => {
     window.localStorage.setItem("wattslot.language", language);
     mockApi();
