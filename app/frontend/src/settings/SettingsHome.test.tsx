@@ -31,7 +31,6 @@ function mockApi() {
       });
     }
     if (url === "api/settings/planning") return Response.json({ scheduler_enabled: true, run_minute: 59 });
-    if (url === "api/requests") return Response.json([{ id: 1, status: "open" }, { id: 2, status: "done" }]);
     if (url === "api/health") {
       return Response.json({
         version: "1",
@@ -63,7 +62,13 @@ describe("SettingsHome", () => {
     );
     const link = async (name: RegExp) => screen.findByRole("link", { name });
     expect(await link(/Notifications\s*2 active\(s\), sur Téléphone/)).toHaveAttribute("href", "#/settings/notifications");
-    expect(await link(/Mes demandes\s*1 en cours/)).toHaveAttribute("href", "#/assistant");
+    // Serveur MCP absent du faux serveur : la ligne de l'assistant dit qu'il ne répond pas.
+    expect(await link(/Assistant vocal\s*Le serveur de l'assistant ne répond pas/)).toHaveAttribute(
+      "href",
+      "#/settings/voice",
+    );
+    // « Mes demandes » est dans la page Assistant, plus dans les Réglages.
+    expect(screen.queryByRole("link", { name: /Mes demandes/ })).not.toBeInTheDocument();
     expect(await link(/Langue et affichage\s*Français · Automatique/)).toHaveAttribute("href", "#/settings/display");
     expect(await link(/État de l'application\s*Tout fonctionne/)).toHaveAttribute("href", "#/settings/status");
     expect(await link(/Calcul automatique\s*Toutes les heures, à la minute 59/)).toHaveAttribute(

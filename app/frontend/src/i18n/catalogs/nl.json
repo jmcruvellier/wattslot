@@ -62,7 +62,8 @@
     "graph": "Grafiek van het huis",
     "notifications": "Meldingen",
     "display": "Taal en weergave",
-    "calculation": "Automatische berekening"
+    "calculation": "Automatische berekening",
+    "voice": "Spraakassistent"
   },
   "setup": {
     "loading": "Inrichting wordt gelezen…",
@@ -506,6 +507,28 @@
       "automatic_default": "Automatisch: {name}",
       "hint": "De valuta van uw prijzen en kosten, op al uw apparaten. Wisselen rekent de al ingevoerde prijzen niet om.",
       "failed": "De valuta kon niet worden opgeslagen."
+    },
+    "voice": {
+      "state": "Status",
+      "current": "Huidige configuratie",
+      "address": "Adres van de MCP-server van de app:",
+      "mcp": "MCP-integratie in Home Assistant",
+      "mcp_none": "niet geïnstalleerd",
+      "mcp_entry": "{title} ({state})",
+      "mcp_states": {
+        "loaded": "geladen",
+        "error": "met fout",
+        "not_loaded": "niet geladen"
+      },
+      "home": "Assistent van Home Assistant",
+      "home_help": "De voorkeursassistent is de assistent die Assist opent; de gespreksagent ervan beantwoordt de vragen.",
+      "pipeline": "Voorkeursassistent",
+      "agent": "Gespreksagent",
+      "no_pipeline": "Geen assistent in Home Assistant.",
+      "not_connected": "Home Assistant is niet verbonden: de assistent kan niet worden gelezen of gewijzigd.",
+      "saved": "Assistent gewijzigd in Home Assistant.",
+      "invalid": "Home Assistant kent deze assistent of agent niet: laad de pagina opnieuw.",
+      "failed": "Home Assistant heeft de wijziging geweigerd, probeer het opnieuw."
     }
   },
   "connection_page": {
@@ -1369,10 +1392,6 @@
     "notifications_none": "Geen actief",
     "notifications_on": "{count} actief, op {device}",
     "notifications_count": "{count} actief",
-    "assistant": "Spraakassistent",
-    "assistant_help": "De Assist van Home Assistant antwoordt over je energie",
-    "requests_open": "{count} open",
-    "requests_none": "Geen open",
     "scheduler_on": "Elk uur, op minuut {minute}",
     "scheduler_off": "Uit: handmatig berekenen"
   },

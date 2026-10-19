@@ -12,7 +12,7 @@ export const SUBPAGES = {
   // Écrans experts de Ma maison (lot 6b.5).
   home: ["devices", "templates", "backup", "graph", "library"],
   // Sous-pages des Réglages (lot 6b.6), ouvertes depuis leur liste.
-  settings: ["notifications", "display", "calculation", "status", "connection", "library"],
+  settings: ["notifications", "voice", "display", "calculation", "status", "connection", "library"],
 } as const satisfies Partial<Record<Section, readonly string[]>>;
 export type Subpage =
   | "library"
@@ -24,7 +24,8 @@ export type Subpage =
   | "graph"
   | "notifications"
   | "display"
-  | "calculation";
+  | "calculation"
+  | "voice";
 
 export type Route = { section: Section; sub: Subpage | null } | { section: "ui"; sub: null };
 

@@ -3,79 +3,24 @@
 // de l'agent de conversation, prompt conseillé, vérification que le serveur répond. Lot 6b.6 :
 // en cartes, l'état d'abord (vérifié à l'ouverture), le branchement replié une fois vérifié.
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { getJson } from "../api";
 import { useI18n } from "../i18n/I18nProvider";
 import RequestsSection from "../start/RequestsSection";
-
-interface Connection {
-  mode: "addon" | "standalone";
-  mcp_url: string | null;
-}
+import { checkTitle, mcpAddress, useConnection, useMcpCheck } from "./mcp";
+import { CheckResult, CopyButton } from "./McpParts";
 
 interface AssistantPrompt {
   language: string;
   prompt: string;
 }
 
-type Check = { status: "idle" | "checking" } | { status: "ok"; tools: number } | { status: "failed"; detail: string };
-
-// URL relative : derrière l'ingress de HA, la page est servie sous un préfixe variable.
-const MCP_URL = "mcp";
-const ACCEPT = { "Content-Type": "application/json", Accept: "application/json, text/event-stream" };
-
-/** Adresse que HA donnera à son intégration MCP : celle de l'extension sur le réseau interne,
- * sinon celle par laquelle le navigateur joint l'application. */
-function mcpAddress(connection: Connection | null): string {
-  if (connection?.mcp_url) return connection.mcp_url;
-  return new URL(MCP_URL, window.location.href.replace(/[?#].*$/, "")).href;
-}
-
-async function rpc(method: string, id: number, params: object = {}): Promise<Record<string, unknown>> {
-  const response = await fetch(MCP_URL, {
-    method: "POST",
-    headers: ACCEPT,
-    body: JSON.stringify({ jsonrpc: "2.0", id, method, params }),
-  });
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
-  const body = (await response.json()) as { result?: Record<string, unknown>; error?: { message?: string } };
-  if (!body.result) throw new Error(body.error?.message ?? "no result");
-  return body.result;
-}
-
-function CopyButton({ text, label }: { text: string; label: string }) {
-  const { t } = useI18n();
-  const [copied, setCopied] = useState(false);
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      onClick={() => {
-        void navigator.clipboard
-          ?.writeText(text)
-          .then(() => setCopied(true))
-          .catch(() => setCopied(false));
-      }}
-    >
-      {t(copied ? "assistant.copied" : "assistant.copy")}
-    </button>
-  );
-}
-
 export default function AssistantScreen() {
   const { language, t } = useI18n();
-  const [connection, setConnection] = useState<Connection | null>(null);
+  const connection = useConnection();
   const [prompt, setPrompt] = useState<string | null>(null);
-  const [check, setCheck] = useState<Check>({ status: "idle" });
-
-  useEffect(() => {
-    const controller = new AbortController();
-    getJson<Connection>("api/assistant/connection", controller.signal)
-      .then(setConnection)
-      .catch(() => undefined);
-    return () => controller.abort();
-  }, []);
+  const [check, verify] = useMcpCheck();
 
   useEffect(() => {
     const controller = new AbortController();
@@ -85,39 +30,7 @@ export default function AssistantScreen() {
     return () => controller.abort();
   }, [language]);
 
-  const verify = useCallback(async () => {
-    setCheck({ status: "checking" });
-    try {
-      await rpc("initialize", 1, {
-        protocolVersion: "2025-06-18",
-        capabilities: {},
-        clientInfo: { name: "wattslot-page", version: "1" },
-      });
-      const listed = await rpc("tools/list", 2);
-      setCheck({ status: "ok", tools: Array.isArray(listed.tools) ? listed.tools.length : 0 });
-    } catch (error) {
-      setCheck({ status: "failed", detail: error instanceof Error ? error.message : String(error) });
-    }
-  }, []);
-
-  // Vérifié à l'ouverture (lot 6b.6) : l'état de l'assistant s'affiche sans rien demander.
-  useEffect(() => {
-    let active = true;
-    queueMicrotask(() => {
-      if (active) void verify();
-    });
-    return () => {
-      active = false;
-    };
-  }, [verify]);
-
   const address = mcpAddress(connection);
-  const title =
-    check.status === "ok"
-      ? "assistant.state.ready"
-      : check.status === "failed"
-        ? "assistant.state.down"
-        : "assistant.state.checking";
   // « Mes demandes » d'abord (lot 6b.3), puis l'assistant vocal (lot 6b.6) : son état, des
   // exemples de questions, et le branchement pas à pas, replié une fois le serveur vérifié.
   return (
@@ -128,16 +41,10 @@ export default function AssistantScreen() {
       <section className="ui-card" aria-labelledby="assistant-title">
         <p className="ui-eyebrow">{t("assistant.title")}</p>
         <h2 id="assistant-title" className="ui-card-title">
-          {t(title)}
+          {t(checkTitle(check))}
         </h2>
         <p>{t("assistant.intro")}</p>
-        {check.status === "ok" && <p role="status">{t("assistant.check.ok", { tools: check.tools })}</p>}
-        {check.status === "failed" && <p role="alert">{t("assistant.check.failed", { detail: check.detail })}</p>}
-        <p>
-          <button type="button" disabled={check.status === "checking"} onClick={() => void verify()}>
-            {t(check.status === "checking" ? "assistant.check.checking" : "assistant.check.run")}
-          </button>
-        </p>
+        <CheckResult check={check} onVerify={() => void verify()} />
 
         <h3>{t("assistant.examples.title")}</h3>
         <ul>

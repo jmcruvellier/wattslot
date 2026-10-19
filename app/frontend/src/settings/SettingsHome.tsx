@@ -6,12 +6,12 @@ import { useEffect, useState } from "react";
 
 import { getJson } from "../api";
 import type { Health } from "../App";
+import { checkTitle, useMcpCheck } from "../assistant/mcp";
 import { useI18n } from "../i18n/I18nProvider";
 import { LANGUAGE_NAMES } from "../i18n/translate";
 import { useStatusLevel } from "../nav/status";
 import { useUpdateState } from "../nav/updates";
 import { routeHash, type Route } from "../nav/routes";
-import type { UserRequest } from "../start/RequestsSection";
 import { readTheme } from "../theme/theme";
 import Icon from "../ui/Icon";
 import { SettingList } from "../ui/SettingRow";
@@ -24,7 +24,6 @@ interface Summaries {
   notifications?: NotificationSettings;
   choices?: SettingsChoices;
   planning?: PlanningSettings;
-  requests?: UserRequest[];
   health?: Health;
 }
 
@@ -51,6 +50,7 @@ export default function SettingsHome() {
   const [found, setFound] = useState<Summaries>({});
   const status = useStatusLevel();
   const update = useUpdateState();
+  const [check] = useMcpCheck();
 
   useEffect(() => {
     const controller = new AbortController();
@@ -58,10 +58,9 @@ export default function SettingsHome() {
       read<NotificationSettings>("api/settings/notifications", controller.signal),
       read<SettingsChoices>("api/settings/choices", controller.signal),
       read<PlanningSettings>("api/settings/planning", controller.signal),
-      read<UserRequest[]>("api/requests", controller.signal),
       read<Health>("api/health", controller.signal),
-    ]).then(([notifications, choices, planning, requests, health]) => {
-      if (!controller.signal.aborted) setFound({ notifications, choices, planning, requests, health });
+    ]).then(([notifications, choices, planning, health]) => {
+      if (!controller.signal.aborted) setFound({ notifications, choices, planning, health });
     });
     return () => controller.abort();
   }, []);
@@ -78,12 +77,6 @@ export default function SettingsHome() {
       : t("settings_home.notifications_count", { count: active });
   };
 
-  const requestsText = () => {
-    if (!found.requests) return null;
-    const open = found.requests.filter((request) => request.status === "open").length;
-    return open ? t("settings_home.requests_open", { count: open }) : t("settings_home.requests_none");
-  };
-
   const plannerText = () => {
     const planning = found.planning;
     if (!planning) return null;
@@ -98,8 +91,7 @@ export default function SettingsHome() {
     <section className="settings-home" aria-label={t("settings.title")}>
       <SettingList>
         <LinkRow route={{ section: "settings", sub: "notifications" }} label={t("nav.notifications")} description={notificationsText()} />
-        <LinkRow route={{ section: "assistant", sub: null }} label={t("settings_home.assistant")} description={t("settings_home.assistant_help")} />
-        <LinkRow route={{ section: "assistant", sub: null }} label={t("requests.title")} description={requestsText()} />
+        <LinkRow route={{ section: "settings", sub: "voice" }} label={t("nav.voice")} description={t(checkTitle(check))} />
         <LinkRow
           route={{ section: "settings", sub: "display" }}
           label={t("settings.appearance.title")}

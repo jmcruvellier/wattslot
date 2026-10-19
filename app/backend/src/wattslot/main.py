@@ -42,6 +42,7 @@ from wattslot import (
     user_requests,
 )
 from wattslot.aggregation import PERIODS, Aggregate, AggregationStatus, Aggregator
+from wattslot.assistant import home_config as assistant_home_config
 from wattslot.assistant import prompts as assistant_prompts
 from wattslot.assistant import server as assistant_server
 from wattslot.detection import (
@@ -54,7 +55,12 @@ from wattslot.detection import (
 )
 from wattslot.diagnostic import Diagnostic, diagnostic
 from wattslot.energy import EnergySources, energy_sources
-from wattslot.home_assistant import ConnectionState, HomeAssistantClient
+from wattslot.home_assistant import (
+    CommandError,
+    ConnectionState,
+    HomeAssistantClient,
+    NotConnectedError,
+)
 from wattslot.ingestion import IngestionStatus, Ingestor
 from wattslot.ingress import IngressOnlyMiddleware
 from wattslot.maintenance import (
@@ -480,6 +486,27 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if client is None or client.status.state is not ConnectionState.CONNECTED:
             raise HTTPException(status_code=503, detail="Home Assistant non connecté")
         return client
+
+    @app.get("/api/assistant/home")
+    async def get_assistant_home(request: Request) -> assistant_home_config.AssistantHomeConfig:
+        """Configuration de l'assistant vocal dans HA : intégration MCP, assistants, agents de
+        conversation ; vide sans HA connecté."""
+        return await assistant_home_config.home_config(request.app.state.home_assistant)
+
+    @app.put("/api/assistant/home")
+    async def put_assistant_home(
+        request: Request, wanted: assistant_home_config.AssistantChange
+    ) -> assistant_home_config.AssistantHomeConfig:
+        """Assistant préféré de HA et son agent de conversation ; 422 pour un choix que HA ne
+        connaît pas, 503 sans HA connecté, 502 si HA refuse la modification."""
+        client = connected_client(request)
+        try:
+            await assistant_home_config.change(client, wanted)
+        except assistant_home_config.UnknownChoiceError as error:
+            raise HTTPException(status_code=422, detail="Assistant ou agent inconnu") from error
+        except (CommandError, NotConnectedError, TimeoutError) as error:
+            raise HTTPException(status_code=502, detail=str(error)) from error
+        return await assistant_home_config.home_config(client)
 
     @app.get("/api/home/proposals")
     async def proposals(request: Request, refresh: bool = False) -> HomeProposal:

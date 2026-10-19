@@ -62,7 +62,8 @@
     "graph": "Grafo de la casa",
     "notifications": "Notificaciones",
     "display": "Idioma y visualización",
-    "calculation": "Cálculo automático"
+    "calculation": "Cálculo automático",
+    "voice": "Asistente de voz"
   },
   "setup": {
     "loading": "Leyendo la configuración inicial…",
@@ -506,6 +507,28 @@
       "automatic_default": "Automática: {name}",
       "hint": "La moneda de sus precios y costes, en todos sus dispositivos. Cambiarla no convierte los precios ya introducidos.",
       "failed": "No se pudo guardar la moneda."
+    },
+    "voice": {
+      "state": "Estado",
+      "current": "Configuración actual",
+      "address": "Dirección del servidor MCP de la aplicación:",
+      "mcp": "Integración MCP en Home Assistant",
+      "mcp_none": "no instalada",
+      "mcp_entry": "{title} ({state})",
+      "mcp_states": {
+        "loaded": "cargada",
+        "error": "con error",
+        "not_loaded": "no cargada"
+      },
+      "home": "Asistente de Home Assistant",
+      "home_help": "El asistente preferido es el que abre Assist; su agente de conversación responde a las preguntas.",
+      "pipeline": "Asistente preferido",
+      "agent": "Agente de conversación",
+      "no_pipeline": "Ningún asistente en Home Assistant.",
+      "not_connected": "Home Assistant no está conectado: el asistente no se puede leer ni modificar.",
+      "saved": "Asistente modificado en Home Assistant.",
+      "invalid": "Home Assistant no conoce este asistente o este agente: recargue la página.",
+      "failed": "Home Assistant rechazó el cambio, vuelva a intentarlo."
     }
   },
   "connection_page": {
@@ -1369,10 +1392,6 @@
     "notifications_none": "Ninguna activa",
     "notifications_on": "{count} activa(s), en {device}",
     "notifications_count": "{count} activa(s)",
-    "assistant": "Asistente de voz",
-    "assistant_help": "El Assist de Home Assistant responde sobre tu energía",
-    "requests_open": "{count} en curso",
-    "requests_none": "Ninguna en curso",
     "scheduler_on": "Cada hora, en el minuto {minute}",
     "scheduler_off": "Desactivado: cálculo a mano"
   },

@@ -62,7 +62,8 @@
     "graph": "Home graph",
     "notifications": "Notifications",
     "display": "Language and display",
-    "calculation": "Automatic calculation"
+    "calculation": "Automatic calculation",
+    "voice": "Voice assistant"
   },
   "setup": {
     "loading": "Reading the setup…",
@@ -506,6 +507,28 @@
       "automatic_default": "Automatic: {name}",
       "hint": "The currency of your prices and costs, on all your devices. Changing it does not convert the prices already entered.",
       "failed": "Unable to save the currency."
+    },
+    "voice": {
+      "state": "Status",
+      "current": "Current setup",
+      "address": "Address of the app's MCP server:",
+      "mcp": "MCP integration in Home Assistant",
+      "mcp_none": "not installed",
+      "mcp_entry": "{title} ({state})",
+      "mcp_states": {
+        "loaded": "loaded",
+        "error": "in error",
+        "not_loaded": "not loaded"
+      },
+      "home": "Home Assistant assistant",
+      "home_help": "The preferred assistant is the one Assist opens; its conversation agent answers the questions.",
+      "pipeline": "Preferred assistant",
+      "agent": "Conversation agent",
+      "no_pipeline": "No assistant in Home Assistant.",
+      "not_connected": "Home Assistant is not connected: the assistant cannot be read or changed.",
+      "saved": "Assistant changed in Home Assistant.",
+      "invalid": "Home Assistant does not know this assistant or agent: reload the page.",
+      "failed": "Home Assistant refused the change, try again."
     }
   },
   "connection_page": {
@@ -1369,10 +1392,6 @@
     "notifications_none": "None active",
     "notifications_on": "{count} active, on {device}",
     "notifications_count": "{count} active",
-    "assistant": "Voice assistant",
-    "assistant_help": "Home Assistant's Assist answers about your energy",
-    "requests_open": "{count} open",
-    "requests_none": "None open",
     "scheduler_on": "Every hour, at minute {minute}",
     "scheduler_off": "Off: calculate by hand"
   },
