@@ -7,12 +7,14 @@ import Banners from "./Banners";
 import SummaryCards from "./SummaryCards";
 import { TODAY, TOMORROW, WITHOUT_BATTERY, WITHOUT_SOLAR, YESTERDAY } from "./testViews";
 import type { DayView } from "./types";
+import PlanActions from "./PlanActions";
 import ViewHeader from "./ViewHeader";
 
 function renderDay(view: DayView, onChanged = vi.fn()) {
   render(
     <I18nProvider>
-      <ViewHeader view={view} onChanged={onChanged} />
+      <PlanActions kind={view.kind} onChanged={onChanged} />
+      <ViewHeader view={view} />
       <Banners view={view} />
       <SummaryCards view={view} />
     </I18nProvider>,

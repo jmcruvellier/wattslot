@@ -9,6 +9,7 @@ import Agenda, { DaySummaryCard } from "./Agenda";
 import Banners from "./Banners";
 import { ExplanationsCard, IndicatorsCard } from "./InsightCards";
 import { availableDayCards } from "./layout";
+import PlanActions from "./PlanActions";
 import { LoadMessage, PlanTabs } from "./PlanTabs";
 import { useDashboardLayout, usePlanView } from "./planView";
 import ViewHeader from "./ViewHeader";
@@ -28,12 +29,16 @@ export default function PlanScreen() {
       <h2 id="plan-title" className="visually-hidden">
         {t("plan.title")}
       </h2>
-      <PlanTabs title={t("plan.title")} tab={tab} onOpen={open} />
+      {/* Onglets à gauche, actions de la vue à droite ; dessous quand la ligne est trop étroite. */}
+      <div className="view-toolbar">
+        <PlanTabs title={t("plan.title")} tab={tab} onOpen={open} />
+        {(load.status === "day" || load.status === "week") && <PlanActions key={tab} kind={tab} onChanged={reload} />}
+      </div>
       <LoadMessage load={load} tab={tab} onRetry={retry} />
 
       {load.status === "day" && (
         <>
-          <ViewHeader view={load.view} onChanged={reload} />
+          <ViewHeader view={load.view} />
           <Banners view={load.view} />
           <div className="plan-agenda">
             <DaySummaryCard view={load.view} />
@@ -47,7 +52,7 @@ export default function PlanScreen() {
         </>
       )}
 
-      {load.status === "week" && <WeekScreen view={load.view} onChanged={reload} onOpen={open} />}
+      {load.status === "week" && <WeekScreen view={load.view} onOpen={open} />}
     </section>
   );
 }

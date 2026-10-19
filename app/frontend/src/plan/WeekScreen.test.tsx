@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { I18nProvider } from "../i18n/I18nProvider";
 import { WEEK, WEEK_WITHOUT_BATTERY } from "./testViews";
 import type { WeekView } from "./types";
+import PlanActions from "./PlanActions";
 import WeekScreen, { WeekDetails } from "./WeekScreen";
 import { DEFAULT_LAYOUT, type ViewLayout } from "./layout";
 
@@ -20,7 +21,8 @@ vi.mock("./Charts", () => ({
 function renderWeek(view: WeekView, onOpen = vi.fn(), onChanged = vi.fn(), layout: ViewLayout = DEFAULT_LAYOUT.week) {
   render(
     <I18nProvider>
-      <WeekScreen view={view} onOpen={onOpen} onChanged={onChanged} />
+      <PlanActions kind="week" onChanged={onChanged} />
+      <WeekScreen view={view} onOpen={onOpen} />
       <WeekDetails view={view} onOpen={onOpen} layout={layout} />
     </I18nProvider>,
   );

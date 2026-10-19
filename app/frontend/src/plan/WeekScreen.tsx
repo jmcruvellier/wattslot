@@ -5,7 +5,7 @@
 // Section Planning (lot 6b.4) : la semaine d'abord en agenda, une ligne par jour (`WeekAgenda`) ;
 // les cartes des jours et les graphiques (`WeekDetails`) vont dans la section Courbes.
 
-import { Suspense, useState } from "react";
+import { Suspense } from "react";
 
 import { useI18n } from "../i18n/I18nProvider";
 import { clock, kwh, percent, time } from "./format";
@@ -18,8 +18,6 @@ import type { IconName } from "../ui/iconPaths";
 
 // Météo du jour : soleil, nuages et soleil, nuages (lot 6b.7, à la place des emojis).
 const WEATHER_ICONS = { sunny: "today", mixed: "cloud-sun", cloudy: "cloud" } as const;
-
-type Action = "idle" | "running" | "failed";
 
 function Notices({ notices, label }: { notices: Notice[]; label: string }) {
   if (!notices.length) return null;
@@ -204,33 +202,13 @@ export function WeekDetails({
   );
 }
 
-export default function WeekScreen({
-  view,
-  onChanged,
-  onOpen,
-}: {
-  view: WeekView;
-  onChanged: () => void;
-  onOpen: (kind: DayKind) => void;
-}) {
+// « Calculer » est à droite des onglets (`PlanActions`).
+export default function WeekScreen({ view, onOpen }: { view: WeekView; onOpen: (kind: DayKind) => void }) {
   const { language, t } = useI18n();
-  const [action, setAction] = useState<Action>("idle");
   const longDay = (iso: string) =>
     new Date(`${iso}T12:00:00`).toLocaleDateString(language, { weekday: "long", day: "numeric", month: "long" });
   const first = view.days[0];
   const last = view.days[view.days.length - 1];
-
-  const run = async () => {
-    setAction("running");
-    try {
-      const response = await fetch("api/planning/run", { method: "POST" });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      setAction("idle");
-      onChanged();
-    } catch {
-      setAction("failed");
-    }
-  };
 
   return (
     <>
@@ -248,12 +226,7 @@ export default function WeekScreen({
             {view.seconds !== null && ` · ${t("plan.week.seconds", { seconds: kwh(view.seconds, 1) })}`}
           </small>
         </p>
-        <span className="spacer" />
-        <button type="button" disabled={action === "running"} onClick={() => void run()}>
-          {t(action === "running" ? "plan.header.running" : "plan.header.compute")}
-        </button>
       </div>
-      {action === "failed" && <p role="alert">{t("plan.header.failed")}</p>}
       <Notices notices={view.notices} label={t("plan.notices")} />
       {view.waiting_not_assigned && <p className="pill">ℹ️ {t("plan.week.waiting")}</p>}
       {view.days.length === 0 && <p className="pill">ℹ️ {t("plan.missing_week")}</p>}
