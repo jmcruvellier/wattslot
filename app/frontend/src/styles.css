@@ -273,6 +273,24 @@ pre {
   margin-bottom: 0.75rem;
 }
 
+/* Onglets des vues et bouton aligné à droite (section Courbes). */
+.view-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.view-toolbar > .view-tabs {
+  margin-bottom: 0;
+}
+
+.view-toolbar > button {
+  margin-left: auto;
+}
+
 .view-tabs .spacer {
   flex: 1;
 }

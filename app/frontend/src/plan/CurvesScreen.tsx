@@ -27,15 +27,28 @@ export default function CurvesScreen() {
   const { layout, saving, failed, change, reset } = useDashboardLayout();
   const [editing, setEditing] = useState(false);
 
-  // Bouton « Personnaliser » et son panneau, pour les cartes de la vue ouverte.
-  const editor = (available: CardId[]) => (
-    <>
-      <p>
-        <button type="button" aria-pressed={editing} onClick={() => setEditing(!editing)}>
-          {t("plan.layout.open")}
-        </button>
-      </p>
-      {editing && (
+  // Cartes de la vue ouverte, que « Personnaliser » range ou masque.
+  const available: CardId[] =
+    load.status === "day" ? curveCards(load.view) : load.status === "week" ? availableWeekCards(load.view) : [];
+  const loaded = load.status === "day" || load.status === "week";
+
+  return (
+    <section aria-labelledby="curves-title">
+      {/* Le titre de la section est dans la barre du haut (lot 6b.2). */}
+      <h2 id="curves-title" className="visually-hidden">
+        {t("nav.curves")}
+      </h2>
+      {/* Onglets à gauche, « Personnaliser » à droite ; dessous quand la ligne est trop étroite. */}
+      <div className="view-toolbar">
+        <PlanTabs title={t("nav.curves")} tab={tab} onOpen={open} />
+        {loaded && (
+          <button type="button" aria-pressed={editing} onClick={() => setEditing(!editing)}>
+            {t("plan.layout.open")}
+          </button>
+        )}
+      </div>
+      <LoadMessage load={load} tab={tab} onRetry={retry} />
+      {loaded && editing && (
         <LayoutEditor
           kind={tab}
           layout={layout}
@@ -48,36 +61,11 @@ export default function CurvesScreen() {
           onClose={() => setEditing(false)}
         />
       )}
-    </>
-  );
-
-  return (
-    <section aria-labelledby="curves-title">
-      {/* Le titre de la section est dans la barre du haut (lot 6b.2). */}
-      <h2 id="curves-title" className="visually-hidden">
-        {t("nav.curves")}
-      </h2>
-      <PlanTabs title={t("nav.curves")} tab={tab} onOpen={open} />
-      <LoadMessage load={load} tab={tab} onRetry={retry} />
 
       {load.status === "day" && (
-        <>
-          {editor(curveCards(load.view))}
-          <DayCards
-            view={load.view}
-            layout={layout[load.view.kind]}
-            indicators={layout.indicators}
-            available={curveCards(load.view)}
-          />
-        </>
+        <DayCards view={load.view} layout={layout[load.view.kind]} indicators={layout.indicators} available={curveCards(load.view)} />
       )}
-
-      {load.status === "week" && (
-        <>
-          {editor(availableWeekCards(load.view))}
-          <WeekDetails view={load.view} onOpen={open} layout={layout.week} />
-        </>
-      )}
+      {load.status === "week" && <WeekDetails view={load.view} onOpen={open} layout={layout.week} />}
     </section>
   );
 }
