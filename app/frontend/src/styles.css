@@ -1600,11 +1600,12 @@ a.ui-setting-row {
   cursor: pointer;
 }
 
-/* « Pourquoi ce plan » et indicateurs du plan : côte à côte quand la largeur le permet. */
+/* « Pourquoi ce plan » et indicateurs du plan : côte à côte et de même hauteur quand la
+   largeur le permet. */
 .plan-insights {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
-  align-items: start;
+  align-items: stretch;
   gap: 0.75rem;
   margin: 0.75rem 0 1rem;
 }
