@@ -1,0 +1,4 @@
+# Dépôt d'extensions Home Assistant : le Supervisor cherche ce fichier à la racine du dépôt,
+# puis chaque extension par son config.yaml (ici ha-addon/wattslot/).
+name: WattSlot
+url: https://github.com/jmcruvellier/wattslot
