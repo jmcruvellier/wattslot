@@ -1,4 +1,4 @@
 # Captures d'écran de la documentation (dev/tools/screenshots.py, lot 7.2) : outil facultatif.
 #   pip install -r dev/requirements-screenshots.txt && python -m playwright install chromium
 playwright==1.63.0
-pillow==12.0.0
+pillow==13.0.0
