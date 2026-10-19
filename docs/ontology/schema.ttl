@@ -1,0 +1,388 @@
+# WattSlot ontology: https://w3id.org/wattslot/ontology/schema
+#
+# Generated from the application's files by dev/tools/ontology_files.py; do not edit.
+# License: Apache-2.0, https://github.com/jmcruvellier/wattslot
+
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix wattslot: <https://w3id.org/wattslot/ontology#> .
+@prefix s4ener: <https://saref.etsi.org/saref4ener/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix saref: <https://saref.etsi.org/core/> .
+@prefix sosa: <http://www.w3.org/ns/sosa/> .
+@prefix ssn: <http://www.w3.org/ns/ssn/> .
+wattslot:AutomationLevel a owl:Class ;
+	rdfs:label "Automation level"@en , "Niveau d'automatisation"@fr .
+wattslot:BatterySettings a owl:Class ;
+	rdfs:label "Battery settings"@en , "Réglages de la batterie"@fr .
+wattslot:Behavior a owl:Class ;
+	rdfs:label "Comportement d'un équipement"@fr , "Device behavior"@en .
+wattslot:ColorPrices a owl:Class ;
+	rdfs:label "Prices of a day color"@en , "Prix d'une couleur de jour"@fr .
+wattslot:Configuration a owl:Class ;
+	rdfs:label "Configuration de la maison"@fr , "Home configuration"@en .
+wattslot:ConfirmAutomation a wattslot:AutomationLevel ;
+	rdfs:label "Ask for confirmation"@en , "Demande de confirmation"@fr .
+wattslot:ControlAutomation a wattslot:AutomationLevel ;
+	rdfs:label "Automatic control"@en , "Pilotage automatique"@fr .
+wattslot:CycleBehavior a wattslot:Behavior ;
+	rdfs:comment "Durée et forme mesurées, démarrage à choisir, interruption impossible."@fr ;
+	rdfs:label "Cycle to start"@en , "Cycle à démarrer"@fr .
+wattslot:DayColorTariff a owl:Class ;
+	rdfs:label "Day-color prices"@en , "Prix par couleur de jour"@fr ;
+	rdfs:subClassOf wattslot:Tariff .
+wattslot:DeviceSettings a owl:Class ;
+	rdfs:label "Device settings"@en , "Réglages d'un équipement"@fr .
+wattslot:DynamicTariff a owl:Class ;
+	rdfs:label "Dynamic prices"@en , "Prix dynamique"@fr ;
+	rdfs:subClassOf wattslot:Tariff .
+wattslot:EnergyByDeadlineBehavior a wattslot:Behavior ;
+	rdfs:label "Besoin d'énergie avant une échéance"@fr , "Energy needed by a deadline"@en .
+wattslot:EnergyNeed a owl:Class ;
+	rdfs:label "Besoin d'énergie avant une échéance"@fr , "Energy need by a deadline"@en .
+wattslot:FloorRange a owl:Class ;
+	rdfs:label "Battery floor range"@en , "Plage de plancher de la batterie"@fr .
+wattslot:GridBehavior a wattslot:Behavior ;
+	rdfs:label "Grid exchange"@en , "Échanges avec le réseau"@fr .
+wattslot:InformAutomation a wattslot:AutomationLevel ;
+	rdfs:label "Inform"@en , "Information"@fr .
+wattslot:Objective a owl:Class ;
+	rdfs:label "Objectif du calcul"@fr , "Planning objective"@en .
+wattslot:PanelArray a owl:Class ;
+	rdfs:label "Champ de panneaux"@fr , "Panel array"@en .
+wattslot:PriceBand a owl:Class ;
+	rdfs:label "Plage horaire de prix"@fr , "Price band"@en .
+wattslot:ProductionBehavior a wattslot:Behavior ;
+	rdfs:label "Production"@en , "Production"@fr .
+wattslot:RecommendAutomation a wattslot:AutomationLevel ;
+	rdfs:label "Recommandation"@fr , "Recommend"@en .
+wattslot:Recurrence a owl:Class ;
+	rdfs:label "Cycle recurrence"@en , "Récurrence d'un cycle"@fr .
+wattslot:RuntimeBehavior a wattslot:Behavior ;
+	rdfs:label "Durée de fonctionnement à placer"@fr , "Runtime to schedule"@en .
+wattslot:RuntimeSettings a owl:Class ;
+	rdfs:label "Runtime settings"@en , "Réglages d'une durée de fonctionnement"@fr .
+wattslot:SingleTariff a owl:Class ;
+	rdfs:label "Prix unique"@fr , "Single price"@en ;
+	rdfs:subClassOf wattslot:Tariff .
+wattslot:SolarPanels a owl:Class ;
+	rdfs:label "Panneaux solaires"@fr , "Solar panels"@en .
+wattslot:StorageBehavior a wattslot:Behavior ;
+	rdfs:label "Stockage"@fr , "Storage"@en .
+wattslot:Tariff a owl:Class ;
+	rdfs:label "Electricity tariff"@en , "Tarif de l'électricité"@fr .
+wattslot:TimeConstraint a owl:Class ;
+	rdfs:label "Contrainte horaire"@fr , "Time constraint"@en .
+wattslot:TimeOfUseTariff a owl:Class ;
+	rdfs:label "Prix par plages horaires"@fr , "Time-of-use prices"@en ;
+	rdfs:subClassOf wattslot:Tariff .
+wattslot:UncontrolledBehavior a wattslot:Behavior ;
+	rdfs:label "Consommation seulement suivie"@fr , "Tracked consumption only"@en .
+wattslot:activeFromHour a owl:DatatypeProperty ;
+	rdfs:domain wattslot:BatterySettings ;
+	rdfs:label "active range start"@en , "début de la plage active"@fr ;
+	rdfs:range xsd:integer .
+wattslot:activeToHour a owl:DatatypeProperty ;
+	rdfs:domain wattslot:BatterySettings ;
+	rdfs:label "active range end (excluded)"@en , "fin de la plage active (exclue)"@fr ;
+	rdfs:range xsd:integer .
+wattslot:arrayIndex a owl:DatatypeProperty ;
+	rdfs:domain wattslot:PanelArray ;
+	rdfs:label "array index"@en , "rang du champ"@fr ;
+	rdfs:range xsd:integer .
+wattslot:automation a owl:ObjectProperty ;
+	rdfs:domain wattslot:DeviceSettings ;
+	rdfs:label "automation level"@en , "niveau d'automatisation"@fr ;
+	rdfs:range wattslot:AutomationLevel .
+wattslot:azimuthDegrees a owl:DatatypeProperty ;
+	rdfs:domain wattslot:PanelArray ;
+	rdfs:label "azimuth (°, 180 = south)"@en , "orientation (°, 180 = sud)"@fr ;
+	rdfs:range xsd:double .
+wattslot:basePriceEurKwh a owl:DatatypeProperty ;
+	rdfs:domain wattslot:Tariff ;
+	rdfs:label "base price (€/kWh)"@en , "prix de base (€/kWh)"@fr ;
+	rdfs:range xsd:double .
+wattslot:batteryWeight a owl:DatatypeProperty ;
+	rdfs:domain wattslot:Objective ;
+	rdfs:label "battery care weight (euro equivalent)"@en , "poids du ménagement de la batterie (équivalent euros)"@fr ;
+	rdfs:range xsd:double .
+wattslot:behavior a owl:ObjectProperty ;
+	rdfs:domain wattslot:DeviceSettings ;
+	rdfs:label "behavior"@en , "comportement"@fr ;
+	rdfs:range wattslot:Behavior .
+wattslot:chargeMaxW a owl:DatatypeProperty ;
+	rdfs:domain wattslot:BatterySettings ;
+	rdfs:label "maximum charge power (W)"@en , "puissance de charge maximale (W)"@fr ;
+	rdfs:range xsd:double .
+wattslot:co2Entity a owl:DatatypeProperty ;
+	rdfs:domain wattslot:Objective ;
+	rdfs:label "entité d'intensité carbone du réseau (g/kWh)"@fr , "grid carbon intensity entity (g/kWh)"@en ;
+	rdfs:range xsd:string .
+wattslot:co2Weight a owl:DatatypeProperty ;
+	rdfs:domain wattslot:Objective ;
+	rdfs:label "CO₂ weight (euro equivalent)"@en , "poids du CO₂ (équivalent euros)"@fr ;
+	rdfs:range xsd:double .
+wattslot:color a owl:DatatypeProperty ;
+	rdfs:domain wattslot:ColorPrices ;
+	rdfs:label "color"@en , "couleur"@fr ;
+	rdfs:range xsd:string .
+wattslot:colorDayStartHour a owl:DatatypeProperty ;
+	rdfs:domain wattslot:Tariff ;
+	rdfs:label "color day start hour"@en , "heure de début du jour de couleur"@fr ;
+	rdfs:range xsd:integer .
+wattslot:colorEntity a owl:DatatypeProperty ;
+	rdfs:domain wattslot:Tariff ;
+	rdfs:label "day color entity"@en , "entité de la couleur du jour"@fr ;
+	rdfs:range xsd:string .
+wattslot:colorTomorrowEntity a owl:DatatypeProperty ;
+	rdfs:domain wattslot:Tariff ;
+	rdfs:label "entité de la couleur du lendemain"@fr , "tomorrow color entity"@en ;
+	rdfs:range xsd:string .
+wattslot:configurationVersion a owl:DatatypeProperty ;
+	rdfs:domain wattslot:Configuration ;
+	rdfs:label "configuration format version"@en , "version du format de la configuration"@fr ;
+	rdfs:range xsd:integer .
+wattslot:constraintEndHour a owl:DatatypeProperty ;
+	rdfs:domain wattslot:TimeConstraint ;
+	rdfs:label "end hour, excluded (forbidden range, finish before)"@en , "heure de fin, exclue (plage interdite, terminé avant)"@fr ;
+	rdfs:range xsd:integer .
+wattslot:constraintKind a owl:DatatypeProperty ;
+	rdfs:domain wattslot:TimeConstraint ;
+	rdfs:label "kind (forbidden, not_before, finish_before)"@en , "sorte (forbidden, not_before, finish_before)"@fr ;
+	rdfs:range xsd:string .
+wattslot:constraintStartHour a owl:DatatypeProperty ;
+	rdfs:domain wattslot:TimeConstraint ;
+	rdfs:label "heure de début (plage interdite, pas avant)"@fr , "start hour (forbidden range, not before)"@en ;
+	rdfs:range xsd:integer .
+wattslot:costWeight a owl:DatatypeProperty ;
+	rdfs:domain wattslot:Objective ;
+	rdfs:label "cost weight"@en , "poids du coût"@fr ;
+	rdfs:range xsd:double .
+wattslot:daily a owl:DatatypeProperty ;
+	rdfs:domain wattslot:EnergyNeed ;
+	rdfs:label "chaque jour"@fr , "daily"@en ;
+	rdfs:range xsd:boolean .
+wattslot:deadlineHour a owl:DatatypeProperty ;
+	rdfs:domain wattslot:EnergyNeed ;
+	rdfs:label "deadline (hour, excluded)"@en , "échéance (heure, exclue)"@fr ;
+	rdfs:range xsd:integer .
+wattslot:dischargeMaxW a owl:DatatypeProperty ;
+	rdfs:domain wattslot:BatterySettings ;
+	rdfs:label "maximum discharge power (W)"@en , "puissance de décharge maximale (W)"@fr ;
+	rdfs:range xsd:double .
+wattslot:earliestHour a owl:DatatypeProperty ;
+	rdfs:domain wattslot:EnergyNeed ;
+	rdfs:label "earliest hour"@en , "heure au plus tôt"@fr ;
+	rdfs:range xsd:integer .
+wattslot:endHour a owl:DatatypeProperty ;
+	rdfs:domain wattslot:PriceBand ;
+	rdfs:label "end hour (excluded)"@en , "heure de fin (exclue)"@fr ;
+	rdfs:range xsd:integer .
+wattslot:exportPriceEntity a owl:DatatypeProperty ;
+	rdfs:domain wattslot:Tariff ;
+	rdfs:label "entité de prix de revente"@fr , "export price entity"@en ;
+	rdfs:range xsd:string .
+wattslot:exportPriceEurKwh a owl:DatatypeProperty ;
+	rdfs:domain wattslot:Tariff ;
+	rdfs:label "export price (€/kWh)"@en , "prix de revente (€/kWh)"@fr ;
+	rdfs:range xsd:double .
+wattslot:exportWeight a owl:DatatypeProperty ;
+	rdfs:domain wattslot:Objective ;
+	rdfs:label "export weight (euro equivalent)"@en , "poids de l'injection (équivalent euros)"@fr ;
+	rdfs:range xsd:double .
+wattslot:floorEndHour a owl:DatatypeProperty ;
+	rdfs:domain wattslot:FloorRange ;
+	rdfs:label "fin de la plage (exclue)"@fr , "range end (excluded)"@en ;
+	rdfs:range xsd:integer .
+wattslot:floorPercent a owl:DatatypeProperty ;
+	rdfs:domain wattslot:BatterySettings ;
+	rdfs:label "discharge floor (%)"@en , "plancher de décharge (%)"@fr ;
+	rdfs:range xsd:double .
+wattslot:floorRangePercent a owl:DatatypeProperty ;
+	rdfs:domain wattslot:FloorRange ;
+	rdfs:label "floor over the range (%)"@en , "plancher sur la plage (%)"@fr ;
+	rdfs:range xsd:double .
+wattslot:floorStartHour a owl:DatatypeProperty ;
+	rdfs:domain wattslot:FloorRange ;
+	rdfs:label "début de la plage"@fr , "range start"@en ;
+	rdfs:range xsd:integer .
+wattslot:forDevice a owl:ObjectProperty ;
+	rdfs:domain wattslot:DeviceSettings ;
+	rdfs:label "réglages de l'équipement"@fr , "settings of device"@en ;
+	rdfs:range wattslot:Device .
+wattslot:fullChargeEveryDays a owl:DatatypeProperty ;
+	rdfs:domain wattslot:BatterySettings ;
+	rdfs:label "charge complète au moins tous les (jours)"@fr , "full charge at least every (days)"@en ;
+	rdfs:range xsd:integer .
+wattslot:hard a owl:DatatypeProperty ;
+	rdfs:domain wattslot:TimeConstraint ;
+	rdfs:label "dure (jamais violée)"@fr , "hard (never violated)"@en ;
+	rdfs:range xsd:boolean .
+wattslot:hasBatterySettings a owl:ObjectProperty ;
+	rdfs:domain wattslot:Configuration ;
+	rdfs:label "a pour réglages de batterie"@fr , "has battery settings"@en ;
+	rdfs:range wattslot:BatterySettings .
+wattslot:hasColorPrices a owl:ObjectProperty ;
+	rdfs:domain wattslot:Tariff ;
+	rdfs:label "a pour prix d'une couleur"@fr , "has color prices"@en ;
+	rdfs:range wattslot:ColorPrices .
+wattslot:hasConfiguration a owl:ObjectProperty ;
+	rdfs:domain wattslot:Home ;
+	rdfs:label "a pour configuration"@fr , "has configuration"@en ;
+	rdfs:range wattslot:Configuration .
+wattslot:hasDeviceSettings a owl:ObjectProperty ;
+	rdfs:domain wattslot:Configuration ;
+	rdfs:label "a pour réglages d'équipement"@fr , "has device settings"@en ;
+	rdfs:range wattslot:DeviceSettings .
+wattslot:hasEnergyNeed a owl:ObjectProperty ;
+	rdfs:domain wattslot:DeviceSettings ;
+	rdfs:label "a pour besoin d'énergie"@fr , "has energy need"@en ;
+	rdfs:range wattslot:EnergyNeed .
+wattslot:hasFloorRange a owl:ObjectProperty ;
+	rdfs:domain wattslot:BatterySettings ;
+	rdfs:label "a pour plage de plancher"@fr , "has floor range"@en ;
+	rdfs:range wattslot:FloorRange .
+wattslot:hasObjective a owl:ObjectProperty ;
+	rdfs:domain wattslot:Configuration ;
+	rdfs:label "a pour objectif"@fr , "has objective"@en ;
+	rdfs:range wattslot:Objective .
+wattslot:hasPanelArray a owl:ObjectProperty ;
+	rdfs:domain wattslot:SolarPanels ;
+	rdfs:label "a pour champ"@fr , "has array"@en ;
+	rdfs:range wattslot:PanelArray .
+wattslot:hasPriceBand a owl:ObjectProperty ;
+	rdfs:domain wattslot:Tariff ;
+	rdfs:label "a pour plage horaire"@fr , "has price band"@en ;
+	rdfs:range wattslot:PriceBand .
+wattslot:hasRecurrence a owl:ObjectProperty ;
+	rdfs:domain wattslot:DeviceSettings ;
+	rdfs:label "a pour récurrence"@fr , "has recurrence"@en ;
+	rdfs:range wattslot:Recurrence .
+wattslot:hasRuntimeSettings a owl:ObjectProperty ;
+	rdfs:domain wattslot:DeviceSettings ;
+	rdfs:label "a pour réglages de durée de fonctionnement"@fr , "has runtime settings"@en ;
+	rdfs:range wattslot:RuntimeSettings .
+wattslot:hasSolarPanels a owl:ObjectProperty ;
+	rdfs:domain wattslot:DeviceSettings ;
+	rdfs:label "a pour panneaux"@fr , "has panels"@en ;
+	rdfs:range wattslot:SolarPanels .
+wattslot:hasSpeed a owl:ObjectProperty ;
+	rdfs:domain wattslot:RuntimeSettings ;
+	rdfs:label "a pour vitesse"@fr , "has speed"@en .
+wattslot:hasTariff a owl:ObjectProperty ;
+	rdfs:domain wattslot:Configuration ;
+	rdfs:label "a pour tarif"@fr , "has tariff"@en ;
+	rdfs:range wattslot:Tariff .
+wattslot:hasTimeConstraint a owl:ObjectProperty ;
+	rdfs:domain wattslot:DeviceSettings ;
+	rdfs:label "a pour contrainte horaire"@fr , "has time constraint"@en ;
+	rdfs:range wattslot:TimeConstraint .
+wattslot:importWeight a owl:DatatypeProperty ;
+	rdfs:domain wattslot:Objective ;
+	rdfs:label "import weight (euro equivalent)"@en , "poids du soutirage (équivalent euros)"@fr ;
+	rdfs:range xsd:double .
+wattslot:inverterKw a owl:DatatypeProperty ;
+	rdfs:domain wattslot:SolarPanels ;
+	rdfs:label "inverter power (kW)"@en , "puissance de l'onduleur (kW)"@fr ;
+	rdfs:range xsd:double .
+wattslot:maxDelayDays a owl:DatatypeProperty ;
+	rdfs:domain wattslot:DeviceSettings ;
+	rdfs:label "postponement tolerance (days)"@en , "tolérance de report (jours)"@fr ;
+	rdfs:range xsd:integer .
+wattslot:maxKw a owl:DatatypeProperty ;
+	rdfs:domain wattslot:EnergyNeed ;
+	rdfs:label "maximum power (kW)"@en , "puissance maximale (kW)"@fr ;
+	rdfs:range xsd:double .
+wattslot:maxStarts a owl:DatatypeProperty ;
+	rdfs:domain wattslot:RuntimeSettings ;
+	rdfs:label "démarrages par jour au plus"@fr , "maximum starts per day"@en ;
+	rdfs:range xsd:integer .
+wattslot:minimumHours a owl:ObjectProperty ;
+	rdfs:domain wattslot:RuntimeSettings ;
+	rdfs:label "heures minimales par saison"@fr , "minimum hours per season"@en .
+wattslot:month a owl:DatatypeProperty ;
+	rdfs:domain wattslot:PriceBand ;
+	rdfs:label "mois"@fr , "month"@en ;
+	rdfs:range xsd:integer .
+wattslot:needEnergyKwh a owl:DatatypeProperty ;
+	rdfs:domain wattslot:EnergyNeed ;
+	rdfs:label "energy to deliver (kWh)"@en , "énergie à fournir (kWh)"@fr ;
+	rdfs:range xsd:double .
+wattslot:objectivePreset a owl:DatatypeProperty ;
+	rdfs:domain wattslot:Objective ;
+	rdfs:label "preset (cost, autonomy, self_consumption, custom)"@en , "préréglage (cost, autonomy, self_consumption, custom)"@fr ;
+	rdfs:range xsd:string .
+wattslot:order a owl:DatatypeProperty ;
+	rdfs:label "order"@en , "rang"@fr ;
+	rdfs:range xsd:integer .
+wattslot:panelsEfficiency a owl:DatatypeProperty ;
+	rdfs:domain wattslot:SolarPanels ;
+	rdfs:label "overall efficiency (excluding temperature)"@en , "rendement global (hors température)"@fr ;
+	rdfs:range xsd:double .
+wattslot:peakPowerKw a owl:DatatypeProperty ;
+	rdfs:domain wattslot:PanelArray ;
+	rdfs:label "peak power (kWp)"@en , "puissance crête (kWc)"@fr ;
+	rdfs:range xsd:double .
+wattslot:planned a owl:DatatypeProperty ;
+	rdfs:domain wattslot:DeviceSettings ;
+	rdfs:label "planned by the engine"@en , "pris en compte par le calcul"@fr ;
+	rdfs:range xsd:boolean .
+wattslot:powerKw a owl:DatatypeProperty ;
+	rdfs:label "power (kW)"@en , "puissance (kW)"@fr ;
+	rdfs:range xsd:double .
+wattslot:priceEntity a owl:DatatypeProperty ;
+	rdfs:domain wattslot:Tariff ;
+	rdfs:label "entité de prix"@fr , "price entity"@en ;
+	rdfs:range xsd:string .
+wattslot:priceEurKwh a owl:DatatypeProperty ;
+	rdfs:domain wattslot:PriceBand ;
+	rdfs:label "price (€/kWh)"@en , "prix (€/kWh)"@fr ;
+	rdfs:range xsd:double .
+wattslot:priceFactor a owl:DatatypeProperty ;
+	rdfs:domain wattslot:Tariff ;
+	rdfs:label "facteur d'unité des prix lus"@fr , "price unit factor"@en ;
+	rdfs:range xsd:double .
+wattslot:recurrenceRule a owl:DatatypeProperty ;
+	rdfs:domain wattslot:Recurrence ;
+	rdfs:label "rule (RFC 5545)"@en , "règle (RFC 5545)"@fr ;
+	rdfs:range xsd:string .
+wattslot:recurrenceStart a owl:DatatypeProperty ;
+	rdfs:domain wattslot:Recurrence ;
+	rdfs:label "semaine de départ"@fr , "starting week"@en ;
+	rdfs:range xsd:date .
+wattslot:season a owl:DatatypeProperty ;
+	rdfs:label "saison"@fr , "season"@en ;
+	rdfs:range xsd:string .
+wattslot:skipDays a owl:ObjectProperty ;
+	rdfs:domain wattslot:RuntimeSettings ;
+	rdfs:label "days that can be skipped per season"@en , "jours sautables par saison"@fr .
+wattslot:speedName a owl:DatatypeProperty ;
+	rdfs:label "nom de la vitesse"@fr , "speed name"@en ;
+	rdfs:range xsd:string .
+wattslot:startHour a owl:DatatypeProperty ;
+	rdfs:domain wattslot:PriceBand ;
+	rdfs:label "heure de début"@fr , "start hour"@en ;
+	rdfs:range xsd:integer .
+wattslot:startsAfterKey a owl:DatatypeProperty ;
+	rdfs:domain wattslot:DeviceSettings ;
+	rdfs:label "démarre après la fin du cycle de (clé de l'équipement)"@fr , "starts after the cycle of (device key)"@en ;
+	rdfs:range xsd:string .
+wattslot:steps a owl:DatatypeProperty ;
+	rdfs:domain wattslot:EnergyNeed ;
+	rdfs:label "in steps (all or nothing)"@en , "par paliers (tout ou rien)"@fr ;
+	rdfs:range xsd:boolean .
+wattslot:tiltDegrees a owl:DatatypeProperty ;
+	rdfs:domain wattslot:PanelArray ;
+	rdfs:label "inclinaison (°)"@fr , "tilt (°)"@en ;
+	rdfs:range xsd:double .
+wattslot:value a owl:DatatypeProperty ;
+	rdfs:label "valeur"@fr , "value"@en ;
+	rdfs:range xsd:integer .
+wattslot:weekday a owl:DatatypeProperty ;
+	rdfs:domain wattslot:PriceBand ;
+	rdfs:label "jour de la semaine (0 lundi)"@fr , "weekday (0 Monday)"@en ;
+	rdfs:range xsd:integer .
+<https://w3id.org/wattslot/ontology/schema> a owl:Ontology ;
+	rdfs:label "Schéma de WattSlot"@fr , "WattSlot schema"@en ;
+	owl:imports <https://w3id.org/wattslot/ontology/library/home-energy> ;
+	owl:versionInfo "0.1" .
