@@ -2,7 +2,7 @@
 
 *[English version](../tariffs.md) · [Guide d'utilisation](README.md)*
 
-Le plan place vos appareils là où l'électricité est gratuite (votre surplus) ou bon marché. Réglez votre contrat dans **Ma maison › Réglages détaillés › Tarif de l'électricité**. Sans tarif, un prix unique de 0,25 €/kWh est supposé, et le plan cherche seulement à acheter le moins possible au réseau.
+Le plan place vos appareils là où l'électricité est gratuite (votre surplus) ou bon marché. Réglez votre contrat dans **Ma maison › Réglages détaillés › Tarif de l'électricité**. Sans tarif, un prix unique de 0,25 par kWh, dans votre devise, est supposé, et le plan cherche seulement à acheter le moins possible au réseau.
 
 **Proposer d'après le tableau Énergie** lit les prix déclarés dans le tableau Énergie de Home Assistant, s'il y en a.
 
@@ -23,7 +23,7 @@ Le plan place vos appareils là où l'électricité est gratuite (votre surplus)
 
 Ces deux champs valent pour tous les types de tarif :
 
-- **Abonnement** (€/mois) : le prix de l'abonnement, sans les kWh. Il est divisé par le nombre de jours du mois et ajouté au coût de chaque journée ; les indicateurs du plan le montrent (« dont abonnement 0,50 € »). Il ne change pas le plan, seulement le coût affiché. Laissez 0 pour ne pas le compter.
+- **Abonnement** (par mois) : le prix de l'abonnement, sans les kWh. Il est divisé par le nombre de jours du mois et ajouté au coût de chaque journée ; les indicateurs du plan le montrent (« dont abonnement 0,50 € »). Il ne change pas le plan, seulement le coût affiché. Laissez 0 pour ne pas le compter.
 - **Puissance souscrite** (kVA) : la puissance au-delà de laquelle votre disjoncteur coupe, par exemple 6, 9 ou 12 kVA. Le plan évite de soutirer plus que cela au réseau en une heure (1 kW par kVA), par exemple en ne faisant pas tourner le chauffe-eau et le sèche-linge en même temps. Si votre consommation de base la dépasse déjà, un avertissement le signale. Le calcul porte sur des totaux horaires : un pic de quelques minutes n'est pas vu. Laissez vide si vous ne la connaissez pas.
 
 ## Sans panneaux solaires
@@ -34,4 +34,4 @@ WattSlot est tout aussi utile sans panneaux : avec des heures creuses, des jours
 
 - Les prix des modèles sont **indicatifs** : remplacez-les par les vôtres, ils guident chaque décision.
 - Pour Tempo, le capteur de couleur vient en général de l'intégration **RTE Tempo** ; saisissez le nom des couleurs exactement comme le capteur les affiche.
-- Les prix sont en €/kWh. Pour un capteur en €/MWh (prix spot), choisissez cette unité : WattSlot convertit.
+- Les prix sont au kWh, dans la devise de votre maison (**Réglages › Langue et affichage**). Pour un capteur au MWh (prix spot) ou en centimes, choisissez cette unité : WattSlot convertit.

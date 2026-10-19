@@ -115,7 +115,7 @@ describe("ConfigurationSection", () => {
     });
     renderSection();
 
-    expect(await screen.findByText(/prix unique de 0.25 €\/kWh/)).toBeInTheDocument();
+    expect(await screen.findByText(/prix unique de 0.25\s€\/kWh/)).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Définir des heures creuses et pleines" }));
     const base = screen.getByLabelText(/Prix hors des plages/);
     await userEvent.clear(base);

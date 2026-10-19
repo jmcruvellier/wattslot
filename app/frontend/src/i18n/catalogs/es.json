@@ -105,7 +105,7 @@
       "history_importing": "Importando el historial de Home Assistant (quedan {count} contador(es)): nada que hacer.",
       "no_plan_yet": "Todo listo: el plan se calculará a la próxima hora, o ahora mismo.",
       "needs_previous_steps": "Posible en cuanto los pasos esenciales estén hechos.",
-      "tariff_default": "Se supone un precio único de 0,25 €/kWh: indique su tarifa para un plan más preciso.",
+      "tariff_default": "Se supone un precio único de {price}: indique su tarifa para un plan más preciso.",
       "battery_default": "Ajustes predeterminados de la batería: adáptelos a los suyos.",
       "no_notification": "Elija un dispositivo que reciba cada día la recomendación del plan.",
       "needs_home": "Posible en cuanto su casa esté guardada.",
@@ -497,6 +497,13 @@
           "help": "Oscuro, violeta y coral"
         }
       }
+    },
+    "currency": {
+      "label": "Moneda",
+      "automatic": "Automática: {name} (Home Assistant)",
+      "automatic_default": "Automática: {name}",
+      "hint": "La moneda de sus precios y costes, en todos sus dispositivos. Cambiarla no convierte los precios ya introducidos.",
+      "failed": "No se pudo guardar la moneda."
     }
   },
   "connection_page": {
@@ -755,7 +762,7 @@
   },
   "tariff": {
     "title": "Tarifa eléctrica",
-    "none": "Sin tarifa: el plan supone un precio único de {price} €/kWh y solo intenta comprar lo menos posible a la red.",
+    "none": "Sin tarifa: el plan supone un precio único de {price} y solo intenta comprar lo menos posible a la red.",
     "use": {
       "SingleTariff": "Ajustar un precio único",
       "TimeOfUseTariff": "Ajustar horas valle y punta",
@@ -810,10 +817,15 @@
     "price_entity_hint": "Sensor de Home Assistant que da el precio de la hora actual y de las siguientes.",
     "export_hint": "Lo que le aporta un kWh de excedente vertido a la red; 0 si no lo vende.",
     "subscription": "Término fijo",
-    "per_month": "€/mes",
+    "per_month": "{symbol}/mes",
     "subscription_hint": "El precio mensual del término fijo, sin los kWh: se divide por los días del mes y se suma al coste de cada día. 0 para no contarlo.",
     "contract_kva": "Potencia contratada",
-    "contract_kva_hint": "La potencia de su contrato, por encima de la cual salta el interruptor general (por ejemplo 6, 9 o 12 kVA). El plan evita consumir más en una hora. Vacío si no la conoce."
+    "contract_kva_hint": "La potencia de su contrato, por encima de la cual salta el interruptor general (por ejemplo 6, 9 o 12 kVA). El plan evita consumir más en una hora. Vacío si no la conoce.",
+    "units": {
+      "kwh": "{symbol}/kWh",
+      "cents_kwh": "céntimos/kWh",
+      "mwh": "{symbol}/MWh"
+    }
   },
   "battery": {
     "title": "Batería",
@@ -1294,7 +1306,7 @@
     },
     "contract": {
       "title": "Mi contrato",
-      "single": "Precio único, {price} €/kWh",
+      "single": "Precio único, {price}",
       "off_peak": "Horas valle {ranges}",
       "colors": "Precio según el color del día",
       "dynamic": "Precio que cambia cada hora"

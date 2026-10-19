@@ -32,7 +32,7 @@ The first time you open WattSlot, a guided path of four screens replaces the hom
 | Consumption history | | Nothing to do: imported from Home Assistant on its own |
 | First plan | yes | The steps above |
 | Ready-made template | | Optional, sets everything in one go |
-| Electricity tariff | | Otherwise a single price of €0.25/kWh is assumed |
+| Electricity tariff | | Otherwise a single price of 0.25 per kWh, in your currency, is assumed |
 | Battery | | Default settings until you adjust them |
 | Notification | | A device to receive messages, see [Notifications](notifications.md) |
 

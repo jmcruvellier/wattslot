@@ -5,6 +5,7 @@
 import { useEffect, useState } from "react";
 
 import { getJson } from "../api";
+import { useCurrency } from "../i18n/currency";
 import { useI18n } from "../i18n/I18nProvider";
 import { formatNumber } from "../i18n/translate";
 import Button from "../ui/Button";
@@ -21,6 +22,7 @@ type Load =
 
 export default function HomeSummary({ version, onOpen }: { version: number; onOpen: (anchor: string) => void }) {
   const { language, t } = useI18n();
+  const { code: currency } = useCurrency();
   const [load, setLoad] = useState<Load>({ status: "loading" });
   const [attempt, setAttempt] = useState(0); // « Réessayer »
 
@@ -92,7 +94,7 @@ export default function HomeSummary({ version, onOpen }: { version: number; onOp
         />
         <SettingRow
           label={t("home_summary.contract.title")}
-          description={tariffText(configuration.tariff, t, language)}
+          description={tariffText(configuration.tariff, t, language, currency)}
           onOpen={() => onOpen("tariff")}
         />
         {solar.length > 0 && (

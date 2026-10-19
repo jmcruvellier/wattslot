@@ -19,6 +19,7 @@ from functools import cache
 from pathlib import Path
 from typing import Any
 
+from wattslot import currency
 from wattslot.languages import language_of, number
 from wattslot.planning.plan import (
     Alternative,
@@ -234,7 +235,7 @@ def _param(name: str, value: Any, lang: str) -> str:
     if name == "objective":
         return catalog(lang)[f"objective.{value}"]
     if name == "price":
-        return number(float(value), lang, 3)
+        return currency.per_kwh(float(value), lang)
     if name == "energy_kwh":
         return number(float(value), lang, 1)
     return str(value)
@@ -256,7 +257,7 @@ def render(explanation: Explanation, lang: str = "fr", without: tuple[str, ...] 
         sentences.append(
             texts["alternative_same" if same else "alternative"].format(
                 time=f"{hours}h{minutes:02d}" if minutes else f"{hours}h",
-                cost=number(alternative.cost_eur_delta, lang, 2, signed=True),
+                cost=currency.amount(alternative.cost_eur_delta, lang, signed=True),
                 grid=number(alternative.import_kwh_delta, lang, 1, signed=True),
             )
         )

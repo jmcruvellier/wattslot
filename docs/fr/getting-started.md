@@ -32,7 +32,7 @@
 | Historique de consommation | | Rien à faire : repris de Home Assistant tout seul |
 | Premier plan | oui | Les étapes ci-dessus |
 | Modèle prêt à l'emploi | | Facultatif, règle tout d'un coup |
-| Tarif de l'électricité | | Sinon, un prix unique de 0,25 €/kWh est supposé |
+| Tarif de l'électricité | | Sinon, un prix unique de 0,25 par kWh, dans votre devise, est supposé |
 | Batterie | | Réglages par défaut tant que vous ne les ajustez pas |
 | Notification | | Un appareil pour recevoir les messages, voir [Notifications](notifications.md) |
 

@@ -138,7 +138,7 @@ export interface Tariff {
   color_day_start_hour: number;
   price_entity: string | null;
   export_entity: string | null;
-  price_factor: number; // unité des entités vers €/kWh
+  price_factor: number; // unité des entités vers le prix du kWh (devise de la maison)
   subscription_eur_month: number; // abonnement, ajouté au coût de chaque jour au prorata du mois
   contract_kva: number | null; // puissance souscrite ; null : inconnue
 }
@@ -239,11 +239,11 @@ export const TARIFF_TEMPLATES: Record<TariffKind, Tariff> = {
   DynamicTariff: { ...BLANK, kind: "DynamicTariff", base_eur_kwh: DEFAULT_PRICE_EUR_KWH },
 };
 
-// Unités possibles des entités de prix (facteur vers €/kWh).
-export const PRICE_UNITS: { factor: number; unit: string }[] = [
-  { factor: 1, unit: "€/kWh" },
-  { factor: 0.01, unit: "c€/kWh" },
-  { factor: 0.001, unit: "€/MWh" },
+// Unités possibles des entités de prix (facteur vers le prix du kWh), dans la devise de la maison.
+export const PRICE_UNITS: { factor: number; unit: "kwh" | "cents_kwh" | "mwh" }[] = [
+  { factor: 1, unit: "kwh" },
+  { factor: 0.01, unit: "cents_kwh" },
+  { factor: 0.001, unit: "mwh" },
 ];
 
 export interface ConfigurationIssue extends Issue {

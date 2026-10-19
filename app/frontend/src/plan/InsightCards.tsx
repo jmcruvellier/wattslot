@@ -2,6 +2,7 @@
 // explications de chaque équipement avec la recommandation du jour (lot 5.3). Les textes sont
 // rédigés par le serveur dans la langue demandée.
 
+import { useCurrency } from "../i18n/currency";
 import { useI18n } from "../i18n/I18nProvider";
 import { kwh, percent } from "./format";
 import { availableIndicators, type IndicatorLayout } from "./layout";
@@ -19,9 +20,9 @@ const HIGHLIGHT: Partial<Record<ObjectivePreset, IndicatorKey>> = {
 };
 
 // Espace insécable : une valeur ne se sépare pas de son unité.
-function value(key: IndicatorKey, indicators: Indicators): string {
+function value(key: IndicatorKey, indicators: Indicators, money: (value: number) => string): string {
   const raw = indicators[key];
-  if (key === "cost_eur") return `${kwh(raw)}\u00a0€`;
+  if (key === "cost_eur") return money(raw ?? 0);
   if (key === "co2_kg") return `${kwh(raw)}\u00a0kg`;
   if (key.endsWith("_percent")) return `${percent(raw)}\u00a0%`;
   return `${kwh(raw)}\u00a0kWh`;
@@ -29,6 +30,7 @@ function value(key: IndicatorKey, indicators: Indicators): string {
 
 export function IndicatorsCard({ view, layout }: { view: DayView; layout: IndicatorLayout }) {
   const { t } = useI18n();
+  const { money } = useCurrency();
   const indicators = view.indicators;
   if (!indicators) return null;
   // Celui choisi dans la disposition, sinon celui de l'objectif du calcul.
@@ -51,11 +53,11 @@ export function IndicatorsCard({ view, layout }: { view: DayView; layout: Indica
           <div key={key} className={key === main ? "indicator indicator-main" : "indicator"}>
             <dt>{t(`plan.indicators.${key}`)}</dt>
             <dd>
-              {value(key, indicators)}
+              {value(key, indicators, money)}
               {key === "cost_eur" && (indicators.subscription_eur ?? 0) > 0 && (
                 <small className="dim">
                   {" "}
-                  {t("plan.indicators.subscription_part", { amount: `${kwh(indicators.subscription_eur)}\u00a0€` })}
+                  {t("plan.indicators.subscription_part", { amount: money(indicators.subscription_eur ?? 0) })}
                 </small>
               )}
             </dd>
