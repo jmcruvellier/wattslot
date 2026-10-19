@@ -124,6 +124,24 @@ jobs:
           ruff format --check --config pyproject.toml ../../bench
           cd ../.. && python -m pytest bench/tests
 
+  backend-result:
+    # Contrôle exigé par la protection de main (lot 7.3) : le job à matrice ci-dessus n'a pas de
+    # nom stable quand il est sauté. Réussit si toutes les versions de Python ont réussi ou si le
+    # backend n'est pas concerné ; échoue sur un échec ou une annulation.
+    name: Backend
+    needs: [changes, backend]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Résultat du backend
+        run: |
+          echo "Fichiers modifiés : ${{ needs.changes.result }}, backend : ${{ needs.backend.result }}"
+          [ "${{ needs.changes.result }}" = "success" ] || exit 1
+          case "${{ needs.backend.result }}" in
+            success|skipped) ;;
+            *) exit 1 ;;
+          esac
+
   frontend:
     name: Frontend
     needs: changes
