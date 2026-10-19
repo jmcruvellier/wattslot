@@ -105,3 +105,30 @@ def test_off_peak_ranges_for_the_dashboard() -> None:
     assert off_peak_ranges(DEFAULT, FRIDAY) == []
     assert off_peak_ranges(WEEKEND, FRIDAY) == [(1, 7)]
     assert off_peak_ranges(WEEKEND, SATURDAY) == []  # même prix toute la journée
+
+
+CONTRACT = WEEKEND.model_copy(update={"subscription_eur_month": 15.5, "contract_kva": 9.0})
+
+
+def test_the_contract_is_saved_and_read_back(tmp_path: Path) -> None:
+    graph = GraphStore(tmp_path)
+    configuration.save(graph, Configuration(tariff=CONTRACT))
+
+    assert configuration.load(graph).tariff == CONTRACT
+    configuration.save(graph, Configuration(tariff=WEEKEND))
+    assert configuration.load(graph).tariff == WEEKEND  # sans contrat : 0 €, puissance inconnue
+
+
+def test_the_subscription_of_a_day_follows_the_length_of_the_month() -> None:
+    assert CONTRACT.subscription_eur(FRIDAY) == 0.5  # 31 jours en octobre
+    assert CONTRACT.subscription_eur(date(2028, 2, 10)) == 15.5 / 29
+    assert WEEKEND.subscription_eur(FRIDAY) == 0.0
+
+
+def test_the_calculation_sees_the_contract() -> None:
+    state, _ = load(STATES[0])
+    problem = from_input(replace(from_v1(state), tariff=CONTRACT))
+
+    assert problem.contract_kwh == 9.0
+    assert problem.subscription_eur == CONTRACT.subscription_eur(problem.day)
+    assert from_input(from_v1(state)).contract_kwh is None

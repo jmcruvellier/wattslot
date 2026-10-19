@@ -127,6 +127,11 @@
     rdfs:label "entité de prix de revente"@fr, "export price entity"@en .
 <#priceFactor> a owl:DatatypeProperty ; rdfs:domain <#Tariff> ; rdfs:range xsd:double ;
     rdfs:label "facteur d'unité des prix lus"@fr, "price unit factor"@en .
+# Contrat (lot 7.3) : abonnement mensuel, puissance souscrite (absente : inconnue).
+<#subscriptionEurMonth> a owl:DatatypeProperty ; rdfs:domain <#Tariff> ; rdfs:range xsd:double ;
+    rdfs:label "abonnement mensuel (€)"@fr, "monthly subscription (€)"@en .
+<#contractKva> a owl:DatatypeProperty ; rdfs:domain <#Tariff> ; rdfs:range xsd:double ;
+    rdfs:label "puissance souscrite (kVA)"@fr, "contract power (kVA)"@en .
 
 # --- Batterie (phase 3, lot 3.3) ------------------------------------------------------------------
 

@@ -49,6 +49,9 @@ FULL_BONUS = 0.0001  # batterie pleine dans la journée : départage seulement (
 FULL_PRIORITY_BONUS = 2.0  # charge complète hebdomadaire due
 SKIP_PENALTY = 100.0  # tâche non placée : seulement si elle ne tient plus
 SOFT_PENALTY = 1.0  # contrainte souple violée, par heure (ou par créneau d'une tâche)
+# Par kWh soutiré au-delà de la puissance souscrite (lot 7.3) : plus qu'une tâche non placée,
+# le disjoncteur coupant toute la maison ; souple, le problème reste toujours soluble.
+CONTRACT_PENALTY = 1000.0
 BIG_KWH = 50.0
 
 
@@ -268,9 +271,14 @@ def solve(problem: Problem, objective: Goal = Objective.COST, time_limit_s: floa
     battery = problem.battery
     soc_previous: Any = battery.stored_kwh
     imports, exports, full_hours = {}, {}, []
+    over_contract: list[Any] = []  # soutirage au-delà de la puissance souscrite (lot 7.3)
     throughput: list[Any] = []  # énergie qui passe par la batterie (ménagement)
     for hour in hours:
         imports[hour], exports[hour] = var(), var()
+        if problem.contract_kwh is not None:
+            over = var()
+            h.addConstr(imports[hour] <= problem.contract_kwh + over)
+            over_contract.append(over)
         balance = problem.net_kwh.get(hour, 0.0) - load[hour]
         if battery.active_from <= hour < battery.active_to and battery.capacity_kwh > 0:
             charge = var(0, battery.charge_max_kw)
@@ -320,6 +328,7 @@ def solve(problem: Problem, objective: Goal = Objective.COST, time_limit_s: floa
         + SKIP_PENALTY * sum(skips.values())
         + SKIP_PENALTY * sum(shortfalls)  # par kWh manquant : seulement s'il ne tient plus
         + SOFT_PENALTY * sum(penalties)
+        + CONTRACT_PENALTY * sum(over_contract)
         + battery_cost(problem, objective) * sum(throughput)
     )
     status = h.getModelStatus()
@@ -576,12 +585,31 @@ def day_plan(problem: Problem, plan: Plan, run: BatteryRun) -> DayPlan:
         items.append(
             RuntimePlan(device=runtime.name, segments=segments, priority=4, justification=note)
         )
+    over = _over_contract(problem, run)
+    if over:
+        warnings.append(
+            {
+                "code": "puissance_souscrite_depassee",
+                "params": {
+                    "kva": f"{problem.contract_kwh:g}",
+                    "heures": ", ".join(str(hour) for hour in over),
+                },
+            }
+        )
     return DayPlan(
         items=items,
         warnings=warnings,
         residual_kwh=dict(run.residual_kwh),
         indicators=indicators(problem, run),
     )
+
+
+def _over_contract(problem: Problem, run: BatteryRun) -> list[int]:
+    """Heures où le soutirage simulé dépasse la puissance souscrite (lot 7.3)."""
+    if problem.contract_kwh is None:
+        return []
+    limit = problem.contract_kwh + 0.001
+    return sorted(hour for hour, kwh in run.residual_kwh.items() if -kwh > limit)
 
 
 def indicators(problem: Problem, run: BatteryRun) -> Indicators:
@@ -595,9 +623,11 @@ def indicators(problem: Problem, run: BatteryRun) -> Indicators:
     return Indicators(
         cost_eur=round(
             sum(price.get(h, 0.0) * kwh for h, kwh in imported.items())
-            - sum(export_price.get(h, 0.0) * kwh for h, kwh in exported.items()),
+            - sum(export_price.get(h, 0.0) * kwh for h, kwh in exported.items())
+            + problem.subscription_eur,
             3,
         ),
+        subscription_eur=round(problem.subscription_eur, 3),
         import_kwh=round(sum(imported.values()), 3),
         export_kwh=round(sum(exported.values()), 3),
         self_consumption_percent=round(100 * (produced - sum(exported.values())) / produced, 1)

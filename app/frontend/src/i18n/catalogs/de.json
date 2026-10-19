@@ -297,7 +297,8 @@
       "co2_kg": "CO₂ des Bezugs",
       "end_soc_percent": "Ladestand am Tagesende",
       "battery_throughput_kwh": "Durch die Batterie geflossene Energie",
-      "chosen": "Hervorgehobene Kennzahl unter „Anpassen“ gewählt."
+      "chosen": "Hervorgehobene Kennzahl unter „Anpassen“ gewählt.",
+      "subscription_part": "davon Grundgebühr {amount}"
     },
     "explanations": {
       "title": "Warum dieser Plan",
@@ -807,7 +808,12 @@
       "DynamicTariff": "Der Preis ändert sich stündlich und wird von einem Home-Assistant-Sensor gelesen."
     },
     "price_entity_hint": "Home-Assistant-Sensor, der den Preis der aktuellen und kommenden Stunden liefert.",
-    "export_hint": "Was Ihnen eine ins Netz eingespeiste kWh Überschuss einbringt; 0, wenn Sie ihn nicht verkaufen."
+    "export_hint": "Was Ihnen eine ins Netz eingespeiste kWh Überschuss einbringt; 0, wenn Sie ihn nicht verkaufen.",
+    "subscription": "Grundgebühr",
+    "per_month": "€/Monat",
+    "subscription_hint": "Die monatliche Grundgebühr ohne die kWh: Sie wird durch die Tage des Monats geteilt und zu den Kosten jedes Tages addiert. 0, um sie nicht zu zählen.",
+    "contract_kva": "Vertragliche Leistung",
+    "contract_kva_hint": "Die Leistung Ihres Vertrags, über der die Hauptsicherung auslöst (zum Beispiel 6, 9 oder 12 kVA). Die Planung vermeidet, in einer Stunde mehr zu beziehen. Leer lassen, wenn unbekannt."
   },
   "battery": {
     "title": "Batterie",

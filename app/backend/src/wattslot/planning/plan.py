@@ -140,7 +140,8 @@ class Indicators(_V1):
     """Indicateurs d'un plan (lot 3.6), sur les heures calculées, batterie simulée : de quoi
     comparer les objectifs."""
 
-    cost_eur: float = _v1_key("cout_eur")  # soutirage au tarif, moins la revente
+    cost_eur: float = _v1_key("cout_eur")  # soutirage au tarif, moins la revente, abonnement
+    subscription_eur: float = _v1_key("abonnement_eur", default=0.0)  # part du jour (lot 7.3)
     import_kwh: float = _v1_key("soutirage_kwh")
     export_kwh: float = _v1_key("injection_kwh")
     self_consumption_percent: float | None = _v1_key("autoconsommation_pct", default=None)

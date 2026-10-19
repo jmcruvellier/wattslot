@@ -24,6 +24,7 @@ Enregistré avec la configuration dans le graphe de la maison (décision 12).
 """
 
 import unicodedata
+from calendar import monthrange
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 from enum import StrEnum
@@ -107,6 +108,14 @@ class Tariff(BaseModel):
     price_entity: str | None = None
     export_entity: str | None = None
     price_factor: float = Field(default=1.0, gt=0)  # unité des entités → €/kWh (0,001 : €/MWh)
+    # Contrat (lot 7.3) : abonnement, ajouté au coût de chaque jour au prorata du mois, et
+    # puissance souscrite, que le soutirage d'une heure ne dépasse pas (1 kW par kVA).
+    subscription_eur_month: float = Field(default=0.0, ge=0)
+    contract_kva: float | None = Field(default=None, gt=0)
+
+    def subscription_eur(self, day: date) -> float:
+        """Part de l'abonnement d'une journée : mensuel divisé par les jours du mois."""
+        return self.subscription_eur_month / monthrange(day.year, day.month)[1]
 
     def _color_prices(self, day: date, context: TariffContext) -> ColorPrices | None:
         known = context.colors.get(day)
@@ -245,7 +254,10 @@ def to_triples(owner: NamedNode, tariff: Tariff) -> list[Triple]:
         Triple(node, vocab("exportPriceEurKwh"), _number(tariff.export_eur_kwh)),
         Triple(node, vocab("colorDayStartHour"), _integer(tariff.color_day_start_hour)),
         Triple(node, vocab("priceFactor"), _number(tariff.price_factor)),
+        Triple(node, vocab("subscriptionEurMonth"), _number(tariff.subscription_eur_month)),
     ]
+    if tariff.contract_kva is not None:
+        triples.append(Triple(node, vocab("contractKva"), _number(tariff.contract_kva)))
     for name, value in (
         ("colorEntity", tariff.color_entity),
         ("colorTomorrowEntity", tariff.color_tomorrow_entity),
@@ -308,7 +320,7 @@ def load(graph: GraphStore, graph_iri: str, owner: NamedNode, vocab_ns: str) -> 
             f"""
             PREFIX wattslot: <{vocab_ns}>
             SELECT ?tariff ?kind ?base ?export ?start ?factor ?colorEntity ?tomorrow ?price
-                   ?exportEntity WHERE {{
+                   ?exportEntity ?subscription ?kva WHERE {{
               GRAPH <{graph_iri}> {{
                 <{owner.value}> wattslot:hasTariff ?tariff .
                 ?tariff a ?kind ; wattslot:basePriceEurKwh ?base ;
@@ -319,6 +331,8 @@ def load(graph: GraphStore, graph_iri: str, owner: NamedNode, vocab_ns: str) -> 
                 OPTIONAL {{ ?tariff wattslot:colorTomorrowEntity ?tomorrow }}
                 OPTIONAL {{ ?tariff wattslot:priceEntity ?price }}
                 OPTIONAL {{ ?tariff wattslot:exportPriceEntity ?exportEntity }}
+                OPTIONAL {{ ?tariff wattslot:subscriptionEurMonth ?subscription }}
+                OPTIONAL {{ ?tariff wattslot:contractKva ?kva }}
               }}
             }}
             """
@@ -362,6 +376,8 @@ def load(graph: GraphStore, graph_iri: str, owner: NamedNode, vocab_ns: str) -> 
         price_entity=row.get("price"),
         export_entity=row.get("exportEntity"),
         price_factor=float(row.get("factor", 1.0)),
+        subscription_eur_month=float(row.get("subscription", 0.0)),
+        contract_kva=float(row["kva"]) if "kva" in row else None,
     )
 
 

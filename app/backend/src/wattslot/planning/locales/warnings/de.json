@@ -17,7 +17,8 @@
     "regle_recurrence_non_geree": "{equipement}: nicht unterstützte Wiederholungsregel, nur seine Fälligkeit zählt in den Prognosen der folgenden Tage.",
     "horizon_interrompu": "Prognosen vor dem {jour} beendet: {raison}.",
     "tache_reportee": "{equipement} auf {jour} verschoben: {pct_jour} % durch Solarstrom gedeckt, gegenüber {pct_auj} % heute.",
-    "tache_reportee_sans_creneau": "{equipement} auf {jour} verschoben: heute nicht mehr genug Zeit für einen vollen Zyklus."
+    "tache_reportee_sans_creneau": "{equipement} auf {jour} verschoben: heute nicht mehr genug Zeit für einen vollen Zyklus.",
+    "puissance_souscrite_depassee": "Geplanter Netzbezug über der vertraglichen Leistung ({kva} kVA) um {heures} Uhr: Grundverbrauch und Geräte übersteigen den Vertrag, auch nach Verschieben der Geräte. Die Hauptsicherung kann auslösen."
   },
   "date": {
     "format": "{jour}, {num}. {mois} {annee}",

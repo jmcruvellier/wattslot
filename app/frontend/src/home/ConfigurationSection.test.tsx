@@ -126,6 +126,10 @@ describe("ConfigurationSection", () => {
     await userEvent.type(nightPrice, "0.138252");
     await userEvent.click(screen.getByRole("button", { name: "Ajouter une plage" }));
     await userEvent.click(screen.getByRole("listitem", { name: "Plage 3" }).querySelector("button")!);
+    const subscription = screen.getByLabelText(/Abonnement/);
+    await userEvent.clear(subscription);
+    await userEvent.type(subscription, "15.5");
+    await userEvent.type(screen.getByLabelText(/Puissance souscrite/), "9");
     await userEvent.click(screen.getByRole("button", { name: "Enregistrer les réglages" }));
 
     expect(await screen.findByRole("status")).toHaveTextContent("Réglages enregistrés.");
@@ -144,6 +148,8 @@ describe("ConfigurationSection", () => {
       price_entity: null,
       export_entity: null,
       price_factor: 1,
+      subscription_eur_month: 15.5,
+      contract_kva: 9,
     });
 
     await userEvent.click(screen.getByRole("button", { name: "Revenir au prix par défaut" }));

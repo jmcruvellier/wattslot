@@ -29,6 +29,8 @@ const BLANK_TARIFF: Tariff = {
   price_entity: null,
   export_entity: null,
   price_factor: 1,
+  subscription_eur_month: 0,
+  contract_kva: null,
 };
 
 function settings(key: string, change: Partial<DeviceSettings>): DeviceSettings {

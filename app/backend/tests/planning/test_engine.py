@@ -217,3 +217,45 @@ def test_full_battery_does_not_cost_end_charge() -> None:
     assert found.end_soc_percent is not None and expected.end_soc_percent is not None
     assert found.cost_eur <= expected.cost_eur + 1e-6
     assert found.end_soc_percent + TOLERANCE_POINTS >= expected.end_soc_percent
+
+
+# --- Contrat (lot 7.3) : abonnement et puissance souscrite --------------------------------
+
+
+def _imports(problem: Problem, plan: Plan) -> dict[int, float]:
+    run = simulate_plan(problem, plan)
+    return {hour: max(0.0, -kwh) for hour, kwh in run.residual_kwh.items()}
+
+
+@pytest.mark.parametrize("path", STATES, ids=[p.stem for p in STATES])
+def test_the_plan_keeps_under_the_contract_power_or_says_so(path: Path) -> None:
+    """Puissance souscrite juste sous le pic du plan sans contrat : le plan s'y tient, ou
+    signale les heures de dépassement ; jamais d'échec du calcul."""
+    problem = from_input(from_v1(load(path)[0]))
+    peak = max(_imports(problem, solve(problem)).values(), default=0.0)
+    limited = replace(problem, contract_kwh=max(0.05, round(peak * 0.8, 3)))
+
+    result = plan_day(limited, explained=False)
+
+    over = sorted(
+        hour
+        for hour, kwh in _imports(limited, result.plan).items()
+        if kwh > limited.contract_kwh + 0.001  # type: ignore[operator]
+    )
+    found = [w for w in result.day.warnings if isinstance(w, dict)]
+    exceeded = [w for w in found if w["code"] == "puissance_souscrite_depassee"]
+    if over:
+        assert exceeded and exceeded[0]["params"]["heures"] == ", ".join(map(str, over))
+    else:
+        assert not exceeded
+
+
+def test_the_subscription_is_part_of_the_cost_of_the_day() -> None:
+    problem = from_input(from_v1(load(STATES[0])[0]))
+    plan = solve(problem)
+    with_subscription = replace(problem, subscription_eur=0.5)
+
+    found = _indicators(with_subscription, plan)
+
+    assert found.subscription_eur == 0.5
+    assert found.cost_eur == pytest.approx(_indicators(problem, plan).cost_eur + 0.5, abs=0.001)

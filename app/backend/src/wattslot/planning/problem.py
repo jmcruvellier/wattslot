@@ -157,6 +157,10 @@ class Problem:
     prices_eur_kwh: dict[int, float] = field(default_factory=dict)  # soutirage, par heure
     export_prices_eur_kwh: dict[int, float] = field(default_factory=dict)  # revente, par heure
     warnings: list[dict[str, Any]] = field(default_factory=list)
+    # Contrat (lot 7.3) : part de l'abonnement du jour (€) ; soutirage maximal d'une heure (kWh,
+    # puissance souscrite à 1 kW par kVA), ``None`` : inconnu.
+    subscription_eur: float = 0.0
+    contract_kwh: float | None = None
 
     @property
     def hours(self) -> range:
@@ -447,6 +451,8 @@ def from_input(data: PlanningInput, reference: Reference = REFERENCE) -> Problem
         warnings=warnings,
         prices_eur_kwh=data.tariff.hourly(day, data.tariff_context),
         export_prices_eur_kwh=data.tariff.export_hourly(day, data.tariff_context),
+        subscription_eur=data.tariff.subscription_eur(day),
+        contract_kwh=data.tariff.contract_kva,
         co2_g_kwh=data.co2.hourly(day),
     )
 

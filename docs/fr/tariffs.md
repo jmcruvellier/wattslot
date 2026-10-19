@@ -19,6 +19,13 @@ Le plan place vos appareils là où l'électricité est gratuite (votre surplus)
 
 **Prix de revente du surplus** : ce que vous rapporte un kWh envoyé au réseau (0 si vous ne le vendez pas). Il peut aussi être lu dans un capteur. Avec l'objectif **le coût le plus bas**, le plan préfère consommer votre surplus quand il vaut plus que son prix de revente.
 
+## Votre contrat
+
+Ces deux champs valent pour tous les types de tarif :
+
+- **Abonnement** (€/mois) : le prix de l'abonnement, sans les kWh. Il est divisé par le nombre de jours du mois et ajouté au coût de chaque journée ; les indicateurs du plan le montrent (« dont abonnement 0,50 € »). Il ne change pas le plan, seulement le coût affiché. Laissez 0 pour ne pas le compter.
+- **Puissance souscrite** (kVA) : la puissance au-delà de laquelle votre disjoncteur coupe, par exemple 6, 9 ou 12 kVA. Le plan évite de soutirer plus que cela au réseau en une heure (1 kW par kVA), par exemple en ne faisant pas tourner le chauffe-eau et le sèche-linge en même temps. Si votre consommation de base la dépasse déjà, un avertissement le signale. Le calcul porte sur des totaux horaires : un pic de quelques minutes n'est pas vu. Laissez vide si vous ne la connaissez pas.
+
 ## Sans panneaux solaires
 
 WattSlot est tout aussi utile sans panneaux : avec des heures creuses, des jours de couleur ou des prix dynamiques, le plan déplace vos appareils, votre chauffe-eau et votre voiture vers les heures les moins chères. Ne déclarez pas de production solaire dans le tableau Énergie ; l'étape de prévision solaire ne s'applique alors pas.

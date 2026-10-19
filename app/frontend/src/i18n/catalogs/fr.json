@@ -297,7 +297,8 @@
       "co2_kg": "CO₂ des achats",
       "end_soc_percent": "SoC en fin de journée",
       "battery_throughput_kwh": "Énergie passée par la batterie",
-      "chosen": "Indicateur mis en avant choisi dans « Personnaliser »."
+      "chosen": "Indicateur mis en avant choisi dans « Personnaliser ».",
+      "subscription_part": "dont abonnement {amount}"
     },
     "explanations": {
       "title": "Pourquoi ce plan",
@@ -807,7 +808,12 @@
       "DynamicTariff": "Le prix change chaque heure, lu dans un capteur de Home Assistant."
     },
     "price_entity_hint": "Capteur de Home Assistant qui donne le prix de l'heure en cours et à venir.",
-    "export_hint": "Ce que vous rapporte un kWh de surplus envoyé au réseau ; 0 si vous ne le vendez pas."
+    "export_hint": "Ce que vous rapporte un kWh de surplus envoyé au réseau ; 0 si vous ne le vendez pas.",
+    "subscription": "Abonnement",
+    "per_month": "€/mois",
+    "subscription_hint": "Le prix mensuel de l'abonnement, sans les kWh : il est divisé par le nombre de jours du mois et ajouté au coût de chaque journée. 0 si vous ne voulez pas le compter.",
+    "contract_kva": "Puissance souscrite",
+    "contract_kva_hint": "La puissance de votre contrat, au-delà de laquelle le disjoncteur coupe (par exemple 6, 9 ou 12 kVA). Le calcul évite de soutirer plus en une heure. Vide si vous ne la connaissez pas."
   },
   "battery": {
     "title": "Batterie",

@@ -19,6 +19,13 @@ The plan places your appliances where electricity is free (your surplus) or chea
 
 **Export price of the surplus**: what a kWh sent to the grid earns you (0 if you do not sell it). It can also be read from a sensor. With the **lowest cost** objective, the plan prefers using your surplus at home when it is worth more than its resale price.
 
+## Your contract
+
+These two fields apply to every kind of tariff:
+
+- **Subscription** (€/month): the standing charge, without the kWh. It is divided by the number of days in the month and added to the cost of each day; the plan's indicators show it ("including subscription 0.50 €"). It does not change the plan, only the cost shown. Leave 0 to leave it out.
+- **Contract power** (kVA): the power above which your main breaker trips, for example 6, 9 or 12 kVA. The plan avoids drawing more than this from the grid in any hour (1 kW per kVA), for example by not running the water heater and the dryer at the same time. If your base consumption alone is already above it, the plan says so in a warning. It works on hourly totals: a peak of a few minutes is not seen. Leave empty if you do not know it.
+
 ## Without solar panels
 
 WattSlot is just as useful without panels: with off-peak hours, colour days or dynamic prices, the plan moves your appliances, water heater and car to the cheapest hours. Leave the solar production out of the Energy dashboard; the solar forecast step then does not apply.
