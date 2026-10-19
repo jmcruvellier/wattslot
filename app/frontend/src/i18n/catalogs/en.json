@@ -529,6 +529,26 @@
       "saved": "Assistant changed in Home Assistant.",
       "invalid": "Home Assistant does not know this assistant or agent: reload the page.",
       "failed": "Home Assistant refused the change, try again."
+    },
+    "open_webui": {
+      "title": "Open WebUI",
+      "help": "To chat with an Open WebUI model from the Assistant page, without going through Home Assistant.",
+      "url": "Address",
+      "key": "API key",
+      "key_saved": "key saved",
+      "replace": "Replace",
+      "clear": "Clear",
+      "test": "Test",
+      "testing": "Testing…",
+      "test_ok": "Open WebUI answers: {count} model(s).",
+      "test_failed": "Open WebUI does not answer ({detail}).",
+      "invalid": "Invalid address: it starts with http:// or https://.",
+      "failed": "Saving failed, try again.",
+      "tools": "Give WattSlot's data to Open WebUI",
+      "tools_server": "In Open WebUI: Admin Panel › Settings › External Tools › “+”, type MCP (Streamable HTTP), with the app's MCP server address above.",
+      "tools_model": "Then Workspace › Models › edit the chosen model › Tools: tick the WattSlot server. Also paste the recommended prompt (Assistant page) into its system prompt if you want it by default.",
+      "tools_addon": "As an add-on, the MCP server can only be reached by Home Assistant: an Open WebUI installed elsewhere cannot use it. The model then answers without WattSlot's data.",
+      "tools_standalone": "Open WebUI must be able to reach the app's address on your local network."
     }
   },
   "connection_page": {

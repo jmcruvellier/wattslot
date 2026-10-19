@@ -44,6 +44,7 @@ from wattslot import (
 from wattslot.aggregation import PERIODS, Aggregate, AggregationStatus, Aggregator
 from wattslot.assistant import chat as assistant_chat
 from wattslot.assistant import home_config as assistant_home_config
+from wattslot.assistant import open_webui
 from wattslot.assistant import prompts as assistant_prompts
 from wattslot.assistant import server as assistant_server
 from wattslot.detection import (
@@ -509,12 +510,68 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(status_code=502, detail=str(error)) from error
         return await assistant_home_config.home_config(client)
 
+    @app.get("/api/assistant/open-webui")
+    def get_open_webui(request: Request) -> open_webui.OpenWebUIState:
+        """Réglage d'Open WebUI : l'adresse, et seulement s'il y a une clé d'API."""
+        return open_webui.state(open_webui.load(request.app.state.database))
+
+    @app.put("/api/assistant/open-webui")
+    def put_open_webui(
+        request: Request, change: open_webui.OpenWebUIChange
+    ) -> open_webui.OpenWebUIState:
+        """Adresse et clé d'API d'Open WebUI ; sans clé saisie, la clé actuelle est gardée."""
+        database = request.app.state.database
+        setting = open_webui.merged(open_webui.load(database), change)
+        open_webui.save(database, setting)
+        return open_webui.state(setting)
+
+    @app.post("/api/assistant/open-webui/test")
+    async def test_open_webui(
+        request: Request, change: open_webui.OpenWebUIChange
+    ) -> list[open_webui.Model]:
+        """Modèles d'Open WebUI avec le réglage du formulaire, sans l'enregistrer ; 502 avec
+        la raison si Open WebUI ne répond pas."""
+        setting = open_webui.merged(open_webui.load(request.app.state.database), change)
+        try:
+            return await asyncio.to_thread(open_webui.models, setting)
+        except open_webui.OpenWebUIError as error:
+            raise HTTPException(status_code=502, detail=str(error)) from error
+
+    @app.get("/api/assistant/open-webui/models")
+    async def open_webui_models(request: Request) -> list[open_webui.Model]:
+        """Modèles d'Open WebUI pour le chat ; liste vide sans réglage ou s'il ne répond pas."""
+        setting = open_webui.load(request.app.state.database)
+        if not setting.ready:
+            return []
+        try:
+            return await asyncio.to_thread(open_webui.models, setting)
+        except open_webui.OpenWebUIError:
+            return []
+
     @app.post("/api/assistant/chat")
     async def post_assistant_chat(
         request: Request, message: assistant_chat.ChatMessage
     ) -> assistant_chat.ChatReply:
-        """Message de la page Assistant, transmis à un agent de conversation de HA ; 503 sans
-        HA connecté, 502 si HA refuse ou ne répond pas à temps."""
+        """Message de la page Assistant, transmis à un agent de conversation de HA, ou à un
+        modèle d'Open WebUI (agent « open_webui:<modèle> ») ; 503 sans HA connecté (ou sans
+        Open WebUI configuré), 502 si l'un ou l'autre refuse ou ne répond pas à temps."""
+        agent = message.agent_id or ""
+        if agent.startswith(open_webui.AGENT_PREFIX):
+            setting = open_webui.load(request.app.state.database)
+            if not setting.ready:
+                raise HTTPException(status_code=503, detail="Open WebUI non configuré")
+            try:
+                text = await asyncio.to_thread(
+                    open_webui.complete,
+                    setting,
+                    agent.removeprefix(open_webui.AGENT_PREFIX),
+                    assistant_prompts.prompt(message.language),
+                    message.history,
+                    message.text,
+                )
+            except open_webui.OpenWebUIError as error:
+                raise HTTPException(status_code=502, detail=str(error)) from error
+            return assistant_chat.ChatReply(text=text)
         client = connected_client(request)
         try:
             return await assistant_chat.send(client, message)

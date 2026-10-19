@@ -54,6 +54,8 @@ const RESPONSES: Record<string, unknown> = {
     objective: null,
   },
   "api/assistant/connection": { mode: "standalone", mcp_url: null },
+  "api/assistant/open-webui": { url: "http://192.0.2.10:3000", has_key: true },
+  "api/assistant/open-webui/models": [{ id: "qwen2.5:14b", name: "Qwen" }],
   "api/assistant/home": {
     connected: true,
     mcp: [{ title: "WattSlot", state: "loaded" }],

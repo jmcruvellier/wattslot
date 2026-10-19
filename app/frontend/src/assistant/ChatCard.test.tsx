@@ -21,13 +21,18 @@ const HOME = {
 
 type Calls = { url: string; body: Record<string, unknown> }[];
 
-function mockApi(chat: (body: Record<string, unknown>) => Response, home: unknown = HOME): Calls {
+function mockApi(
+  chat: (body: Record<string, unknown>) => Response,
+  home: unknown = HOME,
+  models: unknown = [],
+): Calls {
   const calls: Calls = [];
   vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
     const url = String(input);
     const body = init?.body ? (JSON.parse(String(init.body)) as Record<string, unknown>) : {};
     calls.push({ url, body });
     if (url === "api/assistant/home") return Response.json(home);
+    if (url === "api/assistant/open-webui/models") return Response.json(models);
     if (url === "api/assistant/chat") return chat(body);
     return new Response(null, { status: 404 });
   });
@@ -84,6 +89,7 @@ describe("discussion avec l'assistant", () => {
       agent_id: "conversation.ollama",
       conversation_id: null,
       language: "fr",
+      history: [], // HA garde le fil lui-même
     });
     expect(sent[1].conversation_id).toBe("c1");
   });
@@ -114,6 +120,46 @@ describe("discussion avec l'assistant", () => {
     const sent = calls.filter((call) => call.url === "api/assistant/chat").map((call) => call.body);
     expect(sent[0].agent_id).toBe("conversation.home_assistant");
     expect(sent[1].conversation_id).toBeNull();
+  });
+
+  it("un modèle d'Open WebUI reçoit l'historique de la conversation", async () => {
+    const calls = mockApi(
+      () => Response.json({ text: "Réponse", conversation_id: null, error: false }),
+      HOME,
+      [{ id: "qwen2.5:14b", name: "Qwen" }],
+    );
+    renderCard();
+    const user = userEvent.setup();
+
+    expect(await screen.findByRole("group", { name: "Open WebUI" })).toBeInTheDocument();
+    await user.selectOptions(screen.getByLabelText("Répondre avec"), "open_webui:qwen2.5:14b");
+    await user.type(screen.getByLabelText("Votre message"), "Bonjour{Enter}");
+    await screen.findByText("Réponse");
+    await user.type(screen.getByLabelText("Votre message"), "Et demain ?{Enter}");
+    await screen.findAllByText("Réponse");
+
+    const sent = calls.filter((call) => call.url === "api/assistant/chat").map((call) => call.body);
+    expect(sent[0]).toMatchObject({ agent_id: "open_webui:qwen2.5:14b", history: [] });
+    expect(sent[1].history).toEqual([
+      { role: "user", content: "Bonjour" },
+      { role: "assistant", content: "Réponse" },
+    ]);
+  });
+
+  it("sans Home Assistant, Open WebUI reste possible", async () => {
+    const calls = mockApi(
+      () => Response.json({ text: "Oui", conversation_id: null, error: false }),
+      { connected: false, mcp: [], pipelines: [], preferred_pipeline: null, agents: [] },
+      [{ id: "qwen2.5:14b", name: "Qwen" }],
+    );
+    renderCard();
+    const user = userEvent.setup();
+
+    expect(await screen.findByLabelText("Répondre avec")).toHaveValue("open_webui:qwen2.5:14b");
+    expect(screen.queryByText(/Home Assistant n'est pas connecté/)).not.toBeInTheDocument();
+    await user.type(screen.getByLabelText("Votre message"), "Bonjour{Enter}");
+    await screen.findByText("Oui");
+    expect(calls.find((call) => call.url === "api/assistant/chat")?.body.agent_id).toBe("open_webui:qwen2.5:14b");
   });
 
   it("une erreur s'affiche dans la conversation", async () => {

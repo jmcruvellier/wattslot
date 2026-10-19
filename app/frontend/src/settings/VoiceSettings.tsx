@@ -1,7 +1,8 @@
 // Sous-page « Assistant vocal » des Réglages : l'état du serveur MCP (comme la page Assistant),
 // la configuration lue dans Home Assistant (adresse du serveur, intégration MCP), et le choix de
 // l'assistant préféré de HA avec son agent de conversation (/api/assistant/home). L'application
-// ne garde aucun réglage de l'assistant : « Enregistrer » modifie l'assistant dans HA.
+// ne garde aucun réglage de l'assistant de HA : « Enregistrer » le modifie dans HA. En bas,
+// Open WebUI en appel direct (`OpenWebUISettings`).
 
 import { useEffect, useState } from "react";
 
@@ -11,6 +12,7 @@ import { CheckResult, CopyButton } from "../assistant/McpParts";
 import { useI18n } from "../i18n/I18nProvider";
 import { routeHash } from "../nav/routes";
 import StateMessage from "../ui/StateMessage";
+import OpenWebUISettings from "./OpenWebUISettings";
 
 interface Named {
   id: string;
@@ -121,6 +123,8 @@ export default function VoiceSettings() {
           onSave={() => void onSave()}
         />
       )}
+
+      <OpenWebUISettings mode={connection?.mode ?? null} />
 
       <p>
         <a href={routeHash({ section: "assistant", sub: null })}>{t("assistant.setup")}</a>
