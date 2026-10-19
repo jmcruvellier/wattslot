@@ -4,7 +4,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-export const SECTIONS = ["today", "planning", "home", "assistant", "settings"] as const;
+export const SECTIONS = ["today", "planning", "curves", "home", "assistant", "settings"] as const;
 export type Section = (typeof SECTIONS)[number];
 
 // Sous-pages rangées sous une section (« Pour aller plus loin »).

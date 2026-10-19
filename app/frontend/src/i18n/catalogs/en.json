@@ -42,6 +42,7 @@
     "main": "Main navigation",
     "today": "Today",
     "planning": "Planning",
+    "curves": "Charts",
     "home": "My home",
     "assistant": "Assistant",
     "settings": "Settings",
@@ -355,9 +356,7 @@
       "battery_max": "Battery at its highest, {pct}%",
       "until": "Until {time}",
       "empty": "Nothing to start that day.",
-      "now": "Now",
-      "why": "Why this plan",
-      "curves": "Detailed charts"
+      "now": "Now"
     }
   },
   "requests": {

@@ -1,11 +1,12 @@
 // Chaque vue du plan dans chaque langue (lot 5.7) : aucune clé de catalogue ne reste à l'écran,
 // et les langues chargées à la demande s'affichent une fois leur catalogue lu.
 
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import PlanScreen, { CURVES_KEY } from "../plan/PlanScreen";
+import CurvesScreen from "../plan/CurvesScreen";
+import PlanScreen from "../plan/PlanScreen";
 import { TODAY, WEEK } from "../plan/testViews";
 import { I18nProvider } from "./I18nProvider";
 import { LANGUAGES, translate } from "./translate";
@@ -43,25 +44,35 @@ describe("vues du plan dans chaque langue", () => {
     vi.restoreAllMocks();
   });
 
+  // Planning (agenda) et Courbes (cartes de la phase 5, sous « Personnaliser »).
+  const SCREENS = [
+    { name: "Planning", Screen: PlanScreen, title: "plan.title" },
+    { name: "Courbes", Screen: CurvesScreen, title: "nav.curves" },
+  ];
   for (const language of LANGUAGES) {
-    it(`${language} : aucune clé brute dans Hier, Aujourd'hui, Demain et Semaine`, async () => {
-      const user = userEvent.setup();
-      window.localStorage.setItem("wattslot.language", language);
-      window.localStorage.setItem(CURVES_KEY, "open"); // cartes de la phase 5 comprises
-      mockApi();
-      render(
-        <I18nProvider>
-          <PlanScreen />
-        </I18nProvider>,
-      );
-      // Le titre dans la langue voulue : le catalogue est chargé.
-      expect(await screen.findByRole("heading", { name: translate(language, "plan.title") })).toBeInTheDocument();
-      for (const tab of ["yesterday", "today", "tomorrow", "week"] as const) {
-        await user.click(screen.getByRole("tab", { name: translate(language, `plan.tabs.${tab}`) }));
-        await screen.findByRole("button", { name: translate(language, "plan.layout.open") });
-        expect(document.body.textContent ?? "", `${language} / ${tab}`).not.toMatch(RAW_KEY);
-      }
-    });
+    for (const { name, Screen, title } of SCREENS) {
+      it(`${language} : aucune clé brute dans ${name}, Hier, Aujourd'hui, Demain et Semaine`, async () => {
+        const user = userEvent.setup();
+        window.localStorage.setItem("wattslot.language", language);
+        mockApi();
+        render(
+          <I18nProvider>
+            <Screen />
+          </I18nProvider>,
+        );
+        // Le titre dans la langue voulue : le catalogue est chargé.
+        expect(await screen.findByRole("heading", { name: translate(language, title) })).toBeInTheDocument();
+        for (const tab of ["yesterday", "today", "tomorrow", "week"] as const) {
+          await user.click(screen.getByRole("tab", { name: translate(language, `plan.tabs.${tab}`) }));
+          if (Screen === CurvesScreen) {
+            await screen.findByRole("button", { name: translate(language, "plan.layout.open") });
+          } else {
+            await waitFor(() => expect(screen.queryByText(translate(language, "plan.loading"))).toBeNull());
+          }
+          expect(document.body.textContent ?? "", `${language} / ${tab}`).not.toMatch(RAW_KEY);
+        }
+      });
+    }
   }
 
   it.each([

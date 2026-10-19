@@ -42,6 +42,7 @@
     "main": "Hoofdnavigatie",
     "today": "Vandaag",
     "planning": "Planning",
+    "curves": "Grafieken",
     "home": "Mijn huis",
     "assistant": "Assistent",
     "settings": "Instellingen",
@@ -355,9 +356,7 @@
       "battery_max": "Batterij op het hoogst, {pct}%",
       "until": "Tot {time}",
       "empty": "Niets te starten die dag.",
-      "now": "Nu",
-      "why": "Waarom dit plan",
-      "curves": "Gedetailleerde grafieken"
+      "now": "Nu"
     }
   },
   "requests": {

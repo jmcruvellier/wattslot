@@ -47,18 +47,27 @@ describe("navigation", () => {
     window.location.hash = "";
   });
 
-  it("propose cinq sections et ouvre Aujourd'hui par défaut", () => {
+  it("propose six sections et ouvre Aujourd'hui par défaut", () => {
     renderApp();
     const links = menu().getAllByRole("link");
     expect(links.map((link) => link.textContent)).toEqual([
       "Aujourd'hui",
       "Planning",
+      "Courbes",
       "Ma maison",
       "Assistant",
       "Réglages",
     ]);
     expect(menu().getByRole("link", { name: "Aujourd'hui" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("heading", { level: 1, name: "Aujourd'hui" })).toBeInTheDocument();
+  });
+
+  it("ouvre les courbes à leur adresse", async () => {
+    window.location.hash = "#/curves";
+    renderApp();
+    expect(screen.getByRole("heading", { level: 1, name: "Courbes" })).toBeInTheDocument();
+    expect(menu().getByRole("link", { name: "Courbes" })).toHaveAttribute("aria-current", "page");
+    expect(menu().getByRole("link", { name: "Courbes" })).toHaveAttribute("href", "#/curves");
   });
 
   it("ouvre la section de l'adresse, et revient à la précédente", async () => {
