@@ -1253,6 +1253,23 @@
       "ready": "Klaar voor de Assist van Home Assistant",
       "down": "De assistent-server reageert niet",
       "checking": "Assistent wordt gecontroleerd…"
+    },
+    "chat": {
+      "title": "Chatten met de assistent",
+      "restart": "Nieuw gesprek",
+      "agent": "Antwoorden met",
+      "default_agent": "Agent van de voorkeursassistent",
+      "preferred": "{name} (voorkeursassistent)",
+      "you": "U",
+      "assistant": "Assistent",
+      "thinking": "De assistent denkt na…",
+      "input": "Uw bericht",
+      "placeholder": "Hoeveel hebben de panelen gisteren opgewekt?",
+      "send": "Versturen",
+      "help": "Enter om te versturen, Shift+Enter voor een nieuwe regel. Het gesprek wordt niet bewaard.",
+      "empty": "De assistent gaf geen antwoord.",
+      "failed": "De assistent antwoordde niet, probeer het opnieuw.",
+      "not_connected": "Home Assistant is niet verbonden: de chat is niet beschikbaar."
     }
   },
   "ui": {

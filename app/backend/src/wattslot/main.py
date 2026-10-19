@@ -42,6 +42,7 @@ from wattslot import (
     user_requests,
 )
 from wattslot.aggregation import PERIODS, Aggregate, AggregationStatus, Aggregator
+from wattslot.assistant import chat as assistant_chat
 from wattslot.assistant import home_config as assistant_home_config
 from wattslot.assistant import prompts as assistant_prompts
 from wattslot.assistant import server as assistant_server
@@ -507,6 +508,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         except (CommandError, NotConnectedError, TimeoutError) as error:
             raise HTTPException(status_code=502, detail=str(error)) from error
         return await assistant_home_config.home_config(client)
+
+    @app.post("/api/assistant/chat")
+    async def post_assistant_chat(
+        request: Request, message: assistant_chat.ChatMessage
+    ) -> assistant_chat.ChatReply:
+        """Message de la page Assistant, transmis à un agent de conversation de HA ; 503 sans
+        HA connecté, 502 si HA refuse ou ne répond pas à temps."""
+        client = connected_client(request)
+        try:
+            return await assistant_chat.send(client, message)
+        except (CommandError, NotConnectedError, TimeoutError) as error:
+            raise HTTPException(status_code=502, detail=str(error)) from error
 
     @app.get("/api/home/proposals")
     async def proposals(request: Request, refresh: bool = False) -> HomeProposal:

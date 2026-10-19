@@ -8,8 +8,17 @@ import { useEffect, useState } from "react";
 import { getJson } from "../api";
 import { useI18n } from "../i18n/I18nProvider";
 import RequestsSection from "../start/RequestsSection";
+import ChatCard from "./ChatCard";
 import { checkTitle, mcpAddress, useConnection, useMcpCheck } from "./mcp";
 import { CheckResult, CopyButton } from "./McpParts";
+
+const CHAT_INPUT = "assistant-chat-input";
+const EXAMPLES = ["why", "yesterday", "battery", "request"] as const;
+
+/** Question d'exemple sans ses guillemets, pour la zone de saisie du chat. */
+function unquoted(text: string): string {
+  return text.replace(/^[«"“„‚‘]\s*/, "").replace(/\s*[»"”“‘’]$/, "");
+}
 
 interface AssistantPrompt {
   language: string;
@@ -21,6 +30,7 @@ export default function AssistantScreen() {
   const connection = useConnection();
   const [prompt, setPrompt] = useState<string | null>(null);
   const [check, verify] = useMcpCheck();
+  const [draft, setDraft] = useState("");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -31,13 +41,15 @@ export default function AssistantScreen() {
   }, [language]);
 
   const address = mcpAddress(connection);
-  // « Mes demandes » d'abord (lot 6b.3), puis l'assistant vocal (lot 6b.6) : son état, des
-  // exemples de questions, et le branchement pas à pas, replié une fois le serveur vérifié.
+  // « Mes demandes » d'abord (lot 6b.3), puis la discussion avec l'assistant, puis l'assistant
+  // vocal (lot 6b.6) : son état, des exemples de questions (qui remplissent la zone de saisie
+  // du chat), et le branchement pas à pas, replié une fois le serveur vérifié.
   return (
     <div className="assistant">
       <div className="ui-card">
         <RequestsSection />
       </div>
+      <ChatCard inputId={CHAT_INPUT} draft={draft} onDraft={setDraft} />
       <section className="ui-card" aria-labelledby="assistant-title">
         <p className="ui-eyebrow">{t("assistant.title")}</p>
         <h2 id="assistant-title" className="ui-card-title">
@@ -47,11 +59,20 @@ export default function AssistantScreen() {
         <CheckResult check={check} onVerify={() => void verify()} />
 
         <h3>{t("assistant.examples.title")}</h3>
-        <ul>
-          <li>{t("assistant.examples.why")}</li>
-          <li>{t("assistant.examples.yesterday")}</li>
-          <li>{t("assistant.examples.battery")}</li>
-          <li>{t("assistant.examples.request")}</li>
+        <ul className="assistant-examples">
+          {EXAMPLES.map((key) => (
+            <li key={key}>
+              <button
+                type="button"
+                onClick={() => {
+                  setDraft(unquoted(t(`assistant.examples.${key}`)));
+                  document.getElementById(CHAT_INPUT)?.focus();
+                }}
+              >
+                {t(`assistant.examples.${key}`)}
+              </button>
+            </li>
+          ))}
         </ul>
 
         <details className="plan-more" open={check.status !== "ok" || undefined}>

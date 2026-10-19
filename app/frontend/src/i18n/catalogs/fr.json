@@ -1253,6 +1253,23 @@
       "ready": "Prêt pour l'Assist de Home Assistant",
       "down": "Le serveur de l'assistant ne répond pas",
       "checking": "Vérification de l'assistant…"
+    },
+    "chat": {
+      "title": "Discuter avec l'assistant",
+      "restart": "Nouvelle conversation",
+      "agent": "Répondre avec",
+      "default_agent": "Agent de l'assistant préféré",
+      "preferred": "{name} (assistant préféré)",
+      "you": "Vous",
+      "assistant": "Assistant",
+      "thinking": "L'assistant réfléchit…",
+      "input": "Votre message",
+      "placeholder": "Combien les panneaux ont-ils produit hier ?",
+      "send": "Envoyer",
+      "help": "Entrée pour envoyer, Maj+Entrée pour aller à la ligne. La conversation n'est pas enregistrée.",
+      "empty": "L'assistant n'a rien répondu.",
+      "failed": "L'assistant n'a pas répondu, réessayez.",
+      "not_connected": "Home Assistant n'est pas connecté : la discussion est indisponible."
     }
   },
   "ui": {

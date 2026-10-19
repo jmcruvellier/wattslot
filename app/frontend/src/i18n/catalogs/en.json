@@ -1253,6 +1253,23 @@
       "ready": "Ready for Home Assistant's Assist",
       "down": "The assistant server is not responding",
       "checking": "Checking the assistant…"
+    },
+    "chat": {
+      "title": "Chat with the assistant",
+      "restart": "New conversation",
+      "agent": "Answer with",
+      "default_agent": "Preferred assistant's agent",
+      "preferred": "{name} (preferred assistant)",
+      "you": "You",
+      "assistant": "Assistant",
+      "thinking": "The assistant is thinking…",
+      "input": "Your message",
+      "placeholder": "How much did the panels produce yesterday?",
+      "send": "Send",
+      "help": "Enter to send, Shift+Enter for a new line. The conversation is not saved.",
+      "empty": "The assistant gave no answer.",
+      "failed": "The assistant did not answer, try again.",
+      "not_connected": "Home Assistant is not connected: the chat is unavailable."
     }
   },
   "ui": {
