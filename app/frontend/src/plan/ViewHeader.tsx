@@ -1,31 +1,14 @@
 // En-tête d'une vue de jour (lot 5.3) : date, calcul (heure, automatique ou à la main), dernier
-// relevé ; « Calculer » (Aujourd'hui, Demain) et « Rafraîchir les données réelles »
-// (Aujourd'hui), comme dans la v1 ; calculs interrompus, avertissements et tâches reportées.
-
-import { useState } from "react";
+// relevé ; calculs interrompus, avertissements et tâches reportées. « Calculer » et « Rafraîchir
+// les données réelles » sont à droite des onglets (`PlanActions`).
 
 import { useI18n } from "../i18n/I18nProvider";
 import { longDate, time } from "./format";
 import type { DayView } from "./types";
 import Icon from "../ui/Icon";
 
-type Action = "idle" | "running" | "failed";
-
-export default function ViewHeader({ view, onChanged }: { view: DayView; onChanged: () => void }) {
+export default function ViewHeader({ view }: { view: DayView }) {
   const { language, t } = useI18n();
-  const [action, setAction] = useState<Action>("idle");
-
-  const run = async (url: string) => {
-    setAction("running");
-    try {
-      const response = await fetch(url, { method: "POST" });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      setAction("idle");
-      onChanged();
-    } catch {
-      setAction("failed");
-    }
-  };
 
   return (
     <>
@@ -44,19 +27,7 @@ export default function ViewHeader({ view, onChanged }: { view: DayView; onChang
               ` · ${t("plan.header.reading", { time: time(view.actual_updated_at, language) })}`}
           </small>
         </p>
-        <span className="spacer" />
-        {view.kind !== "yesterday" && (
-          <button type="button" disabled={action === "running"} onClick={() => void run("api/planning/run")}>
-            {t(action === "running" ? "plan.header.running" : "plan.header.compute")}
-          </button>
-        )}
-        {view.kind === "today" && (
-          <button type="button" disabled={action === "running"} onClick={() => void run("api/planning/actual")}>
-            {t("plan.header.refresh")}
-          </button>
-        )}
       </div>
-      {action === "failed" && <p role="alert">{t("plan.header.failed")}</p>}
       {view.freshness && (
         <p className="pill pill-warning">
           {view.freshness.code === "stale_today"

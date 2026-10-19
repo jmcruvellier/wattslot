@@ -291,6 +291,20 @@ pre {
   margin-left: auto;
 }
 
+.view-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+/* Échec d'une action : sur sa propre ligne, sous les onglets. */
+.view-toolbar > [role="alert"] {
+  flex-basis: 100%;
+  margin: 0;
+}
+
 .view-tabs .spacer {
   flex: 1;
 }
