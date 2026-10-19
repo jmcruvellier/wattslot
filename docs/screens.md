@@ -54,7 +54,7 @@ Your home in plain sentences: your priority (pay as little as possible, use my o
 
 - **Notifications**: which messages, on which device, quiet hours ([Notifications](notifications.md)).
 - **Automatic calculation**: every hour at a given minute (59 by default), or by hand; the Home Assistant to-do list whose tasks become requests.
-- **Language and display**: six languages, five themes (Ivory, Graphite, Ocean, Meadow, Dusk) or **Automatic**, which follows your device's light or dark mode.
+- **Language and display**: six languages, five themes (Ivory, Graphite, Ocean, Meadow, Dusk) or **Automatic**, which follows your device's light or dark mode, and the **currency** of your prices and costs. By default it is Home Assistant's (Settings › System › General); changing it does not convert the prices already entered.
 - **App status**: what is wrong, if anything, and how to fix it; the version, and whether a new one exists; links to support the project; a report to attach to a bug report ([Troubleshooting](troubleshooting.md)).
 - **Home Assistant connection** (standalone mode).
 

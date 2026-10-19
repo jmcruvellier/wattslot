@@ -1,6 +1,7 @@
 // Phrases de « Ma maison en bref » (lot 6b.5), rédigées à partir de la configuration.
 
 import type { Language } from "../i18n/translate";
+import { DEFAULT_CURRENCY, formatMoney } from "../i18n/money";
 import { formatNumber } from "../i18n/translate";
 import {
   DEFAULT_PRICE_EUR_KWH,
@@ -42,8 +43,13 @@ export function cheapestRanges(bands: PriceBand[]): [number, number][] {
   return merged;
 }
 
-export function tariffText(tariff: Tariff | null | undefined, t: T, language: Language): string {
-  const price = (value: number) => formatNumber(language, value, 2);
+export function tariffText(
+  tariff: Tariff | null | undefined,
+  t: T,
+  language: Language,
+  currency: string = DEFAULT_CURRENCY,
+): string {
+  const price = (value: number) => `${formatMoney(language, currency, value)}/kWh`;
   if (!tariff) return t("home_summary.contract.single", { price: price(DEFAULT_PRICE_EUR_KWH) });
   switch (tariff.kind) {
     case "SingleTariff":

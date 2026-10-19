@@ -32,6 +32,7 @@ from wattslot import (
     backup,
     configuration,
     connection,
+    currency,
     exchange,
     home_model,
     notifications,
@@ -356,6 +357,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         settings.data_dir.mkdir(parents=True, exist_ok=True)
         backup.restore_snapshot(settings.data_dir)  # après une restauration de HA
         database = open_database(settings.data_dir)
+        currency.use_saved(currency.load(database).code)
         if options is not None:
             retention = addon_options.apply_retention(database, options)
             logger.info(
@@ -791,6 +793,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def put_planning_settings(request: Request, settings: PlanningSettings) -> PlanningSettings:
         save_planning_settings(request.app.state.database, settings)
         return load_planning_settings(request.app.state.database)
+
+    @app.get("/api/settings/currency")
+    def get_currency() -> currency.CurrencyState:
+        """Devise de la maison (lot 7.3) : réglage, devise de HA, devise retenue."""
+        return currency.state()
+
+    @app.put("/api/settings/currency")
+    def put_currency(request: Request, setting: currency.CurrencySetting) -> currency.CurrencyState:
+        currency.save(request.app.state.database, setting)
+        return currency.state()
 
     @app.get("/api/planning/input")
     async def planning_input(request: Request, day: date | None = None) -> dict[str, Any]:

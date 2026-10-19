@@ -105,7 +105,7 @@
       "history_importing": "Der Verlauf von Home Assistant wird importiert (noch {count} Zähler): nichts zu tun.",
       "no_plan_yet": "Alles bereit: Der Plan wird zur nächsten vollen Stunde berechnet, oder sofort.",
       "needs_previous_steps": "Möglich, sobald die wesentlichen Schritte erledigt sind.",
-      "tariff_default": "Ein Einheitspreis von 0,25 €/kWh wird angenommen: Geben Sie Ihren Tarif an, damit der Plan genauer wird.",
+      "tariff_default": "Ein Einheitspreis von {price} wird angenommen: Geben Sie Ihren Tarif an, damit der Plan genauer wird.",
       "battery_default": "Standardeinstellungen der Batterie: Passen Sie sie an Ihre an.",
       "no_notification": "Wählen Sie ein Gerät, das täglich die Empfehlung des Plans erhält.",
       "needs_home": "Möglich, sobald Ihr Zuhause gespeichert ist.",
@@ -497,6 +497,13 @@
           "help": "Dunkel, Violett und Koralle"
         }
       }
+    },
+    "currency": {
+      "label": "Währung",
+      "automatic": "Automatisch: {name} (Home Assistant)",
+      "automatic_default": "Automatisch: {name}",
+      "hint": "Die Währung Ihrer Preise und Kosten, auf allen Geräten. Ein Wechsel rechnet die bereits eingegebenen Preise nicht um.",
+      "failed": "Die Währung konnte nicht gespeichert werden."
     }
   },
   "connection_page": {
@@ -755,7 +762,7 @@
   },
   "tariff": {
     "title": "Stromtarif",
-    "none": "Kein Tarif: Der Plan nimmt einen Einheitspreis von {price} €/kWh an und versucht nur, so wenig wie möglich aus dem Netz zu beziehen.",
+    "none": "Kein Tarif: Der Plan nimmt einen Einheitspreis von {price} an und versucht nur, so wenig wie möglich aus dem Netz zu beziehen.",
     "use": {
       "SingleTariff": "Einheitspreis einstellen",
       "TimeOfUseTariff": "Neben- und Hauptzeiten einstellen",
@@ -810,10 +817,15 @@
     "price_entity_hint": "Home-Assistant-Sensor, der den Preis der aktuellen und kommenden Stunden liefert.",
     "export_hint": "Was Ihnen eine ins Netz eingespeiste kWh Überschuss einbringt; 0, wenn Sie ihn nicht verkaufen.",
     "subscription": "Grundgebühr",
-    "per_month": "€/Monat",
+    "per_month": "{symbol}/Monat",
     "subscription_hint": "Die monatliche Grundgebühr ohne die kWh: Sie wird durch die Tage des Monats geteilt und zu den Kosten jedes Tages addiert. 0, um sie nicht zu zählen.",
     "contract_kva": "Vertragliche Leistung",
-    "contract_kva_hint": "Die Leistung Ihres Vertrags, über der die Hauptsicherung auslöst (zum Beispiel 6, 9 oder 12 kVA). Die Planung vermeidet, in einer Stunde mehr zu beziehen. Leer lassen, wenn unbekannt."
+    "contract_kva_hint": "Die Leistung Ihres Vertrags, über der die Hauptsicherung auslöst (zum Beispiel 6, 9 oder 12 kVA). Die Planung vermeidet, in einer Stunde mehr zu beziehen. Leer lassen, wenn unbekannt.",
+    "units": {
+      "kwh": "{symbol}/kWh",
+      "cents_kwh": "Cent/kWh",
+      "mwh": "{symbol}/MWh"
+    }
   },
   "battery": {
     "title": "Batterie",
@@ -1294,7 +1306,7 @@
     },
     "contract": {
       "title": "Mein Vertrag",
-      "single": "Einheitspreis, {price} €/kWh",
+      "single": "Einheitspreis, {price}",
       "off_peak": "Niedertarif {ranges}",
       "colors": "Preis nach Tagesfarbe",
       "dynamic": "Preis, der sich stündlich ändert"

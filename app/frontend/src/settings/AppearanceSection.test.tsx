@@ -2,7 +2,9 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { CurrencyProvider } from "../i18n/currency";
 import { I18nProvider } from "../i18n/I18nProvider";
+import type { CurrencyState } from "../i18n/money";
 import { THEME_STORAGE_KEY } from "../theme/theme";
 import AppearanceSection from "./AppearanceSection";
 
@@ -50,5 +52,32 @@ describe("AppearanceSection", () => {
     window.localStorage.setItem(THEME_STORAGE_KEY, "rose");
     renderSection();
     expect(screen.getByRole("radio", { name: /Automatique/ })).toBeChecked();
+  });
+
+  it("règle la devise de la maison, Home Assistant par défaut", async () => {
+    let state: CurrencyState = { code: null, home_assistant: "SEK", effective: "SEK", choices: ["EUR", "CHF", "SEK"] };
+    const sent: unknown[] = [];
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (_input, init) => {
+      if (init?.method === "PUT") {
+        const body = JSON.parse(String(init.body)) as { code: string | null };
+        sent.push(body);
+        state = { ...state, code: body.code, effective: body.code ?? "SEK" };
+      }
+      return Response.json(state);
+    });
+    render(
+      <I18nProvider>
+        <CurrencyProvider>
+          <AppearanceSection />
+        </CurrencyProvider>
+      </I18nProvider>,
+    );
+
+    const select = await screen.findByRole("combobox", { name: "Devise" });
+    expect(select).toHaveDisplayValue(/Automatique : couronne suédoise \(Home Assistant\)/);
+    expect(screen.getByText(/ne convertit pas les prix déjà saisis/)).toBeInTheDocument();
+    await userEvent.selectOptions(select, "CHF");
+    expect(sent).toEqual([{ code: "CHF" }]);
+    expect(await screen.findByRole("combobox", { name: "Devise" })).toHaveValue("CHF");
   });
 });

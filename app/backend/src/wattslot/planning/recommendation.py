@@ -13,6 +13,7 @@ les raisons.
 from collections.abc import Mapping, Sequence
 from typing import Any
 
+from wattslot import currency
 from wattslot.home_assistant import HomeAssistantClient
 from wattslot.languages import number
 from wattslot.planning.explain import catalog, render
@@ -115,7 +116,7 @@ def _balance(indicators: Indicators | None, lang: str) -> str | None:
     text = _text(
         lang,
         "balance",
-        cost=number(indicators.cost_eur, lang, 2),
+        cost=currency.amount(indicators.cost_eur, lang),
         grid=number(indicators.import_kwh, lang, 1),
     )
     if indicators.self_consumption_percent is not None:

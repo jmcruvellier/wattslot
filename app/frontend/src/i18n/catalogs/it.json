@@ -105,7 +105,7 @@
       "history_importing": "Importazione dello storico di Home Assistant (restano {count} contatore/i): niente da fare.",
       "no_plan_yet": "Tutto pronto: il piano sarà calcolato all'ora successiva, oppure subito.",
       "needs_previous_steps": "Possibile non appena i passi essenziali sono fatti.",
-      "tariff_default": "Si ipotizza un prezzo unico di 0,25 €/kWh: indichi la sua tariffa per un piano più preciso.",
+      "tariff_default": "Si ipotizza un prezzo unico di {price}: indichi la sua tariffa per un piano più preciso.",
       "battery_default": "Impostazioni predefinite della batteria: le adatti alle sue.",
       "no_notification": "Scelga un dispositivo che riceva ogni giorno la raccomandazione del piano.",
       "needs_home": "Possibile non appena la sua casa è salvata.",
@@ -497,6 +497,13 @@
           "help": "Scuro, viola e corallo"
         }
       }
+    },
+    "currency": {
+      "label": "Valuta",
+      "automatic": "Automatica: {name} (Home Assistant)",
+      "automatic_default": "Automatica: {name}",
+      "hint": "La valuta dei prezzi e dei costi, su tutti i dispositivi. Cambiarla non converte i prezzi già inseriti.",
+      "failed": "Impossibile salvare la valuta."
     }
   },
   "connection_page": {
@@ -755,7 +762,7 @@
   },
   "tariff": {
     "title": "Tariffa elettrica",
-    "none": "Nessuna tariffa: il piano ipotizza un prezzo unico di {price} €/kWh e cerca solo di prelevare il meno possibile dalla rete.",
+    "none": "Nessuna tariffa: il piano ipotizza un prezzo unico di {price} e cerca solo di prelevare il meno possibile dalla rete.",
     "use": {
       "SingleTariff": "Imposta un prezzo unico",
       "TimeOfUseTariff": "Imposta fasce fuori punta e di punta",
@@ -810,10 +817,15 @@
     "price_entity_hint": "Sensore di Home Assistant che fornisce il prezzo dell'ora attuale e delle prossime.",
     "export_hint": "Quanto le rende un kWh di surplus immesso in rete; 0 se non lo vende.",
     "subscription": "Quota fissa",
-    "per_month": "€/mese",
+    "per_month": "{symbol}/mese",
     "subscription_hint": "Il costo mensile della quota fissa, senza i kWh: è diviso per i giorni del mese e aggiunto al costo di ogni giorno. 0 per non contarla.",
     "contract_kva": "Potenza impegnata",
-    "contract_kva_hint": "La potenza del contratto, oltre la quale il contatore stacca (per esempio 3, 4,5 o 6 kVA). Il piano evita di prelevare di più in un'ora. Vuoto se non la conosce."
+    "contract_kva_hint": "La potenza del contratto, oltre la quale il contatore stacca (per esempio 3, 4,5 o 6 kVA). Il piano evita di prelevare di più in un'ora. Vuoto se non la conosce.",
+    "units": {
+      "kwh": "{symbol}/kWh",
+      "cents_kwh": "centesimi/kWh",
+      "mwh": "{symbol}/MWh"
+    }
   },
   "battery": {
     "title": "Batteria",
@@ -1294,7 +1306,7 @@
     },
     "contract": {
       "title": "Il mio contratto",
-      "single": "Prezzo unico, {price} €/kWh",
+      "single": "Prezzo unico, {price}",
       "off_peak": "Fascia economica {ranges}",
       "colors": "Prezzo secondo il colore del giorno",
       "dynamic": "Prezzo che cambia ogni ora"

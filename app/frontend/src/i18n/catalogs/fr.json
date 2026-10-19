@@ -105,7 +105,7 @@
       "history_importing": "Reprise de l'historique de Home Assistant en cours ({count} compteur(s) restant(s)) : rien à faire.",
       "no_plan_yet": "Tout est prêt : le plan sera calculé à la prochaine heure, ou tout de suite.",
       "needs_previous_steps": "Possible une fois les étapes indispensables faites.",
-      "tariff_default": "Un prix unique de 0,25 €/kWh est supposé : réglez votre tarif pour un plan plus juste.",
+      "tariff_default": "Un prix unique de {price} est supposé : réglez votre tarif pour un plan plus juste.",
       "battery_default": "Réglages par défaut de la batterie : ajustez-les à la vôtre.",
       "no_notification": "Choisissez un appareil pour recevoir chaque jour la recommandation du plan.",
       "needs_home": "Possible une fois votre maison enregistrée.",
@@ -497,6 +497,13 @@
           "help": "Sombre, violet et corail"
         }
       }
+    },
+    "currency": {
+      "label": "Devise",
+      "automatic": "Automatique : {name} (Home Assistant)",
+      "automatic_default": "Automatique : {name}",
+      "hint": "La devise de vos prix et de vos coûts, pour tous vos appareils. Changer de devise ne convertit pas les prix déjà saisis.",
+      "failed": "Impossible d'enregistrer la devise."
     }
   },
   "connection_page": {
@@ -755,7 +762,7 @@
   },
   "tariff": {
     "title": "Tarif de l'électricité",
-    "none": "Aucun tarif : le calcul compte un prix unique de {price} €/kWh, et cherche seulement à acheter le moins possible au réseau.",
+    "none": "Aucun tarif : le calcul compte un prix unique de {price}, et cherche seulement à acheter le moins possible au réseau.",
     "use": {
       "SingleTariff": "Définir un prix unique",
       "TimeOfUseTariff": "Définir des heures creuses et pleines",
@@ -810,10 +817,15 @@
     "price_entity_hint": "Capteur de Home Assistant qui donne le prix de l'heure en cours et à venir.",
     "export_hint": "Ce que vous rapporte un kWh de surplus envoyé au réseau ; 0 si vous ne le vendez pas.",
     "subscription": "Abonnement",
-    "per_month": "€/mois",
+    "per_month": "{symbol}/mois",
     "subscription_hint": "Le prix mensuel de l'abonnement, sans les kWh : il est divisé par le nombre de jours du mois et ajouté au coût de chaque journée. 0 si vous ne voulez pas le compter.",
     "contract_kva": "Puissance souscrite",
-    "contract_kva_hint": "La puissance de votre contrat, au-delà de laquelle le disjoncteur coupe (par exemple 6, 9 ou 12 kVA). Le calcul évite de soutirer plus en une heure. Vide si vous ne la connaissez pas."
+    "contract_kva_hint": "La puissance de votre contrat, au-delà de laquelle le disjoncteur coupe (par exemple 6, 9 ou 12 kVA). Le calcul évite de soutirer plus en une heure. Vide si vous ne la connaissez pas.",
+    "units": {
+      "kwh": "{symbol}/kWh",
+      "cents_kwh": "centimes/kWh",
+      "mwh": "{symbol}/MWh"
+    }
   },
   "battery": {
     "title": "Batterie",
@@ -1294,7 +1306,7 @@
     },
     "contract": {
       "title": "Mon contrat",
-      "single": "Prix unique, {price} €/kWh",
+      "single": "Prix unique, {price}",
       "off_peak": "Heures creuses {ranges}",
       "colors": "Prix selon la couleur du jour",
       "dynamic": "Prix qui change chaque heure"

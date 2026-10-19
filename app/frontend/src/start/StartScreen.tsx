@@ -7,6 +7,8 @@ import { lazy, Suspense, useEffect, useState } from "react";
 
 import { getJson } from "../api";
 import Glossary from "../common/Glossary";
+import { DEFAULT_PRICE_EUR_KWH } from "../home/configuration";
+import { useCurrency } from "../i18n/currency";
 import { useI18n } from "../i18n/I18nProvider";
 import TodayView from "../today/TodayView";
 import StateMessage from "../ui/StateMessage";
@@ -40,6 +42,7 @@ const MARKS: Record<SetupStep["state"], string> = {
 
 export default function StartScreen({ onNavigate }: { onNavigate: (target: string) => void }) {
   const { t } = useI18n();
+  const { perKwh } = useCurrency();
   const [load, setLoad] = useState<Load>({ status: "loading" });
   const [version, setVersion] = useState(0);
   const [running, setRunning] = useState(false);
@@ -88,7 +91,7 @@ export default function StartScreen({ onNavigate }: { onNavigate: (target: strin
           <span aria-hidden="true">{MARKS[step.state]}</span> <strong>{t(`setup.steps.${step.key}`)}</strong>
           {step.required && step.state !== "done" && <> — {t("setup.required")}</>}{" "}
           <span>{t(`setup.states.${step.state}`)}</span>
-          {step.reason && <p>{t(`setup.reason.${step.reason}`, step.params)}</p>}
+          {step.reason && <p>{t(`setup.reason.${step.reason}`, { ...step.params, price: perKwh(DEFAULT_PRICE_EUR_KWH) })}</p>}
           {step.state !== "done" && step.target && (
             <button type="button" onClick={() => onNavigate(step.target as string)}>
               {t("setup.open")}

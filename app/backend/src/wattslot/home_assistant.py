@@ -22,6 +22,7 @@ from typing import Any, Protocol
 
 import websockets
 
+from wattslot import currency
 from wattslot.runtime import HomeAssistantTarget
 
 logger = logging.getLogger(__name__)
@@ -219,6 +220,7 @@ class HomeAssistantClient:
             if exc.code != "not_found":
                 raise
             energy = None
+        currency.note_home_assistant((config or {}).get("currency"))
         self.snapshot = HomeSnapshot(
             config=config or {},
             energy_preferences=energy,

@@ -7,6 +7,7 @@ import { useState } from "react";
 
 import { ApiError, getJson } from "../api";
 import Advanced, { Hint } from "../common/Advanced";
+import { useCurrency } from "../i18n/currency";
 import { useI18n } from "../i18n/I18nProvider";
 import {
   DEFAULT_PRICE_EUR_KWH,
@@ -24,6 +25,7 @@ const HOURS = Array.from({ length: 25 }, (_, hour) => hour);
 // Contrat (lot 7.3) : abonnement mensuel et puissance souscrite, quel que soit le tarif.
 function Contract({ tariff, onChange }: { tariff: Tariff; onChange: (tariff: Tariff) => void }) {
   const { t } = useI18n();
+  const { symbol } = useCurrency();
   return (
     <>
       <p>
@@ -38,7 +40,7 @@ function Contract({ tariff, onChange }: { tariff: Tariff; onChange: (tariff: Tar
               onChange({ ...tariff, subscription_eur_month: event.target.value === "" ? 0 : Number(event.target.value) })
             }
           />{" "}
-          {t("tariff.per_month")}
+          {t("tariff.per_month", { symbol })}
         </label>
         <Hint text={t("tariff.subscription_hint")} />
       </p>
@@ -63,6 +65,7 @@ function Contract({ tariff, onChange }: { tariff: Tariff; onChange: (tariff: Tar
 }
 
 function Price({ label, value, onChange }: { label: string; value: number; onChange: (value: number) => void }) {
+  const { symbol } = useCurrency();
   return (
     <label>
       {label}{" "}
@@ -73,7 +76,7 @@ function Price({ label, value, onChange }: { label: string; value: number; onCha
         value={value}
         onChange={(event) => onChange(event.target.value === "" ? 0 : Number(event.target.value))}
       />{" "}
-      €/kWh
+      {symbol}/kWh
     </label>
   );
 }
@@ -242,11 +245,12 @@ function ProposeButton({ onChange }: { onChange: (tariff: Tariff) => void }) {
 
 export default function TariffEditor({ tariff, onChange }: { tariff: Tariff | null; onChange: (tariff: Tariff | null) => void }) {
   const { t } = useI18n();
+  const { perKwh, symbol } = useCurrency();
 
   if (tariff === null) {
     return (
       <div>
-        <p>{t("tariff.none", { price: DEFAULT_PRICE_EUR_KWH })}</p>
+        <p>{t("tariff.none", { price: perKwh(DEFAULT_PRICE_EUR_KWH) })}</p>
         <ProposeButton onChange={onChange} />{" "}
         {TARIFF_KINDS.map((kind) => (
           <button key={kind} type="button" onClick={() => onChange(TARIFF_TEMPLATES[kind])}>
@@ -271,7 +275,7 @@ export default function TariffEditor({ tariff, onChange }: { tariff: Tariff | nu
         <select value={tariff.price_factor} onChange={(event) => onChange({ ...tariff, price_factor: Number(event.target.value) })}>
           {PRICE_UNITS.map(({ factor, unit }) => (
             <option key={factor} value={factor}>
-              {unit}
+              {t(`tariff.units.${unit}`, { symbol })}
             </option>
           ))}
         </select>

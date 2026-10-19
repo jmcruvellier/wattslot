@@ -105,7 +105,7 @@
       "history_importing": "De geschiedenis van Home Assistant wordt geïmporteerd (nog {count} meter(s)): niets te doen.",
       "no_plan_yet": "Alles klaar: het plan wordt op het volgende hele uur berekend, of meteen.",
       "needs_previous_steps": "Mogelijk zodra de essentiële stappen klaar zijn.",
-      "tariff_default": "Er wordt een vaste prijs van € 0,25/kWh aangenomen: stel uw tarief in voor een nauwkeuriger plan.",
+      "tariff_default": "Er wordt een vaste prijs van {price} aangenomen: stel uw tarief in voor een nauwkeuriger plan.",
       "battery_default": "Standaardinstellingen van de batterij: pas ze aan de uwe aan.",
       "no_notification": "Kies een apparaat dat elke dag het advies van het plan ontvangt.",
       "needs_home": "Mogelijk zodra uw huis is opgeslagen.",
@@ -497,6 +497,13 @@
           "help": "Donker, paars en koraal"
         }
       }
+    },
+    "currency": {
+      "label": "Valuta",
+      "automatic": "Automatisch: {name} (Home Assistant)",
+      "automatic_default": "Automatisch: {name}",
+      "hint": "De valuta van uw prijzen en kosten, op al uw apparaten. Wisselen rekent de al ingevoerde prijzen niet om.",
+      "failed": "De valuta kon niet worden opgeslagen."
     }
   },
   "connection_page": {
@@ -755,7 +762,7 @@
   },
   "tariff": {
     "title": "Elektriciteitstarief",
-    "none": "Geen tarief: het plan neemt een vaste prijs van {price} €/kWh aan en probeert alleen zo weinig mogelijk van het net af te nemen.",
+    "none": "Geen tarief: het plan neemt een vaste prijs van {price} aan en probeert alleen zo weinig mogelijk van het net af te nemen.",
     "use": {
       "SingleTariff": "Een vaste prijs instellen",
       "TimeOfUseTariff": "Dal- en piekuren instellen",
@@ -810,10 +817,15 @@
     "price_entity_hint": "Home Assistant-sensor die de prijs van het huidige en de komende uren geeft.",
     "export_hint": "Wat een kWh overschot naar het net u oplevert; 0 als u het niet verkoopt.",
     "subscription": "Vastrecht",
-    "per_month": "€/maand",
+    "per_month": "{symbol}/maand",
     "subscription_hint": "Het maandelijkse vastrecht, zonder de kWh: het wordt gedeeld door het aantal dagen van de maand en opgeteld bij de kosten van elke dag. 0 om het niet mee te tellen.",
     "contract_kva": "Gecontracteerd vermogen",
-    "contract_kva_hint": "Het vermogen van uw contract, waarboven de hoofdschakelaar uitvalt (bijvoorbeeld 6, 9 of 12 kVA). De planning vermijdt om in een uur meer af te nemen. Leeg laten als u het niet weet."
+    "contract_kva_hint": "Het vermogen van uw contract, waarboven de hoofdschakelaar uitvalt (bijvoorbeeld 6, 9 of 12 kVA). De planning vermijdt om in een uur meer af te nemen. Leeg laten als u het niet weet.",
+    "units": {
+      "kwh": "{symbol}/kWh",
+      "cents_kwh": "cent/kWh",
+      "mwh": "{symbol}/MWh"
+    }
   },
   "battery": {
     "title": "Batterij",
@@ -1294,7 +1306,7 @@
     },
     "contract": {
       "title": "Mijn contract",
-      "single": "Eén prijs, {price} €/kWh",
+      "single": "Eén prijs, {price}",
       "off_peak": "Daltarief {ranges}",
       "colors": "Prijs volgens de kleur van de dag",
       "dynamic": "Prijs die elk uur verandert"

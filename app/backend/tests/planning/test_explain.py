@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from tests.v1_oracle import STATES, load
-from wattslot import profiles
+from wattslot import currency, profiles
 from wattslot.languages import LANGUAGES
 from wattslot.planning.assemble import configured
 from wattslot.planning.engine import Objective, load_kwh, plan_day
@@ -87,12 +87,31 @@ def test_rendering_in_each_language() -> None:
     )
 
     assert render(explanation, "fr") == (
-        "Placé pour le coût le plus bas. Aux heures les moins chères (0,138 €/kWh). "
-        "Autre départ possible à 10h : +0,18 € et +0,6 kWh soutirés par rapport à ce plan."
+        "Placé pour le coût le plus bas. Aux heures les moins chères (0,138\u00a0€/kWh). "
+        "Autre départ possible à 10h : +0,18\u00a0€ et +0,6 kWh soutirés par rapport à ce plan."
     )
     assert render(explanation, "en").endswith(
-        "+0.18 € and +0.6 kWh imported compared with this plan."
+        "+0.18\u00a0€ and +0.6 kWh imported compared with this plan."
     )
+
+
+def test_rendering_in_the_currency_of_the_home() -> None:
+    """Devise de la maison (lot 7.3) : symbole et place selon la langue, sans conversion."""
+    explanation = Explanation(
+        reasons=[Reason(code="cheap_hours", params={"price": 0.138252})],
+        alternative=Alternative(start_min=600, cost_eur_delta=-0.18, import_kwh_delta=0.6),
+    )
+    currency.use_saved("USD")
+    try:
+        assert render(explanation, "en") == (
+            "At the cheapest hours ($0.138/kWh). Other possible start at 10h: -$0.18 and "
+            "+0.6 kWh imported compared with this plan."
+        )
+        assert "(0,138\u00a0$/kWh)" in render(explanation, "fr")
+        currency.use_saved("CHF")
+        assert "-0,18\u00a0CHF" in render(explanation, "de")
+    finally:
+        currency.use_saved(None)
     same = Alternative(start_min=600, cost_eur_delta=0.001, import_kwh_delta=0.0)
     assert "aussi bon" in render(explanation.model_copy(update={"alternative": same}), "fr")
     with pytest.raises(KeyError):
