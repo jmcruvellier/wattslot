@@ -529,6 +529,26 @@
       "saved": "Assistent in Home Assistant geändert.",
       "invalid": "Home Assistant kennt diesen Assistenten oder Agenten nicht: Laden Sie die Seite neu.",
       "failed": "Home Assistant hat die Änderung abgelehnt, versuchen Sie es erneut."
+    },
+    "open_webui": {
+      "title": "Open WebUI",
+      "help": "Um von der Seite Assistent aus mit einem Modell von Open WebUI zu chatten, ohne Home Assistant.",
+      "url": "Adresse",
+      "key": "API-Schlüssel",
+      "key_saved": "Schlüssel gespeichert",
+      "replace": "Ersetzen",
+      "clear": "Löschen",
+      "test": "Testen",
+      "testing": "Test läuft…",
+      "test_ok": "Open WebUI antwortet: {count} Modell(e).",
+      "test_failed": "Open WebUI antwortet nicht ({detail}).",
+      "invalid": "Ungültige Adresse: Sie beginnt mit http:// oder https://.",
+      "failed": "Das Speichern ist fehlgeschlagen, versuchen Sie es erneut.",
+      "tools": "WattSlot-Daten an Open WebUI geben",
+      "tools_server": "In Open WebUI: Administrationsbereich › Einstellungen › Externe Werkzeuge › „+“, Typ MCP (Streamable HTTP), mit der obigen Adresse des MCP-Servers der App.",
+      "tools_model": "Dann Arbeitsbereich › Modelle › gewähltes Modell bearbeiten › Werkzeuge: den WattSlot-Server ankreuzen. Fügen Sie auch den empfohlenen Prompt (Seite Assistent) in seinen System-Prompt ein, wenn Sie ihn standardmäßig wollen.",
+      "tools_addon": "Als Add-on ist der MCP-Server nur für Home Assistant erreichbar: Ein anderswo installiertes Open WebUI kann ihn nicht nutzen. Das Modell antwortet dann ohne die Daten von WattSlot.",
+      "tools_standalone": "Open WebUI muss die Adresse der App in Ihrem lokalen Netzwerk erreichen können."
     }
   },
   "connection_page": {

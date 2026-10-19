@@ -1,13 +1,15 @@
 """Discussion avec l'assistant de Home Assistant depuis la page Assistant : chaque message est
 transmis à un agent de conversation de HA (commande ``conversation/process``), dans la langue
 de l'interface. L'identifiant de conversation rendu par HA revient avec le message suivant, pour
-que l'agent garde le fil ; l'application n'enregistre pas la conversation.
+que l'agent garde le fil ; l'application n'enregistre pas la conversation. Un agent
+« open_webui:<modèle> » part vers Open WebUI (``open_webui``), avec l'historique de la page.
 """
 
 from typing import Any
 
 from pydantic import BaseModel, Field
 
+from wattslot.assistant.open_webui import HistoryLine
 from wattslot.home_assistant import HomeAssistantClient
 from wattslot.languages import Language
 
@@ -17,6 +19,8 @@ class ChatMessage(BaseModel):
     agent_id: str | None = None  # aucun : l'agent de l'assistant préféré de HA
     conversation_id: str | None = None
     language: Language = "fr"
+    # Messages précédents, pour Open WebUI qui ne garde pas le fil (HA s'en passe).
+    history: list[HistoryLine] = Field(default=[], max_length=60)
 
 
 class ChatReply(BaseModel):
