@@ -175,7 +175,9 @@
       "off_peak": "Ore fuori punta",
       "agenda": "Agenda della settimana",
       "battery_line": "Batteria: {start}%, fino al {max}%, {end}% la sera",
-      "open_day": "Apri {day}"
+      "open_day": "Apri {day}",
+      "missing": "Nessun piano per questo giorno: il calcolo si è fermato prima, vedere il messaggio in cima alla settimana.",
+      "missing_curves": "Nessun piano per questo giorno: il calcolo si è fermato prima. La causa è spiegata in Pianificazione, scheda Settimana."
     },
     "header": {
       "computed": "Calcolato alle {time} ({how})",

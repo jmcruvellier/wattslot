@@ -175,7 +175,9 @@
       "off_peak": "Daluren",
       "agenda": "Weekagenda",
       "battery_line": "Batterij: {start}%, tot {max}%, {end}% 's avonds",
-      "open_day": "{day} openen"
+      "open_day": "{day} openen",
+      "missing": "Geen plan voor deze dag: de berekening is ervoor gestopt, zie het bericht bovenaan de week.",
+      "missing_curves": "Geen plan voor deze dag: de berekening is ervoor gestopt. De oorzaak staat onder Planning, tabblad Week."
     },
     "header": {
       "computed": "Berekend om {time} ({how})",

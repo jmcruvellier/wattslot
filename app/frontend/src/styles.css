@@ -1675,6 +1675,16 @@ a.ui-setting-row {
   color: var(--link);
 }
 
+/* Jour que le calcul n'a pas atteint : grisé, sans données. */
+.week-row-missing .week-row-day,
+.week-missing h3 {
+  color: var(--text-dim);
+}
+
+.week-missing {
+  border-style: dashed;
+}
+
 /* Ma maison en phrases (lot 6b.5). */
 .home-summary {
   display: flex;

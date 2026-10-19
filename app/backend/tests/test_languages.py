@@ -121,6 +121,13 @@ WARNINGS: list[dict[str, Any] | str] = [
     "Texte libre d'un ancien cache",
 ]
 
+# Arrêts de l'horizon selon leur cause (lot 7.3), sans équivalent dans la v1.
+HORIZON_STOPS = [
+    {"code": "horizon_sans_solution", "params": {"jour": "2026-10-23", "raison": "NoPlanError"}},
+    {"code": "horizon_sans_prevision", "params": {"jour": "2026-10-23", "raison": "KeyError"}},
+    {"code": "horizon_calcul_echoue", "params": {"jour": "2026-10-23", "raison": "SoC inconnu"}},
+]
+
 
 @pytest.mark.parametrize("lang", ["fr", "en"])
 def test_warnings_read_as_in_the_v1_in_french_and_english(lang: str) -> None:
@@ -147,6 +154,18 @@ def test_warnings_in_the_new_languages() -> None:
     for lang in LANGUAGES:
         for warning in WARNINGS:
             assert not re.search(r"\{\w+\}", warning_text(warning, lang)), (lang, warning)
+
+
+def test_the_horizon_stops_are_written_out_in_every_language() -> None:
+    """Un texte par cause, dans chaque langue ; seule la panne générique cite la raison."""
+    for lang in LANGUAGES:
+        texts = [warning_text(w, lang) for w in HORIZON_STOPS]
+        assert len(set(texts)) == 3, lang
+        for text in texts:
+            assert not re.search(r"\{\w+\}", text) and "2026" in text, (lang, text)
+        assert "NoPlanError" not in texts[0] and "KeyError" not in texts[1]
+        assert "SoC inconnu" in texts[2]
+    assert warning_text(HORIZON_STOPS[0], "fr").startswith("Pas de plan à partir du Vendredi 23")
 
 
 def test_languages_and_numbers() -> None:

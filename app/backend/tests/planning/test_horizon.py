@@ -150,7 +150,7 @@ def test_horizon_chains_the_battery_and_stops_without_forecast() -> None:
         assert data.first_hour == 0
     assert result.warnings == [
         {
-            "code": "horizon_interrompu",
+            "code": "horizon_sans_prevision",
             "params": {
                 "jour": (first.day + timedelta(days=4)).isoformat(),
                 "raison": f"KeyError : {first.day + timedelta(days=4)!r}",
@@ -193,7 +193,7 @@ def test_horizon_stops_at_the_day_without_plan_and_hands_it_over(
     ]
     assert result.warnings == [
         {
-            "code": "horizon_interrompu",
+            "code": "horizon_sans_solution",
             "params": {
                 "jour": failing.isoformat(),
                 "raison": "NoPlanError : pas de plan : Infeasible",

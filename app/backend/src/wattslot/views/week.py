@@ -13,6 +13,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel
 
+from wattslot.planning.horizon import HORIZON_DAYS
 from wattslot.views.banners import Notice, notices, weather_quality
 from wattslot.views.display import (
     BATTERY,
@@ -65,6 +66,38 @@ class WeekView(BaseModel):
     now_index: float | None = None  # position du dernier relevé sur l'axe des points
     notices: list[Notice] = []  # avertissements du calcul de l'horizon
     waiting_not_assigned: bool = False  # tâches en attente sans affectation à un jour
+    # Jours de l'horizon que le calcul n'a pas atteints : celui où il s'est arrêté et les
+    # suivants, jusqu'au dernier jour prévu ; la cause est dans ``notices``.
+    missing_days: list[date] = []
+
+
+# Avertissements qui arrêtent l'horizon au jour ``jour`` (``planning/horizon.py``).
+STOP_CODES = {
+    "horizon_interrompu",
+    "horizon_sans_solution",
+    "horizon_sans_prevision",
+    "horizon_calcul_echoue",
+    "donnees_impossibles",
+    "donnees_impossibles_sans_origine",
+}
+
+
+def missing_days(
+    warnings: Sequence[Any], computed_on: date | None, shown: Sequence[date]
+) -> list[date]:
+    """Jours non calculés : du jour où l'horizon s'est arrêté au dernier jour prévu (le
+    lendemain du calcul et les ``HORIZON_DAYS - 1`` suivants), sans les jours affichés."""
+    stops = [
+        _as_date((w.get("params") or {}).get("jour"))
+        for w in warnings
+        if isinstance(w, Mapping) and w.get("code") in STOP_CODES
+    ]
+    stop = next((s for s in stops if isinstance(s, date)), None)
+    if stop is None:
+        return []
+    last = computed_on + timedelta(days=HORIZON_DAYS) if computed_on else stop
+    count = (last - stop).days + 1
+    return [d for d in (stop + timedelta(days=k) for k in range(count)) if d not in shown]
 
 
 def _as_date(value: Any) -> Any:
@@ -244,8 +277,9 @@ def build_week(
     ]
     execution = content.get("derniere_execution") or {}
     computed_at = execution.get("heure_iso")
+    computed = datetime.fromisoformat(computed_at) if isinstance(computed_at, str) else None
     return WeekView(
-        computed_at=datetime.fromisoformat(computed_at) if isinstance(computed_at, str) else None,
+        computed_at=computed,
         manual=bool(execution.get("manuel")),
         seconds=content.get("duree_s"),
         days=week_days,
@@ -265,6 +299,11 @@ def build_week(
         now_index=reading_index(today_state, context) if with_today and today_state else None,
         notices=notices({"avertissements": content.get("avertissements", [])}, "week", lang),
         waiting_not_assigned=bool(first.get("taches_en_attente") and not first.get("affectations")),
+        missing_days=missing_days(
+            content.get("avertissements") or [],
+            computed.date() if computed else None,
+            [d.day for d in week_days],
+        ),
     )
 
 

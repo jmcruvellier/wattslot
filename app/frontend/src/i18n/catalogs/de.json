@@ -175,7 +175,9 @@
       "off_peak": "Nebenzeiten",
       "agenda": "Wochenablauf",
       "battery_line": "Batterie: {start} %, bis {max} %, {end} % am Abend",
-      "open_day": "{day} öffnen"
+      "open_day": "{day} öffnen",
+      "missing": "Kein Plan für diesen Tag: Die Berechnung wurde vorher beendet, siehe Meldung oben in der Woche.",
+      "missing_curves": "Kein Plan für diesen Tag: Die Berechnung wurde vorher beendet. Die Ursache steht unter Planung, Reiter Woche."
     },
     "header": {
       "computed": "Berechnet um {time} ({how})",

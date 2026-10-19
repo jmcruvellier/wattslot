@@ -234,6 +234,7 @@ export const WEEK: WeekView = {
   now_index: 13.5,
   notices: [{ code: "horizon_incomplet", info: false, text: "Prévision manquante pour le 23 octobre." }],
   waiting_not_assigned: true,
+  missing_days: [],
 };
 
 export const WEEK_WITHOUT_BATTERY: WeekView = {

@@ -95,6 +95,22 @@ function DayCard({ day, onOpen }: { day: WeekDay; onOpen: (kind: DayKind) => voi
   );
 }
 
+/** Carte d'un jour que le calcul n'a pas atteint (section Courbes). */
+function MissingDayCard({ day }: { day: string }) {
+  const { language, t } = useI18n();
+  const title = dayName(day, language);
+  return (
+    <article className="card week-day week-missing" aria-label={title}>
+      <header>
+        <h3>{title}</h3>
+      </header>
+      <p className="dim">
+        <Icon name="warning" size={18} /> {t("plan.week.missing_curves")}
+      </p>
+    </article>
+  );
+}
+
 const CHART_ICONS: Record<WeekSeries, IconName> = { production: "today", consumption: "home", soc: "battery" };
 
 function WeekChartCard({ view, series }: { view: WeekView; series: WeekSeries }) {
@@ -113,12 +129,17 @@ function WeekChartCard({ view, series }: { view: WeekView; series: WeekSeries })
   );
 }
 
+/** Nom d'un jour de la semaine : « lundi 19 ». */
+function dayName(iso: string, language: string): string {
+  return new Date(`${iso}T12:00:00`).toLocaleDateString(language, { weekday: "long", day: "numeric" });
+}
+
 function WeekAgenda({ view, onOpen }: { view: WeekView; onOpen: (kind: DayKind) => void }) {
   const { language, t } = useI18n();
   return (
     <ol className="week-agenda" aria-label={t("plan.week.agenda")}>
       {view.days.map((day) => {
-        const name = new Date(`${day.day}T12:00:00`).toLocaleDateString(language, { weekday: "long", day: "numeric" });
+        const name = dayName(day.day, language);
         const devices = day.devices.filter((device) => device.device !== "Batterie");
         const withBattery = day.soc_max_percent !== null;
         return (
@@ -159,6 +180,15 @@ function WeekAgenda({ view, onOpen }: { view: WeekView; onOpen: (kind: DayKind) 
           </li>
         );
       })}
+      {/* Jours que le calcul n'a pas atteints : affichés quand même, sans données. */}
+      {view.missing_days.map((day) => (
+        <li key={day} className="week-row week-row-missing">
+          <div className="week-row-head">
+            <span className="week-row-day">{dayName(day, language)}</span>
+          </div>
+          <p className="dim">{t("plan.week.missing")}</p>
+        </li>
+      ))}
     </ol>
   );
 }
@@ -188,6 +218,9 @@ export function WeekDetails({
           <section key="days" className="week-days" aria-label={t("plan.tabs.week")}>
             {view.days.map((day) => (
               <DayCard key={day.day} day={day} onOpen={onOpen} />
+            ))}
+            {view.missing_days.map((day) => (
+              <MissingDayCard key={day} day={day} />
             ))}
           </section>
         ) : (

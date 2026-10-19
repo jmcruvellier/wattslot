@@ -118,13 +118,13 @@ async def compute_horizon(
         day = first.day + timedelta(days=offset)
         soc = end_soc_kwh(horizon.days[-1][1])
         if soc is None:
-            horizon.warnings.append(_interrupted(day, "SoC de fin de journée inconnu"))
+            horizon.warnings.append(_interrupted(day, FAILED, "SoC de fin de journée inconnu"))
             break
         began = time.perf_counter()
         try:
             forecast = await forecast_of(day)
         except Exception as exc:  # noqa: BLE001 — l'horizon s'arrête au dernier jour connu
-            horizon.warnings.append(_interrupted(day, f"{type(exc).__name__} : {exc}"))
+            horizon.warnings.append(_interrupted(day, NO_FORECAST, f"{type(exc).__name__} : {exc}"))
             break
         data = next_day_input(first, day, forecast, soc)
         try:
@@ -135,12 +135,20 @@ async def compute_horizon(
             if isinstance(exc, ImpossibleDataError) and on_impossible is not None:
                 horizon.warnings.append(on_impossible(exc))
             else:
-                horizon.warnings.append(_interrupted(day, f"{type(exc).__name__} : {exc}"))
+                code = NO_SOLUTION if isinstance(exc, NoPlanError) else FAILED
+                horizon.warnings.append(_interrupted(day, code, f"{type(exc).__name__} : {exc}"))
             break
         horizon.days.append((data, result))
         horizon.seconds.append(round(time.perf_counter() - began, 1))
     return horizon
 
 
-def _interrupted(day: date, reason: str) -> dict[str, Any]:
-    return {"code": "horizon_interrompu", "params": {"jour": day.isoformat(), "raison": reason}}
+# Arrêt de l'horizon, selon sa cause : un texte explicite pour chacune (« horizon_interrompu »,
+# texte de la v1 avec la raison technique, reste lu dans les horizons enregistrés avant).
+NO_SOLUTION = "horizon_sans_solution"  # aucun plan ne respecte les contraintes du jour
+NO_FORECAST = "horizon_sans_prevision"  # prévision de production du jour illisible
+FAILED = "horizon_calcul_echoue"  # autre échec, raison technique à l'appui
+
+
+def _interrupted(day: date, code: str, reason: str) -> dict[str, Any]:
+    return {"code": code, "params": {"jour": day.isoformat(), "raison": reason}}
