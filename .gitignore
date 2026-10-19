@@ -247,3 +247,6 @@ Thumbs.db
 # Dépendances et compilation de l'interface v2
 node_modules/
 app/backend/data/
+
+# Captures de problèmes sans plan (planning/capture.py) : données d'une maison réelle
+no-plan-*.pickle

@@ -16,6 +16,7 @@ import time
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import UTC, date, datetime, timedelta
+from pathlib import Path
 from typing import Annotated, Any
 from zoneinfo import ZoneInfo
 
@@ -239,6 +240,7 @@ def _scheduler(
     raw: RawStores,
     database: sqlite3.Connection,
     lock: asyncio.Lock,
+    data_dir: Path | None = None,
 ) -> PlanningScheduler:
     """Planificateur des calculs : réglages relus à chaque tour, HA connecté exigé (sauf pour
     relire les données réelles, lues sur le brut)."""
@@ -254,6 +256,7 @@ def _scheduler(
             database=database,
             settings=load_planning_settings(database),
             configuration=configuration.load(graph),
+            data_dir=data_dir,
         )
         report = await run(context, now)
         await _notify(client, database, now, raw.zone, report)
@@ -392,7 +395,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         scheduler = None
         if client is not None and aggregator is not None:
             scheduler = _scheduler(
-                client, graph, aggregator, raw, database, app.state.planning_lock
+                client,
+                graph,
+                aggregator,
+                raw,
+                database,
+                app.state.planning_lock,
+                settings.data_dir,
             )
             scheduler.start()
         app.state.scheduler = scheduler
@@ -838,6 +847,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             database=state.database,
             settings=load_planning_settings(state.database),
             configuration=configuration.load(state.graph),
+            data_dir=settings.data_dir,
         )
         async with state.planning_lock:
             try:
@@ -875,6 +885,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 database=state.database,
                 settings=load_planning_settings(state.database),
                 configuration=configuration.load(state.graph),
+                data_dir=settings.data_dir,
             )
             try:
                 await run(context, now, manual=True)

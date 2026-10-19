@@ -9,8 +9,9 @@ Tâches : les tâches datées qui concernent le jour (une tâche récurrente rev
 règle, ``recurrence.py``) ; les tâches en attente seulement le jour auquel elles sont
 affectées (``assignment.py``), sans quoi un lave-linge serait placé chaque jour.
 
-Si la prévision d'un jour manque, l'horizon s'arrête au dernier jour calculé, avec un
-avertissement : les jours suivants dépendent de son SoC.
+Si la prévision d'un jour manque, ou si son calcul échoue, l'horizon s'arrête au dernier jour
+calculé, avec un avertissement : les jours suivants dépendent de son SoC. Un problème que HiGHS
+déclare impossible est passé à ``on_no_plan`` pour être capturé (``capture.py``, lot 7.3).
 """
 
 import time
@@ -19,7 +20,7 @@ from dataclasses import dataclass, field, replace
 from datetime import date, timedelta
 from typing import Any
 
-from wattslot.planning.engine import Goal, Objective, Result, plan_day
+from wattslot.planning.engine import Goal, NoPlanError, Objective, Result, plan_day
 from wattslot.planning.inputs import PlanningInput
 from wattslot.planning.problem import from_input
 from wattslot.planning.recurrence import tasks_of_day
@@ -37,6 +38,7 @@ class DayForecast:
 
 
 ForecastOf = Callable[[date], Awaitable[DayForecast]]
+OnNoPlan = Callable[[NoPlanError], None]
 
 
 @dataclass
@@ -98,6 +100,7 @@ async def compute_horizon(
     forecast_of: ForecastOf,
     objective: Goal = Objective.COST,
     days: int = HORIZON_DAYS,
+    on_no_plan: OnNoPlan | None = None,
 ) -> Horizon:
     """Le premier jour tel quel, puis au plus ``days - 1`` jours calculés à la suite."""
     horizon = Horizon(days=[(first, first_result)])
@@ -114,7 +117,14 @@ async def compute_horizon(
             horizon.warnings.append(_interrupted(day, f"{type(exc).__name__} : {exc}"))
             break
         data = next_day_input(first, day, forecast, soc)
-        horizon.days.append((data, plan_day(from_input(data), objective, explained=False)))
+        try:
+            result = plan_day(from_input(data), objective, explained=False)
+        except Exception as exc:  # noqa: BLE001 — l'horizon s'arrête au dernier jour calculé
+            if isinstance(exc, NoPlanError) and on_no_plan is not None:
+                on_no_plan(exc)
+            horizon.warnings.append(_interrupted(day, f"{type(exc).__name__} : {exc}"))
+            break
+        horizon.days.append((data, result))
         horizon.seconds.append(round(time.perf_counter() - began, 1))
     return horizon
 
