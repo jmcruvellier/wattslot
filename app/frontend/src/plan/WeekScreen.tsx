@@ -240,14 +240,15 @@ export default function WeekScreen({ view, onOpen }: { view: WeekView; onOpen: (
   const { language, t } = useI18n();
   const longDay = (iso: string) =>
     new Date(`${iso}T12:00:00`).toLocaleDateString(language, { weekday: "long", day: "numeric", month: "long" });
-  const first = view.days[0];
-  const last = view.days[view.days.length - 1];
+  const first = view.days[0]?.day;
+  // Jusqu'au dernier jour prévu, jours non calculés compris.
+  const last = view.missing_days[view.missing_days.length - 1] ?? view.days[view.days.length - 1]?.day;
 
   return (
     <>
       <div className="view-header">
         <p>
-          <strong>{first && last ? t("plan.week.title", { start: longDay(first.day), end: longDay(last.day) }) : t("plan.tabs.week")}</strong>
+          <strong>{first && last ? t("plan.week.title", { start: longDay(first), end: longDay(last) }) : t("plan.tabs.week")}</strong>
           <br />
           <small>
             {view.computed_at
