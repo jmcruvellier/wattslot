@@ -18,7 +18,9 @@
     "horizon_interrompu": "Previsiones detenidas antes del {jour}: {raison}.",
     "tache_reportee": "{equipement} aplazado al {jour}: {pct_jour} % cubierto por el sol, frente al {pct_auj} % hoy.",
     "tache_reportee_sans_creneau": "{equipement} aplazado al {jour}: ya no queda tiempo hoy para un ciclo completo.",
-    "puissance_souscrite_depassee": "Consumo de red previsto por encima de la potencia contratada ({kva} kVA) a las {heures} h: el consumo base y los aparatos superan lo que permite el contrato, incluso moviendo los aparatos. Puede saltar el interruptor general."
+    "puissance_souscrite_depassee": "Consumo de red previsto por encima de la potencia contratada ({kva} kVA) a las {heures} h: el consumo base y los aparatos superan lo que permite el contrato, incluso moviendo los aparatos. Puede saltar el interruptor general.",
+    "donnees_impossibles": "Previsiones detenidas antes del {jour}: el consumo previsto a las {heure} ({kwh} kWh) supera lo que su casa puede tomar en una hora ({limite} kWh). Viene de un salto del sensor «{capteur}» ({entite}) el {jour_source} a las {heure_source}: {kwh_source} kWh contados en una hora, probablemente un corte del sensor. Las previsiones de este día de la semana seguirán falseadas hasta el {jour_fin}.",
+    "donnees_impossibles_sans_origine": "Previsiones detenidas antes del {jour}: el consumo previsto a las {heure} ({kwh} kWh) supera lo que su casa puede tomar en una hora ({limite} kWh). Probablemente un salto de contador falsea el consumo base: revise el historial de sus contadores de energía en Home Assistant."
   },
   "date": {
     "format": "{jour}, {num} de {mois} de {annee}",

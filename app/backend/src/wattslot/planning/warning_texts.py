@@ -12,7 +12,7 @@ from functools import cache
 from pathlib import Path
 from typing import Any
 
-from wattslot.languages import DEFAULT, language_of
+from wattslot.languages import DEFAULT, language_of, number
 
 LOCALES = Path(__file__).parent / "locales" / "warnings"
 
@@ -97,8 +97,12 @@ def _param(name: str, value: Any, lang: str) -> str:
         return hour_minutes(int(value), lang)
     if name == "duree_min":
         return duration(int(value), lang)
-    if name == "jour":
+    if name == "jour" or name.startswith("jour_"):
         return long_date(value, lang)
+    if name.startswith("heure"):
+        return hour(int(value), lang)
+    if name.startswith("kwh") or name == "limite":
+        return number(float(value), lang, 0 if abs(float(value)) >= 100 else 1)
     return str(value)
 
 

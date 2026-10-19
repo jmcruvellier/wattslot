@@ -6,6 +6,8 @@ import { useEffect, useState } from "react";
 
 import { getJson } from "../api";
 import { useI18n } from "../i18n/I18nProvider";
+import { longDate } from "../plan/format";
+import { formatNumber } from "./format";
 
 export interface Problem {
   code: string;
@@ -21,7 +23,7 @@ export default function ProblemsSection({ version, onNavigate }: {
   version: number;
   onNavigate: (target: string) => void;
 }) {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const [load, setLoad] = useState<Load>({ status: "loading" });
 
   useEffect(() => {
@@ -43,6 +45,23 @@ export default function ProblemsSection({ version, onNavigate }: {
       return t("problems.code.energy_dashboard_issue", {
         device: params.device,
         issue: t(`issue.${issue}`, params),
+      });
+    }
+    if (problem.code === "impossible_data" || problem.code === "impossible_data_unknown") {
+      // Saut de compteur (lot 7.3) : dates, heures et énergies dans la langue de l'interface.
+      const hour = (value: string) => t("problems.hour", { hour: value });
+      return t(`problems.code.${problem.code}`, {
+        ...params,
+        day: longDate(params.day, language),
+        hour: hour(params.hour),
+        kwh: formatNumber(language, Number(params.kwh), 0),
+        limit: formatNumber(language, Number(params.limit), 1),
+        ...(problem.code === "impossible_data" && {
+          when: longDate(params.when, language),
+          when_hour: hour(params.when_hour),
+          source_kwh: formatNumber(language, Number(params.source_kwh), 0),
+          until: longDate(params.until, language),
+        }),
       });
     }
     return t(`problems.code.${problem.code}`, {

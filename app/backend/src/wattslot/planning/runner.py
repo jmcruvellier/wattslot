@@ -40,7 +40,14 @@ from wattslot.planning import capture, open_meteo, past
 from wattslot.planning.actual import actual_day
 from wattslot.planning.assemble import build_input, to_v1
 from wattslot.planning.assignment import decide, launched_keys
-from wattslot.planning.engine import Goal, NoPlanError, Objective, Result, plan_day
+from wattslot.planning.engine import (
+    Goal,
+    ImpossibleDataError,
+    NoPlanError,
+    Objective,
+    Result,
+    plan_day,
+)
 from wattslot.planning.horizon import DayForecast, compute_horizon, end_soc_kwh
 from wattslot.planning.inputs import FrozenCycle, PlanningInput, RecentHistory
 from wattslot.planning.journal import CycleJournal, cycle_appliances
@@ -62,6 +69,43 @@ MIN_FILTRATION_KWH = 0.05
 DEPARTURE_BEFORE_HOUR = 18  # départ de demain retenu s'il est prévu avant 18 h (v1)
 
 
+class ImpossibleData(BaseModel):
+    """Consommation de base impossible d'un jour, et le saut de compteur qui l'explique."""
+
+    day: date
+    hour: int
+    consumption_kwh: float
+    limit_kwh: float
+    device: str | None = None  # capteur à l'origine ; None : pas retrouvé
+    entity_id: str | None = None
+    source_start: datetime | None = None  # heure locale du saut
+    source_kwh: float | None = None
+    until: date | None = None  # dernier jour dont la prévision en dépend
+
+    def warning(self) -> dict[str, Any]:
+        """Avertissement de l'horizon, à la place de « horizon_interrompu »."""
+        params: dict[str, Any] = {
+            "jour": self.day.isoformat(),
+            "heure": self.hour,
+            "kwh": self.consumption_kwh,
+            "limite": self.limit_kwh,
+        }
+        if self.source_start is None:
+            return {"code": "donnees_impossibles_sans_origine", "params": params}
+        return {
+            "code": "donnees_impossibles",
+            "params": params
+            | {
+                "capteur": self.device,
+                "entite": self.entity_id,
+                "jour_source": self.source_start.date().isoformat(),
+                "heure_source": self.source_start.hour,
+                "kwh_source": self.source_kwh,
+                "jour_fin": self.until.isoformat() if self.until else None,
+            },
+        }
+
+
 @dataclass
 class Context:
     client: HomeAssistantClient
@@ -80,6 +124,29 @@ class Context:
         if self.data_dir is not None:
             capture.save(self.data_dir, error)
 
+    def impossible(self, error: ImpossibleDataError, today: date) -> ImpossibleData:
+        """Le saut de compteur à l'origine d'une consommation impossible, s'il est retrouvé."""
+        found = past.spike(
+            self.model, self.reader, error.day, error.hour, today, self.raw.zone, error.limit_kwh
+        )
+        about = ImpossibleData(
+            day=error.day,
+            hour=error.hour,
+            consumption_kwh=round(error.consumption_kwh, 1),
+            limit_kwh=round(error.limit_kwh, 1),
+        )
+        if found is None:
+            return about
+        return about.model_copy(
+            update={
+                "device": found.device,
+                "entity_id": found.entity_id,
+                "source_start": found.start,
+                "source_kwh": round(found.energy_kwh, 1),
+                "until": found.start.date() + timedelta(days=7 * past.SAME_WEEKDAY_OCCURRENCES),
+            }
+        )
+
 
 class RunReport(BaseModel):
     day: date
@@ -90,6 +157,8 @@ class RunReport(BaseModel):
     seconds_horizon: float | None = None
     horizon_days: int = 0
     errors: list[str] = []
+    # Jours non calculés à cause d'une consommation impossible (lot 7.3), avec son origine.
+    impossible: list[ImpossibleData] = []
 
 
 def frozen_cycles(old: Plan | None, first_hour: int) -> tuple[FrozenCycle, ...]:
@@ -496,6 +565,11 @@ async def run(ctx: Context, now: datetime, manual: bool = False) -> RunReport:
             state_t["depart_memorise"] = memorised
         store.save("tomorrow", tomorrow, state_t, time.perf_counter() - began, manual)
         report.seconds_tomorrow = round(time.perf_counter() - began, 2)
+    except ImpossibleDataError as exc:
+        found = ctx.impossible(exc, today)
+        logger.warning("Prévision de demain impossible : %s (%s)", exc, found)
+        report.impossible.append(found)
+        return report
     except Exception as exc:
         if isinstance(exc, NoPlanError):
             ctx.capture_no_plan(exc)
@@ -509,8 +583,19 @@ async def run(ctx: Context, now: datetime, manual: bool = False) -> RunReport:
         async def forecast_of(day: date) -> DayForecast:
             return await day_forecast(forecasts, ctx, day, today)
 
+        def on_impossible(error: ImpossibleDataError) -> dict[str, Any]:
+            found = ctx.impossible(error, today)
+            logger.warning("Horizon arrêté : %s (%s)", error, found)
+            report.impossible.append(found)
+            return found.warning()
+
         horizon = await compute_horizon(
-            data_t, result_t, forecast_of, objective, on_no_plan=ctx.capture_no_plan
+            data_t,
+            result_t,
+            forecast_of,
+            objective,
+            on_no_plan=ctx.capture_no_plan,
+            on_impossible=on_impossible,
         )
         days = [plan_state(d, r) for d, r in horizon.days[1:]]
         store.save(

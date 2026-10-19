@@ -1057,7 +1057,9 @@
       "writes_behind": "{count} Messwerte warten auf das Speichern: Das Gerät kommt nicht mehr nach.",
       "no_statistics": "Kein Verlauf in Home Assistant für: {devices}.",
       "plan_stale": "Seit mehr als 2 Stunden konnte kein Plan berechnet werden.",
-      "energy_dashboard_issue": "{device}: {issue}"
+      "energy_dashboard_issue": "{device}: {issue}",
+      "impossible_data": "Prognosen vor dem {day} beendet: Der Sensor „{device}“ ({entity}) hat am {when} um {when_hour} {source_kwh} kWh in einer Stunde gezählt, vermutlich ein Sensorausfall. Der um {hour} erwartete Verbrauch ({kwh} kWh) übersteigt, was das Haus beziehen kann ({limit} kWh); die Prognosen dieses Wochentags bleiben bis zum {until} verfälscht.",
+      "impossible_data_unknown": "Prognosen vor dem {day} beendet: Der um {hour} erwartete Verbrauch ({kwh} kWh) übersteigt, was das Haus in einer Stunde beziehen kann ({limit} kWh)."
     },
     "action": {
       "ha_not_configured": "Add-on: Starten Sie es neu. Docker: Geben Sie die Adresse von Home Assistant und ein langlebiges Zugriffstoken an.",
@@ -1072,8 +1074,11 @@
       "writes_behind": "Wenn es anhält, hängen Sie den Bericht an eine Fehlermeldung an.",
       "no_statistics": "Diese Sensoren haben keine Statistiken in Home Assistant: Der Plan geht nicht von ihrem Verlauf aus.",
       "plan_stale": "Sehen Sie sich die anderen Probleme an oder starten Sie eine Berechnung auf der Startseite.",
-      "configuration_issue": "Korrigieren Sie die Einstellung unter Mein Zuhause."
-    }
+      "configuration_issue": "Korrigieren Sie die Einstellung unter Mein Zuhause.",
+      "impossible_data": "Prüfen Sie den Verlauf dieses Sensors in Home Assistant zu dieser Zeit.",
+      "impossible_data_unknown": "Vermutlich verfälscht ein Zählersprung den Grundverbrauch: Prüfen Sie den Verlauf Ihrer Energiezähler in Home Assistant."
+    },
+    "hour": "{hour}:00 Uhr"
   },
   "report": {
     "title": "Bericht für eine Fehlermeldung",

@@ -1057,7 +1057,9 @@
       "writes_behind": "{count} medidas esperan para guardarse: el equipo ya no da abasto.",
       "no_statistics": "Ningún historial en Home Assistant para: {devices}.",
       "plan_stale": "No se ha podido calcular ningún plan desde hace más de 2 horas.",
-      "energy_dashboard_issue": "{device}: {issue}"
+      "energy_dashboard_issue": "{device}: {issue}",
+      "impossible_data": "Previsiones detenidas antes del {day}: el sensor «{device}» ({entity}) contó {source_kwh} kWh en una hora el {when} a las {when_hour}, probablemente un corte del sensor. El consumo previsto a las {hour} ({kwh} kWh) supera lo que la casa puede tomar ({limit} kWh); las previsiones de este día de la semana siguen falseadas hasta el {until}.",
+      "impossible_data_unknown": "Previsiones detenidas antes del {day}: el consumo previsto a las {hour} ({kwh} kWh) supera lo que la casa puede tomar en una hora ({limit} kWh)."
     },
     "action": {
       "ha_not_configured": "Complemento: reinícielo. Docker: indique la dirección de Home Assistant y un token de acceso de larga duración.",
@@ -1072,8 +1074,11 @@
       "writes_behind": "Si dura, adjunte el informe a un aviso de error.",
       "no_statistics": "Estos sensores no tienen estadísticas en Home Assistant: el plan no parte de su historial.",
       "plan_stale": "Mire los demás problemas, o lance un cálculo desde la página de inicio.",
-      "configuration_issue": "Corrija el ajuste en Mi casa."
-    }
+      "configuration_issue": "Corrija el ajuste en Mi casa.",
+      "impossible_data": "Revise el historial de este sensor en Home Assistant a esa hora.",
+      "impossible_data_unknown": "Probablemente un salto de contador falsea el consumo base: revise el historial de sus contadores de energía en Home Assistant."
+    },
+    "hour": "{hour}:00"
   },
   "report": {
     "title": "Informe para un aviso de error",

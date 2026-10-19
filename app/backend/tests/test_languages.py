@@ -6,9 +6,10 @@ import json
 import re
 import string
 from collections.abc import Mapping
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import pytest
 from fastapi.testclient import TestClient
@@ -21,6 +22,7 @@ from wattslot.languages import LANGUAGES, TO_REVIEW, language_of, number
 from wattslot.main import create_app
 from wattslot.notifications import NotificationSettings
 from wattslot.planning.recommendation import recommendation, title
+from wattslot.planning.runner import ImpossibleData
 from wattslot.planning.store import PlanStore
 from wattslot.planning.warning_texts import LOCALES as WARNING_LOCALES
 from wattslot.planning.warning_texts import warning_text
@@ -179,3 +181,33 @@ def test_the_views_and_the_notifications_accept_every_language(tmp_path: Path) -
     assert notices["nl"].startswith("Droger uitgesteld naar zondag")
     assert len(set(notices.values())) == len(LANGUAGES)
     assert saved.status_code == 200 and saved.json()["language"] == "it"
+
+
+def test_the_impossible_data_warning_is_written_out_in_every_language() -> None:
+    """Avertissement des données impossibles (lot 7.3) : dates en toutes lettres, heures et
+    énergies à la façon de chaque langue, rien de technique."""
+    found = ImpossibleData(
+        day=date(2026, 10, 23),
+        hour=20,
+        consumption_kwh=10674.1,
+        limit_kwh=11.5,
+        device="Réseau",
+        entity_id="sensor.grid_import",
+        source_start=datetime(2026, 10, 16, 20, tzinfo=ZoneInfo("Europe/Paris")),
+        source_kwh=64045.0,
+        until=date(2026, 11, 27),
+    )
+    texts = {lang: warning_text(found.warning(), lang) for lang in LANGUAGES}
+
+    assert texts["fr"] == (
+        "Prévisions arrêtées avant le Vendredi 23 Octobre 2026 : la consommation prévue à 20h "
+        "(10674 kWh) dépasse ce que votre maison peut tirer en une heure (11,5 kWh). Elle vient "
+        "d'un saut du capteur « Réseau » (sensor.grid_import) le Vendredi 16 Octobre 2026 à 20h : "
+        "64045 kWh comptés en une heure, sans doute une coupure du capteur. Les prévisions de ce "
+        "jour de la semaine resteront faussées jusqu'au Vendredi 27 Novembre 2026."
+    )
+    for lang, text in texts.items():
+        assert "{" not in text and "NoPlanError" not in text and "None" not in text, lang
+        assert "sensor.grid_import" in text and "64045" in text, lang
+    bare = found.model_copy(update={"source_start": None})
+    assert "Home Assistant" in warning_text(bare.warning(), "fr")

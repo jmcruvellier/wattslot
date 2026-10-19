@@ -1057,7 +1057,9 @@
       "writes_behind": "{count} metingen wachten om opgeslagen te worden: het apparaat kan het niet meer bijhouden.",
       "no_statistics": "Geen geschiedenis in Home Assistant voor: {devices}.",
       "plan_stale": "Al meer dan 2 uur kon er geen plan worden berekend.",
-      "energy_dashboard_issue": "{device}: {issue}"
+      "energy_dashboard_issue": "{device}: {issue}",
+      "impossible_data": "Prognoses gestopt vóór {day}: de sensor \"{device}\" ({entity}) telde {source_kwh} kWh in één uur op {when} om {when_hour}, waarschijnlijk een storing van de sensor. Het verwachte verbruik om {hour} ({kwh} kWh) is meer dan het huis kan afnemen ({limit} kWh); de prognoses voor deze weekdag blijven onjuist tot {until}.",
+      "impossible_data_unknown": "Prognoses gestopt vóór {day}: het verwachte verbruik om {hour} ({kwh} kWh) is meer dan het huis in een uur kan afnemen ({limit} kWh)."
     },
     "action": {
       "ha_not_configured": "Add-on: start hem opnieuw. Docker: geef het adres van Home Assistant en een langlevend toegangstoken op.",
@@ -1072,8 +1074,11 @@
       "writes_behind": "Als het aanhoudt, voeg dan het rapport toe aan een foutmelding.",
       "no_statistics": "Deze sensoren hebben geen statistieken in Home Assistant: het plan gaat niet uit van hun geschiedenis.",
       "plan_stale": "Bekijk de andere problemen, of start een berekening vanaf de startpagina.",
-      "configuration_issue": "Corrigeer de instelling in Mijn huis."
-    }
+      "configuration_issue": "Corrigeer de instelling in Mijn huis.",
+      "impossible_data": "Controleer de geschiedenis van deze sensor in Home Assistant op dat tijdstip.",
+      "impossible_data_unknown": "Waarschijnlijk vertekent een metersprong het basisverbruik: controleer de geschiedenis van uw energiemeters in Home Assistant."
+    },
+    "hour": "{hour}:00 uur"
   },
   "report": {
     "title": "Rapport voor een foutmelding",

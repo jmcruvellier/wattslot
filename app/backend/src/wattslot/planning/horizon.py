@@ -20,7 +20,14 @@ from dataclasses import dataclass, field, replace
 from datetime import date, timedelta
 from typing import Any
 
-from wattslot.planning.engine import Goal, NoPlanError, Objective, Result, plan_day
+from wattslot.planning.engine import (
+    Goal,
+    ImpossibleDataError,
+    NoPlanError,
+    Objective,
+    Result,
+    plan_day,
+)
 from wattslot.planning.inputs import PlanningInput
 from wattslot.planning.problem import from_input
 from wattslot.planning.recurrence import tasks_of_day
@@ -39,6 +46,8 @@ class DayForecast:
 
 ForecastOf = Callable[[date], Awaitable[DayForecast]]
 OnNoPlan = Callable[[NoPlanError], None]
+# Avertissement d'un jour aux données impossibles (lot 7.3), à la place de « horizon_interrompu ».
+OnImpossible = Callable[[ImpossibleDataError], dict[str, Any]]
 
 
 @dataclass
@@ -101,6 +110,7 @@ async def compute_horizon(
     objective: Goal = Objective.COST,
     days: int = HORIZON_DAYS,
     on_no_plan: OnNoPlan | None = None,
+    on_impossible: OnImpossible | None = None,
 ) -> Horizon:
     """Le premier jour tel quel, puis au plus ``days - 1`` jours calculés à la suite."""
     horizon = Horizon(days=[(first, first_result)])
@@ -122,7 +132,10 @@ async def compute_horizon(
         except Exception as exc:  # noqa: BLE001 — l'horizon s'arrête au dernier jour calculé
             if isinstance(exc, NoPlanError) and on_no_plan is not None:
                 on_no_plan(exc)
-            horizon.warnings.append(_interrupted(day, f"{type(exc).__name__} : {exc}"))
+            if isinstance(exc, ImpossibleDataError) and on_impossible is not None:
+                horizon.warnings.append(on_impossible(exc))
+            else:
+                horizon.warnings.append(_interrupted(day, f"{type(exc).__name__} : {exc}"))
             break
         horizon.days.append((data, result))
         horizon.seconds.append(round(time.perf_counter() - began, 1))

@@ -10,7 +10,7 @@ import pytest
 
 from tests.v1_oracle import STATES, V1Raised, load, state_named, v1
 from wattslot.planning import horizon
-from wattslot.planning.engine import Goal, NoPlanError, Result, plan_day
+from wattslot.planning.engine import Goal, ImpossibleDataError, NoPlanError, Result, plan_day
 from wattslot.planning.horizon import (
     DayForecast,
     compute_horizon,
@@ -201,3 +201,40 @@ def test_horizon_stops_at_the_day_without_plan_and_hands_it_over(
         }
     ]
     assert [error.problem.day for error in captured] == [failing]
+
+
+def test_an_impossible_day_gets_its_own_warning(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Consommation de base impossible (lot 7.3) : l'avertissement vient de ``on_impossible``,
+    qui retrouve le saut de compteur, à la place de « horizon_interrompu »."""
+    first_state, _ = load(state_named("tomorrow_laundry"))
+    first = from_v1(first_state)
+    rng = random.Random(0)
+    available = {first.day + timedelta(days=k): forecast(rng) for k in range(1, 6)}
+    failing = first.day + timedelta(days=2)
+
+    async def forecast_of(day: date) -> DayForecast:
+        surplus = available[day]
+        return DayForecast(surplus["net_horaire_signe"], surplus["production_solaire_horaire"])
+
+    def plan_or_fail(problem: Problem, objective: Goal, explained: bool = True) -> Result:
+        if problem.day == failing:
+            raise ImpossibleDataError(problem.day, 20, 10674.1, 11.5)
+        return plan_day(problem, objective, explained)
+
+    first_result = plan_day(from_input(first))
+    monkeypatch.setattr(horizon, "plan_day", plan_or_fail)
+    told: list[ImpossibleDataError] = []
+
+    def on_impossible(error: ImpossibleDataError) -> dict[str, Any]:
+        told.append(error)
+        return {"code": "donnees_impossibles_sans_origine", "params": {"jour": "x"}}
+
+    result = asyncio.run(
+        compute_horizon(first, first_result, forecast_of, days=6, on_impossible=on_impossible)
+    )
+
+    assert len(result.days) == 2
+    assert result.warnings == [
+        {"code": "donnees_impossibles_sans_origine", "params": {"jour": "x"}}
+    ]
+    assert [(e.day, e.hour) for e in told] == [(failing, 20)]

@@ -14,8 +14,11 @@ import pytest
 from tests.planning import evaluation
 from tests.v1_oracle import STATES, load, state_named, v1
 from wattslot.planning.engine import (
+    DEFAULT_CONTRACT_KWH,
+    ImpossibleDataError,
     Objective,
     Plan,
+    impossible_hour,
     indicators,
     plan_day,
     simulate_plan,
@@ -229,11 +232,18 @@ def _imports(problem: Problem, plan: Plan) -> dict[int, float]:
 
 @pytest.mark.parametrize("path", STATES, ids=[p.stem for p in STATES])
 def test_the_plan_keeps_under_the_contract_power_or_says_so(path: Path) -> None:
-    """Puissance souscrite juste sous le pic du plan sans contrat : le plan s'y tient, ou
+    """Puissance souscrite juste sous le pic du plan sans contrat, mais au-dessus de la seule
+    consommation de base (en dessous, la journée est impossible) : le plan s'y tient, ou
     signale les heures de dépassement ; jamais d'échec du calcul."""
     problem = from_input(from_v1(load(path)[0]))
     peak = max(_imports(problem, solve(problem)).values(), default=0.0)
-    limited = replace(problem, contract_kwh=max(0.05, round(peak * 0.8, 3)))
+    base = max(
+        problem.production_kwh.get(h, 0.0)
+        - problem.net_kwh.get(h, 0.0)
+        + problem.fixed_kwh.get(h, 0.0)
+        for h in problem.hours
+    )
+    limited = replace(problem, contract_kwh=max(0.05, round(peak * 0.8, 3), round(base, 3)))
 
     result = plan_day(limited, explained=False)
 
@@ -259,3 +269,39 @@ def test_the_subscription_is_part_of_the_cost_of_the_day() -> None:
 
     assert found.subscription_eur == 0.5
     assert found.cost_eur == pytest.approx(_indicators(problem, plan).cost_eur + 0.5, abs=0.001)
+
+
+# --- Données impossibles (lot 7.3) : saut de compteur dans la consommation de base -----------
+
+
+@pytest.mark.parametrize("path", STATES, ids=[p.stem for p in STATES])
+def test_real_days_are_never_impossible(path: Path) -> None:
+    problem = from_input(from_v1(load(path)[0]))
+
+    assert impossible_hour(problem) is None
+    assert impossible_hour(replace(problem, contract_kwh=6.0)) is None
+
+
+def test_an_impossible_baseline_stops_the_calculation_with_its_hour() -> None:
+    problem = from_input(from_v1(load(STATES[0])[0]))
+    hour = problem.hours[-2]
+    jumped = replace(problem, net_kwh={**problem.net_kwh, hour: -10674.1}, contract_kwh=9.0)
+
+    with pytest.raises(ImpossibleDataError) as raised:
+        solve(jumped)
+
+    error = raised.value
+    assert (error.day, error.hour) == (problem.day, hour)
+    production = max(0.0, problem.production_kwh.get(hour, 0.0))
+    assert error.consumption_kwh == pytest.approx(
+        production + 10674.1 + problem.fixed_kwh.get(hour, 0.0)
+    )
+    battery = problem.battery
+    active = battery.capacity_kwh > 0 and battery.active_from <= hour < battery.active_to
+    assert error.limit_kwh == pytest.approx(
+        9.0 + production + (battery.discharge_max_kw if active else 0.0)
+    )
+    unknown = replace(jumped, contract_kwh=None)
+    assert impossible_hour(unknown).limit_kwh == pytest.approx(  # type: ignore[union-attr]
+        error.limit_kwh - 9.0 + DEFAULT_CONTRACT_KWH
+    )

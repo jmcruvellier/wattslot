@@ -167,6 +167,31 @@ def _component_problems(diagnostic: Diagnostic, home: HomeModel) -> list[Problem
             )
         )
     planning = diagnostic.planning
+    report = planning.last_report if planning is not None else None
+    for impossible in report.impossible if report is not None else []:
+        # Jour non calculé, consommation de base impossible (lot 7.3) : saut de compteur.
+        params = {
+            "day": impossible.day.isoformat(),
+            "hour": str(impossible.hour),
+            "kwh": f"{impossible.consumption_kwh:g}",
+            "limit": f"{impossible.limit_kwh:g}",
+        }
+        if impossible.source_start is None:
+            found.append(_problem("impossible_data_unknown", Severity.DEGRADED, **params))
+            continue
+        found.append(
+            _problem(
+                "impossible_data",
+                Severity.DEGRADED,
+                **params,
+                device=impossible.device or "",
+                entity=impossible.entity_id or "",
+                when=impossible.source_start.date().isoformat(),
+                when_hour=str(impossible.source_start.hour),
+                source_kwh=f"{impossible.source_kwh:g}",
+                until=impossible.until.isoformat() if impossible.until else "",
+            )
+        )
     if (
         planning is not None
         and planning.enabled

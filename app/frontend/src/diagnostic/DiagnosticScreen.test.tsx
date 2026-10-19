@@ -218,6 +218,39 @@ describe("DiagnosticScreen", () => {
     expect(document.querySelector("details")?.open).toBe(false); // détail technique replié
   });
 
+  it("nomme le saut de compteur derrière un jour non calculé", async () => {
+    mockApi(HEALTHY, [
+      {
+        code: "impossible_data",
+        severity: "degraded",
+        params: {
+          day: "2026-10-23",
+          hour: "20",
+          kwh: "10674.1",
+          limit: "11.5",
+          device: "Grid",
+          entity: "sensor.grid_import",
+          when: "2026-10-16",
+          when_hour: "20",
+          source_kwh: "64045",
+          until: "2026-11-27",
+        },
+        target: null,
+        doc: null,
+      },
+    ]);
+    renderScreen();
+
+    const problem = await screen.findByText(/Forecasts stopped before Friday, October 23/);
+    expect(problem.closest("li")).toHaveTextContent(
+      'the sensor "Grid" (sensor.grid_import) counted 64,045 kWh in one hour on Friday, October 16 at 20:00',
+    );
+    expect(problem.closest("li")).toHaveTextContent("expected at 20:00 (10,674 kWh)");
+    expect(problem.closest("li")).toHaveTextContent("(11.5 kWh)");
+    expect(problem.closest("li")).toHaveTextContent("stay wrong until Friday, November 27.");
+    expect(problem.closest("li")).toHaveTextContent("Check the history of this sensor in Home Assistant");
+  });
+
   it("montre le rapport avant de le télécharger", async () => {
     mockApi(HEALTHY);
     const created = vi.fn(() => "blob:report");
