@@ -2,7 +2,7 @@
 # Même image que le mode Docker autonome (app/Dockerfile), publiée par la CI ; le Supervisor
 # la télécharge sous l'étiquette « version » ci-dessous.
 name: WattSlot
-version: "0.8.0"
+version: "0.9.0"
 slug: wattslot
 description: Plans the use of household appliances and the home battery around solar production and electricity prices.
 url: https://github.com/jmcruvellier/wattslot
