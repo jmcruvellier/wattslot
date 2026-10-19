@@ -130,6 +130,7 @@ describe("vue Semaine", () => {
     expect(rows.at(-2)).toHaveTextContent("mardi 20");
     expect(rows.at(-1)).toHaveTextContent("mercredi 21");
     expect(rows.at(-1)).toHaveTextContent("Pas de plan pour ce jour : le calcul s'est arrêté avant");
+    expect(screen.getByText("Semaine du samedi 17 octobre au mercredi 21 octobre")).toBeInTheDocument();
     const card = screen.getByRole("article", { name: "mardi 20" });
     expect(card).toHaveTextContent("La cause est expliquée dans Planning, onglet Semaine.");
   });
