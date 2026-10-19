@@ -62,7 +62,8 @@
     "graph": "Grafo della casa",
     "notifications": "Notifiche",
     "display": "Lingua e visualizzazione",
-    "calculation": "Calcolo automatico"
+    "calculation": "Calcolo automatico",
+    "voice": "Assistente vocale"
   },
   "setup": {
     "loading": "Lettura della configurazione iniziale…",
@@ -506,6 +507,28 @@
       "automatic_default": "Automatica: {name}",
       "hint": "La valuta dei prezzi e dei costi, su tutti i dispositivi. Cambiarla non converte i prezzi già inseriti.",
       "failed": "Impossibile salvare la valuta."
+    },
+    "voice": {
+      "state": "Stato",
+      "current": "Configurazione attuale",
+      "address": "Indirizzo del server MCP dell'app:",
+      "mcp": "Integrazione MCP in Home Assistant",
+      "mcp_none": "non installata",
+      "mcp_entry": "{title} ({state})",
+      "mcp_states": {
+        "loaded": "caricata",
+        "error": "in errore",
+        "not_loaded": "non caricata"
+      },
+      "home": "Assistente di Home Assistant",
+      "home_help": "L'assistente preferito è quello che apre Assist; il suo agente di conversazione risponde alle domande.",
+      "pipeline": "Assistente preferito",
+      "agent": "Agente di conversazione",
+      "no_pipeline": "Nessun assistente in Home Assistant.",
+      "not_connected": "Home Assistant non è connesso: l'assistente non può essere letto né modificato.",
+      "saved": "Assistente modificato in Home Assistant.",
+      "invalid": "Home Assistant non conosce questo assistente o questo agente: ricarica la pagina.",
+      "failed": "Home Assistant ha rifiutato la modifica, riprova."
     }
   },
   "connection_page": {
@@ -1369,10 +1392,6 @@
     "notifications_none": "Nessuna attiva",
     "notifications_on": "{count} attiva/e, su {device}",
     "notifications_count": "{count} attiva/e",
-    "assistant": "Assistente vocale",
-    "assistant_help": "L'Assist di Home Assistant risponde sulla tua energia",
-    "requests_open": "{count} in corso",
-    "requests_none": "Nessuna in corso",
     "scheduler_on": "Ogni ora, al minuto {minute}",
     "scheduler_off": "Disattivato: calcolo a mano"
   },

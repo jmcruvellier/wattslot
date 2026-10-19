@@ -62,7 +62,8 @@
     "graph": "Graph des Hauses",
     "notifications": "Benachrichtigungen",
     "display": "Sprache und Darstellung",
-    "calculation": "Automatische Berechnung"
+    "calculation": "Automatische Berechnung",
+    "voice": "Sprachassistent"
   },
   "setup": {
     "loading": "Einrichtung wird gelesen…",
@@ -506,6 +507,28 @@
       "automatic_default": "Automatisch: {name}",
       "hint": "Die Währung Ihrer Preise und Kosten, auf allen Geräten. Ein Wechsel rechnet die bereits eingegebenen Preise nicht um.",
       "failed": "Die Währung konnte nicht gespeichert werden."
+    },
+    "voice": {
+      "state": "Status",
+      "current": "Aktuelle Einrichtung",
+      "address": "Adresse des MCP-Servers der App:",
+      "mcp": "MCP-Integration in Home Assistant",
+      "mcp_none": "nicht installiert",
+      "mcp_entry": "{title} ({state})",
+      "mcp_states": {
+        "loaded": "geladen",
+        "error": "fehlerhaft",
+        "not_loaded": "nicht geladen"
+      },
+      "home": "Assistent von Home Assistant",
+      "home_help": "Der bevorzugte Assistent ist der, den Assist öffnet; sein Konversationsagent beantwortet die Fragen.",
+      "pipeline": "Bevorzugter Assistent",
+      "agent": "Konversationsagent",
+      "no_pipeline": "Kein Assistent in Home Assistant.",
+      "not_connected": "Home Assistant ist nicht verbunden: Der Assistent kann weder gelesen noch geändert werden.",
+      "saved": "Assistent in Home Assistant geändert.",
+      "invalid": "Home Assistant kennt diesen Assistenten oder Agenten nicht: Laden Sie die Seite neu.",
+      "failed": "Home Assistant hat die Änderung abgelehnt, versuchen Sie es erneut."
     }
   },
   "connection_page": {
@@ -1369,10 +1392,6 @@
     "notifications_none": "Keine aktiv",
     "notifications_on": "{count} aktiv, auf {device}",
     "notifications_count": "{count} aktiv",
-    "assistant": "Sprachassistent",
-    "assistant_help": "Der Assist von Home Assistant antwortet zu Ihrer Energie",
-    "requests_open": "{count} offen",
-    "requests_none": "Keine offen",
     "scheduler_on": "Jede Stunde, zur Minute {minute}",
     "scheduler_off": "Aus: Berechnung von Hand"
   },

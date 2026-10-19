@@ -62,7 +62,8 @@
     "graph": "Graphe de la maison",
     "notifications": "Notifications",
     "display": "Langue et affichage",
-    "calculation": "Calcul automatique"
+    "calculation": "Calcul automatique",
+    "voice": "Assistant vocal"
   },
   "setup": {
     "loading": "Lecture de la mise en route…",
@@ -506,6 +507,28 @@
       "automatic_default": "Automatique : {name}",
       "hint": "La devise de vos prix et de vos coûts, pour tous vos appareils. Changer de devise ne convertit pas les prix déjà saisis.",
       "failed": "Impossible d'enregistrer la devise."
+    },
+    "voice": {
+      "state": "État",
+      "current": "Configuration actuelle",
+      "address": "Adresse du serveur MCP de l'application :",
+      "mcp": "Intégration MCP dans Home Assistant",
+      "mcp_none": "non installée",
+      "mcp_entry": "{title} ({state})",
+      "mcp_states": {
+        "loaded": "chargée",
+        "error": "en erreur",
+        "not_loaded": "non chargée"
+      },
+      "home": "Assistant de Home Assistant",
+      "home_help": "L'assistant préféré est celui qu'ouvre l'Assist ; son agent de conversation répond aux questions.",
+      "pipeline": "Assistant préféré",
+      "agent": "Agent de conversation",
+      "no_pipeline": "Aucun assistant dans Home Assistant.",
+      "not_connected": "Home Assistant n'est pas connecté : l'assistant ne peut pas être lu ni modifié.",
+      "saved": "Assistant modifié dans Home Assistant.",
+      "invalid": "Home Assistant ne connaît pas cet assistant ou cet agent : rechargez la page.",
+      "failed": "Home Assistant a refusé la modification, réessayez."
     }
   },
   "connection_page": {
@@ -1369,10 +1392,6 @@
     "notifications_none": "Aucune active",
     "notifications_on": "{count} active(s), sur {device}",
     "notifications_count": "{count} active(s)",
-    "assistant": "Assistant vocal",
-    "assistant_help": "L'Assist de Home Assistant répond sur votre énergie",
-    "requests_open": "{count} en cours",
-    "requests_none": "Aucune en cours",
     "scheduler_on": "Toutes les heures, à la minute {minute}",
     "scheduler_off": "Désactivé : calcul à la main"
   },

@@ -42,6 +42,7 @@ const HomeScreen = lazy(() => import("./home/HomeScreen"));
 import type { HomePage } from "./home/HomeScreen";
 const LibraryScreen = lazy(() => import("./library/LibraryScreen"));
 const SettingsScreen = lazy(() => import("./settings/SettingsScreen"));
+import type { SettingsPage } from "./settings/SettingsScreen";
 // Démonstration des composants (lot 6b.1), hors du menu : adresse #/ui.
 const UiGallery = lazy(() => import("./ui/UiGallery"));
 // Feuille « Demander un appareil » (lot 6b.2), lue à la première ouverture.
@@ -156,8 +157,8 @@ export default function App() {
             )}
             {route.sub === "library" && <LibraryScreen />}
             {route.section === "settings" &&
-              (!route.sub || route.sub === "notifications" || route.sub === "calculation" || route.sub === "display") && (
-                <SettingsScreen page={route.sub ?? "main"} />
+              (!route.sub || ["notifications", "voice", "calculation", "display"].includes(route.sub)) && (
+                <SettingsScreen page={(route.sub ?? "main") as SettingsPage} />
               )}
             {route.section === "assistant" && <AssistantScreen />}
             {route.sub === "connection" && <ConnectionScreen returned={returned} />}

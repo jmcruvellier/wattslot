@@ -2,7 +2,8 @@
 // automatique (/api/settings/planning) ; notifications (lot 5.6, /api/settings/notifications) ;
 // thème, gardé sur l'appareil (lot 6b.1). Lot 6b.6 : la page Réglages est une liste
 // (`SettingsHome`) ; notifications, calcul et affichage ont chacun leur sous-page, et chaque
-// sous-page enregistre ses propres réglages.
+// sous-page enregistre ses propres réglages. La sous-page « Assistant vocal » (`VoiceSettings`)
+// lit et modifie l'assistant dans Home Assistant.
 // Les choix sont lus dans HA (/api/settings/choices) ; sans HA, ou pour une valeur absente de la
 // liste, la saisie libre reste possible.
 
@@ -14,6 +15,7 @@ import AppearanceSection from "./AppearanceSection";
 import SettingsHome from "./SettingsHome";
 import NotificationSettingsSection, { type NotificationSettings } from "./NotificationSettings";
 import StateMessage from "../ui/StateMessage";
+import VoiceSettings from "./VoiceSettings";
 
 export interface PlanningSettings {
   objective: string; // ancien réglage, gardé tel quel (l'objectif se règle dans Ma maison)
@@ -87,11 +89,12 @@ function ChoiceSelect({
   );
 }
 
-export type SettingsPage = "main" | "notifications" | "calculation" | "display";
+export type SettingsPage = "main" | "notifications" | "voice" | "calculation" | "display";
 
 export default function SettingsScreen({ page = "main" }: { page?: SettingsPage }) {
   const { t } = useI18n();
   if (page === "main") return <SettingsHome />;
+  if (page === "voice") return <VoiceSettings />;
   if (page === "display") {
     return (
       <section aria-labelledby="display-title">

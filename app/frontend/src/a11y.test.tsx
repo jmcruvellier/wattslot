@@ -54,6 +54,13 @@ const RESPONSES: Record<string, unknown> = {
     objective: null,
   },
   "api/assistant/connection": { mode: "standalone", mcp_url: null },
+  "api/assistant/home": {
+    connected: true,
+    mcp: [{ title: "WattSlot", state: "loaded" }],
+    pipelines: [{ id: "p1", name: "Home Assistant", conversation_engine: "conversation.home_assistant" }],
+    preferred_pipeline: "p1",
+    agents: [{ id: "conversation.home_assistant", name: "Home Assistant" }],
+  },
 };
 
 function mockApi() {
@@ -88,6 +95,7 @@ const PAGES: [string, string | RegExp][] = [
   ["#/settings/notifications", "Appareil commun"],
   ["#/settings/display", "Thème"],
   ["#/settings/calculation", "Calcul automatique"],
+  ["#/settings/voice", "Agent de conversation"],
 ];
 
 // Les écrans sont chargés à la demande (lazy) : le premier import transforme leurs modules, ce
