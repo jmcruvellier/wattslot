@@ -4,7 +4,7 @@
 
 import { render, screen } from "@testing-library/react";
 import axe from "axe-core";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import App from "./App";
 import { I18nProvider } from "./i18n/I18nProvider";
@@ -90,7 +90,25 @@ const PAGES: [string, string | RegExp][] = [
   ["#/settings/calculation", "Calcul automatique"],
 ];
 
+// Les écrans sont chargés à la demande (lazy) : le premier import transforme leurs modules, ce
+// qui prend plusieurs centaines de millisecondes quand toute la suite tourne en parallèle. On les
+// charge avant les tests, pour que l'attente ci-dessous ne mesure que le rendu et les données.
+const SCREENS = [
+  () => import("./assistant/AssistantScreen"),
+  () => import("./home/HomeScreen"),
+  () => import("./plan/CurvesScreen"),
+  () => import("./settings/SettingsScreen"),
+];
+
+// Délai d'attente de l'écran chargé : le rendu reste lent sous charge, même modules préchargés.
+// Un texte absent fait toujours échouer le test, après ce délai ; le test lui-même a 15 s, axe compris.
+const LOADED_TIMEOUT = 5000;
+
 describe("accessibilité", () => {
+  beforeAll(async () => {
+    await Promise.all(SCREENS.map((load) => load()));
+  }, 30000);
+
   beforeEach(() => {
     window.localStorage.clear();
     vi.spyOn(navigator, "languages", "get").mockReturnValue(["fr-FR"]);
@@ -109,7 +127,7 @@ describe("accessibilité", () => {
         <App />
       </I18nProvider>,
     );
-    await screen.findAllByText(loaded);
+    await screen.findAllByText(loaded, undefined, { timeout: LOADED_TIMEOUT });
     expect(await violations()).toEqual([]);
-  });
+  }, 15000);
 });
