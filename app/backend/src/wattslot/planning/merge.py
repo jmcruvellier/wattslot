@@ -109,6 +109,14 @@ def _merge_battery(
     }
 
 
+def _about(warning: Any, placed: set[str]) -> bool:
+    """Avertissement d'un calcul précédent sur un équipement que le plan place désormais
+    (profil devenu disponible, temps suffisant…) : périmé, il n'est pas gardé."""
+    if not isinstance(warning, dict):
+        return False
+    return warning.get("params", {}).get("equipement") in placed
+
+
 def _deduplicated(warnings: list[Any]) -> list[Any]:
     """Sans doublon, ordre préservé (avertissements structurés ou anciens textes)."""
     seen: dict[Any, Any] = {}
@@ -194,8 +202,10 @@ def merge_plans(
     merged["planning"] = merge_planning(
         old.get("planning", []), new.get("planning", []), first_hour, active, real_segments
     )
+    placed = {item["equipement"] for item in merged["planning"]}
     merged["avertissements"] = _deduplicated(
-        old.get("avertissements", []) + new.get("avertissements", [])
+        [w for w in old.get("avertissements", []) if not _about(w, placed)]
+        + new.get("avertissements", [])
     )
     merged["avertissements_prevision"] = _deduplicated(
         old.get("avertissements_prevision", []) + new.get("avertissements_prevision", [])

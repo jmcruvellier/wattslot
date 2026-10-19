@@ -137,6 +137,19 @@ def test_merge_same_as_v1(seed: int) -> None:
     assert by_name(actual) == by_name(expected)
 
 
+def test_an_old_warning_about_a_device_now_placed_is_dropped() -> None:
+    missing = {"code": "profil_indisponible_attente", "params": {"equipement": "Chauffe-Eau"}}
+    other = {"code": "profil_indisponible_attente", "params": {"equipement": "Lave Linge"}}
+    old = {"date_cible": DAY, "planning": [], "avertissements": [missing, other, "texte"]}
+    heater = {"equipement": "Chauffe-Eau", "heure_debut": 3, "heure_fin": 6, "energie_kwh": 1.7}
+    new = {"date_cible": DAY, "planning": [heater], "avertissements": []}
+
+    merged = merge_plans(new, old, 2)
+
+    # Le chauffe-eau est placé : son ancien avertissement est périmé ; les autres restent.
+    assert merged["avertissements"] == [other, "texte"]
+
+
 @pytest.mark.parametrize("seed", range(300))
 def test_start_soc_same_as_v1(seed: int) -> None:
     rng = random.Random(seed)
