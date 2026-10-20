@@ -7,7 +7,6 @@ import { useEffect, useState } from "react";
 
 import { getJson } from "../api";
 import { useI18n } from "../i18n/I18nProvider";
-import RequestsSection from "../start/RequestsSection";
 import ChatCard from "./ChatCard";
 import { checkTitle, mcpAddress, useConnection, useMcpCheck } from "./mcp";
 import { CheckResult, CopyButton } from "./McpParts";
@@ -41,14 +40,11 @@ export default function AssistantScreen() {
   }, [language]);
 
   const address = mcpAddress(connection);
-  // « Mes demandes » d'abord (lot 6b.3), puis la discussion avec l'assistant, puis l'assistant
-  // vocal (lot 6b.6) : son état, des exemples de questions (qui remplissent la zone de saisie
-  // du chat), et le branchement pas à pas, replié une fois le serveur vérifié.
+  // La discussion avec l'assistant, puis l'assistant vocal (lot 6b.6) : son état, des exemples
+  // de questions (qui remplissent la zone de saisie du chat), et le branchement pas à pas, replié
+  // une fois le serveur vérifié. « Mes demandes » est dans Planning, à côté du plan.
   return (
     <div className="assistant">
-      <div className="ui-card">
-        <RequestsSection />
-      </div>
       <ChatCard inputId={CHAT_INPUT} draft={draft} onDraft={setDraft} />
       <section className="ui-card" aria-labelledby="assistant-title">
         <p className="ui-eyebrow">{t("assistant.title")}</p>

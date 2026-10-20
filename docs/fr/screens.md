@@ -27,6 +27,7 @@ Le plan en détail, pour **Hier**, **Aujourd'hui**, **Demain** et la **Semaine**
 - Des bandeaux pour l'essentiel : avertissements, batterie à minuit, production prévue comparée à la production mesurée.
 - **La journée en agenda** : ce qui se passe, et quand.
 - **Pourquoi ce plan** : l'explication de chaque décision, en clair.
+- **Mes demandes** (sous chaque onglet) : les appareils que vous avez demandés, avec ou sans échéance, à marquer faits ou à annuler.
 - **Courbes détaillées** (repliées) : cartes de synthèse (batterie, réseau, production, estimé et mesuré), le Planning des équipements, la charge de la batterie, les échanges avec le réseau et les courbes de production et de consommation, prévues (en pointillés) et mesurées.
 - **Personnaliser** choisit les cartes affichées et leur ordre.
 - Une mesure impossible pour la maison (un compteur qui compte des milliers de kWh en une heure) est écartée : un trou dans les courbes, rien dans les totaux, et une ligne au-dessus des cartes avec **Voir les données** (**Ma maison › Données**).
@@ -47,7 +48,7 @@ Votre maison en phrases, en quatre onglets. Touchez une ligne : son réglage s'o
 
 ## Assistant
 
-**Mes demandes** (les appareils que vous avez demandés, avec ou sans échéance) et le branchement de l'**assistant vocal** : voir [Assistant vocal](assistant.md).
+**Discuter avec l'assistant** et le branchement de l'**assistant vocal** : voir [Assistant vocal](assistant.md).
 
 ![Assistant](../images/fr/assistant-desktop-light.png)
 

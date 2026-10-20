@@ -1296,7 +1296,7 @@
       "placeholder": "¿Cuánto produjeron los paneles ayer?",
       "send": "Enviar",
       "help": "Intro para enviar, Mayús+Intro para cambiar de línea. La conversación no se guarda.",
-      "empty": "El asistente no respondió nada.",
+      "empty": "Sus preguntas y las respuestas del asistente aparecerán aquí.",
       "failed": "El asistente no respondió, vuelva a intentarlo.",
       "not_connected": "Home Assistant no está conectado: el chat no está disponible."
     }

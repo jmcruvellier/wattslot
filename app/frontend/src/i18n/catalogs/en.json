@@ -1296,7 +1296,7 @@
       "placeholder": "How much did the panels produce yesterday?",
       "send": "Send",
       "help": "Enter to send, Shift+Enter for a new line. The conversation is not saved.",
-      "empty": "The assistant gave no answer.",
+      "empty": "Your questions and the assistant's answers will appear here.",
       "failed": "The assistant did not answer, try again.",
       "not_connected": "Home Assistant is not connected: the chat is unavailable."
     }

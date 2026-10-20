@@ -1296,7 +1296,7 @@
       "placeholder": "Combien les panneaux ont-ils produit hier ?",
       "send": "Envoyer",
       "help": "Entrée pour envoyer, Maj+Entrée pour aller à la ligne. La conversation n'est pas enregistrée.",
-      "empty": "L'assistant n'a rien répondu.",
+      "empty": "Vos questions et les réponses de l'assistant s'afficheront ici.",
       "failed": "L'assistant n'a pas répondu, réessayez.",
       "not_connected": "Home Assistant n'est pas connecté : la discussion est indisponible."
     }

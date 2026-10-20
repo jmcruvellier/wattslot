@@ -27,6 +27,7 @@ The plan in detail, for **Yesterday**, **Today**, **Tomorrow** and the **Week**.
 - Banners for what matters: warnings, the battery at midnight, the forecast production compared with what was measured.
 - **The day as an agenda**: what happens and when.
 - **Why this plan**: the explanation of each decision, in plain words.
+- **My requests** (under each tab): the appliances you asked for, with or without a deadline, to mark done or cancel.
 - **Detailed charts** (folded): summary cards (battery, grid, production, estimated against measured), the appliance schedule, the battery charge, the grid exchanges and the production and consumption curves, planned (dotted) and measured.
 - **Customize** chooses which cards appear and their order.
 - A measurement the home cannot reach (a meter counting thousands of kWh in one hour) is set aside: a gap in the curves, nothing in the totals, and a line above the cards with **See the data** (**My home › Data**).
@@ -47,7 +48,7 @@ Your home in plain sentences, in four tabs. Tap a line: its setting opens on its
 
 ## Assistant
 
-**My requests** (appliances you asked for, with or without a deadline) and the setup of the **voice assistant**: see [Voice assistant](assistant.md).
+**Chat with the assistant** and the setup of the **voice assistant**: see [Voice assistant](assistant.md).
 
 ![Assistant](images/en/assistant-desktop-light.png)
 

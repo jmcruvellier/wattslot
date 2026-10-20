@@ -1685,6 +1685,11 @@ a.ui-setting-row {
   border-style: dashed;
 }
 
+/* « Mes demandes » sous le plan, dans Planning. */
+.plan-requests {
+  margin-top: 1rem;
+}
+
 /* Ma maison en phrases (lot 6b.5). */
 .home-summary {
   display: flex;
@@ -1827,14 +1832,23 @@ a.ui-setting-row {
   margin: 0;
 }
 
+/* Fil de la discussion : hauteur fixe (plus grande que la place des premières réponses), une
+   barre de défilement au-delà ; un peu moins haut sur téléphone, sous la barre du haut. */
 .assistant-chat-log {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  max-height: 28rem;
+  height: min(36rem, 60vh);
   overflow-y: auto;
-  padding: 0.5rem 0;
-  border-top: 1px solid var(--border);
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+
+.assistant-chat-empty {
+  margin: auto;
+  text-align: center;
 }
 
 .assistant-chat-line {

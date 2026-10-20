@@ -65,9 +65,11 @@ export default function ChatCard({
     return () => controller.abort();
   }, []);
 
-  // La dernière réponse reste visible.
+  // La dernière réponse reste visible : le fil, de hauteur fixe, défile jusqu'en bas (sans faire
+  // défiler la page).
   useEffect(() => {
-    log.current?.lastElementChild?.scrollIntoView?.({ block: "nearest" });
+    const element = log.current;
+    if (element) element.scrollTop = element.scrollHeight;
   }, [lines, waiting]);
 
   // Sans agent de HA (HA déconnecté), le premier modèle d'Open WebUI.
@@ -161,23 +163,23 @@ export default function ChatCard({
         </p>
       )}
 
-      {(lines.length > 0 || waiting) && (
-        <div className="assistant-chat-log" role="log" aria-live="polite" ref={log}>
-          {lines.map((line, index) => (
-            <p
-              key={index}
-              className={`assistant-chat-line assistant-chat-${line.from}`}
-              data-error={line.error || undefined}
-            >
-              <span className="visually-hidden">
-                {t(line.from === "me" ? "assistant.chat.you" : "assistant.chat.assistant")} :{" "}
-              </span>
-              {line.text}
-            </p>
-          ))}
-          {waiting && <p className="assistant-chat-line assistant-chat-assistant dim">{t("assistant.chat.thinking")}</p>}
-        </div>
-      )}
+      {/* Toujours là, de hauteur fixe : la carte ne grandit plus au fil des questions. */}
+      <div className="assistant-chat-log" role="log" aria-live="polite" ref={log}>
+        {lines.length === 0 && !waiting && <p className="assistant-chat-empty dim">{t("assistant.chat.empty")}</p>}
+        {lines.map((line, index) => (
+          <p
+            key={index}
+            className={`assistant-chat-line assistant-chat-${line.from}`}
+            data-error={line.error || undefined}
+          >
+            <span className="visually-hidden">
+              {t(line.from === "me" ? "assistant.chat.you" : "assistant.chat.assistant")} :{" "}
+            </span>
+            {line.text}
+          </p>
+        ))}
+        {waiting && <p className="assistant-chat-line assistant-chat-assistant dim">{t("assistant.chat.thinking")}</p>}
+      </div>
 
       <form
         className="assistant-chat-form"
