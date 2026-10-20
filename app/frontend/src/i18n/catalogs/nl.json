@@ -177,7 +177,12 @@
       "battery_line": "Batterij: {start}%, tot {max}%, {end}% 's avonds",
       "open_day": "{day} openen",
       "missing": "Geen plan voor deze dag: de berekening is ervoor gestopt, zie het bericht bovenaan de week.",
-      "missing_curves": "Geen plan voor deze dag: de berekening is ervoor gestopt. De oorzaak staat onder Planning, tabblad Week."
+      "missing_curves": "Geen plan voor deze dag: de berekening is ervoor gestopt. De oorzaak staat onder Planning, tabblad Week.",
+      "table": {
+        "day": "Dag",
+        "weather": "Weer",
+        "battery": "Batterij"
+      }
     },
     "header": {
       "computed": "Berekend om {time} ({how})",
@@ -1543,6 +1548,7 @@
       "none": "Geen afwijking in deze periode.",
       "found": "{count} afwijking(en): duidelijke worden automatisch gecorrigeerd.",
       "failed": "De controle is mislukt."
-    }
+    },
+    "related": "Met het kwartier {period}: {value}"
   }
 }

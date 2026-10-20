@@ -177,7 +177,12 @@
       "battery_line": "Batterie : {start} %, jusqu'à {max} %, {end} % le soir",
       "open_day": "Ouvrir {day}",
       "missing": "Pas de plan pour ce jour : le calcul s'est arrêté avant, voir le message en haut de la semaine.",
-      "missing_curves": "Pas de plan pour ce jour : le calcul s'est arrêté avant. La cause est expliquée dans Planning, onglet Semaine."
+      "missing_curves": "Pas de plan pour ce jour : le calcul s'est arrêté avant. La cause est expliquée dans Planning, onglet Semaine.",
+      "table": {
+        "day": "Jour",
+        "weather": "Météo",
+        "battery": "Batterie"
+      }
     },
     "header": {
       "computed": "Calculé à {time} ({how})",
@@ -1543,6 +1548,7 @@
       "none": "Aucune anomalie sur cette période.",
       "found": "{count} anomalie(s) : les évidentes sont corrigées automatiquement.",
       "failed": "L'analyse a échoué."
-    }
+    },
+    "related": "Avec le quart d'heure {period} : {value}"
   }
 }

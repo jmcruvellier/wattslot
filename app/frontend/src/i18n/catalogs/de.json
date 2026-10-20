@@ -177,7 +177,12 @@
       "battery_line": "Batterie: {start} %, bis {max} %, {end} % am Abend",
       "open_day": "{day} öffnen",
       "missing": "Kein Plan für diesen Tag: Die Berechnung wurde vorher beendet, siehe Meldung oben in der Woche.",
-      "missing_curves": "Kein Plan für diesen Tag: Die Berechnung wurde vorher beendet. Die Ursache steht unter Planung, Reiter Woche."
+      "missing_curves": "Kein Plan für diesen Tag: Die Berechnung wurde vorher beendet. Die Ursache steht unter Planung, Reiter Woche.",
+      "table": {
+        "day": "Tag",
+        "weather": "Wetter",
+        "battery": "Batterie"
+      }
     },
     "header": {
       "computed": "Berechnet um {time} ({how})",
@@ -1543,6 +1548,7 @@
       "none": "Keine Auffälligkeit in diesem Zeitraum.",
       "found": "{count} Auffälligkeit(en): Eindeutige werden automatisch korrigiert.",
       "failed": "Die Prüfung ist fehlgeschlagen."
-    }
+    },
+    "related": "Mit der Viertelstunde {period}: {value}"
   }
 }

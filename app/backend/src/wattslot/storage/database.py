@@ -147,6 +147,12 @@ MIGRATIONS: tuple[str, ...] = (
     # reportée d'une période à la suivante comme le dernier relevé.
     "ALTER TABLE aggregation_state ADD COLUMN drop_time TEXT",
     "ALTER TABLE aggregation_state ADD COLUMN drop_value REAL",
+    # 15 : valeurs négatives signalées à partir de -0,05 kWh (avant : -0,001) ; les corrections
+    # automatiques de l'arrondi des statistiques de HA sont annulées (gardées, pour la trace).
+    """
+    UPDATE quality_corrections SET undone_at = created_at
+    WHERE kind = 'negative' AND automatic = 1 AND undone_at IS NULL AND original_kwh >= -0.05
+    """,
 )
 
 

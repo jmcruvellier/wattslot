@@ -177,7 +177,12 @@
       "battery_line": "Battery: {start}%, up to {max}%, {end}% in the evening",
       "open_day": "Open {day}",
       "missing": "No plan for this day: the computation stopped before it, see the message at the top of the week.",
-      "missing_curves": "No plan for this day: the computation stopped before it. The cause is explained in Planning, Week tab."
+      "missing_curves": "No plan for this day: the computation stopped before it. The cause is explained in Planning, Week tab.",
+      "table": {
+        "day": "Day",
+        "weather": "Weather",
+        "battery": "Battery"
+      }
     },
     "header": {
       "computed": "Computed at {time} ({how})",
@@ -1543,6 +1548,7 @@
       "none": "No anomaly in this period.",
       "found": "{count} anomaly/anomalies: the obvious ones are corrected automatically.",
       "failed": "The check failed."
-    }
+    },
+    "related": "With the quarter hour {period}: {value}"
   }
 }

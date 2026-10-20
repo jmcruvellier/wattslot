@@ -39,31 +39,46 @@ describe("vue Semaine", () => {
     vi.restoreAllMocks();
   });
 
-  it("en-tête, avertissements de l'horizon et une carte par jour", () => {
+  it("en-tête, avertissements de l'horizon et un tableau d'une ligne par jour", async () => {
+    const user = userEvent.setup();
     renderWeek(WEEK);
 
     expect(screen.getByText("Semaine du samedi 17 octobre au lundi 19 octobre")).toBeInTheDocument();
     expect(screen.getByText(/Horizon calculé à 13:59 \(à la main\) · calcul en 4,2 s/)).toBeInTheDocument();
     expect(screen.getByText(/Prévision manquante pour le 23 octobre/)).toBeInTheDocument();
     expect(screen.getByText(/ne sont placées que sur demain/)).toBeInTheDocument();
-    expect(within(screen.getByRole("region", { name: "Semaine" })).getAllByRole("article")).toHaveLength(3);
+    const table = within(screen.getByRole("region", { name: "Semaine" })).getByRole("table");
+    const [head, ...rows] = within(table).getAllByRole("row");
+    expect(within(head).getAllByRole("columnheader").map((cell) => cell.textContent)).toEqual([
+      "Jour",
+      "Météo",
+      "Production",
+      "Batterie",
+      "Achat",
+      "dont heures pleines",
+      "Surplus",
+      "Équipements",
+    ]);
+    expect(rows).toHaveLength(3); // un jour par ligne, aucun déplié
 
-    const today = screen.getByRole("article", { name: "samedi 17" });
-    expect(within(today).getByText("Aujourd'hui")).toBeInTheDocument();
-    expect(within(today).getByText(/ensoleillée/)).toBeInTheDocument();
-    expect(within(today).getByText("12,3 kWh")).toBeInTheDocument();
-    expect(within(today).getByText("40 → 55 %")).toBeInTheDocument();
-    expect(within(today).getByText("98 %")).toBeInTheDocument();
-    expect(within(today).getByText("0,25 kWh")).toBeInTheDocument();
-    expect(within(today).getByText("Lave-linge")).toBeInTheDocument();
-    expect(within(today).getByText("10h05–11h30")).toBeInTheDocument();
+    const today = rows[0];
+    expect(within(today).getByRole("button", { name: "samedi 17" })).toHaveTextContent("sam. 17"); // abrégé sur téléphone
+    expect(today).toHaveTextContent("Aujourd'hui");
+    expect(today).toHaveTextContent("12,3 kWh");
+    expect(today).toHaveTextContent("40 → 55 %maximum 98 %");
+    expect(today).toHaveTextContent("0,25 kWh");
+    expect(today).toHaveTextContent("Lave-linge");
+    expect(within(today).getByTitle(/ensoleillée/)).toBeInTheDocument();
 
-    const tomorrow = screen.getByRole("article", { name: "dimanche 18" });
-    expect(within(tomorrow).getByText("Aucun équipement prévu")).toBeInTheDocument();
-    expect(within(tomorrow).getByText(/Sèche-linge reporté/)).toBeInTheDocument();
-
-    const later = screen.getByRole("article", { name: "lundi 19" });
-    expect(within(later).queryByRole("button", { name: /Voir le détail/ })).toBeNull();
+    // Une ligne touchée déplie le détail du jour : équipements et heures, avertissements.
+    await user.click(within(rows[1]).getByRole("button", { name: /dimanche 18/ }));
+    expect(within(rows[1]).getByRole("button", { name: /dimanche 18/ })).toHaveAttribute("aria-expanded", "true");
+    const detail = within(table).getAllByRole("row")[3]; // en-tête, samedi, dimanche, son détail
+    expect(detail).toHaveTextContent("Aucun équipement prévu");
+    expect(detail).toHaveTextContent(/Sèche-linge reporté/);
+    await user.click(within(rows[0]).getByRole("button", { name: /samedi 17/ }));
+    expect(within(table).getAllByRole("row")[2]).toHaveTextContent("Lave-linge 10h05–11h30");
+    expect(within(table).getAllByRole("row")).toHaveLength(5); // un seul jour déplié à la fois
   });
 
   it("la semaine en agenda : une ligne par jour", async () => {
@@ -84,8 +99,12 @@ describe("vue Semaine", () => {
   it("« Voir le détail » ouvre la vue du jour", async () => {
     const user = userEvent.setup();
     const { onOpen } = renderWeek(WEEK);
-    await user.click(within(screen.getByRole("article", { name: "dimanche 18" })).getByRole("button", { name: /Voir le détail/ }));
+    const table = screen.getByRole("table");
+    await user.click(within(table).getByRole("button", { name: /dimanche 18/ }));
+    await user.click(within(table).getByRole("button", { name: /Voir le détail/ }));
     expect(onOpen).toHaveBeenCalledWith("tomorrow");
+    await user.click(within(table).getByRole("button", { name: /lundi 19/ }));
+    expect(within(table).queryByRole("button", { name: /Voir le détail/ })).toBeNull(); // pas de vue du jour
   });
 
   it("« Calculer » lance un calcul puis recharge la vue", async () => {
@@ -104,16 +123,16 @@ describe("vue Semaine", () => {
     expect(screen.getByRole("article", { name: "Consommation prévue" })).toHaveTextContent("Heures creuses");
   });
 
-  it("sans batterie : ni lignes SoC ni graphique du SoC", async () => {
+  it("sans batterie : ni colonne Batterie ni graphique du SoC", async () => {
     renderWeek(WEEK_WITHOUT_BATTERY);
     expect(await screen.findByText("consumption 72 heures, relevé 13.5")).toBeInTheDocument();
     expect(screen.queryByRole("article", { name: "Batterie (SoC prévu)" })).toBeNull();
-    const today = screen.getByRole("article", { name: "samedi 17" });
-    expect(within(today).queryByText("SoC")).toBeNull();
-    expect(within(today).getByText("Achat")).toBeInTheDocument();
+    const headers = within(screen.getByRole("table")).getAllByRole("columnheader").map((cell) => cell.textContent);
+    expect(headers).not.toContain("Batterie");
+    expect(headers).toContain("Achat");
   });
 
-  it("cartes des jours avant les graphiques, production masquée", async () => {
+  it("tableau des jours avant les graphiques, production masquée", async () => {
     renderWeek(WEEK, vi.fn(), vi.fn(), { order: ["days", "soc", "consumption", "production"], hidden: ["production"] });
     expect(await screen.findByText("soc 72 heures, relevé 13.5")).toBeInTheDocument();
     expect(screen.queryByText(/^production 72/)).toBeNull();
@@ -131,7 +150,7 @@ describe("vue Semaine", () => {
     expect(rows.at(-1)).toHaveTextContent("mercredi 21");
     expect(rows.at(-1)).toHaveTextContent("Pas de plan pour ce jour : le calcul s'est arrêté avant");
     expect(screen.getByText("Semaine du samedi 17 octobre au mercredi 21 octobre")).toBeInTheDocument();
-    const card = screen.getByRole("article", { name: "mardi 20" });
-    expect(card).toHaveTextContent("La cause est expliquée dans Planning, onglet Semaine.");
+    const missing = within(screen.getByRole("table")).getByRole("rowheader", { name: "mardi 20" }).closest("tr")!;
+    expect(missing).toHaveTextContent("La cause est expliquée dans Planning, onglet Semaine.");
   });
 });
