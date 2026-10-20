@@ -1301,7 +1301,7 @@
       "placeholder": "Quanto hanno prodotto i pannelli ieri?",
       "send": "Invia",
       "help": "Invio per inviare, Maiusc+Invio per andare a capo. La conversazione non viene salvata.",
-      "empty": "L'assistente non ha risposto nulla.",
+      "empty": "Le tue domande e le risposte dell'assistente appariranno qui.",
       "failed": "L'assistente non ha risposto, riprova.",
       "not_connected": "Home Assistant non è connesso: la chat non è disponibile."
     }

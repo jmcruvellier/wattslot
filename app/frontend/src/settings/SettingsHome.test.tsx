@@ -67,7 +67,7 @@ describe("SettingsHome", () => {
       "href",
       "#/settings/voice",
     );
-    // « Mes demandes » est dans la page Assistant, plus dans les Réglages.
+    // « Mes demandes » est dans Planning, plus dans les Réglages.
     expect(screen.queryByRole("link", { name: /Mes demandes/ })).not.toBeInTheDocument();
     expect(await link(/Langue et affichage\s*Français · Automatique/)).toHaveAttribute("href", "#/settings/display");
     expect(await link(/État de l'application\s*Tout fonctionne/)).toHaveAttribute("href", "#/settings/status");

@@ -1301,7 +1301,7 @@
       "placeholder": "Hoeveel hebben de panelen gisteren opgewekt?",
       "send": "Versturen",
       "help": "Enter om te versturen, Shift+Enter voor een nieuwe regel. Het gesprek wordt niet bewaard.",
-      "empty": "De assistent gaf geen antwoord.",
+      "empty": "Uw vragen en de antwoorden van de assistent verschijnen hier.",
       "failed": "De assistent antwoordde niet, probeer het opnieuw.",
       "not_connected": "Home Assistant is niet verbonden: de chat is niet beschikbaar."
     }

@@ -1301,7 +1301,7 @@
       "placeholder": "Wie viel haben die Module gestern erzeugt?",
       "send": "Senden",
       "help": "Eingabe zum Senden, Umschalt+Eingabe für eine neue Zeile. Die Unterhaltung wird nicht gespeichert.",
-      "empty": "Der Assistent hat nichts geantwortet.",
+      "empty": "Ihre Fragen und die Antworten des Assistenten erscheinen hier.",
       "failed": "Der Assistent hat nicht geantwortet, versuchen Sie es erneut.",
       "not_connected": "Home Assistant ist nicht verbunden: Der Chat ist nicht verfügbar."
     }

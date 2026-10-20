@@ -90,6 +90,20 @@ describe("PlanScreen", () => {
     expect(container.querySelector(".plan-insights")?.children).toHaveLength(0);
   });
 
+  it("montre « Mes demandes » sous le plan", async () => {
+    const plan = mockApi(() => ({ yesterday: null, today: 1, tomorrow: null, week: null }));
+    const views = plan.getMockImplementation()!;
+    plan.mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url === "api/requests/devices") return Response.json([{ key: "washer", name: "Lave-linge" }]);
+      if (url === "api/requests") return Response.json([]);
+      return views(input, init);
+    });
+    renderScreen();
+
+    expect(await screen.findByRole("heading", { name: "Mes demandes" })).toBeInTheDocument();
+  });
+
   it("passe d'une vue à l'autre et dit quand un plan manque", async () => {
     const user = userEvent.setup();
     mockApi(() => ({ yesterday: null, today: 1, tomorrow: null, week: 2 }));
