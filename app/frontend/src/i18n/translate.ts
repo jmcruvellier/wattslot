@@ -1,9 +1,9 @@
 // Traductions de l'interface : un catalogue JSON par langue, mêmes clés et mêmes
-// paramètres `{nom}` dans tous les catalogues (vérifié par translate.test.ts). Le français et
-// l'anglais (langue de secours) sont dans le fichier principal ; les autres langues (lot 5.7) sont
-// chargées à la demande. Chaque catalogue dit s'il a été relu (`_meta.status`).
-import en from "./catalogs/en.json";
-import fr from "./catalogs/fr.json";
+// paramètres `{nom}` dans tous les catalogues (vérifié par translate.test.ts). Tous sont chargés
+// à la demande (lot 5.7 pour les quatre dernières langues, puis le français et l'anglais pour
+// libérer le fichier principal) : la langue de l'interface avant le premier affichage
+// (`main.tsx`), l'anglais (langue de secours) à côté. Chaque catalogue dit s'il a été relu
+// (`_meta.status`).
 
 export type Catalog = { [key: string]: string | Catalog };
 
@@ -25,10 +25,12 @@ export const LANGUAGE_NAMES: Record<Language, string> = {
   it: "Italiano",
 };
 
-// Catalogues disponibles : ceux du fichier principal, puis ceux chargés.
-const CATALOGS: Partial<Record<Language, Catalog>> = { en, fr };
+// Catalogues chargés.
+const CATALOGS: Partial<Record<Language, Catalog>> = {};
 
-const LOADERS: Record<Exclude<Language, "fr" | "en">, () => Promise<{ default: Catalog }>> = {
+const LOADERS: Record<Language, () => Promise<{ default: Catalog }>> = {
+  fr: () => import("./catalogs/fr.json"),
+  en: () => import("./catalogs/en.json"),
   de: () => import("./catalogs/de.json"),
   nl: () => import("./catalogs/nl.json"),
   es: () => import("./catalogs/es.json"),
@@ -41,7 +43,7 @@ export function isLoaded(language: Language): boolean {
 
 /** Charge le catalogue d'une langue (sans effet s'il l'est déjà). */
 export async function loadCatalog(language: Language): Promise<void> {
-  if (isLoaded(language) || language === "fr" || language === "en") return;
+  if (isLoaded(language)) return;
   CATALOGS[language] = (await LOADERS[language]()).default;
 }
 
@@ -61,6 +63,17 @@ export function reviewed(language: Language): boolean {
 }
 
 export type Params = Record<string, string | number>;
+
+// Choix de la langue gardé dans le navigateur.
+export const STORAGE_KEY = "wattslot.language";
+
+export function readStoredLanguage(): string | null {
+  try {
+    return window.localStorage.getItem(STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
 
 function isLanguage(value: string | null | undefined): value is Language {
   return value != null && (LANGUAGES as readonly string[]).includes(value);
@@ -90,7 +103,7 @@ export function formatNumber(language: Language, value: number, decimals?: numbe
  * paramètres numériques sont mis au format de la langue. */
 export function translate(language: Language, key: string, params: Params = {}): string {
   const text =
-    lookup(CATALOGS[language] ?? {}, key) ?? lookup(CATALOGS[FALLBACK_LANGUAGE]!, key) ?? key;
+    lookup(CATALOGS[language] ?? {}, key) ?? lookup(CATALOGS[FALLBACK_LANGUAGE] ?? {}, key) ?? key;
   return text.replace(/\{(\w+)\}/g, (match, name: string) => {
     if (!(name in params)) return match;
     const value = params[name];

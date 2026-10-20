@@ -14,7 +14,8 @@ const DIST = new URL("../dist/", import.meta.url).pathname.replace(/^\/([A-Za-z]
 const ASSETS = join(DIST, "assets");
 
 // Fichier principal : 109,8 Ko au lot 5.2 avant les graphiques, 10 % de marge ; 100,7 Ko une fois
-// les écrans secondaires chargés à la demande (lot 5.5).
+// les écrans secondaires chargés à la demande (lot 5.5) ; 88,4 Ko quand les textes français et
+// anglais le sont aussi (qualité des données), au lieu de 120,9 Ko.
 const MAIN_KB = 121;
 // Graphiques (Recharts) : au plus 150 Ko de plus pour l'écran du plan.
 const CHARTS_KB = 150;
