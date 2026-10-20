@@ -1702,11 +1702,6 @@ a.ui-setting-row {
   color: var(--text-dim);
 }
 
-/* Onglets de Ma maison : trois, pas quatre comme Planning et Courbes. */
-.home-tabs[role="tablist"] {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
 /* Appareils suivis seulement : une ligne qui les nomme, la liste dépliée dessous. */
 .home-followed > summary {
   display: flex;
@@ -1727,6 +1722,17 @@ a.ui-setting-row {
 
 .home-followed[open] > summary > svg {
   transform: rotate(90deg);
+}
+
+/* Onglet « Données » : résumé de la qualité des données en tête. */
+.quality-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.quality-summary.quality-clean {
+  border-color: var(--ok);
 }
 
 .home-search {

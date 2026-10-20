@@ -35,6 +35,11 @@ export async function putJson<T>(url: string, body: unknown): Promise<T> {
   return (await response.json()) as T;
 }
 
+export async function deleteRequest(url: string): Promise<void> {
+  const response = await fetch(url, { method: "DELETE" });
+  if (!response.ok) throw await failure(response);
+}
+
 export async function postJson<T>(url: string, body: unknown): Promise<T> {
   const response = await fetch(url, {
     method: "POST",

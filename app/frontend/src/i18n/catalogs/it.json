@@ -627,7 +627,8 @@
     "tabs": {
       "essentials": "L'essenziale",
       "devices": "Apparecchi",
-      "more": "Avanzate"
+      "more": "Avanzate",
+      "data": "Dati"
     },
     "fiche": {
       "details": "Sensori, nome e tipo",
@@ -1487,5 +1488,59 @@
   "state": {
     "retry": "Riprova",
     "error_hint": "Verifica che l'app e Home Assistant siano avviati e raggiungibili, poi riprova."
+  },
+  "quality": {
+    "loading": "Lettura dei dati…",
+    "summary": {
+      "clean": "I tuoi dati sono a posto",
+      "corrected": "{count} valore/i corretto/i",
+      "checked": "Ultimo controllo alle {time}",
+      "not_checked": "Nessun controllo dall'avvio"
+    },
+    "corrected": "Valori corretti",
+    "discarded": "scartato",
+    "gaps": "Lacune",
+    "gap": "{count} h senza valore dal {date}",
+    "gaps_help": "Niente da correggere: il sensore non ha inviato nulla in quelle ore (ultimi sette giorni).",
+    "undone": "Correzioni annullate ({count})",
+    "kind": {
+      "spike": "{value} contati: più di quanto la casa possa prelevare. Probabilmente un'interruzione del sensore.",
+      "negative": "{value}: un contatore non va all'indietro.",
+      "gap": "Nessun valore per questo periodo."
+    },
+    "automatic": "Corretto automaticamente.",
+    "manual": "Corretto a mano.",
+    "method": {
+      "raw": "Ricalcolato dalle letture grezze: {value}.",
+      "estimate": "Stimato dalle ore vicine: {value}.",
+      "discard": "Scartato: il calcolo lo ignora."
+    },
+    "was_undone": "Correzione annullata: il valore originale è tornato.",
+    "actions": "Altra correzione",
+    "actions_again": "Correggi di nuovo",
+    "action": {
+      "raw": "Ricalcola dalle letture grezze",
+      "estimate": "Stima",
+      "discard": "Scarta",
+      "undo": "Annulla la correzione"
+    },
+    "error": {
+      "load": "Impossibile leggere il controllo dei dati.",
+      "no_raw": "Le letture grezze di questo periodo non sono più conservate (tre giorni).",
+      "no_neighbours": "Nessuna ora vicina plausibile per stimare.",
+      "failed": "La correzione non è riuscita."
+    },
+    "scan": {
+      "open": "Analizza un periodo",
+      "title": "Analizza un periodo",
+      "sensor": "Contatore",
+      "all": "Tutti i contatori",
+      "from": "Dal",
+      "to": "al",
+      "run": "Analizza",
+      "none": "Nessuna anomalia in questo periodo.",
+      "found": "{count} anomalia/e: quelle evidenti sono corrette automaticamente.",
+      "failed": "L'analisi non è riuscita."
+    }
   }
 }
