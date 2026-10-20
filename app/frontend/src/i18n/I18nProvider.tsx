@@ -9,17 +9,16 @@ import {
 } from "react";
 
 import { setNumberLanguage } from "../plan/format";
-import { detectLanguage, isLoaded, loadCatalog, translate, type Language, type Params } from "./translate";
-
-const STORAGE_KEY = "wattslot.language";
-
-function readStoredLanguage(): string | null {
-  try {
-    return window.localStorage.getItem(STORAGE_KEY);
-  } catch {
-    return null;
-  }
-}
+import {
+  detectLanguage,
+  isLoaded,
+  loadCatalog,
+  readStoredLanguage,
+  STORAGE_KEY,
+  translate,
+  type Language,
+  type Params,
+} from "./translate";
 
 function storeLanguage(language: Language): void {
   try {
@@ -42,7 +41,8 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     detectLanguage(window.location.search, readStoredLanguage(), navigator.languages ?? []),
   );
 
-  // Catalogue chargé à la demande : l'anglais s'affiche le temps de le lire.
+  // Catalogue chargé à la demande (celui du démarrage l'est avant le premier affichage) :
+  // l'anglais s'affiche le temps de le lire.
   const [loaded, setLoaded] = useState(0);
   useEffect(() => {
     document.documentElement.lang = language;
