@@ -154,7 +154,6 @@ export default function App() {
             {route.section === "home" && route.sub !== "library" && (
               <HomeScreen
                 page={(route.sub ?? "main") as HomePage}
-                onNavigate={navigate}
                 more={<MoreLinks section="home" />}
                 anchor={homeAnchor}
                 onAnchor={clearAnchor}

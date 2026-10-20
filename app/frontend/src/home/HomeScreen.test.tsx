@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { I18nProvider } from "../i18n/I18nProvider";
-import HomeScreen from "./HomeScreen";
+import HomeEditor from "./HomeEditor";
 import type { HomeModel, HomeProposal } from "./types";
 
 const PROPOSAL: HomeProposal = {
@@ -51,7 +51,7 @@ function mockApi(proposal: HomeProposal | number, saved: HomeModel = { devices: 
 function renderScreen() {
   return render(
     <I18nProvider>
-      <HomeScreen page="devices" onNavigate={vi.fn()} />
+      <HomeEditor onSaved={vi.fn()} />
     </I18nProvider>,
   );
 }

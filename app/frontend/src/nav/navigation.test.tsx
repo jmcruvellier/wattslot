@@ -103,7 +103,6 @@ describe("navigation", () => {
     // Avant le lexique.
     expect(nav.nextElementSibling?.querySelector("summary")).toHaveTextContent("Lexique");
     expect(more.getAllByRole("link").map((link) => [link.textContent, link.getAttribute("href")])).toEqual([
-      ["Appareils et capteurs", "#/home/devices"],
       ["Modèles prêts à l'emploi", "#/home/templates"],
       ["Sauvegarder ou partager", "#/home/backup"],
       ["Graphe de la maison", "#/home/graph"],

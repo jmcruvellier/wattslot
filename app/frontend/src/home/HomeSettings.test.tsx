@@ -37,13 +37,18 @@ function mockApi(
     other?: (url: string) => Response | undefined;
   } = {},
 ) {
+  // Configuration enregistrée : relue après chaque enregistrement réussi.
+  let current = configuration;
   return vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
     const url = String(input);
     if (url === "api/home") return Response.json(home);
     if (url === "api/configuration" && init?.method === "PUT") {
-      return put(JSON.parse(String(init.body)) as Configuration);
+      const body = JSON.parse(String(init.body)) as Configuration;
+      const response = put(body);
+      if (response.ok) current = body;
+      return response;
     }
-    if (url === "api/configuration") return Response.json(configuration);
+    if (url === "api/configuration") return Response.json(current);
     return other?.(url) ?? new Response(null, { status: 404 });
   });
 }
@@ -99,9 +104,10 @@ describe("réglages de Ma maison", () => {
     mockApi(put);
     renderHome();
 
-    // Production : réglée par « Panneaux » dans L'essentiel, pas parmi les appareils.
+    // Production : réglée par « Panneaux » dans L'essentiel ; parmi les appareils, repliée avec
+    // le réseau et la batterie (ses capteurs).
     await userEvent.click(await screen.findByRole("tab", { name: "Appareils" }));
-    expect(screen.queryByRole("button", { name: /^Panneaux/ })).toBeNull();
+    expect(screen.getByText("Panneaux", { selector: "summary .ui-row-label" })).toBeInTheDocument();
 
     let pool = await openSheet("Appareils", /^Piscine/, "Piscine");
     const select = within(pool).getByLabelText("Comportement") as HTMLSelectElement;
@@ -134,6 +140,7 @@ describe("réglages de Ma maison", () => {
     renderHome();
 
     const pool = await openSheet("Appareils", /^Piscine/, "Piscine");
+    await userEvent.selectOptions(within(pool).getByLabelText("Comportement"), "UncontrolledBehavior");
     await save(pool);
 
     expect(await within(pool).findByRole("alert")).toHaveTextContent(
@@ -563,12 +570,23 @@ describe("réglages de Ma maison", () => {
     ]);
   });
 
-  it("invite à enregistrer la maison d'abord", async () => {
-    mockApi(undefined, { home: { devices: [] }, configuration: { version: 1, devices: [], tariff: null } });
+  it("commence par les appareils proposés quand la maison n'est pas encore enregistrée", async () => {
+    mockApi(undefined, {
+      home: { devices: [] },
+      configuration: { version: 1, devices: [], tariff: null },
+      other: (url) =>
+        url.startsWith("api/home/proposals")
+          ? Response.json({
+              energy_dashboard: true,
+              devices: [{ key: "washer", kind: "WashingMachine", name: "Lave-linge", sensors: [], capacity_kwh: null, issues: [] }],
+            })
+          : undefined,
+    });
     renderHome();
 
-    await userEvent.click(await screen.findByRole("tab", { name: "Appareils" }));
-    expect(await screen.findByText(/Enregistrez d'abord votre maison/)).toBeInTheDocument();
+    expect(await screen.findByText(/Voici ce que l'application a reconnu/)).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Appareils" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("article", { name: "Lave-linge" })).toBeInTheDocument();
   });
 
   it("ne déplie rien pour des réglages par défaut, qui s'enregistrent tels quels (lot 4.7)", async () => {
@@ -581,7 +599,7 @@ describe("réglages de Ma maison", () => {
     expect(sheet.querySelectorAll("details[open]")).toHaveLength(0);
     await save(sheet);
     await saved();
-    expect(sent[0].devices).toEqual(CONFIGURATION.devices);
+    expect(sent).toHaveLength(0); // rien de changé : rien d'envoyé
   });
 
   it("ouvre les réglages avancés qui ne sont plus ceux par défaut", async () => {

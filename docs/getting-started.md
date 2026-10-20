@@ -7,7 +7,7 @@ The first time you open WattSlot, a guided path of four screens replaces the hom
 ## The four first steps
 
 1. **Connect the app to Home Assistant.** As a Home Assistant app there is nothing to do. In standalone mode, enter your Home Assistant address and log in (see [Installation](installation.md#standalone-docker)).
-2. **Here is what we found in your home.** WattSlot reads Home Assistant's Energy dashboard and proposes your devices: solar production, grid, battery, water heater, washing machine, dryer, dishwasher, pool pump… Untick anything that should not be taken into account. A device missing from the Energy dashboard (a smart plug, a heat pump) can be added later in **My home › Appliances and sensors › Add a device**.
+2. **Here is what we found in your home.** WattSlot reads Home Assistant's Energy dashboard and proposes your devices: solar production, grid, battery, water heater, washing machine, dryer, dishwasher, pool pump… Untick anything that should not be taken into account. A device missing from the Energy dashboard (a smart plug, a heat pump) can be added later in **My home › Devices › Add a device**.
 3. **What is your electricity contract?** Pick the closest template: tariff, battery and appliances are set in one go, with indicative prices to replace with yours (see [Tariffs](tariffs.md)).
 
    | Template | For |

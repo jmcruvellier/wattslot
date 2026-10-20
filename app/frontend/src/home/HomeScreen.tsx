@@ -1,65 +1,25 @@
-import { lazy, Suspense, useCallback, useEffect, useState, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 
 import { ApiError, getJson, putJson } from "../api";
-import Advanced, { Hint } from "../common/Advanced";
 import Glossary from "../common/Glossary";
 import { useI18n } from "../i18n/I18nProvider";
-import Button from "../ui/Button";
+import Sheet from "../ui/Sheet";
 import StateMessage from "../ui/StateMessage";
+import Button from "../ui/Button";
 import AddDevice from "./AddDevice";
 import BatteryEditor from "./BatteryEditor";
 import type { Configuration, DeviceSettings as DeviceSettingsType, TaskRules } from "./configuration";
-import DeviceSettings from "./DeviceSettings";
+import DeviceSheet from "./DeviceSheet";
+import { buildDraft, loadHome, toModel, type DraftDevice, type LoadResult } from "./draft";
 import ExchangeSection from "./ExchangeSection";
+import HomeEditor from "./HomeEditor";
 import { Devices, Essentials, type Essential, type HomeData } from "./HomeSummary";
 import ObjectiveEditor from "./ObjectiveEditor";
 import PanelsEditor from "./PanelsEditor";
 import SettingsSheet from "./SettingsSheet";
 import TariffEditor from "./TariffEditor";
 import TemplateSection from "./TemplateSection";
-import { buildDraft, mergeDraft, toModel, type DraftDevice } from "./draft";
-import {
-  DEVICE_KINDS,
-  type DeviceKind,
-  type DeviceType,
-  type DeviceTypes,
-  type LibraryType,
-  type HomeModel,
-  type HomeProposal,
-  type Issue,
-} from "./types";
-
-type LoadState =
-  | { status: "loading" }
-  | { status: "ready"; energyDashboard: boolean }
-  | { status: "error"; code: "not_connected" | "failed" };
-
-type SaveState = "idle" | "saving" | "saved" | "failed";
-
-type LoadResult =
-  | { ok: true; draft: DraftDevice[]; energyDashboard: boolean; types: DeviceType[]; library: LibraryType[] }
-  | { ok: false; code: "not_connected" | "failed" };
-
-async function loadHome(refresh: boolean): Promise<LoadResult> {
-  try {
-    const [proposal, saved, types] = await Promise.all([
-      getJson<HomeProposal>(`api/home/proposals${refresh ? "?refresh=true" : ""}`),
-      getJson<HomeModel>("api/home"),
-      // Types propres : sans eux, l'écran reste utilisable avec ceux de la bibliothèque.
-      getJson<DeviceTypes>("api/home/types").catch(() => ({ parents: [], types: [], library: [] })),
-    ]);
-    return {
-      ok: true,
-      draft: buildDraft(proposal.devices, saved),
-      energyDashboard: proposal.energy_dashboard,
-      types: types.types,
-      library: types.library,
-    };
-  } catch (error) {
-    const notConnected = error instanceof ApiError && error.status === 503;
-    return { ok: false, code: notConnected ? "not_connected" : "failed" };
-  }
-}
+import type { HomeModel } from "./types";
 
 // Vue en graphe : React Flow n'est chargé que si on la demande (lot 2t.3).
 const HomeGraph = lazy(() => import("./HomeGraph"));
@@ -88,17 +48,16 @@ function rememberTab(tab: Tab) {
 
 // Pages de Ma maison (lot 6b.5) : la page principale en onglets, puis les écrans experts ouverts
 // depuis l'onglet « Avancé ».
-export type HomePage = "main" | "devices" | "templates" | "backup" | "graph";
+export type HomePage = "main" | "templates" | "backup" | "graph";
 
 export default function HomeScreen({
   page = "main",
-  onNavigate,
   more,
   anchor = null,
   onAnchor,
 }: {
   page?: HomePage;
-  onNavigate: (target: string) => void;
+  onNavigate?: (target: string) => void; // gardé pour l'application ; les liens passent par `anchor`
   // Liens des écrans experts, fournis par l'application : rendus dans l'onglet « Avancé ».
   more?: ReactNode;
   // Réglage demandé par un lien (« home#tariff », « home#settings-washer ») : sa feuille s'ouvre.
@@ -109,7 +68,6 @@ export default function HomeScreen({
   const [version, setVersion] = useState(0); // relit les réglages après un enregistrement
   const changed = () => setVersion((count) => count + 1);
 
-  if (page === "devices") return <HomeEditor onSaved={changed} onNavigate={onNavigate} />;
   if (page === "templates") return <TemplateSection version={version} onApplied={changed} />;
   if (page === "backup") return <ExchangeSection onImported={changed} />;
   if (page === "graph") {
@@ -119,28 +77,42 @@ export default function HomeScreen({
       </Suspense>
     );
   }
-  return <HomeMain onNavigate={onNavigate} more={more} anchor={anchor} onAnchor={onAnchor} />;
+  return <HomeMain more={more} anchor={anchor} onAnchor={onAnchor} />;
 }
 
 type MainLoad = { status: "loading" } | { status: "error" } | ({ status: "ready" } & HomeData);
 
-// Feuille ouverte : un réglage de « L'essentiel » ou les réglages d'un appareil.
-type Open = { kind: Essential } | { kind: "device"; key: string };
+// Feuille ouverte : un réglage de « L'essentiel », la fiche d'un appareil ou l'ajout d'un appareil.
+type Open = { kind: Essential } | { kind: "device"; key: string } | { kind: "add" };
 
 const ESSENTIALS: readonly string[] = ["objective", "tariff", "solar", "battery"];
+
+// Ancre d'un lien : la feuille qu'elle ouvre, et son onglet.
+function anchorSheet(anchor: string): [Tab, Open] | null {
+  if (ESSENTIALS.includes(anchor)) return ["essentials", { kind: anchor as Essential }];
+  if (anchor === "add-device") return ["devices", { kind: "add" }];
+  for (const prefix of ["settings-", "device-"]) {
+    if (anchor.startsWith(prefix)) return ["devices", { kind: "device", key: anchor.slice(prefix.length) }];
+  }
+  return null;
+}
 
 // Reprise des règles des tâches de HA : enregistrées, aucune, HA absent, échec.
 type RulesState = "idle" | "loading" | "applied" | "none" | "not_connected" | "failed";
 
-// Page principale (refonte de Ma maison) : trois onglets courts, et chaque réglage dans sa feuille,
-// enregistré seul. Rien n'est déplié d'avance : une ligne par réglage ou par appareil.
+// Appareils de la maison enregistrée, sans les propositions de HA (HA absent) : la fiche garde
+// leurs capteurs, sans points à vérifier.
+function savedDraft(home: HomeModel): DraftDevice[] {
+  return buildDraft([], home).map((device) => ({ ...device, issues: [] }));
+}
+
+// Page principale (refonte de Ma maison) : trois onglets courts, et chaque réglage ou appareil dans
+// sa feuille, enregistré seul. Rien n'est déplié d'avance : une ligne par réglage ou par appareil.
 function HomeMain({
-  onNavigate,
   more,
   anchor,
   onAnchor,
 }: {
-  onNavigate: (target: string) => void;
   more?: ReactNode;
   anchor: string | null;
   onAnchor?: () => void;
@@ -148,10 +120,14 @@ function HomeMain({
   const { t } = useI18n();
   const [tab, setTab] = useState<Tab>(savedTab);
   const [load, setLoad] = useState<MainLoad>({ status: "loading" });
-  const [attempt, setAttempt] = useState(0); // « Réessayer »
+  // Propositions de HA (capteurs, points à vérifier, appareils pas encore suivis) : lues à côté,
+  // la page ne les attend pas.
+  const [found, setFound] = useState<LoadResult | null>(null);
+  const [attempt, setAttempt] = useState(0); // « Réessayer », et relecture après un enregistrement
   const [open, setOpen] = useState<Open | null>(null);
   const [saved, setSaved] = useState(false);
   const [rules, setRules] = useState<RulesState>("idle");
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -159,11 +135,22 @@ function HomeMain({
       getJson<HomeModel>("api/home", controller.signal),
       getJson<Configuration>("api/configuration", controller.signal),
     ])
-      .then(([home, configuration]) => setLoad({ status: "ready", devices: home.devices, configuration }))
+      .then(([home, configuration]) => {
+        setLoad({ status: "ready", devices: home.devices, configuration });
+        // Maison pas encore enregistrée : on commence par ses appareils.
+        if (home.devices.length === 0) setTab("devices");
+      })
       .catch(() => {
         if (!controller.signal.aborted) setLoad({ status: "error" });
       });
-    return () => controller.abort();
+    let cancelled = false;
+    loadHome(false).then((result) => {
+      if (!cancelled) setFound(result);
+    });
+    return () => {
+      controller.abort();
+      cancelled = true;
+    };
   }, [attempt]);
 
   const choose = (next: Tab) => {
@@ -176,12 +163,10 @@ function HomeMain({
   const [handled, setHandled] = useState<string | null>(null);
   if (anchor && anchor !== handled && load.status === "ready") {
     setHandled(anchor);
-    if (ESSENTIALS.includes(anchor)) {
-      setTab("essentials");
-      setOpen({ kind: anchor as Essential });
-    } else if (anchor.startsWith("settings-")) {
-      setTab("devices");
-      setOpen({ kind: "device", key: anchor.slice("settings-".length) });
+    const target = anchorSheet(anchor);
+    if (target) {
+      setTab(target[0]);
+      setOpen(target[1]);
     }
   }
   useEffect(() => {
@@ -191,26 +176,44 @@ function HomeMain({
   const data: HomeData | null =
     load.status === "ready" ? { devices: load.devices, configuration: load.configuration } : null;
   const names = new Map(data?.devices.map((device) => [device.key, device.name]));
-  const empty = data !== null && data.configuration.devices.length === 0;
+  const firstSave = data !== null && data.devices.length === 0;
+  // Appareils de la fiche : propositions de HA fusionnées avec la maison, sinon la maison seule.
+  const draft = found?.ok ? found.draft : data ? savedDraft({ devices: data.devices }) : [];
 
   const show = (next: Open) => {
     setSaved(false);
     setOpen(next);
   };
 
-  const onSaved = (configuration: Configuration) => {
-    if (data) setLoad({ status: "ready", ...data, configuration });
+  const done = () => {
     setOpen(null);
     setSaved(true);
   };
 
+  // Enregistrement qui touche la maison : tout est relu (appareils, réglages, propositions).
+  const reload = () => {
+    done();
+    setAttempt((count) => count + 1);
+  };
+
+  const onSettingsSaved = (configuration: Configuration) => {
+    if (data) setLoad({ status: "ready", ...data, configuration });
+    done();
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    setFound(await loadHome(true));
+    setRefreshing(false);
+  };
+
   // Reprise des règles des descriptions JSON des tâches de HA (lot 3.5), enregistrées aussitôt :
-  // chaque appareil concerné les montre ensuite dans sa feuille.
+  // chaque appareil concerné les montre ensuite dans sa fiche.
   const onImportRules = async (current: HomeData) => {
     setRules("loading");
     try {
-      const found = await getJson<TaskRules[]>("api/configuration/task-rules-proposal");
-      const byDevice = new Map(found.map((r) => [r.key, r]));
+      const proposals = await getJson<TaskRules[]>("api/configuration/task-rules-proposal");
+      const byDevice = new Map(proposals.map((r) => [r.key, r]));
       const { configuration } = current;
       if (!configuration.devices.some((s) => byDevice.has(s.key) && s.behavior === "CycleBehavior")) {
         setRules("none");
@@ -251,6 +254,8 @@ function HomeMain({
       />
     ) : null;
 
+  const device = open?.kind === "device" ? draft.find((d) => d.key === open.key) : undefined;
+
   return (
     <>
       <div className="view-tabs home-tabs" role="tablist" aria-label={t("nav.home")}>
@@ -264,20 +269,20 @@ function HomeMain({
       <section className="home-summary" role="tabpanel" aria-label={t(`home.tabs.${tab}`)}>
         {tab !== "more" && state}
         {tab === "essentials" && data && <Essentials data={data} onOpen={(kind) => show({ kind })} />}
-        {tab === "devices" &&
-          data &&
-          (empty ? (
-            <StateMessage kind="empty" title={t("configuration.empty")} />
-          ) : (
-            <Devices
-              data={data}
-              onOpen={(key) => show({ kind: "device", key })}
-              onAdd={() => onNavigate("devices#add-device")}
-            />
-          ))}
+        {tab === "devices" && data && firstSave && <HomeEditor onSaved={reload} />}
+        {tab === "devices" && data && !firstSave && (
+          <Devices
+            data={data}
+            proposed={draft.filter((d) => !d.included).map((d) => ({ key: d.key, name: d.name }))}
+            onOpen={(key) => show({ kind: "device", key })}
+            onAdd={() => show({ kind: "add" })}
+            onRefresh={found?.ok ? () => void onRefresh() : undefined}
+            refreshing={refreshing}
+          />
+        )}
         {tab === "more" && (
           <>
-            {data && !empty && (
+            {data && !firstSave && (
               <p>
                 <Button onClick={() => void onImportRules(data)} disabled={rules === "loading"}>
                   {t("configuration.import_rules")}
@@ -290,10 +295,64 @@ function HomeMain({
           </>
         )}
       </section>
-      {open && data && (
-        <HomeSheet open={open} data={data} names={names} onClose={() => setOpen(null)} onSaved={onSaved} />
+      {open && data && open.kind !== "device" && open.kind !== "add" && (
+        <HomeSheet open={open} data={data} names={names} onClose={() => setOpen(null)} onSaved={onSettingsSaved} />
+      )}
+      {open && data && device && (
+        <DeviceSheet
+          key={device.key}
+          device={device}
+          home={draft}
+          configuration={data.configuration}
+          types={found?.ok ? found.types : []}
+          names={names}
+          onClose={() => setOpen(null)}
+          onSaved={reload}
+        />
+      )}
+      {open?.kind === "add" && (
+        <AddSheet found={found} draft={draft} onClose={() => setOpen(null)} onSaved={reload} />
       )}
     </>
+  );
+}
+
+// Ajout d'un appareil absent du tableau Énergie de HA (lot 2t.2), enregistré aussitôt.
+function AddSheet({
+  found,
+  draft,
+  onClose,
+  onSaved,
+}: {
+  found: LoadResult | null;
+  draft: DraftDevice[];
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const { t } = useI18n();
+  const [failed, setFailed] = useState(false);
+  return (
+    <Sheet open wide title={t("home.add.title")} onClose={onClose}>
+      <div className="expert-form">
+        <AddDevice
+          opened
+          library={found?.ok ? found.library : []}
+          types={found?.ok ? found.types : []}
+          existing={draft.map((device) => device.key)}
+          onCancel={onClose}
+          onAdd={async (device) => {
+            setFailed(false);
+            try {
+              await putJson("api/home", toModel([...draft, device]));
+              onSaved();
+            } catch {
+              setFailed(true);
+            }
+          }}
+        />
+      </div>
+      {failed && <p role="alert">{t("home.save_failed")}</p>}
+    </Sheet>
   );
 }
 
@@ -305,7 +364,7 @@ function HomeSheet({
   onClose,
   onSaved,
 }: {
-  open: Open;
+  open: { kind: Essential };
   data: HomeData;
   names: Map<string, string>;
   onClose: () => void;
@@ -318,7 +377,7 @@ function HomeSheet({
       {edit}
     </SettingsSheet>
   );
-  // Réglages d'un appareil modifiés : ils ne sont plus ceux par défaut de son type.
+  // Panneaux modifiés : ils ne sont plus ceux par défaut de son type.
   const withDevice = (draft: Configuration, key: string, update: Partial<DeviceSettingsType>): Configuration => ({
     ...draft,
     devices: draft.devices.map((settings) =>
@@ -364,230 +423,5 @@ function HomeSheet({
             ))}
         </div>
       ));
-    case "device": {
-      const key = open.key;
-      if (!configuration.devices.some((settings) => settings.key === key)) return null;
-      const name = names.get(key) ?? key;
-      const kind = devices.find((d) => d.key === key)?.kind ?? null;
-      return sheet(name, (draft, change) => (
-        <DeviceSettings
-          settings={draft.devices.find((s) => s.key === key)!}
-          kind={kind}
-          name={name}
-          others={draft.devices
-            .filter((other) => other.key !== key && other.behavior === "CycleBehavior")
-            .map((other) => ({ key: other.key, name: names.get(other.key) ?? other.key }))}
-          onChange={(update) => change(withDevice(draft, key, update))}
-        />
-      ));
-    }
   }
-}
-
-function HomeEditor({ onSaved, onNavigate }: { onSaved: () => void; onNavigate: (target: string) => void }) {
-  const { t } = useI18n();
-  const [load, setLoad] = useState<LoadState>({ status: "loading" });
-  const [draft, setDraft] = useState<DraftDevice[]>([]);
-  const [save, setSave] = useState<SaveState>("idle");
-  const [types, setTypes] = useState<DeviceType[]>([]);
-  const [library, setLibrary] = useState<LibraryType[]>([]);
-
-  const apply = useCallback((result: LoadResult, keepChoices: boolean) => {
-    if (!result.ok) {
-      setLoad({ status: "error", code: result.code });
-      return;
-    }
-    setDraft((previous) => (keepChoices ? mergeDraft(previous, result.draft) : result.draft));
-    setTypes(result.types);
-    setLibrary(result.library);
-    setLoad({ status: "ready", energyDashboard: result.energyDashboard });
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    loadHome(false).then((result) => {
-      if (!cancelled) apply(result, false);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [apply]);
-
-  const onRefresh = async () => apply(await loadHome(true), true);
-
-  const update = (key: string, change: Partial<DraftDevice>) => {
-    setSave("idle");
-    setDraft((devices) =>
-      devices.map((device) => (device.key === key ? { ...device, ...change } : device)),
-    );
-  };
-
-  const toggleSensor = (key: string, index: number, included: boolean) => {
-    setSave("idle");
-    setDraft((devices) =>
-      devices.map((device) =>
-        device.key === key
-          ? {
-              ...device,
-              sensors: device.sensors.map((sensor, i) =>
-                i === index ? { ...sensor, included } : sensor,
-              ),
-            }
-          : device,
-      ),
-    );
-  };
-
-  const onSave = async () => {
-    setSave("saving");
-    try {
-      await putJson<HomeModel>("api/home", toModel(draft));
-      setSave("saved");
-      onSaved();
-    } catch {
-      setSave("failed");
-    }
-  };
-
-  if (load.status === "loading") return <p>{t("home.loading")}</p>;
-  if (load.status === "error") return <p role="alert">{t(`home.error.${load.code}`)}</p>;
-  if (!load.energyDashboard) return <p role="alert">{t("home.no_energy_dashboard")}</p>;
-
-  const issueCount = draft.reduce(
-    (count, device) =>
-      count + device.issues.length + device.sensors.reduce((n, s) => n + s.issues.length, 0),
-    0,
-  );
-
-  return (
-    <section aria-labelledby="home-title" className="expert-form">
-      <h2 className="visually-hidden" id="home-title">{t("home.title")}</h2>
-      <p>{t("home.intro")}</p>
-      {issueCount > 0 && <p role="status">{t("home.issue_count", { count: issueCount })}</p>}
-      <button type="button" onClick={() => void onRefresh()}>
-        {t("home.refresh")}
-      </button>
-
-      {draft.map((device) => (
-        <article key={device.key} id={`device-${device.key}`} aria-label={device.name} className="card expert-card">
-          <label>
-            <input
-              type="checkbox"
-              checked={device.included}
-              onChange={(event) => update(device.key, { included: event.target.checked })}
-            />{" "}
-            {t("home.include")}
-          </label>
-          <Hint text={t("home.include_hint")} />
-          <label>
-            {t("home.name")}{" "}
-            <input
-              value={device.name}
-              onChange={(event) => update(device.key, { name: event.target.value })}
-            />
-          </label>
-          <label>
-            {t("home.kind")}{" "}
-            <select
-              value={device.customType ? `custom:${device.customType}` : device.kind}
-              onChange={(event) => update(device.key, kindChoice(event.target.value, types))}
-            >
-              {DEVICE_KINDS.map((kind) => (
-                <option key={kind} value={kind}>
-                  {t(`kind.${kind}`)}
-                </option>
-              ))}
-              {types.map((own) => (
-                <option key={own.key} value={`custom:${own.key}`}>
-                  {t("home.custom_kind", { name: own.name, parent: t(`kind.${own.parent}`) })}
-                </option>
-              ))}
-            </select>
-          </label>
-          <Hint text={t("home.kind_hint")} />
-          {device.kind === "Battery" && (
-            <label>
-              {t("home.capacity")}{" "}
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={device.capacityKwh ?? ""}
-                onChange={(event) =>
-                  update(device.key, {
-                    capacityKwh: event.target.value === "" ? null : Number(event.target.value),
-                  })
-                }
-              />
-              {device.capacitySource && (
-                <> {t("home.capacity_source", { entity: device.capacitySource })}</>
-              )}
-            </label>
-          )}
-          <IssueList issues={device.issues} />
-          {device.included && (
-            <button type="button" className="link" onClick={() => onNavigate(`home#settings-${device.key}`)}>
-              {t("home.to_settings")}
-            </button>
-          )}
-          <p>{t("home.sensors_summary", { count: device.sensors.filter((sensor) => sensor.included).length })}</p>
-          <Advanced modified={device.sensors.some((sensor) => !sensor.included || sensor.issues.length > 0)}>
-          <ul>
-            {device.sensors.map((sensor, index) => (
-              <li key={`${sensor.role}-${sensor.entity_id}`}>
-                <input
-                  type="checkbox"
-                  aria-label={t("home.keep_sensor", { entity: sensor.entity_id })}
-                  checked={sensor.included}
-                  onChange={(event) => toggleSensor(device.key, index, event.target.checked)}
-                />{" "}
-                {t(`role.${sensor.role}`)} : <code>{sensor.entity_id}</code>
-                {sensor.unit && ` (${sensor.unit})`}
-                {sensor.resets_daily && ` — ${t("home.resets_daily")}`}
-                <IssueList issues={sensor.issues} />
-              </li>
-            ))}
-          </ul>
-          </Advanced>
-        </article>
-      ))}
-
-      <div id="add-device">
-      <AddDevice
-        library={library}
-        types={types}
-        existing={draft.map((device) => device.key)}
-        onAdd={(device) => {
-          setSave("idle");
-          setDraft((devices) => [...devices, device]);
-        }}
-      />
-      </div>{" "}
-      <button type="button" onClick={() => void onSave()} disabled={save === "saving"}>
-        {t("home.save")}
-      </button>
-      {save === "saved" && <p role="status">{t("home.saved")}</p>}
-      {save === "failed" && <p role="alert">{t("home.save_failed")}</p>}
-    </section>
-  );
-}
-
-// Choix du type : un type de la bibliothèque, ou un type propre (et alors son parent).
-function kindChoice(value: string, types: DeviceType[]): { kind: DeviceKind; customType: string | null } {
-  const own = value.startsWith("custom:") ? types.find((t) => t.key === value.slice(7)) : undefined;
-  return own ? { kind: own.parent, customType: own.key } : { kind: value as DeviceKind, customType: null };
-}
-
-function IssueList({ issues }: { issues: Issue[] }) {
-  const { t } = useI18n();
-  if (issues.length === 0) return null;
-  return (
-    <ul>
-      {issues.map((issue, index) => (
-        <li key={`${issue.code}-${index}`} className="issue">
-          {t(`issue.${issue.code}`, issue.params)}
-        </li>
-      ))}
-    </ul>
-  );
 }

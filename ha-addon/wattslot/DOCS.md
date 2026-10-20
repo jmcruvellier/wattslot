@@ -28,7 +28,7 @@ The add-on connects to Home Assistant by itself: no token or address to enter.
 - **First steps**: until setup is complete, the app guides you in four screens: connection, the appliances found in Home Assistant's Energy dashboard, your electricity contract, then your first plan.
 - **Today**: what is happening right now, the next appliance to start (with "It's started" and "Remind me"), and the day ahead.
 - **Planning**: yesterday, today, tomorrow and the week as an agenda; detailed charts are one click away.
-- **My home**: your home in plain sentences, in three tabs (Essentials, Devices, Advanced); each line opens its setting. Expert screens (sensors, templates, backup, graph, library) are in "Advanced".
+- **My home**: your home in plain sentences, in three tabs (Essentials, Devices, Advanced); each line opens its setting, each device its sheet (rules, sensors, name and type). Expert screens (templates, backup, graph, library) are in "Advanced".
 - **Assistant** and **Settings**: your requests, the voice assistant, notifications, language and theme.
 - **Themes**: "Automatic" follows the light or dark setting of your phone, browser or computer; five themes are available in Settings › Language and display. The choice is kept on each device.
 

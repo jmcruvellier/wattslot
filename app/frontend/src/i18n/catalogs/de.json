@@ -56,7 +56,6 @@
     "status_ok": "Alles in Ordnung",
     "status_degraded": "Bitte prüfen",
     "status_blocking": "Die Berechnung ist blockiert",
-    "devices": "Geräte und Sensoren",
     "templates": "Fertige Vorlagen",
     "backup": "Sichern oder teilen",
     "graph": "Graph des Hauses",
@@ -611,7 +610,6 @@
     "keep_sensor": "{entity} behalten",
     "capacity_source": "(aus Home Assistant gelesen: {entity})",
     "custom_kind": "{name} ({parent})",
-    "to_settings": "Planungseinstellungen dieses Geräts",
     "add": {
       "open": "Gerät hinzufügen",
       "title": "Ein im Energie-Dashboard fehlendes Gerät hinzufügen",
@@ -630,6 +628,14 @@
       "essentials": "Das Wichtigste",
       "devices": "Geräte",
       "more": "Erweitert"
+    },
+    "fiche": {
+      "details": "Sensoren, Name und Typ",
+      "proposed": "Von Home Assistant vorgeschlagen, noch nicht erfasst. Prüfen Sie Name, Typ und Sensoren und fügen Sie es dann Ihrem Zuhause hinzu.",
+      "include": "Zu meinem Zuhause hinzufügen",
+      "remove": "Aus meinem Zuhause entfernen",
+      "remove_confirm": "Entfernen bestätigen",
+      "remove_hint": "Das Gerät wird nicht mehr erfasst oder eingeplant. Home Assistant schlägt es weiter vor, solange sein Sensor existiert."
     }
   },
   "graph": {
@@ -1421,7 +1427,12 @@
       "not_before": "nicht vor {start}",
       "finish_before": "fertig vor {end}"
     },
-    "add": "Gerät hinzufügen"
+    "add": "Gerät hinzufügen",
+    "installation": "Erzeugung, Netz und Batterie",
+    "installation_help": "Eingestellt unter Das Wichtigste; hier ihre Sensoren",
+    "proposed": "Von Home Assistant vorgeschlagen",
+    "proposed_help": "Noch nicht erfasst: zum Hinzufügen antippen",
+    "search": "Gerät suchen"
   },
   "settings_home": {
     "notifications_none": "Keine aktiv",

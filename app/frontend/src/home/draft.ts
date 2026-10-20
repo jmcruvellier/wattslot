@@ -1,12 +1,17 @@
 // Brouillon du modèle de la maison : propositions de l'application, fusionnées avec ce que
 // l'utilisateur a déjà validé, puis modifiées dans l'écran avant enregistrement.
 
+import { ApiError, getJson } from "../api";
 import type {
   DeviceKind,
   DeviceProposal,
+  DeviceType,
+  DeviceTypes,
   HomeDevice,
   HomeModel,
+  HomeProposal,
   Issue,
+  LibraryType,
   SensorProposal,
 } from "./types";
 
@@ -139,4 +144,36 @@ export function toModel(draft: DraftDevice[]): HomeModel {
           .map(({ entity_id, role, resets_daily }) => ({ entity_id, role, resets_daily })),
       })),
   };
+}
+
+// Choix du type : un type de la bibliothèque, ou un type propre (et alors son parent).
+export function kindChoice(value: string, types: DeviceType[]): { kind: DeviceKind; customType: string | null } {
+  const own = value.startsWith("custom:") ? types.find((t) => t.key === value.slice(7)) : undefined;
+  return own ? { kind: own.parent, customType: own.key } : { kind: value as DeviceKind, customType: null };
+}
+
+// Propositions de HA fusionnées avec la maison enregistrée, et types d'appareils.
+export type LoadResult =
+  | { ok: true; draft: DraftDevice[]; energyDashboard: boolean; types: DeviceType[]; library: LibraryType[] }
+  | { ok: false; code: "not_connected" | "failed" };
+
+export async function loadHome(refresh: boolean): Promise<LoadResult> {
+  try {
+    const [proposal, saved, types] = await Promise.all([
+      getJson<HomeProposal>(`api/home/proposals${refresh ? "?refresh=true" : ""}`),
+      getJson<HomeModel>("api/home"),
+      // Types propres : sans eux, l'écran reste utilisable avec ceux de la bibliothèque.
+      getJson<DeviceTypes>("api/home/types").catch(() => ({ parents: [], types: [], library: [] })),
+    ]);
+    return {
+      ok: true,
+      draft: buildDraft(proposal.devices, saved),
+      energyDashboard: proposal.energy_dashboard,
+      types: types.types,
+      library: types.library,
+    };
+  } catch (error) {
+    const notConnected = error instanceof ApiError && error.status === 503;
+    return { ok: false, code: notConnected ? "not_connected" : "failed" };
+  }
 }

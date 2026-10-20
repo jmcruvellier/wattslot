@@ -179,7 +179,7 @@ describe("Ma maison en onglets", () => {
     await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Fermer" }));
 
     await userEvent.click(screen.getByRole("button", { name: "Ajouter un appareil" }));
-    expect(onNavigate).toHaveBeenLastCalledWith("devices#add-device");
+    expect(screen.getByRole("dialog", { name: "Ajouter un équipement absent du tableau Énergie" })).toBeInTheDocument();
   });
 
   it("ouvre la feuille demandée par un lien, dans son onglet", async () => {

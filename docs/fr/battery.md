@@ -14,7 +14,7 @@ WattSlot ne pilote pas votre batterie : il simule son comportement (elle charge 
 | **La batterie charge et décharge de … à …** | toute la journée | Pour les batteries qui ne fonctionnent qu'à certaines heures |
 | **Viser régulièrement une charge complète**, au moins tous les N jours | non | Les batteries au lithium recalent leur mesure de charge quand elles atteignent 100 % : le plan garde alors assez de surplus pour cela, et peut sauter quelques heures de piscine ces jours-là |
 
-La capacité vient de Home Assistant quand un capteur la donne, sinon de **Ma maison › Avancé › Appareils et capteurs**.
+La capacité vient de Home Assistant quand un capteur la donne, sinon de sa fiche dans **Ma maison › Appareils** (**Capteurs, nom et type**).
 
 ## Ce que vous voyez
 

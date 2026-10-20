@@ -55,22 +55,28 @@ export default function SettingsSheet({
       {children(draft, change)}
       <div className="home-sheet-actions">
         {save.status === "failed" && <p role="alert">{t("configuration.save_failed")}</p>}
-        {save.status === "invalid" && (
-          <ul role="alert">
-            {save.issues.map((issue, index) => (
-              <li key={`${issue.code}-${index}`} className="issue">
-                {t(`configuration.issue.${issue.code}`, {
-                  ...issue.params,
-                  device: names.get(issue.device ?? "") ?? issue.device ?? "",
-                })}
-              </li>
-            ))}
-          </ul>
-        )}
+        {save.status === "invalid" && <ConfigurationIssues issues={save.issues} names={names} />}
         <Button variant="primary" onClick={() => void onSave()} disabled={save.status === "saving"}>
           {t("configuration.save")}
         </Button>
       </div>
     </Sheet>
+  );
+}
+
+/** Anomalies d'une configuration refusée par l'API (422). */
+export function ConfigurationIssues({ issues, names }: { issues: ConfigurationIssue[]; names: Map<string, string> }) {
+  const { t } = useI18n();
+  return (
+    <ul role="alert">
+      {issues.map((issue, index) => (
+        <li key={`${issue.code}-${index}`} className="issue">
+          {t(`configuration.issue.${issue.code}`, {
+            ...issue.params,
+            device: names.get(issue.device ?? "") ?? issue.device ?? "",
+          })}
+        </li>
+      ))}
+    </ul>
   );
 }
