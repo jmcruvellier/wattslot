@@ -56,7 +56,6 @@
     "status_ok": "Tutto funziona",
     "status_degraded": "Da controllare",
     "status_blocking": "Il calcolo è bloccato",
-    "devices": "Apparecchi e sensori",
     "templates": "Modelli pronti",
     "backup": "Salvare o condividere",
     "graph": "Grafo della casa",
@@ -611,7 +610,6 @@
     "keep_sensor": "Mantieni {entity}",
     "capacity_source": "(letto in Home Assistant: {entity})",
     "custom_kind": "{name} ({parent})",
-    "to_settings": "Impostazioni di pianificazione di questo apparecchio",
     "add": {
       "open": "Aggiungi un apparecchio",
       "title": "Aggiungere un apparecchio assente dalla dashboard energia",
@@ -630,6 +628,14 @@
       "essentials": "L'essenziale",
       "devices": "Apparecchi",
       "more": "Avanzate"
+    },
+    "fiche": {
+      "details": "Sensori, nome e tipo",
+      "proposed": "Proposto da Home Assistant, non ancora seguito. Verificane nome, tipo e sensori, poi aggiungilo alla tua casa.",
+      "include": "Aggiungi alla mia casa",
+      "remove": "Rimuovi dalla mia casa",
+      "remove_confirm": "Conferma la rimozione",
+      "remove_hint": "L'apparecchio non sarà più seguito né collocato. Home Assistant continuerà a proporlo finché esiste il suo sensore."
     }
   },
   "graph": {
@@ -1421,7 +1427,12 @@
       "not_before": "non prima delle {start}",
       "finish_before": "finito prima delle {end}"
     },
-    "add": "Aggiungi un apparecchio"
+    "add": "Aggiungi un apparecchio",
+    "installation": "Produzione, rete e batteria",
+    "installation_help": "Impostati in L'essenziale; qui i loro sensori",
+    "proposed": "Proposti da Home Assistant",
+    "proposed_help": "Non ancora seguiti: toccane uno per aggiungerlo",
+    "search": "Cerca un apparecchio"
   },
   "settings_home": {
     "notifications_none": "Nessuna attiva",

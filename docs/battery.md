@@ -14,7 +14,7 @@ WattSlot does not control your battery: it simulates how it behaves (it charges 
 | **The battery charges and discharges from … to …** | all day | For batteries that only work at some hours |
 | **Aim for a full charge regularly**, at least every N days | off | Lithium batteries recalibrate their charge measure when they reach 100 %: the plan then keeps enough surplus for it, and may skip some pool hours on those days |
 
-The capacity comes from Home Assistant when a sensor gives it, otherwise from **My home › Advanced › Appliances and sensors**.
+The capacity comes from Home Assistant when a sensor gives it, otherwise from its sheet in **My home › Devices** (**Sensors, name and type**).
 
 ## What you see
 

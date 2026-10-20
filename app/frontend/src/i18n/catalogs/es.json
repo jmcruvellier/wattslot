@@ -56,7 +56,6 @@
     "status_ok": "Todo funciona",
     "status_degraded": "Revisar",
     "status_blocking": "El cálculo está bloqueado",
-    "devices": "Aparatos y sensores",
     "templates": "Plantillas listas",
     "backup": "Guardar o compartir",
     "graph": "Grafo de la casa",
@@ -611,7 +610,6 @@
     "keep_sensor": "Conservar {entity}",
     "capacity_source": "(leído en Home Assistant: {entity})",
     "custom_kind": "{name} ({parent})",
-    "to_settings": "Ajustes de planificación de este aparato",
     "add": {
       "open": "Añadir un aparato",
       "title": "Añadir un aparato que falta en el panel de energía",
@@ -630,6 +628,14 @@
       "essentials": "Lo esencial",
       "devices": "Aparatos",
       "more": "Avanzado"
+    },
+    "fiche": {
+      "details": "Sensores, nombre y tipo",
+      "proposed": "Propuesto por Home Assistant, aún no seguido. Compruebe su nombre, su tipo y sus sensores y añádalo a su casa.",
+      "include": "Añadir a mi casa",
+      "remove": "Quitar de mi casa",
+      "remove_confirm": "Confirmar la retirada",
+      "remove_hint": "El aparato ya no se seguirá ni se colocará. Home Assistant lo seguirá proponiendo mientras exista su sensor."
     }
   },
   "graph": {
@@ -1421,7 +1427,12 @@
       "not_before": "no antes de las {start}",
       "finish_before": "terminado antes de las {end}"
     },
-    "add": "Añadir un aparato"
+    "add": "Añadir un aparato",
+    "installation": "Producción, red y batería",
+    "installation_help": "Se ajustan en Lo esencial; aquí, sus sensores",
+    "proposed": "Propuestos por Home Assistant",
+    "proposed_help": "Aún no seguidos: toque uno para añadirlo",
+    "search": "Buscar un aparato"
   },
   "settings_home": {
     "notifications_none": "Ninguna activa",

@@ -1,8 +1,9 @@
 // Ajout d'un équipement absent du tableau Énergie de HA (lot 2t.2, « Ma maison ») : un nom, un
 // type (de la bibliothèque ou propre) et, pour chaque capteur attendu de ce type, une entité de
-// HA dont l'unité convient. L'équipement rejoint le brouillon ; « Enregistrer » le valide.
+// HA dont l'unité convient. L'équipement rejoint le brouillon (premier enregistrement), ou la
+// maison aussitôt (feuille « Ajouter un appareil »).
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { ApiError, getJson } from "../api";
 import { useI18n } from "../i18n/I18nProvider";
@@ -18,15 +19,17 @@ interface EntityChoice {
 
 type Entities = { status: "idle" | "loading" | "not_connected" | "failed" } | { status: "ready"; list: EntityChoice[] };
 
-export default function AddDevice({ library, types, existing, onAdd }: {
+export default function AddDevice({ library, types, existing, onAdd, opened = false, onCancel }: {
   library: LibraryType[];
   types: DeviceType[];
   existing: string[]; // clés déjà prises
   onAdd: (device: DraftDevice) => void;
+  opened?: boolean; // dans une feuille : le formulaire est ouvert d'emblée
+  onCancel?: () => void;
 }) {
   const { t } = useI18n();
-  const [open, setOpen] = useState(false);
-  const [entities, setEntities] = useState<Entities>({ status: "idle" });
+  const [open, setOpen] = useState(opened);
+  const [entities, setEntities] = useState<Entities>({ status: opened ? "loading" : "idle" });
   const [name, setName] = useState("");
   const [choice, setChoice] = useState<string>("OtherLoad");
   const [chosen, setChosen] = useState<Partial<Record<Role, string>>>({});
@@ -35,13 +38,29 @@ export default function AddDevice({ library, types, existing, onAdd }: {
   const kind: DeviceKind = own ? own.parent : (choice as DeviceKind);
   const roles = library.find((type) => type.kind === kind)?.roles ?? [];
 
+  const failure = (error: unknown): Entities => ({
+    status: error instanceof ApiError && error.status === 503 ? "not_connected" : "failed",
+  });
+
+  // Ouvert d'emblée (feuille) : capteurs de HA lus une fois.
+  useEffect(() => {
+    if (!opened) return;
+    let cancelled = false;
+    getJson<EntityChoice[]>("api/home/entities")
+      .then((list) => !cancelled && setEntities({ status: "ready", list }))
+      .catch((error: unknown) => !cancelled && setEntities(failure(error)));
+    return () => {
+      cancelled = true;
+    };
+  }, [opened]);
+
   const start = async () => {
     setOpen(true);
     setEntities({ status: "loading" });
     try {
       setEntities({ status: "ready", list: await getJson<EntityChoice[]>("api/home/entities") });
     } catch (error) {
-      setEntities({ status: error instanceof ApiError && error.status === 503 ? "not_connected" : "failed" });
+      setEntities(failure(error));
     }
   };
 
@@ -146,7 +165,7 @@ export default function AddDevice({ library, types, existing, onAdd }: {
       <button type="button" disabled={!name.trim()} onClick={add}>
         {t("home.add.confirm")}
       </button>{" "}
-      <button type="button" onClick={() => setOpen(false)}>
+      <button type="button" onClick={() => (onCancel ? onCancel() : setOpen(false))}>
         {t("home.add.cancel")}
       </button>
     </fieldset>

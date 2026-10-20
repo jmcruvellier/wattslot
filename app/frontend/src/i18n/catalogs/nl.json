@@ -56,7 +56,6 @@
     "status_ok": "Alles werkt",
     "status_degraded": "Controleren",
     "status_blocking": "De berekening is geblokkeerd",
-    "devices": "Apparaten en sensoren",
     "templates": "Kant-en-klare sjablonen",
     "backup": "Back-up maken of delen",
     "graph": "Grafiek van het huis",
@@ -611,7 +610,6 @@
     "keep_sensor": "{entity} behouden",
     "capacity_source": "(gelezen in Home Assistant: {entity})",
     "custom_kind": "{name} ({parent})",
-    "to_settings": "Planningsinstellingen van dit apparaat",
     "add": {
       "open": "Een apparaat toevoegen",
       "title": "Een apparaat toevoegen dat in het energiedashboard ontbreekt",
@@ -630,6 +628,14 @@
       "essentials": "Het belangrijkste",
       "devices": "Apparaten",
       "more": "Geavanceerd"
+    },
+    "fiche": {
+      "details": "Sensoren, naam en type",
+      "proposed": "Voorgesteld door Home Assistant, nog niet gevolgd. Controleer naam, type en sensoren en voeg het dan toe aan uw huis.",
+      "include": "Toevoegen aan mijn huis",
+      "remove": "Uit mijn huis verwijderen",
+      "remove_confirm": "Verwijderen bevestigen",
+      "remove_hint": "Het apparaat wordt niet meer gevolgd of ingepland. Home Assistant blijft het voorstellen zolang de sensor bestaat."
     }
   },
   "graph": {
@@ -1421,7 +1427,12 @@
       "not_before": "niet vóór {start}",
       "finish_before": "klaar vóór {end}"
     },
-    "add": "Apparaat toevoegen"
+    "add": "Apparaat toevoegen",
+    "installation": "Productie, net en batterij",
+    "installation_help": "Ingesteld bij Het belangrijkste; hier hun sensoren",
+    "proposed": "Voorgesteld door Home Assistant",
+    "proposed_help": "Nog niet gevolgd: tik erop om het toe te voegen",
+    "search": "Apparaat zoeken"
   },
   "settings_home": {
     "notifications_none": "Geen actief",

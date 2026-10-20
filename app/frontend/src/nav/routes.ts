@@ -10,7 +10,7 @@ export type Section = (typeof SECTIONS)[number];
 // Sous-pages rangées sous une section (« Pour aller plus loin »).
 export const SUBPAGES = {
   // Écrans experts de Ma maison (lot 6b.5).
-  home: ["devices", "templates", "backup", "graph", "library"],
+  home: ["templates", "backup", "graph", "library"],
   // Sous-pages des Réglages (lot 6b.6), ouvertes depuis leur liste.
   settings: ["notifications", "voice", "display", "calculation", "status", "connection", "library"],
 } as const satisfies Partial<Record<Section, readonly string[]>>;
@@ -18,7 +18,6 @@ export type Subpage =
   | "library"
   | "status"
   | "connection"
-  | "devices"
   | "templates"
   | "backup"
   | "graph"
@@ -56,7 +55,7 @@ const LEGACY: Record<string, Route> = {
   assistant: { section: "assistant", sub: null },
   connection: { section: "settings", sub: "connection" },
   diagnostic: { section: "settings", sub: "status" },
-  devices: { section: "home", sub: "devices" },
+  devices: { section: "home", sub: null }, // fiches des appareils, dans l'onglet « Appareils »
   templates: { section: "home", sub: "templates" },
   backup: { section: "home", sub: "backup" },
   graph: { section: "home", sub: "graph" },
@@ -72,7 +71,6 @@ function settingsAnchorPage(anchor: string): Route | null {
 
 function homeAnchorPage(anchor: string): Route | null {
   if (anchor === "models") return { section: "home", sub: "templates" };
-  if (anchor === "add-device" || anchor.startsWith("device-")) return { section: "home", sub: "devices" };
   return null;
 }
 

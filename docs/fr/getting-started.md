@@ -7,7 +7,7 @@
 ## Les quatre premiers écrans
 
 1. **Reliez l'application à Home Assistant.** Comme application de Home Assistant, il n'y a rien à faire. En mode autonome, saisissez l'adresse de votre Home Assistant et connectez-vous (voir [Installation](installation.md#en-mode-autonome-docker)).
-2. **Voici ce que nous avons trouvé chez vous.** WattSlot lit le tableau Énergie de Home Assistant et propose vos équipements : production solaire, réseau, batterie, chauffe-eau, lave-linge, sèche-linge, lave-vaisselle, pompe de piscine… Décochez ce qui ne doit pas être pris en compte. Un équipement absent du tableau Énergie (une prise connectée, une pompe à chaleur) s'ajoute plus tard dans **Ma maison › Appareils et capteurs › Ajouter un équipement**.
+2. **Voici ce que nous avons trouvé chez vous.** WattSlot lit le tableau Énergie de Home Assistant et propose vos équipements : production solaire, réseau, batterie, chauffe-eau, lave-linge, sèche-linge, lave-vaisselle, pompe de piscine… Décochez ce qui ne doit pas être pris en compte. Un équipement absent du tableau Énergie (une prise connectée, une pompe à chaleur) s'ajoute plus tard dans **Ma maison › Appareils › Ajouter un appareil**.
 3. **Quel est votre contrat d'électricité ?** Choisissez le modèle le plus proche : tarif, batterie et appareils sont réglés d'un coup, avec des prix indicatifs à remplacer par les vôtres (voir [Tarifs](tariffs.md)).
 
    | Modèle | Pour |

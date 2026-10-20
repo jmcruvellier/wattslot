@@ -56,7 +56,6 @@
     "status_ok": "Tout fonctionne",
     "status_degraded": "À vérifier",
     "status_blocking": "Le calcul est bloqué",
-    "devices": "Appareils et capteurs",
     "templates": "Modèles prêts à l'emploi",
     "backup": "Sauvegarder ou partager",
     "graph": "Graphe de la maison",
@@ -611,7 +610,6 @@
     "keep_sensor": "Retenir {entity}",
     "capacity_source": "(lue dans Home Assistant : {entity})",
     "custom_kind": "{name} ({parent})",
-    "to_settings": "Réglages du calcul de cet équipement",
     "add": {
       "open": "Ajouter un équipement",
       "title": "Ajouter un équipement absent du tableau Énergie",
@@ -630,6 +628,14 @@
       "essentials": "L'essentiel",
       "devices": "Appareils",
       "more": "Avancé"
+    },
+    "fiche": {
+      "details": "Capteurs, nom et type",
+      "proposed": "Proposé par Home Assistant, pas encore suivi. Vérifiez son nom, son type et ses capteurs, puis ajoutez-le à votre maison.",
+      "include": "Ajouter à ma maison",
+      "remove": "Retirer de ma maison",
+      "remove_confirm": "Confirmer le retrait",
+      "remove_hint": "L'appareil ne sera plus suivi ni placé. Home Assistant le proposera encore tant que son capteur existe."
     }
   },
   "graph": {
@@ -1421,7 +1427,12 @@
       "not_before": "pas avant {start}",
       "finish_before": "fini avant {end}"
     },
-    "add": "Ajouter un appareil"
+    "add": "Ajouter un appareil",
+    "installation": "Production, réseau et batterie",
+    "installation_help": "Réglés dans L'essentiel ; ici, leurs capteurs",
+    "proposed": "Proposés par Home Assistant",
+    "proposed_help": "Pas encore suivis : touchez-en un pour l'ajouter",
+    "search": "Rechercher un appareil"
   },
   "settings_home": {
     "notifications_none": "Aucune active",

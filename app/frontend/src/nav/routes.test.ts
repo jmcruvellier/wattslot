@@ -34,15 +34,16 @@ describe("adresses", () => {
   });
 
   it("range les écrans experts de Ma maison dans leurs sous-pages", () => {
-    expect(parseHash("#/home/devices")).toEqual({ section: "home", sub: "devices" });
+    // Appareils et capteurs : dans la fiche de chaque appareil depuis la refonte de Ma maison.
+    expect(parseHash("#/home/devices")).toBeNull();
     expect(parseHash("#/home/graph")).toEqual({ section: "home", sub: "graph" });
     expect(parseHash("#/settings/devices")).toBeNull();
     // Anciennes ancres de Ma maison, passées dans une sous-page.
     expect(resolveTarget("home#models")).toEqual({ route: { section: "home", sub: "templates" }, anchor: "models" });
-    expect(resolveTarget("home#device-washer")?.route).toEqual({ section: "home", sub: "devices" });
+    expect(resolveTarget("home#device-washer")).toEqual({ route: { section: "home", sub: null }, anchor: "device-washer" });
     expect(resolveTarget("home#battery")?.route).toEqual({ section: "home", sub: null });
     expect(resolveTarget("devices#add-device")).toEqual({
-      route: { section: "home", sub: "devices" },
+      route: { section: "home", sub: null },
       anchor: "add-device",
     });
   });

@@ -40,8 +40,8 @@ Your home in plain sentences, in three tabs. Tap a line: its setting opens on it
 ![My home](images/en/home-desktop-light.png)
 
 - **Essentials**: your priority (pay as little as possible, use my own sun…), your contract, your panels and your battery: see [Tariffs](tariffs.md) and [Battery](battery.md).
-- **Devices**: the appliances placed at the best time, then those only monitored (folded, often many plugs), and **Add a device**. Each appliance opens its rules: see [Your home and its rules](your-home.md).
-- **Advanced**: **Import the rules of Home Assistant tasks**, then **Appliances and sensors** (the devices read from Home Assistant), **Ready-made templates**, **Back up or share** (export or import your home as a file), **Home graph** and **Appliance library** (for the curious), and the glossary.
+- **Devices**: the appliances placed at the best time, then, folded, those only monitored (often many plugs, with a search field), the production, grid and battery, and the devices Home Assistant suggests but WattSlot does not follow yet; **Add a device** and **Re-read Home Assistant**. Each device opens its sheet: its rules (see [Your home and its rules](your-home.md)), then, folded, its **sensors, name and type**, with the points to check and **Remove from my home**.
+- **Advanced**: **Import the rules of Home Assistant tasks**, then **Ready-made templates**, **Back up or share** (export or import your home as a file), **Home graph** and **Appliance library** (for the curious), and the glossary.
 
 ## Assistant
 

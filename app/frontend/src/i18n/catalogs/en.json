@@ -56,7 +56,6 @@
     "status_ok": "All good",
     "status_degraded": "Needs a look",
     "status_blocking": "Planning is blocked",
-    "devices": "Appliances and sensors",
     "templates": "Ready-made templates",
     "backup": "Back up or share",
     "graph": "Home graph",
@@ -611,7 +610,6 @@
     "keep_sensor": "Keep {entity}",
     "capacity_source": "(read from Home Assistant: {entity})",
     "custom_kind": "{name} ({parent})",
-    "to_settings": "Planner settings of this device",
     "add": {
       "open": "Add a device",
       "title": "Add a device missing from the Energy dashboard",
@@ -630,6 +628,14 @@
       "essentials": "Essentials",
       "devices": "Devices",
       "more": "Advanced"
+    },
+    "fiche": {
+      "details": "Sensors, name and type",
+      "proposed": "Suggested by Home Assistant, not followed yet. Check its name, type and sensors, then add it to your home.",
+      "include": "Add to my home",
+      "remove": "Remove from my home",
+      "remove_confirm": "Confirm removal",
+      "remove_hint": "The device will no longer be followed or placed. Home Assistant will still suggest it while its sensor exists."
     }
   },
   "graph": {
@@ -1421,7 +1427,12 @@
       "not_before": "not before {start}",
       "finish_before": "done before {end}"
     },
-    "add": "Add an appliance"
+    "add": "Add an appliance",
+    "installation": "Production, grid and battery",
+    "installation_help": "Set in Essentials; their sensors here",
+    "proposed": "Suggested by Home Assistant",
+    "proposed_help": "Not followed yet: tap one to add it",
+    "search": "Search a device"
   },
   "settings_home": {
     "notifications_none": "None active",

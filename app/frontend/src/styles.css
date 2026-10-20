@@ -1729,6 +1729,22 @@ a.ui-setting-row {
   transform: rotate(90deg);
 }
 
+.home-search {
+  width: 100%;
+  margin-bottom: 0.6rem;
+}
+
+.home-devices-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Fiche d'un appareil : capteurs, nom et type repliés sous ses réglages. */
+.home-fiche-details {
+  margin-top: 1rem;
+}
+
 /* Feuille d'un réglage : formulaire plus large sur ordinateur, « Enregistrer » toujours visible. */
 @media (min-width: 768px) {
   .ui-sheet.ui-sheet-wide {

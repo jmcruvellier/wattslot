@@ -40,8 +40,8 @@ Votre maison en phrases, en trois onglets. Touchez une ligne : son réglage s'ou
 ![Ma maison](../images/fr/home-desktop-light.png)
 
 - **L'essentiel** : votre priorité (payer le moins cher, consommer mon soleil…), votre contrat, vos panneaux et votre batterie : voir [Tarifs](tariffs.md) et [Batterie](battery.md).
-- **Appareils** : les appareils placés au meilleur moment, puis ceux seulement suivis (repliés, souvent de nombreuses prises), et **Ajouter un appareil**. Chaque appareil ouvre ses règles : voir [Votre maison et ses règles](your-home.md).
-- **Avancé** : **Reprendre les règles des tâches de Home Assistant**, puis **Appareils et capteurs** (les équipements lus dans Home Assistant), **Modèles prêts à l'emploi**, **Sauvegarder ou partager** (exporter ou importer votre maison dans un fichier), **Graphe de la maison** et **Bibliothèque d'appareils** (pour les curieux), et le lexique.
+- **Appareils** : les appareils placés au meilleur moment, puis, repliés, ceux seulement suivis (souvent de nombreuses prises, avec un champ de recherche), la production, le réseau et la batterie, et les appareils que Home Assistant propose mais que WattSlot ne suit pas encore ; **Ajouter un appareil** et **Relire Home Assistant**. Chaque appareil ouvre sa fiche : ses règles (voir [Votre maison et ses règles](your-home.md)), puis, repliés, ses **capteurs, nom et type**, avec les points à vérifier et **Retirer de ma maison**.
+- **Avancé** : **Reprendre les règles des tâches de Home Assistant**, puis **Modèles prêts à l'emploi**, **Sauvegarder ou partager** (exporter ou importer votre maison dans un fichier), **Graphe de la maison** et **Bibliothèque d'appareils** (pour les curieux), et le lexique.
 
 ## Assistant
 
