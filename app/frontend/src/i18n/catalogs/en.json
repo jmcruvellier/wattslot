@@ -1548,6 +1548,7 @@
       "none": "No anomaly in this period.",
       "found": "{count} anomaly/anomalies: the obvious ones are corrected automatically.",
       "failed": "The check failed."
-    }
+    },
+    "related": "With the quarter hour {period}: {value}"
   }
 }

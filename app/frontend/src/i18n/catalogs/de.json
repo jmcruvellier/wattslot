@@ -1548,6 +1548,7 @@
       "none": "Keine Auffälligkeit in diesem Zeitraum.",
       "found": "{count} Auffälligkeit(en): Eindeutige werden automatisch korrigiert.",
       "failed": "Die Prüfung ist fehlgeschlagen."
-    }
+    },
+    "related": "Mit der Viertelstunde {period}: {value}"
   }
 }

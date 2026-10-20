@@ -70,6 +70,31 @@ function periodText(language: Language, period: string, start: string): string {
   return `${day}, ${time(from)} – ${time(to)}`;
 }
 
+// Correction d'une heure et celles de ses quarts d'heure : un saut touche les deux, une seule
+// ligne les montre. Un quart d'heure corrigé sans son heure reste seul.
+interface Group {
+  main: Correction;
+  related: Correction[];
+}
+
+const HOUR_MS = 3_600_000;
+
+function groups(list: Correction[]): Group[] {
+  const found: Group[] = list.filter((c) => c.period === HOUR).map((main) => ({ main, related: [] }));
+  for (const quarter of list.filter((c) => c.period !== HOUR)) {
+    const start = new Date(quarter.start).getTime();
+    const hour = found.find(
+      (g) =>
+        g.main.entity_id === quarter.entity_id &&
+        start >= new Date(g.main.start).getTime() &&
+        start < new Date(g.main.start).getTime() + HOUR_MS,
+    );
+    if (hour) hour.related.push(quarter);
+    else found.push({ main: quarter, related: [] });
+  }
+  return found.sort((a, b) => b.main.start.localeCompare(a.main.start));
+}
+
 // Nom d'un compteur : son appareil, et son rôle quand l'appareil en a plusieurs (son entité quand
 // deux ont le même rôle : heures creuses et pleines d'un Linky).
 function useSensorName(data: HomeData) {
@@ -90,7 +115,7 @@ export default function DataTab({ data }: { data: HomeData }) {
   const name = useSensorName(data);
   const [load, setLoad] = useState<Load>({ status: "loading" });
   const [attempt, setAttempt] = useState(0); // relecture après une correction ou une analyse
-  const [open, setOpen] = useState<Correction | null>(null);
+  const [open, setOpen] = useState<Group | null>(null);
   const [scanning, setScanning] = useState(false);
 
   useEffect(() => {
@@ -130,7 +155,9 @@ export default function DataTab({ data }: { data: HomeData }) {
     return <StateMessage kind="error" title={t("quality.error.load")} onRetry={reload} />;
   }
 
-  const { corrections, undone, checked } = load;
+  const corrections = groups(load.corrections);
+  const undone = groups(load.undone);
+  const { checked } = load;
 
   // Trous regroupés par compteur : heures manquantes et première.
   const gaps = new Map<string, { missing: number; since: string }>();
@@ -146,14 +173,14 @@ export default function DataTab({ data }: { data: HomeData }) {
     `${c.original_kwh === null ? "—" : kwh(language, c.original_kwh)} → ${
       c.corrected_kwh === null ? t("quality.discarded") : kwh(language, c.corrected_kwh)
     }`;
-  const rows = (list: Correction[]) => (
+  const rows = (list: Group[]) => (
     <SettingList>
-      {list.map((c) => (
+      {list.map((group) => (
         <SettingRow
-          key={c.id}
-          label={name(c.entity_id)}
-          description={`${periodText(language, c.period, c.start)} · ${valueText(c)}`}
-          onOpen={() => setOpen(c)}
+          key={group.main.id}
+          label={name(group.main.entity_id)}
+          description={`${periodText(language, group.main.period, group.main.start)} · ${valueText(group.main)}`}
+          onOpen={() => setOpen(group)}
         />
       ))}
     </SettingList>
@@ -214,9 +241,10 @@ export default function DataTab({ data }: { data: HomeData }) {
 
       {open && (
         <CorrectionSheet
-          correction={open}
-          title={name(open.entity_id)}
-          period={periodText(language, open.period, open.start)}
+          correction={open.main}
+          related={open.related}
+          title={name(open.main.entity_id)}
+          period={periodText(language, open.main.period, open.main.start)}
           onClose={() => setOpen(null)}
           onDone={() => {
             setOpen(null);
@@ -239,12 +267,14 @@ export default function DataTab({ data }: { data: HomeData }) {
 // Feuille d'une correction : ce qui s'est passé, ce qui a été fait, les autres choix.
 function CorrectionSheet({
   correction,
+  related,
   title,
   period,
   onClose,
   onDone,
 }: {
   correction: Correction;
+  related: Correction[]; // quarts d'heure de cette heure, corrigés avec elle
   title: string;
   period: string;
   onClose: () => void;
@@ -269,15 +299,23 @@ function CorrectionSheet({
     }
   };
 
+  // Une action vaut pour l'heure et ses quarts d'heure : l'heure d'abord (son refus arrête tout).
+  const all = [correction, ...related];
   const apply = (method: Method) =>
-    run(() =>
-      postJson("api/quality/corrections", {
-        entity_id: correction.entity_id,
-        period: correction.period,
-        start: correction.start,
-        method,
-      }),
-    );
+    run(async () => {
+      for (const c of all) {
+        await postJson("api/quality/corrections", {
+          entity_id: c.entity_id,
+          period: c.period,
+          start: c.start,
+          method,
+        });
+      }
+    });
+  const valueOf = (c: Correction) =>
+    `${c.original_kwh === null ? "—" : kwh(language, c.original_kwh)} → ${
+      c.corrected_kwh === null ? t("quality.discarded") : kwh(language, c.corrected_kwh)
+    }`;
 
   return (
     <Sheet open title={title} onClose={onClose}>
@@ -292,6 +330,14 @@ function CorrectionSheet({
             })}`
           : t("quality.was_undone")}
       </p>
+      {related.map((quarter) => (
+        <p key={quarter.id} className="dim">
+          {t("quality.related", {
+            period: periodText(language, quarter.period, quarter.start),
+            value: valueOf(quarter),
+          })}
+        </p>
+      ))}
       <h3 className="home-summary-heading">{t(active ? "quality.actions" : "quality.actions_again")}</h3>
       <p className="home-devices-actions">
         {METHODS.filter((method) => !active || method !== correction.method).map((method) => (
@@ -303,7 +349,13 @@ function CorrectionSheet({
           <Button
             variant="quiet"
             disabled={busy}
-            onClick={() => void run(() => deleteRequest(`api/quality/corrections/${correction.id}`))}
+            onClick={() =>
+              void run(async () => {
+                for (const c of all.filter((item) => item.undone_at === null)) {
+                  await deleteRequest(`api/quality/corrections/${c.id}`);
+                }
+              })
+            }
           >
             {t("quality.action.undo")}
           </Button>

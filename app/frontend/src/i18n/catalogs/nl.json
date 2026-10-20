@@ -1548,6 +1548,7 @@
       "none": "Geen afwijking in deze periode.",
       "found": "{count} afwijking(en): duidelijke worden automatisch gecorrigeerd.",
       "failed": "De controle is mislukt."
-    }
+    },
+    "related": "Met het kwartier {period}: {value}"
   }
 }
