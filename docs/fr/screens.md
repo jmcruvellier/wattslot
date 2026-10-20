@@ -27,6 +27,7 @@ Le plan en détail, pour **Hier**, **Aujourd'hui**, **Demain** et la **Semaine**
 - Des bandeaux pour l'essentiel : avertissements, batterie à minuit, production prévue comparée à la production mesurée.
 - **La journée en agenda** : ce qui se passe, et quand.
 - **Pourquoi ce plan** : l'explication de chaque décision, en clair.
+- **Indicateurs du plan** (coût, achat, surplus, autoconsommation…) : sur la journée entière, mesurés pour les heures déjà passées, prévus pour la suite.
 - **Mes demandes** (sous chaque onglet) : les appareils que vous avez demandés, avec ou sans échéance, à marquer faits ou à annuler.
 - **Courbes détaillées** (repliées) : cartes de synthèse (batterie, réseau, production, estimé et mesuré), le Planning des équipements, la charge de la batterie, les échanges avec le réseau et les courbes de production et de consommation, prévues (en pointillés) et mesurées.
 - **Personnaliser** choisit les cartes affichées et leur ordre.

@@ -1300,10 +1300,11 @@
       "input": "Su mensaje",
       "placeholder": "¿Cuánto produjeron los paneles ayer?",
       "send": "Enviar",
-      "help": "Intro para enviar, Mayús+Intro para cambiar de línea. La conversación no se guarda.",
-      "empty": "Sus preguntas y las respuestas del asistente aparecerán aquí.",
+      "help": "Intro para enviar, Mayús+Intro para cambiar de línea. La conversación se conserva mientras la pestaña del navegador siga abierta.",
+      "empty": "El asistente no respondió nada.",
       "failed": "El asistente no respondió, vuelva a intentarlo.",
-      "not_connected": "Home Assistant no está conectado: el chat no está disponible."
+      "not_connected": "Home Assistant no está conectado: el chat no está disponible.",
+      "log_empty": "Sus preguntas y las respuestas del asistente aparecerán aquí."
     }
   },
   "ui": {

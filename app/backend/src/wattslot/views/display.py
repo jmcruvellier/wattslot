@@ -28,6 +28,7 @@ from wattslot.planning.cycles import (
 from wattslot.planning.inputs import V1_POOL
 from wattslot.planning.reference import task_key
 from wattslot.planning.simulation import simulate
+from wattslot.tariff import Tariff
 
 BATTERY = "Batterie"
 
@@ -46,6 +47,9 @@ class Context:
     objective: str = "cost"
     # Faux pour une maison sans installation solaire (lot 7.4) : rien de solaire à montrer.
     solar: bool = True
+    # Tarif de la maison : coût des heures déjà passées quand le plan a été calculé (indicateurs
+    # de la journée entière) ; aucun : ces heures ne sont pas chiffrées.
+    tariff: Tariff | None = None
 
     def speed_kw(self, mode: str) -> float:
         """Puissance d'un mode de la filtration ; la plus haute pour « eco » et la plus basse

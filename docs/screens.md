@@ -27,6 +27,7 @@ The plan in detail, for **Yesterday**, **Today**, **Tomorrow** and the **Week**.
 - Banners for what matters: warnings, the battery at midnight, the forecast production compared with what was measured.
 - **The day as an agenda**: what happens and when.
 - **Why this plan**: the explanation of each decision, in plain words.
+- **Plan indicators** (cost, purchases, surplus, self-consumption…): for the whole day, measured for the hours already past, planned for the rest.
 - **My requests** (under each tab): the appliances you asked for, with or without a deadline, to mark done or cancel.
 - **Detailed charts** (folded): summary cards (battery, grid, production, estimated against measured), the appliance schedule, the battery charge, the grid exchanges and the production and consumption curves, planned (dotted) and measured.
 - **Customize** chooses which cards appear and their order.
