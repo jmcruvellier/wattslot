@@ -1,71 +1,35 @@
-// Ma maison en phrases (lot 6b.5) : priorité, contrat, panneaux, batterie, appareils placés au
-// meilleur moment et appareils suivis seulement, rédigés à partir de la configuration et de la
-// maison enregistrées. Un clic ouvre le réglage concerné dans « Réglages détaillés ».
+// Ma maison en phrases (lot 6b.5), rédigées à partir de la configuration et de la maison
+// enregistrées : « L'essentiel » (priorité, contrat, panneaux, batterie) et « Appareils » (placés au
+// meilleur moment, suivis seulement). Un clic ouvre la feuille du réglage.
 
-import { useEffect, useState } from "react";
-
-import { getJson } from "../api";
 import { useCurrency } from "../i18n/currency";
 import { useI18n } from "../i18n/I18nProvider";
 import { formatNumber } from "../i18n/translate";
 import Button from "../ui/Button";
+import Icon from "../ui/Icon";
 import SettingRow, { SettingList } from "../ui/SettingRow";
 import { DEFAULT_BATTERY, type Configuration } from "./configuration";
 import { deviceText, direction, list, PLACED, tariffText } from "./summaryText";
-import type { HomeDevice, HomeModel } from "./types";
-import StateMessage from "../ui/StateMessage";
+import type { HomeDevice } from "./types";
 
-type Load =
-  | { status: "loading" }
-  | { status: "error" }
-  | { status: "ready"; devices: HomeDevice[]; configuration: Configuration };
+// Feuilles de « L'essentiel » ; un appareil s'ouvre par sa clé.
+export type Essential = "objective" | "tariff" | "solar" | "battery";
 
-export default function HomeSummary({ version, onOpen }: { version: number; onOpen: (anchor: string) => void }) {
+export interface HomeData {
+  devices: HomeDevice[];
+  configuration: Configuration;
+}
+
+export function Essentials({ data, onOpen }: { data: HomeData; onOpen: (sheet: Essential) => void }) {
   const { language, t } = useI18n();
   const { code: currency } = useCurrency();
-  const [load, setLoad] = useState<Load>({ status: "loading" });
-  const [attempt, setAttempt] = useState(0); // « Réessayer »
-
-  useEffect(() => {
-    const controller = new AbortController();
-    Promise.all([
-      getJson<HomeModel>("api/home", controller.signal),
-      getJson<Configuration>("api/configuration", controller.signal),
-    ])
-      .then(([home, configuration]) => setLoad({ status: "ready", devices: home.devices, configuration }))
-      .catch(() => {
-        if (!controller.signal.aborted) setLoad({ status: "error" });
-      });
-    return () => controller.abort();
-  }, [version, attempt]);
-
-  if (load.status === "loading") return <StateMessage kind="loading" title={t("home_summary.loading")} />;
-  if (load.status === "error") {
-    return (
-      <StateMessage
-        kind="error"
-        title={t("home_summary.error")}
-        onRetry={() => {
-          setLoad({ status: "loading" });
-          setAttempt((count) => count + 1);
-        }}
-      />
-    );
-  }
-  const { devices, configuration } = load;
-  const names = new Map(devices.map((device) => [device.key, device.name]));
-  const name = (key: string) => names.get(key) ?? key;
+  const { devices, configuration } = data;
   const preset = configuration.objective?.preset ?? "cost";
-
   const solar = configuration.devices.filter((s) => s.behavior === "ProductionBehavior");
   const arrays = solar.flatMap((s) => s.panels?.arrays ?? []);
   const batteries = devices.filter((device) => device.kind === "Battery");
   const capacity = batteries.reduce((sum, device) => sum + (device.capacity_kwh ?? 0), 0);
   const battery = configuration.battery ?? DEFAULT_BATTERY;
-  const placed = configuration.devices.filter((s) => PLACED.has(s.behavior) && s.planned);
-  const followed = configuration.devices.filter(
-    (s) => s.behavior === "UncontrolledBehavior" || (PLACED.has(s.behavior) && !s.planned),
-  );
 
   const panelsText = () => {
     if (arrays.length === 0) return t("home_summary.panels.undescribed");
@@ -73,6 +37,60 @@ export default function HomeSummary({ version, onOpen }: { version: number; onOp
     const facing = [...new Set(arrays.map((array) => t(`home_summary.direction.${direction(array.azimuth)}`)))];
     return t("home_summary.panels.fields", { count: arrays.length, directions: list(facing, t), kwp });
   };
+
+  return (
+    <SettingList>
+      <SettingRow
+        label={t("home_summary.priority")}
+        description={t(`home_summary.presets.${preset}`)}
+        onOpen={() => onOpen("objective")}
+      />
+      <SettingRow
+        label={t("home_summary.contract.title")}
+        description={tariffText(configuration.tariff, t, language, currency)}
+        onOpen={() => onOpen("tariff")}
+      />
+      {solar.length > 0 && (
+        <SettingRow label={t("home_summary.panels.title")} description={panelsText()} onOpen={() => onOpen("solar")} />
+      )}
+      {batteries.length > 0 && (
+        <SettingRow
+          label={t("home_summary.battery.title")}
+          description={[
+            t("home_summary.battery.floor", {
+              kwh: formatNumber(language, capacity, 1),
+              pct: formatNumber(language, battery.floor_percent, 0),
+            }),
+            battery.full_charge_every_days
+              ? t("home_summary.battery.full_charge", { days: battery.full_charge_every_days })
+              : null,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
+          onOpen={() => onOpen("battery")}
+        />
+      )}
+    </SettingList>
+  );
+}
+
+export function Devices({
+  data,
+  onOpen,
+  onAdd,
+}: {
+  data: HomeData;
+  onOpen: (key: string) => void;
+  onAdd: () => void;
+}) {
+  const { language, t } = useI18n();
+  const { devices, configuration } = data;
+  const names = new Map(devices.map((device) => [device.key, device.name]));
+  const name = (key: string) => names.get(key) ?? key;
+  const placed = configuration.devices.filter((s) => PLACED.has(s.behavior) && s.planned);
+  const followed = configuration.devices.filter(
+    (s) => s.behavior === "UncontrolledBehavior" || (PLACED.has(s.behavior) && !s.planned),
+  );
 
   const followedText = () => {
     // Jusqu'à quatre, tous nommés ; au-delà, trois et le nombre des autres.
@@ -82,43 +100,7 @@ export default function HomeSummary({ version, onOpen }: { version: number; onOp
   };
 
   return (
-    <section className="home-summary" aria-labelledby="home-summary-title">
-      <h2 id="home-summary-title" className="visually-hidden">
-        {t("home_summary.title")}
-      </h2>
-      <SettingList>
-        <SettingRow
-          label={t("home_summary.priority")}
-          description={t(`home_summary.presets.${preset}`)}
-          onOpen={() => onOpen("objective")}
-        />
-        <SettingRow
-          label={t("home_summary.contract.title")}
-          description={tariffText(configuration.tariff, t, language, currency)}
-          onOpen={() => onOpen("tariff")}
-        />
-        {solar.length > 0 && (
-          <SettingRow label={t("home_summary.panels.title")} description={panelsText()} onOpen={() => onOpen("solar")} />
-        )}
-        {batteries.length > 0 && (
-          <SettingRow
-            label={t("home_summary.battery.title")}
-            description={[
-              t("home_summary.battery.floor", {
-                kwh: formatNumber(language, capacity, 1),
-                pct: formatNumber(language, battery.floor_percent, 0),
-              }),
-              battery.full_charge_every_days
-                ? t("home_summary.battery.full_charge", { days: battery.full_charge_every_days })
-                : null,
-            ]
-              .filter(Boolean)
-              .join(" · ")}
-            onOpen={() => onOpen("battery")}
-          />
-        )}
-      </SettingList>
-
+    <>
       {placed.length > 0 && (
         <>
           <h3 className="home-summary-heading">{t("home_summary.placed")}</h3>
@@ -128,7 +110,7 @@ export default function HomeSummary({ version, onOpen }: { version: number; onOp
                 key={settings.key}
                 label={name(settings.key)}
                 description={deviceText(settings, names, t, language)}
-                onOpen={() => onOpen(`settings-${settings.key}`)}
+                onOpen={() => onOpen(settings.key)}
               />
             ))}
           </SettingList>
@@ -138,21 +120,29 @@ export default function HomeSummary({ version, onOpen }: { version: number; onOp
       {followed.length > 0 && (
         <>
           <h3 className="home-summary-heading">{t("home_summary.followed")}</h3>
-          <SettingList>
-            <SettingRow
-              label={followedText()}
-              description={t("home_summary.followed_help")}
-              onOpen={() => onOpen(`settings-${followed[0].key}`)}
-            />
-          </SettingList>
+          {/* Souvent des dizaines de prises : repliées, une ligne qui les nomme. */}
+          <details className="home-followed">
+            <summary>
+              <span>
+                <span className="ui-row-label">{followedText()}</span>
+                <span className="ui-row-help">{t("home_summary.followed_help")}</span>
+              </span>
+              <Icon name="chevron-right" size={18} />
+            </summary>
+            <SettingList>
+              {followed.map((settings) => (
+                <SettingRow key={settings.key} label={name(settings.key)} onOpen={() => onOpen(settings.key)} />
+              ))}
+            </SettingList>
+          </details>
         </>
       )}
 
       <p>
-        <Button icon="plus" onClick={() => onOpen("add-device")}>
+        <Button icon="plus" onClick={onAdd}>
           {t("home_summary.add")}
         </Button>
       </p>
-    </section>
+    </>
   );
 }

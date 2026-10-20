@@ -2,7 +2,7 @@
 
 *[Version française](fr/your-home.md) · [User guide](README.md)*
 
-Everything here is in **My home › Detailed settings**. A ready-made template sets most of it in one go; then adjust what differs in your home.
+Everything here is in **My home**: the rules of each appliance in the **Devices** tab, your priority, contract, panels and battery in **Essentials**. A ready-made template sets most of it in one go; then adjust what differs in your home.
 
 ## What WattSlot does with each device
 

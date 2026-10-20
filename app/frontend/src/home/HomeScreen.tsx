@@ -3,12 +3,19 @@ import { lazy, Suspense, useCallback, useEffect, useState, type ReactNode } from
 import { ApiError, getJson, putJson } from "../api";
 import Advanced, { Hint } from "../common/Advanced";
 import Glossary from "../common/Glossary";
-import { reveal } from "../common/reveal";
 import { useI18n } from "../i18n/I18nProvider";
+import Button from "../ui/Button";
+import StateMessage from "../ui/StateMessage";
 import AddDevice from "./AddDevice";
-import HomeSummary from "./HomeSummary";
-import ConfigurationSection from "./ConfigurationSection";
+import BatteryEditor from "./BatteryEditor";
+import type { Configuration, DeviceSettings as DeviceSettingsType, TaskRules } from "./configuration";
+import DeviceSettings from "./DeviceSettings";
 import ExchangeSection from "./ExchangeSection";
+import { Devices, Essentials, type Essential, type HomeData } from "./HomeSummary";
+import ObjectiveEditor from "./ObjectiveEditor";
+import PanelsEditor from "./PanelsEditor";
+import SettingsSheet from "./SettingsSheet";
+import TariffEditor from "./TariffEditor";
 import TemplateSection from "./TemplateSection";
 import { buildDraft, mergeDraft, toModel, type DraftDevice } from "./draft";
 import {
@@ -57,44 +64,50 @@ async function loadHome(refresh: boolean): Promise<LoadResult> {
 // Vue en graphe : React Flow n'est chargé que si on la demande (lot 2t.3).
 const HomeGraph = lazy(() => import("./HomeGraph"));
 
-// « Réglages détaillés » ouverts ou repliés (lot 6b.5), gardé dans le navigateur.
-export const DETAILS_KEY = "home.details";
+// Onglet ouvert de la page principale, gardé dans le navigateur comme celui de Planning.
+export const TAB_KEY = "home.tab";
+const TABS = ["essentials", "devices", "more"] as const;
+type Tab = (typeof TABS)[number];
 
-function savedDetails(): boolean {
+function savedTab(): Tab {
   try {
-    return window.localStorage.getItem(DETAILS_KEY) === "open";
+    const found = window.localStorage.getItem(TAB_KEY);
+    return (TABS as readonly string[]).includes(found ?? "") ? (found as Tab) : "essentials";
   } catch {
-    return false;
+    return "essentials";
   }
 }
 
-function rememberDetails(open: boolean) {
+function rememberTab(tab: Tab) {
   try {
-    window.localStorage.setItem(DETAILS_KEY, open ? "open" : "closed");
+    window.localStorage.setItem(TAB_KEY, tab);
   } catch {
     // stockage indisponible : rien à garder
   }
 }
 
-// Pages de Ma maison (lot 6b.5) : la maison en phrases et ses réglages détaillés, puis les
-// écrans experts rangés sous « Pour aller plus loin ».
+// Pages de Ma maison (lot 6b.5) : la page principale en onglets, puis les écrans experts ouverts
+// depuis l'onglet « Avancé ».
 export type HomePage = "main" | "devices" | "templates" | "backup" | "graph";
 
 export default function HomeScreen({
   page = "main",
   onNavigate,
   more,
+  anchor = null,
+  onAnchor,
 }: {
   page?: HomePage;
   onNavigate: (target: string) => void;
-  // « Pour aller plus loin », fourni par l'application : rendu sous les réglages, avant le lexique.
+  // Liens des écrans experts, fournis par l'application : rendus dans l'onglet « Avancé ».
   more?: ReactNode;
+  // Réglage demandé par un lien (« home#tariff », « home#settings-washer ») : sa feuille s'ouvre.
+  anchor?: string | null;
+  onAnchor?: () => void;
 }) {
   const { t } = useI18n();
   const [version, setVersion] = useState(0); // relit les réglages après un enregistrement
   const changed = () => setVersion((count) => count + 1);
-  // Lu une fois : ensuite la section s'ouvre au clic ou par `reveal`, sans que React la referme.
-  const [detailsOpen] = useState(savedDetails);
 
   if (page === "devices") return <HomeEditor onSaved={changed} onNavigate={onNavigate} />;
   if (page === "templates") return <TemplateSection version={version} onApplied={changed} />;
@@ -106,26 +119,269 @@ export default function HomeScreen({
       </Suspense>
     );
   }
-  // Ma maison en phrases d'abord ; les réglages sont repliés dessous, et un clic sur une phrase
-  // les déplie jusqu'au bon réglage. « Ajouter un appareil » ouvre « Appareils et capteurs ».
+  return <HomeMain onNavigate={onNavigate} more={more} anchor={anchor} onAnchor={onAnchor} />;
+}
+
+type MainLoad = { status: "loading" } | { status: "error" } | ({ status: "ready" } & HomeData);
+
+// Feuille ouverte : un réglage de « L'essentiel » ou les réglages d'un appareil.
+type Open = { kind: Essential } | { kind: "device"; key: string };
+
+const ESSENTIALS: readonly string[] = ["objective", "tariff", "solar", "battery"];
+
+// Reprise des règles des tâches de HA : enregistrées, aucune, HA absent, échec.
+type RulesState = "idle" | "loading" | "applied" | "none" | "not_connected" | "failed";
+
+// Page principale (refonte de Ma maison) : trois onglets courts, et chaque réglage dans sa feuille,
+// enregistré seul. Rien n'est déplié d'avance : une ligne par réglage ou par appareil.
+function HomeMain({
+  onNavigate,
+  more,
+  anchor,
+  onAnchor,
+}: {
+  onNavigate: (target: string) => void;
+  more?: ReactNode;
+  anchor: string | null;
+  onAnchor?: () => void;
+}) {
+  const { t } = useI18n();
+  const [tab, setTab] = useState<Tab>(savedTab);
+  const [load, setLoad] = useState<MainLoad>({ status: "loading" });
+  const [attempt, setAttempt] = useState(0); // « Réessayer »
+  const [open, setOpen] = useState<Open | null>(null);
+  const [saved, setSaved] = useState(false);
+  const [rules, setRules] = useState<RulesState>("idle");
+
+  useEffect(() => {
+    const controller = new AbortController();
+    Promise.all([
+      getJson<HomeModel>("api/home", controller.signal),
+      getJson<Configuration>("api/configuration", controller.signal),
+    ])
+      .then(([home, configuration]) => setLoad({ status: "ready", devices: home.devices, configuration }))
+      .catch(() => {
+        if (!controller.signal.aborted) setLoad({ status: "error" });
+      });
+    return () => controller.abort();
+  }, [attempt]);
+
+  const choose = (next: Tab) => {
+    setTab(next);
+    rememberTab(next);
+  };
+
+  // Lien vers un réglage : son onglet, puis sa feuille, une fois la maison lue (état ajusté au
+  // rendu, une fois par lien).
+  const [handled, setHandled] = useState<string | null>(null);
+  if (anchor && anchor !== handled && load.status === "ready") {
+    setHandled(anchor);
+    if (ESSENTIALS.includes(anchor)) {
+      setTab("essentials");
+      setOpen({ kind: anchor as Essential });
+    } else if (anchor.startsWith("settings-")) {
+      setTab("devices");
+      setOpen({ kind: "device", key: anchor.slice("settings-".length) });
+    }
+  }
+  useEffect(() => {
+    if (anchor && anchor === handled) onAnchor?.();
+  }, [anchor, handled, onAnchor]);
+
+  const data: HomeData | null =
+    load.status === "ready" ? { devices: load.devices, configuration: load.configuration } : null;
+  const names = new Map(data?.devices.map((device) => [device.key, device.name]));
+  const empty = data !== null && data.configuration.devices.length === 0;
+
+  const show = (next: Open) => {
+    setSaved(false);
+    setOpen(next);
+  };
+
+  const onSaved = (configuration: Configuration) => {
+    if (data) setLoad({ status: "ready", ...data, configuration });
+    setOpen(null);
+    setSaved(true);
+  };
+
+  // Reprise des règles des descriptions JSON des tâches de HA (lot 3.5), enregistrées aussitôt :
+  // chaque appareil concerné les montre ensuite dans sa feuille.
+  const onImportRules = async (current: HomeData) => {
+    setRules("loading");
+    try {
+      const found = await getJson<TaskRules[]>("api/configuration/task-rules-proposal");
+      const byDevice = new Map(found.map((r) => [r.key, r]));
+      const { configuration } = current;
+      if (!configuration.devices.some((s) => byDevice.has(s.key) && s.behavior === "CycleBehavior")) {
+        setRules("none");
+        return;
+      }
+      const next = await putJson<Configuration>("api/configuration", {
+        ...configuration,
+        devices: configuration.devices.map((settings) => {
+          const proposed = byDevice.get(settings.key);
+          if (!proposed || settings.behavior !== "CycleBehavior") return settings;
+          return {
+            ...settings,
+            recurrence: proposed.recurrence ?? settings.recurrence,
+            after: proposed.after ?? settings.after,
+            default: false,
+          };
+        }),
+      });
+      setLoad({ status: "ready", ...current, configuration: next });
+      setRules("applied");
+    } catch (error) {
+      setRules(error instanceof ApiError && error.status === 503 ? "not_connected" : "failed");
+    }
+  };
+
+  // Maison pas encore lue ou illisible : « Avancé » reste ouvert (sauvegarde, modèles…).
+  const state =
+    load.status === "loading" ? (
+      <StateMessage kind="loading" title={t("home_summary.loading")} />
+    ) : load.status === "error" ? (
+      <StateMessage
+        kind="error"
+        title={t("home_summary.error")}
+        onRetry={() => {
+          setLoad({ status: "loading" });
+          setAttempt((count) => count + 1);
+        }}
+      />
+    ) : null;
+
   return (
     <>
-      <HomeSummary
-        version={version}
-        onOpen={(anchor) => (anchor === "add-device" ? onNavigate("devices#add-device") : void reveal(anchor))}
-      />
-      <details
-        className="plan-more home-details"
-        open={detailsOpen}
-        onToggle={(event) => rememberDetails(event.currentTarget.open)}
-      >
-        <summary>{t("home_summary.details")}</summary>
-        <ConfigurationSection version={version} onNavigate={onNavigate} />
-      </details>
-      {more}
-      <Glossary />
+      <div className="view-tabs home-tabs" role="tablist" aria-label={t("nav.home")}>
+        {TABS.map((kind) => (
+          <button key={kind} type="button" role="tab" aria-selected={tab === kind} onClick={() => choose(kind)}>
+            {t(`home.tabs.${kind}`)}
+          </button>
+        ))}
+      </div>
+      {saved && <p role="status">{t("configuration.saved")}</p>}
+      <section className="home-summary" role="tabpanel" aria-label={t(`home.tabs.${tab}`)}>
+        {tab !== "more" && state}
+        {tab === "essentials" && data && <Essentials data={data} onOpen={(kind) => show({ kind })} />}
+        {tab === "devices" &&
+          data &&
+          (empty ? (
+            <StateMessage kind="empty" title={t("configuration.empty")} />
+          ) : (
+            <Devices
+              data={data}
+              onOpen={(key) => show({ kind: "device", key })}
+              onAdd={() => onNavigate("devices#add-device")}
+            />
+          ))}
+        {tab === "more" && (
+          <>
+            {data && !empty && (
+              <p>
+                <Button onClick={() => void onImportRules(data)} disabled={rules === "loading"}>
+                  {t("configuration.import_rules")}
+                </Button>
+              </p>
+            )}
+            {rules !== "idle" && rules !== "loading" && <p role="status">{t(`configuration.rules.${rules}`)}</p>}
+            {more}
+            <Glossary />
+          </>
+        )}
+      </section>
+      {open && data && (
+        <HomeSheet open={open} data={data} names={names} onClose={() => setOpen(null)} onSaved={onSaved} />
+      )}
     </>
   );
+}
+
+// Feuille d'un réglage : l'éditeur de la partie concernée de la configuration.
+function HomeSheet({
+  open,
+  data,
+  names,
+  onClose,
+  onSaved,
+}: {
+  open: Open;
+  data: HomeData;
+  names: Map<string, string>;
+  onClose: () => void;
+  onSaved: (configuration: Configuration) => void;
+}) {
+  const { t } = useI18n();
+  const { devices, configuration } = data;
+  const sheet = (title: string, edit: (draft: Configuration, change: (next: Configuration) => void) => ReactNode) => (
+    <SettingsSheet title={title} configuration={configuration} names={names} onClose={onClose} onSaved={onSaved}>
+      {edit}
+    </SettingsSheet>
+  );
+  // Réglages d'un appareil modifiés : ils ne sont plus ceux par défaut de son type.
+  const withDevice = (draft: Configuration, key: string, update: Partial<DeviceSettingsType>): Configuration => ({
+    ...draft,
+    devices: draft.devices.map((settings) =>
+      settings.key === key ? { ...settings, ...update, default: false } : settings,
+    ),
+  });
+
+  switch (open.kind) {
+    case "objective":
+      return sheet(t("objective.title"), (draft, change) => (
+        <div className="expert-form">
+          <ObjectiveEditor objective={draft.objective ?? null} onChange={(objective) => change({ ...draft, objective })} />
+        </div>
+      ));
+    case "tariff":
+      return sheet(t("tariff.title"), (draft, change) => (
+        <div className="expert-form">
+          <TariffEditor tariff={draft.tariff ?? null} onChange={(tariff) => change({ ...draft, tariff })} />
+        </div>
+      ));
+    case "battery": {
+      // Batteries de la maison, vues comme une seule par le calcul.
+      const capacity = devices.filter((d) => d.kind === "Battery").reduce((sum, d) => sum + (d.capacity_kwh ?? 0), 0);
+      return sheet(t("battery.title"), (draft, change) => (
+        <div className="expert-form">
+          <BatteryEditor battery={draft.battery ?? null} capacityKwh={capacity} onChange={(battery) => change({ ...draft, battery })} />
+        </div>
+      ));
+    }
+    case "solar":
+      // Une installation ou plusieurs : les panneaux de chacune.
+      return sheet(t("home_summary.panels.title"), (draft, change) => (
+        <div className="expert-form">
+          {draft.devices
+            .filter((settings) => settings.behavior === "ProductionBehavior")
+            .map((settings) => (
+              <PanelsEditor
+                key={settings.key}
+                panels={settings.panels ?? null}
+                name={names.get(settings.key) ?? settings.key}
+                onChange={(panels) => change(withDevice(draft, settings.key, { panels }))}
+              />
+            ))}
+        </div>
+      ));
+    case "device": {
+      const key = open.key;
+      if (!configuration.devices.some((settings) => settings.key === key)) return null;
+      const name = names.get(key) ?? key;
+      const kind = devices.find((d) => d.key === key)?.kind ?? null;
+      return sheet(name, (draft, change) => (
+        <DeviceSettings
+          settings={draft.devices.find((s) => s.key === key)!}
+          kind={kind}
+          name={name}
+          others={draft.devices
+            .filter((other) => other.key !== key && other.behavior === "CycleBehavior")
+            .map((other) => ({ key: other.key, name: names.get(other.key) ?? other.key }))}
+          onChange={(update) => change(withDevice(draft, key, update))}
+        />
+      ));
+    }
+  }
 }
 
 function HomeEditor({ onSaved, onNavigate }: { onSaved: () => void; onNavigate: (target: string) => void }) {

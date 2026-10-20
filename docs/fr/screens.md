@@ -35,12 +35,13 @@ Le plan en détail, pour **Hier**, **Aujourd'hui**, **Demain** et la **Semaine**
 
 ## Ma maison
 
-Votre maison en phrases : votre priorité (payer le moins cher, consommer mon soleil…), votre contrat, vos panneaux, votre batterie, les appareils placés au meilleur moment et ceux seulement suivis.
+Votre maison en phrases, en trois onglets. Touchez une ligne : son réglage s'ouvre seul, avec son propre bouton **Enregistrer les réglages** (par le bas de l'écran sur téléphone, dans une fenêtre sur ordinateur).
 
 ![Ma maison](../images/fr/home-desktop-light.png)
 
-- **Réglages détaillés** (repliés) ouvre chaque réglage : voir [Votre maison et ses règles](your-home.md), [Tarifs](tariffs.md) et [Batterie](battery.md).
-- **Pour aller plus loin** : **Appareils et capteurs** (les équipements lus dans Home Assistant, ajouter un équipement), **Modèles prêts à l'emploi**, **Sauvegarder ou partager** (exporter ou importer votre maison dans un fichier), **Graphe de la maison** et **Bibliothèque d'appareils** (pour les curieux).
+- **L'essentiel** : votre priorité (payer le moins cher, consommer mon soleil…), votre contrat, vos panneaux et votre batterie : voir [Tarifs](tariffs.md) et [Batterie](battery.md).
+- **Appareils** : les appareils placés au meilleur moment, puis ceux seulement suivis (repliés, souvent de nombreuses prises), et **Ajouter un appareil**. Chaque appareil ouvre ses règles : voir [Votre maison et ses règles](your-home.md).
+- **Avancé** : **Reprendre les règles des tâches de Home Assistant**, puis **Appareils et capteurs** (les équipements lus dans Home Assistant), **Modèles prêts à l'emploi**, **Sauvegarder ou partager** (exporter ou importer votre maison dans un fichier), **Graphe de la maison** et **Bibliothèque d'appareils** (pour les curieux), et le lexique.
 
 ## Assistant
 

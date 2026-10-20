@@ -625,7 +625,12 @@
     },
     "sensors_summary": "Verknüpfte Home-Assistant-Sensoren: {count}.",
     "include_hint": "Entfernen Sie das Häkchen bei einem vorgeschlagenen Gerät, das nicht zum Zuhause gehört.",
-    "kind_hint": "Der Typ bestimmt, was der Plan mit dem Gerät tun kann."
+    "kind_hint": "Der Typ bestimmt, was der Plan mit dem Gerät tun kann.",
+    "tabs": {
+      "essentials": "Das Wichtigste",
+      "devices": "Geräte",
+      "more": "Erweitert"
+    }
   },
   "graph": {
     "title": "Mein Zuhause als Graph",
@@ -711,10 +716,6 @@
     "name_suggests_cost": "{entity} sieht nach seinem Namen wie Kosten aus, nicht wie verbrauchte Energie: Es wird standardmäßig nicht übernommen. Setzen Sie das Häkchen wieder, wenn es wirklich ein Zähler ist."
   },
   "configuration": {
-    "title": "Planungseinstellungen",
-    "intro": "Für jedes gespeicherte Gerät: wie die Planung damit umgeht und ob sie es einplanen soll.",
-    "loading": "Einstellungen werden gelesen…",
-    "error": "Die Einstellungen konnten nicht gelesen werden.",
     "empty": "Speichern Sie zuerst Ihr Zuhause: Seine Geräte erscheinen dann hier.",
     "behavior": "Verhalten",
     "planned": "Von der Planung eingeplant",
@@ -765,12 +766,11 @@
     },
     "import_rules": "Regeln der Home-Assistant-Aufgaben übernehmen",
     "rules": {
-      "applied": "Regeln aus den Beschreibungen der Aufgaben übernommen: Prüfen Sie sie und speichern Sie dann.",
+      "applied": "Regeln aus den Aufgabenbeschreibungen übernommen und gespeichert: Jedes betroffene Gerät zeigt sie in seinen Einstellungen.",
       "none": "Keine Regel aus den Home-Assistant-Aufgaben zu übernehmen.",
       "not_connected": "Home Assistant ist nicht verbunden.",
       "failed": "Die Aufgaben von Home Assistant können nicht gelesen werden."
     },
-    "to_device": "Gerät und Sensoren",
     "behavior_hints": {
       "CycleBehavior": "Ein Programm, das nach dem Start eine Weile läuft: Der Plan sagt Ihnen, wann Sie es starten sollen.",
       "EnergyByDeadlineBehavior": "Eine Energiemenge, die vor einer Uhrzeit geliefert werden muss (Laden eines Autos, leistungsgeregelter Warmwasserbereiter).",
@@ -1354,10 +1354,8 @@
     }
   },
   "home_summary": {
-    "title": "Mein Zuhause im Überblick",
     "loading": "Zuhause wird gelesen…",
     "error": "Das Zuhause kann nicht gelesen werden.",
-    "details": "Ausführliche Einstellungen",
     "priority": "Meine Priorität",
     "presets": {
       "cost": "Möglichst wenig zahlen",

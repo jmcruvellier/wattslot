@@ -2,7 +2,7 @@
 
 *[English version](../tariffs.md) · [Guide d'utilisation](README.md)*
 
-Le plan place vos appareils là où l'électricité est gratuite (votre surplus) ou bon marché. Réglez votre contrat dans **Ma maison › Réglages détaillés › Tarif de l'électricité**. Sans tarif, un prix unique de 0,25 par kWh, dans votre devise, est supposé, et le plan cherche seulement à acheter le moins possible au réseau.
+Le plan place vos appareils là où l'électricité est gratuite (votre surplus) ou bon marché. Réglez votre contrat dans **Ma maison › L'essentiel › Mon contrat**. Sans tarif, un prix unique de 0,25 par kWh, dans votre devise, est supposé, et le plan cherche seulement à acheter le moins possible au réseau.
 
 **Proposer d'après le tableau Énergie** lit les prix déclarés dans le tableau Énergie de Home Assistant, s'il y en a.
 

@@ -2,7 +2,7 @@
 
 *[English version](../battery.md) · [Guide d'utilisation](README.md)*
 
-WattSlot ne pilote pas votre batterie : il simule son comportement (elle charge tout surplus et se décharge sur tout déficit, comme la plupart des batteries domestiques en autoconsommation) pour placer vos appareils là où ils sont le plus utiles. Plusieurs batteries sont vues comme une seule. Les réglages sont dans **Ma maison › Réglages détaillés › Batterie**.
+WattSlot ne pilote pas votre batterie : il simule son comportement (elle charge tout surplus et se décharge sur tout déficit, comme la plupart des batteries domestiques en autoconsommation) pour placer vos appareils là où ils sont le plus utiles. Plusieurs batteries sont vues comme une seule. Les réglages sont dans **Ma maison › L'essentiel › Batterie**.
 
 ## Réglages
 
@@ -14,7 +14,7 @@ WattSlot ne pilote pas votre batterie : il simule son comportement (elle charge 
 | **La batterie charge et décharge de … à …** | toute la journée | Pour les batteries qui ne fonctionnent qu'à certaines heures |
 | **Viser régulièrement une charge complète**, au moins tous les N jours | non | Les batteries au lithium recalent leur mesure de charge quand elles atteignent 100 % : le plan garde alors assez de surplus pour cela, et peut sauter quelques heures de piscine ces jours-là |
 
-La capacité vient de Home Assistant quand un capteur la donne, sinon de **Ma maison › Appareils et capteurs**.
+La capacité vient de Home Assistant quand un capteur la donne, sinon de **Ma maison › Avancé › Appareils et capteurs**.
 
 ## Ce que vous voyez
 

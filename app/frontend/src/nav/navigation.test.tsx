@@ -93,15 +93,14 @@ describe("navigation", () => {
     expect(container.querySelector(".back-link")).toHaveAttribute("href", "#/settings");
   });
 
-  it("range les écrans experts de Ma maison sous « Pour aller plus loin », en bas de page", async () => {
+  it("range les écrans experts de Ma maison dans l'onglet « Avancé »", async () => {
     window.location.hash = "#/home";
-    const { container } = renderApp();
+    renderApp();
+    await userEvent.click(await screen.findByRole("tab", { name: "Avancé" }));
     const nav = await screen.findByRole("navigation", { name: "Pour aller plus loin" });
     const more = within(nav);
     expect(more.getByRole("heading", { level: 2, name: "Pour aller plus loin" })).toBeInTheDocument();
-    // Sous le résumé et les réglages détaillés, avant le lexique.
-    const details = container.querySelector(".home-details");
-    expect(details?.compareDocumentPosition(nav)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    // Avant le lexique.
     expect(nav.nextElementSibling?.querySelector("summary")).toHaveTextContent("Lexique");
     expect(more.getAllByRole("link").map((link) => [link.textContent, link.getAttribute("href")])).toEqual([
       ["Appareils et capteurs", "#/home/devices"],

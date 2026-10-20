@@ -2,7 +2,7 @@
 
 *[Version française](fr/tariffs.md) · [User guide](README.md)*
 
-The plan places your appliances where electricity is free (your surplus) or cheap. Set your contract in **My home › Detailed settings › Electricity tariff**. Without one, a single price of 0.25 per kWh, in your currency, is assumed and the plan only tries to buy as little as possible from the grid.
+The plan places your appliances where electricity is free (your surplus) or cheap. Set your contract in **My home › Essentials › My contract**. Without one, a single price of 0.25 per kWh, in your currency, is assumed and the plan only tries to buy as little as possible from the grid.
 
 **Suggest from the energy dashboard** reads the prices declared in Home Assistant's Energy dashboard, if any.
 

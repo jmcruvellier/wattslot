@@ -43,7 +43,6 @@ const rules = parseRules(css);
 // Blocs posés directement dans main ou dans la section d'un écran.
 const BLOCKS = [
   "plan-more",
-  "home-details",
   "agenda",
   "week-agenda",
   "plan-agenda",

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 
 import { reveal } from "./common/reveal";
 import { returnedFromHomeAssistant } from "./connection/address";
@@ -76,8 +76,11 @@ export default function App() {
     setRoute(found.route);
     setAnchor(found.anchor);
   };
+  // Ma maison ouvre elle-même la feuille du réglage demandé (« home#tariff »).
+  const homeAnchor = route.section === "home" && !route.sub ? anchor : null;
+  const clearAnchor = useCallback(() => setAnchor(null), []);
   useEffect(() => {
-    if (!anchor) return;
+    if (!anchor || homeAnchor) return;
     let tries = 0;
     const timer = window.setInterval(() => {
       tries += 1;
@@ -88,7 +91,7 @@ export default function App() {
       }
     }, 100);
     return () => window.clearInterval(timer);
-  }, [anchor, route]);
+  }, [anchor, homeAnchor, route]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -153,6 +156,8 @@ export default function App() {
                 page={(route.sub ?? "main") as HomePage}
                 onNavigate={navigate}
                 more={<MoreLinks section="home" />}
+                anchor={homeAnchor}
+                onAnchor={clearAnchor}
               />
             )}
             {route.sub === "library" && <LibraryScreen />}

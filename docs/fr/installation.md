@@ -43,7 +43,7 @@ Dans **Paramètres › Applications › WattSlot › Configuration** :
 
 ### Désinstaller
 
-**Paramètres › Applications › WattSlot › Désinstaller** supprime l'application **et ses données**. Faites d'abord une sauvegarde si vous pensez revenir, ou exportez votre maison (**Ma maison › Sauvegarder ou partager**).
+**Paramètres › Applications › WattSlot › Désinstaller** supprime l'application **et ses données**. Faites d'abord une sauvegarde si vous pensez revenir, ou exportez votre maison (**Ma maison › Avancé › Sauvegarder ou partager**).
 
 ## En mode autonome (Docker)
 

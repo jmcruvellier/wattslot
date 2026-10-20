@@ -625,7 +625,12 @@
     },
     "sensors_summary": "Sensores de Home Assistant vinculados: {count}.",
     "include_hint": "Desmarque un aparato propuesto que no pertenezca a la casa.",
-    "kind_hint": "El tipo decide lo que el plan puede hacer con el aparato."
+    "kind_hint": "El tipo decide lo que el plan puede hacer con el aparato.",
+    "tabs": {
+      "essentials": "Lo esencial",
+      "devices": "Aparatos",
+      "more": "Avanzado"
+    }
   },
   "graph": {
     "title": "Mi casa en grafo",
@@ -711,10 +716,6 @@
     "name_suggests_cost": "{entity} parece un coste (por su nombre), no energía consumida: no se conserva por defecto. Vuelva a marcarlo si de verdad es un contador."
   },
   "configuration": {
-    "title": "Ajustes de planificación",
-    "intro": "Para cada aparato guardado: cómo lo gestiona la planificación y si debe programarlo.",
-    "loading": "Leyendo los ajustes…",
-    "error": "No se pudieron leer los ajustes.",
     "empty": "Guarde primero su casa: sus aparatos aparecerán aquí.",
     "behavior": "Comportamiento",
     "planned": "Programado por la planificación",
@@ -765,12 +766,11 @@
     },
     "import_rules": "Importar las reglas de las tareas de Home Assistant",
     "rules": {
-      "applied": "Reglas importadas de las descripciones de las tareas: revíselas y guarde.",
+      "applied": "Reglas tomadas de las descripciones de las tareas y guardadas: cada aparato afectado las muestra en sus ajustes.",
       "none": "Ninguna regla que importar de las tareas de Home Assistant.",
       "not_connected": "Home Assistant no está conectado.",
       "failed": "No se pueden leer las tareas de Home Assistant."
     },
-    "to_device": "Aparato y sensores",
     "behavior_hints": {
       "CycleBehavior": "Un programa que funciona un tiempo una vez puesto en marcha: el plan le dice cuándo ponerlo.",
       "EnergyByDeadlineBehavior": "Una cantidad de energía que entregar antes de una hora (cargar un coche, termo controlado por potencia).",
@@ -1354,10 +1354,8 @@
     }
   },
   "home_summary": {
-    "title": "Mi casa de un vistazo",
     "loading": "Leyendo la casa…",
     "error": "No se puede leer la casa.",
-    "details": "Ajustes detallados",
     "priority": "Mi prioridad",
     "presets": {
       "cost": "Pagar lo menos posible",
