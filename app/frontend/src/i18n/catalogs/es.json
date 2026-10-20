@@ -627,7 +627,8 @@
     "tabs": {
       "essentials": "Lo esencial",
       "devices": "Aparatos",
-      "more": "Avanzado"
+      "more": "Avanzado",
+      "data": "Datos"
     },
     "fiche": {
       "details": "Sensores, nombre y tipo",
@@ -1487,5 +1488,59 @@
   "state": {
     "retry": "Reintentar",
     "error_hint": "Compruebe que la aplicación y Home Assistant están en marcha y accesibles, y vuelva a intentarlo."
+  },
+  "quality": {
+    "loading": "Leyendo los datos…",
+    "summary": {
+      "clean": "Sus datos están en buen estado",
+      "corrected": "{count} valor(es) corregido(s)",
+      "checked": "Último control a las {time}",
+      "not_checked": "Aún sin control desde el arranque"
+    },
+    "corrected": "Valores corregidos",
+    "discarded": "descartado",
+    "gaps": "Huecos",
+    "gap": "{count} h sin valor desde el {date}",
+    "gaps_help": "Nada que corregir: el sensor no envió nada durante esas horas (últimos siete días).",
+    "undone": "Correcciones anuladas ({count})",
+    "kind": {
+      "spike": "{value} contados: más de lo que la casa puede consumir. Probablemente un corte del sensor.",
+      "negative": "{value}: un contador no retrocede.",
+      "gap": "Sin valor para este periodo."
+    },
+    "automatic": "Corregido automáticamente.",
+    "manual": "Corregido a mano.",
+    "method": {
+      "raw": "Recalculado con las lecturas brutas: {value}.",
+      "estimate": "Estimado a partir de las horas vecinas: {value}.",
+      "discard": "Descartado: el cálculo lo ignora."
+    },
+    "was_undone": "Corrección anulada: vuelve el valor original.",
+    "actions": "Otra corrección",
+    "actions_again": "Corregir de nuevo",
+    "action": {
+      "raw": "Recalcular con lecturas brutas",
+      "estimate": "Estimar",
+      "discard": "Descartar",
+      "undo": "Anular la corrección"
+    },
+    "error": {
+      "load": "No se pudo leer el control de los datos.",
+      "no_raw": "Las lecturas brutas de este periodo ya no se conservan (tres días).",
+      "no_neighbours": "No hay hora vecina plausible para estimar.",
+      "failed": "La corrección ha fallado."
+    },
+    "scan": {
+      "open": "Analizar un periodo",
+      "title": "Analizar un periodo",
+      "sensor": "Contador",
+      "all": "Todos los contadores",
+      "from": "Del",
+      "to": "al",
+      "run": "Analizar",
+      "none": "Ninguna anomalía en este periodo.",
+      "found": "{count} anomalía(s): las evidentes se corrigen automáticamente.",
+      "failed": "El análisis ha fallado."
+    }
   }
 }

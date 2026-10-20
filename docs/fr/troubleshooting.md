@@ -35,6 +35,8 @@
 
 **La batterie ne se comporte pas comme le plan.** WattSlot simule la batterie ; vérifiez ses réglages (plancher, puissances maximales), voir [Batterie](battery.md).
 
+**Un compteur a compté des milliers de kWh en une heure.** Son capteur est sans doute tombé à zéro un instant. WattSlot ne compte plus une coupure brève comme une remise à zéro, et corrige les heures déjà touchées : voir **Ma maison › Données**.
+
 **WattSlot peut-il lancer mes appareils lui-même ?** Pas encore : cette version recommande seulement. Le pilotage des appareils, avec votre confirmation d'abord, puis automatique, équipement par équipement, viendra dans une version suivante.
 
 **Est-ce que ça marche sans panneaux solaires ?** Oui : avec des heures creuses, des jours de couleur ou des prix dynamiques, il place vos appareils aux heures les moins chères ([Tarifs](tariffs.md)).

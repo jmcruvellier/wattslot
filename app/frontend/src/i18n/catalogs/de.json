@@ -627,7 +627,8 @@
     "tabs": {
       "essentials": "Das Wichtigste",
       "devices": "Geräte",
-      "more": "Erweitert"
+      "more": "Erweitert",
+      "data": "Daten"
     },
     "fiche": {
       "details": "Sensoren, Name und Typ",
@@ -1487,5 +1488,59 @@
   "state": {
     "retry": "Erneut versuchen",
     "error_hint": "Prüfen Sie, ob die App und Home Assistant laufen und erreichbar sind, und versuchen Sie es dann erneut."
+  },
+  "quality": {
+    "loading": "Daten werden gelesen…",
+    "summary": {
+      "clean": "Ihre Daten sind in Ordnung",
+      "corrected": "{count} Wert(e) korrigiert",
+      "checked": "Letzte Prüfung um {time}",
+      "not_checked": "Seit dem Start noch nicht geprüft"
+    },
+    "corrected": "Korrigierte Werte",
+    "discarded": "verworfen",
+    "gaps": "Lücken",
+    "gap": "{count} h ohne Wert seit {date}",
+    "gaps_help": "Nichts zu korrigieren: Der Sensor hat in diesen Stunden nichts gesendet (letzte sieben Tage).",
+    "undone": "Rückgängig gemachte Korrekturen ({count})",
+    "kind": {
+      "spike": "{value} gezählt: mehr, als das Zuhause beziehen kann. Vermutlich ein Sensorausfall.",
+      "negative": "{value}: Ein Zähler läuft nicht rückwärts.",
+      "gap": "Kein Wert für diesen Zeitraum."
+    },
+    "automatic": "Automatisch korrigiert.",
+    "manual": "Manuell korrigiert.",
+    "method": {
+      "raw": "Aus den Rohwerten neu berechnet: {value}.",
+      "estimate": "Aus den benachbarten Stunden geschätzt: {value}.",
+      "discard": "Verworfen: Die Berechnung ignoriert ihn."
+    },
+    "was_undone": "Korrektur rückgängig gemacht: Der ursprüngliche Wert gilt wieder.",
+    "actions": "Andere Korrektur",
+    "actions_again": "Erneut korrigieren",
+    "action": {
+      "raw": "Aus Rohwerten neu berechnen",
+      "estimate": "Schätzen",
+      "discard": "Verwerfen",
+      "undo": "Korrektur rückgängig machen"
+    },
+    "error": {
+      "load": "Die Datenprüfung konnte nicht gelesen werden.",
+      "no_raw": "Die Rohwerte dieses Zeitraums werden nicht mehr aufbewahrt (drei Tage).",
+      "no_neighbours": "Keine plausible Nachbarstunde für eine Schätzung.",
+      "failed": "Die Korrektur ist fehlgeschlagen."
+    },
+    "scan": {
+      "open": "Zeitraum prüfen",
+      "title": "Zeitraum prüfen",
+      "sensor": "Zähler",
+      "all": "Alle Zähler",
+      "from": "Von",
+      "to": "bis",
+      "run": "Prüfen",
+      "none": "Keine Auffälligkeit in diesem Zeitraum.",
+      "found": "{count} Auffälligkeit(en): Eindeutige werden automatisch korrigiert.",
+      "failed": "Die Prüfung ist fehlgeschlagen."
+    }
   }
 }

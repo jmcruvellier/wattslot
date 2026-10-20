@@ -23,10 +23,12 @@ import type { HomeModel } from "./types";
 
 // Vue en graphe : React Flow n'est chargé que si on la demande (lot 2t.3).
 const HomeGraph = lazy(() => import("./HomeGraph"));
+// Onglet « Données » (qualité des données), chargé à son ouverture.
+const DataTab = lazy(() => import("./DataTab"));
 
 // Onglet ouvert de la page principale, gardé dans le navigateur comme celui de Planning.
 export const TAB_KEY = "home.tab";
-const TABS = ["essentials", "devices", "more"] as const;
+const TABS = ["essentials", "devices", "data", "more"] as const;
 type Tab = (typeof TABS)[number];
 
 function savedTab(): Tab {
@@ -279,6 +281,11 @@ function HomeMain({
             onRefresh={found?.ok ? () => void onRefresh() : undefined}
             refreshing={refreshing}
           />
+        )}
+        {tab === "data" && data && !firstSave && (
+          <Suspense fallback={<StateMessage kind="loading" title={t("quality.loading")} />}>
+            <DataTab data={data} />
+          </Suspense>
         )}
         {tab === "more" && (
           <>

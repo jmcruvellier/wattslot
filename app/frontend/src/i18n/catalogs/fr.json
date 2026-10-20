@@ -627,7 +627,8 @@
     "tabs": {
       "essentials": "L'essentiel",
       "devices": "Appareils",
-      "more": "Avancé"
+      "more": "Avancé",
+      "data": "Données"
     },
     "fiche": {
       "details": "Capteurs, nom et type",
@@ -1487,5 +1488,59 @@
   "state": {
     "retry": "Réessayer",
     "error_hint": "Vérifiez que l'application et Home Assistant sont démarrés et joignables, puis réessayez."
+  },
+  "quality": {
+    "loading": "Lecture des données…",
+    "summary": {
+      "clean": "Vos données sont saines",
+      "corrected": "{count} valeur(s) corrigée(s)",
+      "checked": "Dernier contrôle à {time}",
+      "not_checked": "Pas encore de contrôle depuis le démarrage"
+    },
+    "corrected": "Valeurs corrigées",
+    "discarded": "écartée",
+    "gaps": "Trous",
+    "gap": "{count} h sans valeur depuis le {date}",
+    "gaps_help": "Rien à corriger : le capteur n'a rien envoyé pendant ces heures (sept derniers jours).",
+    "undone": "Corrections annulées ({count})",
+    "kind": {
+      "spike": "{value} comptés : plus que la maison ne peut tirer. Sans doute une coupure du capteur.",
+      "negative": "{value} : un compteur ne recule pas.",
+      "gap": "Pas de valeur pour cette période."
+    },
+    "automatic": "Corrigée automatiquement.",
+    "manual": "Corrigée à la main.",
+    "method": {
+      "raw": "Recalculée sur le relevé brut : {value}.",
+      "estimate": "Estimée d'après les heures voisines : {value}.",
+      "discard": "Écartée : le calcul l'ignore."
+    },
+    "was_undone": "Correction annulée : la valeur d'origine est revenue.",
+    "actions": "Autre correction",
+    "actions_again": "Corriger à nouveau",
+    "action": {
+      "raw": "Recalculer depuis le brut",
+      "estimate": "Estimer",
+      "discard": "Écarter",
+      "undo": "Annuler la correction"
+    },
+    "error": {
+      "load": "Impossible de lire la qualité des données.",
+      "no_raw": "Le relevé brut de cette période n'est plus gardé (trois jours).",
+      "no_neighbours": "Pas d'heure voisine plausible pour estimer.",
+      "failed": "La correction a échoué."
+    },
+    "scan": {
+      "open": "Analyser une période",
+      "title": "Analyser une période",
+      "sensor": "Compteur",
+      "all": "Tous les compteurs",
+      "from": "Du",
+      "to": "au",
+      "run": "Analyser",
+      "none": "Aucune anomalie sur cette période.",
+      "found": "{count} anomalie(s) : les évidentes sont corrigées automatiquement.",
+      "failed": "L'analyse a échoué."
+    }
   }
 }

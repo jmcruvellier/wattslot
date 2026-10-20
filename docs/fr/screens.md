@@ -35,12 +35,13 @@ Le plan en détail, pour **Hier**, **Aujourd'hui**, **Demain** et la **Semaine**
 
 ## Ma maison
 
-Votre maison en phrases, en trois onglets. Touchez une ligne : son réglage s'ouvre seul, avec son propre bouton **Enregistrer les réglages** (par le bas de l'écran sur téléphone, dans une fenêtre sur ordinateur).
+Votre maison en phrases, en quatre onglets. Touchez une ligne : son réglage s'ouvre seul, avec son propre bouton **Enregistrer les réglages** (par le bas de l'écran sur téléphone, dans une fenêtre sur ordinateur).
 
 ![Ma maison](../images/fr/home-desktop-light.png)
 
 - **L'essentiel** : votre priorité (payer le moins cher, consommer mon soleil…), votre contrat, vos panneaux et votre batterie : voir [Tarifs](tariffs.md) et [Batterie](battery.md).
 - **Appareils** : les appareils placés au meilleur moment, puis, repliés, ceux seulement suivis (souvent de nombreuses prises, avec un champ de recherche), la production, le réseau et la batterie, et les appareils que Home Assistant propose mais que WattSlot ne suit pas encore ; **Ajouter un appareil** et **Relire Home Assistant**. Chaque appareil ouvre sa fiche : ses règles (voir [Votre maison et ses règles](your-home.md)), puis, repliés, ses **capteurs, nom et type**, avec les points à vérifier et **Retirer de ma maison**.
+- **Données** : le contrôle des données de vos compteurs. Un compteur qui compte plus que la maison ne peut tirer (une coupure du capteur comptée comme une remise à zéro : des milliers de kWh en une heure) est corrigé automatiquement : recalculé sur le relevé brut tant qu'il est gardé (trois jours), sinon écarté, et le calcul comme les courbes l'ignorent. Chaque correction s'ouvre dans une feuille : ce qui s'est passé, ce qui a été fait, et les autres choix (recalculer, estimer d'après les heures voisines, écarter, annuler). Les données d'origine ne changent jamais. **Analyser une période** contrôle un compteur ou tous, sur les jours que vous choisissez.
 - **Avancé** : **Reprendre les règles des tâches de Home Assistant**, puis **Modèles prêts à l'emploi**, **Sauvegarder ou partager** (exporter ou importer votre maison dans un fichier), **Graphe de la maison** et **Bibliothèque d'appareils** (pour les curieux), et le lexique.
 
 ## Assistant

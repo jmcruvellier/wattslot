@@ -35,6 +35,8 @@
 
 **The battery does not behave like the plan.** WattSlot simulates the battery; check its settings (floor, maximum powers), see [Battery](battery.md).
 
+**A meter counted thousands of kWh in one hour.** Its sensor probably dropped to zero for an instant. WattSlot no longer counts a short dropout as a reset, and corrects the hours already affected: see **My home › Data**.
+
 **Can WattSlot start my appliances by itself?** Not yet: this version recommends only. Controlling appliances, with your confirmation first, then automatically, device by device, will come in a later version.
 
 **Does it work without solar panels?** Yes: with off-peak hours, colour days or dynamic prices, it places your appliances at the cheapest hours ([Tariffs](tariffs.md)).

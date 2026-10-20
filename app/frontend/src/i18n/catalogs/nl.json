@@ -627,7 +627,8 @@
     "tabs": {
       "essentials": "Het belangrijkste",
       "devices": "Apparaten",
-      "more": "Geavanceerd"
+      "more": "Geavanceerd",
+      "data": "Gegevens"
     },
     "fiche": {
       "details": "Sensoren, naam en type",
@@ -1487,5 +1488,59 @@
   "state": {
     "retry": "Opnieuw proberen",
     "error_hint": "Controleer of de app en Home Assistant draaien en bereikbaar zijn, en probeer het dan opnieuw."
+  },
+  "quality": {
+    "loading": "Gegevens lezen…",
+    "summary": {
+      "clean": "Uw gegevens zijn in orde",
+      "corrected": "{count} waarde(n) gecorrigeerd",
+      "checked": "Laatste controle om {time}",
+      "not_checked": "Nog niet gecontroleerd sinds de start"
+    },
+    "corrected": "Gecorrigeerde waarden",
+    "discarded": "weggelaten",
+    "gaps": "Gaten",
+    "gap": "{count} u zonder waarde sinds {date}",
+    "gaps_help": "Niets te corrigeren: de sensor stuurde in die uren niets (laatste zeven dagen).",
+    "undone": "Ongedaan gemaakte correcties ({count})",
+    "kind": {
+      "spike": "{value} geteld: meer dan het huis kan afnemen. Waarschijnlijk een sensoronderbreking.",
+      "negative": "{value}: een meter loopt niet terug.",
+      "gap": "Geen waarde voor deze periode."
+    },
+    "automatic": "Automatisch gecorrigeerd.",
+    "manual": "Handmatig gecorrigeerd.",
+    "method": {
+      "raw": "Herberekend uit de ruwe metingen: {value}.",
+      "estimate": "Geschat op basis van de naburige uren: {value}.",
+      "discard": "Weggelaten: de berekening negeert hem."
+    },
+    "was_undone": "Correctie ongedaan: de oorspronkelijke waarde is terug.",
+    "actions": "Andere correctie",
+    "actions_again": "Opnieuw corrigeren",
+    "action": {
+      "raw": "Herberekenen uit ruwe metingen",
+      "estimate": "Schatten",
+      "discard": "Weglaten",
+      "undo": "Correctie ongedaan maken"
+    },
+    "error": {
+      "load": "De gegevenscontrole kon niet worden gelezen.",
+      "no_raw": "De ruwe metingen van deze periode worden niet meer bewaard (drie dagen).",
+      "no_neighbours": "Geen aannemelijk naburig uur om te schatten.",
+      "failed": "De correctie is mislukt."
+    },
+    "scan": {
+      "open": "Een periode controleren",
+      "title": "Een periode controleren",
+      "sensor": "Meter",
+      "all": "Alle meters",
+      "from": "Van",
+      "to": "tot",
+      "run": "Controleren",
+      "none": "Geen afwijking in deze periode.",
+      "found": "{count} afwijking(en): duidelijke worden automatisch gecorrigeerd.",
+      "failed": "De controle is mislukt."
+    }
   }
 }

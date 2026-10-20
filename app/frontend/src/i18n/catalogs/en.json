@@ -627,7 +627,8 @@
     "tabs": {
       "essentials": "Essentials",
       "devices": "Devices",
-      "more": "Advanced"
+      "more": "Advanced",
+      "data": "Data"
     },
     "fiche": {
       "details": "Sensors, name and type",
@@ -1487,5 +1488,59 @@
   "state": {
     "retry": "Try again",
     "error_hint": "Check that the app and Home Assistant are running and reachable, then try again."
+  },
+  "quality": {
+    "loading": "Reading the data…",
+    "summary": {
+      "clean": "Your data is sound",
+      "corrected": "{count} value(s) corrected",
+      "checked": "Last check at {time}",
+      "not_checked": "Not checked yet since start-up"
+    },
+    "corrected": "Corrected values",
+    "discarded": "set aside",
+    "gaps": "Gaps",
+    "gap": "{count} h without a value since {date}",
+    "gaps_help": "Nothing to correct: the sensor sent nothing during these hours (last seven days).",
+    "undone": "Undone corrections ({count})",
+    "kind": {
+      "spike": "{value} counted: more than the home can draw. Probably a sensor dropout.",
+      "negative": "{value}: a meter does not run backwards.",
+      "gap": "No value for this period."
+    },
+    "automatic": "Corrected automatically.",
+    "manual": "Corrected by hand.",
+    "method": {
+      "raw": "Recomputed from the raw readings: {value}.",
+      "estimate": "Estimated from the neighbouring hours: {value}.",
+      "discard": "Set aside: the calculation ignores it."
+    },
+    "was_undone": "Correction undone: the original value is back.",
+    "actions": "Another correction",
+    "actions_again": "Correct again",
+    "action": {
+      "raw": "Recompute from raw readings",
+      "estimate": "Estimate",
+      "discard": "Set aside",
+      "undo": "Undo the correction"
+    },
+    "error": {
+      "load": "The data check could not be read.",
+      "no_raw": "The raw readings of this period are no longer kept (three days).",
+      "no_neighbours": "No plausible neighbouring hour to estimate from.",
+      "failed": "The correction failed."
+    },
+    "scan": {
+      "open": "Check a period",
+      "title": "Check a period",
+      "sensor": "Meter",
+      "all": "All meters",
+      "from": "From",
+      "to": "to",
+      "run": "Check",
+      "none": "No anomaly in this period.",
+      "found": "{count} anomaly/anomalies: the obvious ones are corrected automatically.",
+      "failed": "The check failed."
+    }
   }
 }
