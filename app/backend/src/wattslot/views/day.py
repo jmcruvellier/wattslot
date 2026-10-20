@@ -121,6 +121,9 @@ class DayView(BaseModel):
     departure: Departure | None = None  # maison avec batterie
     weather: WeatherBanner
     solar: bool = True  # faux : maison sans installation solaire, ni carte Soleil ni bandeau
+    # Heures dont une mesure impossible a été écartée (qualité des données) : un trou dans les
+    # courbes, rien dans les totaux.
+    discarded_hours: list[int] = []
     notices: list[Notice] = []
     freshness: Freshness | None = None
     indicators: Indicators | None = None

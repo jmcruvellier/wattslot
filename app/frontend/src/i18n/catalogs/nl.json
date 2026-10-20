@@ -360,7 +360,9 @@
       "until": "Tot {time}",
       "empty": "Niets te starten die dag.",
       "now": "Nu"
-    }
+    },
+    "discarded": "Onmogelijke meting weggelaten om {hours}: waarschijnlijk een sensoronderbreking.",
+    "discarded_link": "Gegevens bekijken"
   },
   "requests": {
     "title": "Mijn verzoeken",

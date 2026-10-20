@@ -18,6 +18,7 @@ import ObjectiveEditor from "./ObjectiveEditor";
 import PanelsEditor from "./PanelsEditor";
 import SettingsSheet from "./SettingsSheet";
 import TariffEditor from "./TariffEditor";
+import { rememberTab, savedTab, TABS, type Tab } from "./tab";
 import TemplateSection from "./TemplateSection";
 import type { HomeModel } from "./types";
 
@@ -27,26 +28,7 @@ const HomeGraph = lazy(() => import("./HomeGraph"));
 const DataTab = lazy(() => import("./DataTab"));
 
 // Onglet ouvert de la page principale, gardé dans le navigateur comme celui de Planning.
-export const TAB_KEY = "home.tab";
-const TABS = ["essentials", "devices", "data", "more"] as const;
-type Tab = (typeof TABS)[number];
-
-function savedTab(): Tab {
-  try {
-    const found = window.localStorage.getItem(TAB_KEY);
-    return (TABS as readonly string[]).includes(found ?? "") ? (found as Tab) : "essentials";
-  } catch {
-    return "essentials";
-  }
-}
-
-function rememberTab(tab: Tab) {
-  try {
-    window.localStorage.setItem(TAB_KEY, tab);
-  } catch {
-    // stockage indisponible : rien à garder
-  }
-}
+export { TAB_KEY } from "./tab";
 
 // Pages de Ma maison (lot 6b.5) : la page principale en onglets, puis les écrans experts ouverts
 // depuis l'onglet « Avancé ».
@@ -90,7 +72,8 @@ type Open = { kind: Essential } | { kind: "device"; key: string } | { kind: "add
 const ESSENTIALS: readonly string[] = ["objective", "tariff", "solar", "battery"];
 
 // Ancre d'un lien : la feuille qu'elle ouvre, et son onglet.
-function anchorSheet(anchor: string): [Tab, Open] | null {
+function anchorSheet(anchor: string): [Tab, Open | null] | null {
+  if (anchor === "data") return ["data", null];
   if (ESSENTIALS.includes(anchor)) return ["essentials", { kind: anchor as Essential }];
   if (anchor === "add-device") return ["devices", { kind: "add" }];
   for (const prefix of ["settings-", "device-"]) {

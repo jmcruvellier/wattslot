@@ -150,3 +150,23 @@ def test_route(tmp_path: Path) -> None:
     assert found["objective"] == "cost" and autonomy == "autonomy"
     assert found["indicators"]["cost_eur"] == 1.23 and found["indicators"]["import_kwh"] == 4.5
     assert found["summary"]["production_kwh"] > 0
+
+
+def test_route_sets_aside_impossible_measurements(tmp_path: Path) -> None:
+    """Qualité des données : un compteur coupé un instant (tout son index compté en une heure)
+    ne cache plus les autres mesures ; l'heure est écartée des courbes et des totaux."""
+    state = state_of(STATES[0])
+    actual = actual_of(state)
+    imported = dict(actual.get("reseau_reel_soutire_horaire") or {})
+    imported["0"] = 64073.34
+    state["donnees_reelles_cache"] = {**actual, "reseau_reel_soutire_horaire": imported}
+    with TestClient(create_app(_settings(tmp_path))) as api:
+        PlanStore(open_database(tmp_path / "data")).save(
+            "yesterday", date(2026, 10, 12), state, 1.0, False
+        )
+        found = api.get("/api/views/yesterday").json()
+
+    assert found["discarded_hours"] == [0]
+    assert found["hours"][0]["grid_import_actual_kwh"] is None
+    total = sum(h["grid_import_actual_kwh"] or 0 for h in found["hours"])
+    assert total < 1000

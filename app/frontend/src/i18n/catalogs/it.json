@@ -360,7 +360,9 @@
       "until": "Fino alle {time}",
       "empty": "Niente da avviare quel giorno.",
       "now": "Adesso"
-    }
+    },
+    "discarded": "Misura impossibile scartata alle {hours}: probabilmente un'interruzione di un sensore.",
+    "discarded_link": "Vedi i dati"
   },
   "requests": {
     "title": "Le mie richieste",

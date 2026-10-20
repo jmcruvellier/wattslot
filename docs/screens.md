@@ -29,6 +29,7 @@ The plan in detail, for **Yesterday**, **Today**, **Tomorrow** and the **Week**.
 - **Why this plan**: the explanation of each decision, in plain words.
 - **Detailed charts** (folded): summary cards (battery, grid, production, estimated against measured), the appliance schedule, the battery charge, the grid exchanges and the production and consumption curves, planned (dotted) and measured.
 - **Customize** chooses which cards appear and their order.
+- A measurement the home cannot reach (a meter counting thousands of kWh in one hour) is set aside: a gap in the curves, nothing in the totals, and a line above the cards with **See the data** (**My home › Data**).
 - **Week**: one card per day with its sun, the appliances planned and the battery, then the week's charts.
 
 ![Planning in the dark theme](images/en/planning-desktop-dark.png)

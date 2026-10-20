@@ -360,7 +360,9 @@
       "until": "Bis {time}",
       "empty": "An diesem Tag nichts zu starten.",
       "now": "Jetzt"
-    }
+    },
+    "discarded": "Unmöglicher Messwert um {hours} verworfen: vermutlich ein Sensorausfall.",
+    "discarded_link": "Daten ansehen"
   },
   "requests": {
     "title": "Meine Anfragen",

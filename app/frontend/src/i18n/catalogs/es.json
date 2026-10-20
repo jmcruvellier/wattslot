@@ -360,7 +360,9 @@
       "until": "Hasta las {time}",
       "empty": "Nada que poner ese día.",
       "now": "Ahora"
-    }
+    },
+    "discarded": "Medida imposible descartada a las {hours}: probablemente un corte de un sensor.",
+    "discarded_link": "Ver los datos"
   },
   "requests": {
     "title": "Mis peticiones",

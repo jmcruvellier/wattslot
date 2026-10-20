@@ -360,7 +360,9 @@
       "until": "Jusqu'à {time}",
       "empty": "Rien à lancer ce jour-là.",
       "now": "Maintenant"
-    }
+    },
+    "discarded": "Mesure impossible écartée à {hours} : sans doute une coupure d'un capteur.",
+    "discarded_link": "Voir les données"
   },
   "requests": {
     "title": "Mes demandes",

@@ -5,6 +5,7 @@ base, avec le contexte de la maison au moment de la lecture.
 """
 
 import asyncio
+from collections.abc import Mapping
 from dataclasses import replace
 from datetime import UTC, date, datetime, timedelta
 from typing import Any, Literal
@@ -12,7 +13,7 @@ from typing import Any, Literal
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
-from wattslot import configuration, home_model, notifications, reminders
+from wattslot import configuration, home_model, notifications, quality, reminders
 from wattslot.languages import language_of
 from wattslot.objective_settings import Preset
 from wattslot.planning.engine import Objective
@@ -61,6 +62,12 @@ def objective_of(state: Any, saved: configuration.Configuration) -> Preset:
     if saved.objective is not None:
         return saved.objective.preset
     return FALLBACK_PRESETS[load_settings(state.database).objective]
+
+
+def _plausible(state: Any, content: Mapping[str, Any]) -> tuple[dict[str, Any], list[int]]:
+    """Plan gardé sans ses mesures horaires impossibles (qualité des données)."""
+    limit = quality.house_limit_kwh(home_model.load(state.graph), configuration.load(state.graph))
+    return quality.plausible_actual(content, limit)
 
 
 def house_context(state: Any, day: date) -> Context:
@@ -118,7 +125,7 @@ async def week_view_of(state: Any, lang: str = "fr") -> WeekView | None:
         build_week,
         horizon.content,
         tomorrow.content if tomorrow else None,
-        today.content if today else None,
+        _plausible(state, today.content)[0] if today else None,
         context,
         language_of(lang),
     )
@@ -130,6 +137,7 @@ async def day_view_of(state: Any, kind: DayKind, lang: str = "fr") -> DayView | 
     if plan is None:
         return None
     context = house_context(state, plan.day)
+    content, discarded = _plausible(state, plan.content)
     today_estimate = None
     if kind == "tomorrow":
         today = PlanStore(state.database).load("today")
@@ -139,11 +147,12 @@ async def day_view_of(state: Any, kind: DayKind, lang: str = "fr") -> DayView | 
                 for h in range(24)
             ]
             recalculated = recalculated_production(
-                production, today.content.get("donnees_reelles_cache")
+                production, _plausible(state, today.content)[0].get("donnees_reelles_cache")
             )
             today_estimate = recalculated if recalculated is not None else sum(production)
     language = language_of(lang)
-    view = await asyncio.to_thread(build_day, plan.content, kind, context, language, today_estimate)
+    view = await asyncio.to_thread(build_day, content, kind, context, language, today_estimate)
+    view = view.model_copy(update={"discarded_hours": discarded})
     if kind != "today":
         return view
     # Aujourd'hui (lot 6b.3) : le moment, d'après les agrégats, et le prochain appareil à lancer.
