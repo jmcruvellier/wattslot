@@ -4,7 +4,9 @@ Pour chaque entité suivie et chaque période close :
 
 - compteur d'énergie : énergie de la période (kWh), par différence des relevés ; une baisse de
   plus de 10 % est une remise à zéro (compteur quotidien, compteur remplacé), une baisse plus
-  faible est ignorée ;
+  faible est ignorée ; un retour d'un coup à l'index d'avant la baisse dans les ``GLITCH_MAX`` qui
+  suivent est une coupure du capteur (0 envoyé un instant), pas une remise à zéro : seule
+  l'énergie au-delà de l'index d'avant est comptée ;
 - autres mesures (puissance, état de charge) : moyenne pondérée par la durée et maximum.
 
 Les agrégats sont calculés à partir des relevés bruts déjà écrits, pas du flux en mémoire : un
@@ -54,6 +56,13 @@ GRACE = timedelta(minutes=1)  # relevés encore en file (lots de 5 s), horodatag
 INTERVAL_S = 60.0
 CATCH_UP_MAX = timedelta(days=3)  # conservation du brut : rien à relire au-delà
 RESET_RATIO = 0.9
+# Coupure d'un compteur (un Linky qui envoie 0 un instant, puis son index) : retour à l'index
+# d'avant la baisse dans ce délai. Au-delà, la baisse était une vraie remise à zéro.
+GLITCH_MAX = timedelta(minutes=10)
+# … et d'un seul relevé, d'au moins tant : en dix minutes, 30 kW, hors de portée d'une maison. Un
+# petit compteur remis à zéro qui remonte vite reste une remise à zéro.
+GLITCH_JUMP_KWH = 5.0
+RECOMPUTE_BEFORE = timedelta(hours=1)  # brut relu avant une période recalculée
 DECIMALS = 6  # efface le bruit des calculs en virgule flottante (0.2900000000008731)
 # Reprise de l'historique : agrégats par chargement en masse, plusieurs entités à la fois. Chaque
 # écriture dans RocksDB est recompactée avec une part du magasin qui croît avec lui : par 5 000
@@ -66,11 +75,20 @@ RDF_TYPE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
 
 
 @dataclass(frozen=True)
-class Carry:
-    """Dernier relevé connu avant une période."""
+class Drop:
+    """Baisse d'un compteur pas encore confirmée comme remise à zéro : index d'avant et heure."""
 
     time: datetime
     value: float
+
+
+@dataclass(frozen=True)
+class Carry:
+    """Dernier relevé connu avant une période (et baisse en suspens d'un compteur)."""
+
+    time: datetime
+    value: float
+    drop: Drop | None = None
 
 
 @dataclass(frozen=True)
@@ -144,18 +162,9 @@ def compute(
     points: list[tuple[datetime, float]],
 ) -> tuple[Values | None, Carry | None]:
     """Agrégat d'une période (``points`` triés, tous dans la période) et valeur à reporter."""
-    out = Carry(*points[-1]) if points else carry
     if role in ENERGY_ROLES:
-        base = carry.value if carry else None
-        energy = 0.0
-        for _, value in points:
-            if base is None or value >= base:
-                energy += 0.0 if base is None else value - base
-                base = value
-            elif value < base * RESET_RATIO:
-                energy += value  # remise à zéro
-                base = value
-        return (Values(energy_kwh=energy) if base is not None else None), out
+        return _counter(carry, points)
+    out = Carry(*points[-1]) if points else carry
     current = carry.value if carry else None
     since = start if carry else None
     integral = covered = 0.0
@@ -174,6 +183,64 @@ def compute(
     covered += seconds
     mean = integral / covered if covered > 0 else current
     return Values(mean=mean, maximum=maximum, last=current), out
+
+
+class CounterState:
+    """Suivi d'un compteur d'énergie relevé après relevé : base (plus haute valeur retenue) et
+    baisse en suspens. Une baisse de plus de 10 % est comptée comme une remise à zéro, mais reste
+    en suspens ``GLITCH_MAX`` : un retour d'un coup (``GLITCH_JUMP_KWH``) à l'index d'avant en
+    fait une coupure du capteur, et seule l'énergie au-delà de cet index compte. Partagé par les
+    agrégats et par la journée en cours (``planning.actual.counter_hourly``)."""
+
+    def __init__(self, base: float | None = None, drop: Drop | None = None) -> None:
+        self.base = base
+        self.drop = drop
+        self._since_drop = 0.0  # énergie comptée depuis la baisse en suspens
+
+    def step(self, moment: datetime, value: float) -> float:
+        """Énergie de ce relevé (négative quand une coupure reprend ce qui avait été compté)."""
+        drop = self.drop
+        if drop is not None and moment - drop.time > GLITCH_MAX:
+            drop = self.drop = None  # vraie remise à zéro : ce qui a été compté depuis reste
+        base = self.base
+        if base is None:
+            self.base = value
+            return 0.0
+        if (
+            drop is not None
+            and value >= drop.value * RESET_RATIO
+            and value - base >= GLITCH_JUMP_KWH
+        ):
+            # Coupure : le compteur a retrouvé son index ; seul ce qui le dépasse compte.
+            delta = max(0.0, value - drop.value) - self._since_drop
+            self.base, self.drop, self._since_drop = max(value, drop.value), None, 0.0
+            return delta
+        if value >= base:
+            delta = value - base
+        elif value < base * RESET_RATIO:
+            delta = value  # remise à zéro, en suspens
+            if drop is None:
+                self.drop, self._since_drop = Drop(moment, base), 0.0
+        else:
+            return 0.0  # bruit : la base reste la plus haute valeur vue
+        self.base = value
+        if self.drop is not None:
+            self._since_drop += delta
+        return delta
+
+
+def _counter(
+    carry: Carry | None, points: list[tuple[datetime, float]]
+) -> tuple[Values | None, Carry | None]:
+    """Énergie d'un compteur sur une période (``CounterState``) et valeur à reporter. Ce qui a
+    été compté avant la période depuis une baisse en suspens n'est pas repris."""
+    state = CounterState(carry.value if carry else None, carry.drop if carry else None)
+    energy = sum(state.step(moment, value) for moment, value in points)
+    if state.base is None:
+        return None, carry
+    last = points[-1][0] if points else carry.time if carry else None
+    out = Carry(last, state.base, state.drop) if last is not None else None
+    return Values(energy_kwh=energy), out
 
 
 def aggregate_nquads(
@@ -270,16 +337,31 @@ class Aggregator:
 
     def _state(self) -> dict[tuple[str, str], tuple[datetime, Carry | None]]:
         rows = self._database.execute(
-            "SELECT entity_id, period, next_start, carry_time, carry_value FROM aggregation_state"
+            "SELECT entity_id, period, next_start, carry_time, carry_value, drop_time, drop_value "
+            "FROM aggregation_state"
         )
         return {
             (entity_id, period): (
                 datetime.fromisoformat(next_start),
-                Carry(datetime.fromisoformat(carry_time), carry_value)
+                Carry(
+                    datetime.fromisoformat(carry_time),
+                    carry_value,
+                    Drop(datetime.fromisoformat(drop_time), drop_value)
+                    if drop_time is not None and drop_value is not None
+                    else None,
+                )
                 if carry_time is not None and carry_value is not None
                 else None,
             )
-            for entity_id, period, next_start, carry_time, carry_value in rows
+            for (
+                entity_id,
+                period,
+                next_start,
+                carry_time,
+                carry_value,
+                drop_time,
+                drop_value,
+            ) in rows
         }
 
     def _earliest(self, zone: ZoneInfo) -> datetime | None:
@@ -371,14 +453,18 @@ class Aggregator:
                 cursors[entity_id].isoformat(),
                 carry.time.isoformat() if (carry := carries[entity_id]) else None,
                 carry.value if carry else None,
+                carry.drop.time.isoformat() if carry and carry.drop else None,
+                carry.drop.value if carry and carry.drop else None,
             )
             for entity_id in targets
         ]
         with self._database:
             self._database.executemany(
-                "INSERT INTO aggregation_state VALUES (?, ?, ?, ?, ?) "
+                "INSERT INTO aggregation_state (entity_id, period, next_start, carry_time, "
+                "carry_value, drop_time, drop_value) VALUES (?, ?, ?, ?, ?, ?, ?) "
                 "ON CONFLICT(entity_id, period) DO UPDATE SET next_start = excluded.next_start, "
-                "carry_time = excluded.carry_time, carry_value = excluded.carry_value",
+                "carry_time = excluded.carry_time, carry_value = excluded.carry_value, "
+                "drop_time = excluded.drop_time, drop_value = excluded.drop_value",
                 rows,
             )
 
@@ -541,6 +627,30 @@ class Aggregator:
             ),
             since=since,
         )
+
+    # --- Recalcul ----------------------------------------------------------------------------
+
+    def recompute(self, entity_id: str, period: str, start: datetime) -> float | None:
+        """Énergie d'une période d'un compteur recalculée sur le brut, avec la règle actuelle des
+        remises à zéro (qualité des données) ; None sans relevé brut (au-delà de sa
+        conservation)."""
+        target = self._ingestor.targets.get(entity_id)
+        if target is None or target.role not in ENERGY_ROLES or period not in PERIODS:
+            return None
+        earliest = self._earliest(self._raw.zone)
+        if earliest is None or start < earliest:
+            return None
+        end = start + PERIODS[period]
+        # Une heure avant : le dernier relevé et une baisse encore en suspens (``GLITCH_MAX``).
+        points = sorted(
+            (moment, value)
+            for sensor_iri, moment, value in self._raw.readings(start - RECOMPUTE_BEFORE, end)
+            if sensor_iri == target.sensor_iri
+        )
+        before = [p for p in points if p[0] < start]
+        carry = _counter(None, before)[1] if before else None
+        values, _ = compute(target.role, start, end, carry, [p for p in points if p[0] >= start])
+        return values.energy_kwh if values else None
 
     # --- Lecture -----------------------------------------------------------------------------
 

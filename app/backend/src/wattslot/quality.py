@@ -19,13 +19,15 @@ trou, que la consommation de base ignore) ; l'estimer la remplace par la moyenne
 voisines. Chaque correction garde le capteur, la période, la valeur d'origine et la valeur
 corrigée : de quoi l'annuler, et plus tard la reporter dans le recorder de HA.
 
-Les sauts et valeurs négatives sont écartés automatiquement (``automatic``), une fois : une
-correction annulée n'est pas refaite.
+Les sauts et valeurs négatives sont corrigés automatiquement (``automatic``), une fois : une
+correction annulée n'est pas refaite. Tant que le relevé brut existe (trois jours), la période est
+recalculée sur le brut avec la règle actuelle des remises à zéro (une coupure du capteur n'en est
+plus une) ; sinon, ou si le recalcul n'est pas plausible, elle est écartée.
 """
 
 import asyncio
 import logging
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Protocol
@@ -77,6 +79,10 @@ class Anomaly(BaseModel):
     limit_kwh: float | None = None  # limite physique de la période (saut)
     missing: int = 0  # périodes manquantes (trou)
     correction: Correction | None = None  # correction en vigueur
+
+
+# Énergie d'une période recalculée sur le brut (``Aggregator.recompute``), None sans brut.
+Recompute = Callable[[str, str, datetime], float | None]
 
 
 class Reader(Protocol):
@@ -207,9 +213,11 @@ def scan(
     periods: dict[str, tuple[datetime, datetime]],
     entity_ids: Iterable[str] | None = None,
     automatic: bool = True,
+    recompute: Recompute | None = None,
 ) -> Scan:
     """Anomalies des compteurs (tous, ou ``entity_ids``) sur chaque période demandée ; les sauts
-    et valeurs négatives jamais corrigés sont écartés si ``automatic``."""
+    et valeurs négatives jamais corrigés le sont si ``automatic`` : recalculés sur le brut quand
+    c'est possible et plausible, écartés sinon."""
     wanted = set(entity_ids) if entity_ids is not None else None
     anomalies: list[Anomaly] = []
     corrected = 0
@@ -227,7 +235,14 @@ def scan(
                     and anomaly.kind in AUTOMATIC
                     and not store.known(sensor.entity_id, period, anomaly.start)
                 ):
-                    correction = store.add(anomaly, Method.DISCARD, None, automatic=True)
+                    value = (
+                        recompute(sensor.entity_id, period, anomaly.start) if recompute else None
+                    )
+                    limit = sensor.limit_kwh_per_hour * hours(period)
+                    if value is not None and NEGATIVE_KWH <= value <= limit:
+                        correction = store.add(anomaly, Method.RAW, value, automatic=True)
+                    else:
+                        correction = store.add(anomaly, Method.DISCARD, None, automatic=True)
                     corrected += 1
                 anomalies.append(anomaly.model_copy(update={"correction": correction}))
     anomalies.sort(key=lambda a: (a.start, a.entity_id, a.period))
@@ -243,6 +258,7 @@ def correct(
     period: str,
     start: datetime,
     method: Method,
+    recompute: Recompute | None = None,
 ) -> Correction:
     """Correction demandée d'une période d'un compteur ; ``ValueError`` (code) sinon."""
     sensor = next((s for s in sensors(home, saved) if s.entity_id == entity_id), None)
@@ -277,6 +293,10 @@ def correct(
         value = estimate(original, start, period, limit)
         if value is None:
             raise ValueError("no_neighbours")
+    elif method is Method.RAW:
+        value = recompute(entity_id, period, start) if recompute else None
+        if value is None:
+            raise ValueError("no_raw")
     return store.add(anomaly, method, value, automatic=False)
 
 
@@ -294,8 +314,15 @@ class Monitor:
     """Analyse les dernières périodes closes toutes les 15 minutes, et la fenêtre de la
     consommation de base au premier passage."""
 
-    def __init__(self, reader: Reader, store: CorrectionStore, graph: GraphStore) -> None:
+    def __init__(
+        self,
+        reader: Reader,
+        store: CorrectionStore,
+        graph: GraphStore,
+        recompute: Recompute | None = None,
+    ) -> None:
         self._reader = reader
+        self._recompute = recompute
         self._store = store
         self._graph = graph
         self._task: asyncio.Task[None] | None = None
@@ -321,7 +348,7 @@ class Monitor:
             HOUR: (now - (FIRST_HOURS if first else RECENT), now),
             QUARTER: (now - (FIRST_QUARTERS if first else RECENT), now),
         }
-        found = scan(self._reader, self._store, home, saved, periods)
+        found = scan(self._reader, self._store, home, saved, periods, recompute=self._recompute)
         self._status.last_run_at = datetime.now(UTC)
         self._status.corrected += found.corrected
         self._status.last_error = None
@@ -365,6 +392,10 @@ class CorrectionRequest(BaseModel):
     method: Method
 
 
+def _recompute(request: Request) -> Recompute | None:
+    return getattr(request.app.state.aggregator, "recompute", None)
+
+
 def _context(request: Request) -> tuple[Reader, CorrectionStore, HomeModel, Configuration]:
     state = request.app.state
     if state.aggregator is None:
@@ -392,7 +423,13 @@ def scan_route(request: Request, body: ScanRequest) -> ScanResult:
         raise HTTPException(status_code=422, detail="invalid_range")
     reader, store, home, saved = _context(request)
     found = scan(
-        reader, store, home, saved, {p: (start, end) for p in body.periods}, body.entity_ids
+        reader,
+        store,
+        home,
+        saved,
+        {p: (start, end) for p in body.periods},
+        body.entity_ids,
+        recompute=_recompute(request),
     )
     return ScanResult(anomalies=found.anomalies, corrected=found.corrected)
 
@@ -411,7 +448,15 @@ def add_correction(request: Request, body: CorrectionRequest) -> Correction:
     reader, store, home, saved = _context(request)
     try:
         return correct(
-            reader, store, home, saved, body.entity_id, body.period, _aware(body.start), body.method
+            reader,
+            store,
+            home,
+            saved,
+            body.entity_id,
+            body.period,
+            _aware(body.start),
+            body.method,
+            _recompute(request),
         )
     except ValueError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error

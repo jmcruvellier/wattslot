@@ -394,7 +394,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             aggregator.start()
         # Qualité des données : les sauts de compteur écartés dès qu'ils sont calculés.
         quality_monitor = (
-            QualityMonitor(aggregator, CorrectionStore(database), graph) if aggregator else None
+            QualityMonitor(aggregator, CorrectionStore(database), graph, aggregator.recompute)
+            if aggregator
+            else None
         )
         if quality_monitor:
             quality_monitor.start()

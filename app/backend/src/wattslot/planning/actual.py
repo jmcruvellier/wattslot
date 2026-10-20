@@ -32,7 +32,7 @@ from typing import Any
 from zoneinfo import ZoneInfo
 
 from wattslot import configuration as config
-from wattslot.aggregation import RESET_RATIO as COUNTER_RESET_RATIO
+from wattslot.aggregation import CounterState
 from wattslot.configuration import Behavior, Configuration
 from wattslot.detection import DeviceKind, Role
 from wattslot.home_model import HomeModel, sensor_iri
@@ -133,9 +133,10 @@ def counter_hourly(
 ) -> dict[int, float] | None:
     """kWh par heure locale d'un compteur (total ou remis à zéro à minuit), ``None`` sans
     aucun relevé. Départ : dernier relevé de la veille placé à minuit. Même règle que les
-    agrégats (``aggregation.compute``) : une baisse de plus de 10 % est une remise à zéro (la
-    nouvelle valeur est comptée), une baisse plus faible du bruit, ignorée sans abaisser la
-    base. Chaque hausse est répartie au prorata du temps depuis le relevé précédent."""
+    agrégats (``aggregation.CounterState``) : une baisse de plus de 10 % est une remise à zéro,
+    sauf retour à l'index d'avant dans les dix minutes (coupure du capteur), une baisse plus
+    faible du bruit, ignorée sans abaisser la base. Chaque hausse est répartie au prorata du
+    temps depuis le relevé précédent."""
     day, previous = sorted(today), sorted(before)
     if not day and not previous:
         return None
@@ -143,16 +144,10 @@ def counter_hourly(
     if previous:
         points.insert(0, (midnight, previous[-1][1]))
     found: dict[int, float] = defaultdict(float)
-    base = points[0][1]
+    state = CounterState(points[0][1])
     for (t0, _), (t1, v1) in itertools.pairwise(points):
-        if v1 >= base:
-            delta = v1 - base
-        elif v1 < base * COUNTER_RESET_RATIO:
-            delta = v1  # remise à zéro
-        else:
-            continue  # bruit : la base reste la plus haute valeur vue
-        base = v1
-        if delta <= 0 or t1 <= t0:
+        delta = state.step(t1, v1)
+        if delta == 0 or t1 <= t0:
             continue
         for hour, part in _spread(t0, t1, delta, zone).items():
             found[hour] += part

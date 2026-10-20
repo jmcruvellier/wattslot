@@ -25,6 +25,7 @@ class Kind(StrEnum):
 class Method(StrEnum):
     DISCARD = "discard"  # période retirée des lectures
     ESTIMATE = "estimate"  # moyenne des périodes voisines
+    RAW = "raw"  # recalculée sur le relevé brut (gardé trois jours)
 
 
 class Correction(BaseModel):
