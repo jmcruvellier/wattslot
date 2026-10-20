@@ -47,6 +47,7 @@ from wattslot.assistant import home_config as assistant_home_config
 from wattslot.assistant import open_webui
 from wattslot.assistant import prompts as assistant_prompts
 from wattslot.assistant import server as assistant_server
+from wattslot.corrections import CorrectionStore
 from wattslot.detection import (
     DeviceKind,
     EntityChoice,
@@ -96,6 +97,8 @@ from wattslot.planning.sources import (
 )
 from wattslot.planning.store import PLAN_KINDS, PlanStore
 from wattslot.problems import Problem, collect
+from wattslot.quality import Monitor as QualityMonitor
+from wattslot.quality import router as quality_routes
 from wattslot.reminders import ReminderLoop
 from wattslot.reminders import router as reminders_routes
 from wattslot.runtime import RunMode, Settings, load_settings
@@ -389,6 +392,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             await ingestor.start(home_model.load(graph))
         if aggregator:
             aggregator.start()
+        # Qualité des données : les sauts de compteur écartés dès qu'ils sont calculés.
+        quality_monitor = (
+            QualityMonitor(aggregator, CorrectionStore(database), graph) if aggregator else None
+        )
+        if quality_monitor:
+            quality_monitor.start()
         maintenance = (
             Maintenance(raw, graph, database, settings.data_dir, aggregator) if aggregator else None
         )
@@ -400,6 +409,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.ingestor = ingestor
         app.state.raw = raw
         app.state.aggregator = aggregator
+        app.state.quality = quality_monitor
         app.state.planning_lock = asyncio.Lock()
         app.state.maintenance = maintenance
         scheduler = None
@@ -437,6 +447,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 await scheduler.stop()
             if maintenance:
                 await maintenance.stop()
+            if quality_monitor:
+                await quality_monitor.stop()
             if aggregator:
                 await aggregator.stop()
             if ingestor:
@@ -454,6 +466,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.mcp = mcp_server
     app.include_router(assistant_prompts.router)
     app.include_router(reminders_routes)
+    app.include_router(quality_routes)
 
     @app.get("/api/assistant/connection")
     def assistant_connection() -> assistant_prompts.AssistantConnection:

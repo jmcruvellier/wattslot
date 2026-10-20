@@ -37,6 +37,7 @@ from zoneinfo import ZoneInfo
 from pydantic import BaseModel
 
 from wattslot import history
+from wattslot.corrections import CorrectionStore, apply
 from wattslot.detection import ENERGY_ROLES, Role, slug
 from wattslot.home_assistant import ConnectionState, HomeAssistantClient
 from wattslot.ingestion import Ingestor, Target
@@ -213,6 +214,7 @@ class Aggregator:
         self._raw = raw
         self._graph = graph
         self._database = database
+        self._corrections = CorrectionStore(database)
         self._task: asyncio.Task[None] | None = None
         self._status = AggregationStatus(running=False)
         # Reprise de l'historique : agrégats en attente du chargement en masse (N-Quads, un par
@@ -453,7 +455,9 @@ class Aggregator:
         earliest = min(grouped)
         existing = {
             aggregate.start
-            for aggregate in await asyncio.to_thread(self.read, entity_id, period, earliest, before)
+            for aggregate in await asyncio.to_thread(
+                self.read, entity_id, period, earliest, before, False
+            )
         }
         nquads = [
             aggregate_nquads(
@@ -540,8 +544,16 @@ class Aggregator:
 
     # --- Lecture -----------------------------------------------------------------------------
 
-    def read(self, entity_id: str, period: str, start: datetime, end: datetime) -> list[Aggregate]:
-        """Agrégats d'une entité sur ``[start, end)``, triés (graphes nommés explicitement)."""
+    def read(
+        self,
+        entity_id: str,
+        period: str,
+        start: datetime,
+        end: datetime,
+        corrected: bool = True,
+    ) -> list[Aggregate]:
+        """Agrégats d'une entité sur ``[start, end)``, triés (graphes nommés explicitement), avec
+        les corrections de la qualité des données (``corrections.py``) sauf ``corrected=False``."""
         target = self._ingestor.targets.get(entity_id)
         if target is None or period not in PERIODS:
             return []
@@ -573,4 +585,7 @@ class Aggregator:
             )
             for row in rows
         ]
-        return sorted(found, key=lambda aggregate: aggregate.start)
+        found.sort(key=lambda aggregate: aggregate.start)
+        if not corrected:
+            return found
+        return apply(found, self._corrections.active(entity_id, period, start, end))

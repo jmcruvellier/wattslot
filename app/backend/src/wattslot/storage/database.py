@@ -125,6 +125,24 @@ MIGRATIONS: tuple[str, ...] = (
     # calculées pendant la reprise de l'historique, ou avant la réécriture des relevés bruts,
     # étaient vides et gardées 30 jours (profil « insuffisant ») ; recalculées à la demande.
     "DELETE FROM appliance_days",
+    # 12 : corrections des agrégats (lot qualité des données) : une par période corrigée,
+    # annulée (``undone_at``) plutôt que supprimée ; les agrégats eux-mêmes ne changent pas.
+    """
+    CREATE TABLE quality_corrections (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        entity_id TEXT NOT NULL,
+        period TEXT NOT NULL,
+        start TEXT NOT NULL,
+        kind TEXT NOT NULL,
+        method TEXT NOT NULL,
+        original_kwh REAL,
+        corrected_kwh REAL,
+        automatic INTEGER NOT NULL,
+        created_at TEXT NOT NULL,
+        undone_at TEXT
+    )
+    """,
+    "CREATE INDEX quality_corrections_period ON quality_corrections (entity_id, period, start)",
 )
 
 
