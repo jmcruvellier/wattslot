@@ -177,7 +177,12 @@
       "battery_line": "Batteria: {start}%, fino al {max}%, {end}% la sera",
       "open_day": "Apri {day}",
       "missing": "Nessun piano per questo giorno: il calcolo si è fermato prima, vedere il messaggio in cima alla settimana.",
-      "missing_curves": "Nessun piano per questo giorno: il calcolo si è fermato prima. La causa è spiegata in Pianificazione, scheda Settimana."
+      "missing_curves": "Nessun piano per questo giorno: il calcolo si è fermato prima. La causa è spiegata in Pianificazione, scheda Settimana.",
+      "table": {
+        "day": "Giorno",
+        "weather": "Meteo",
+        "battery": "Batteria"
+      }
     },
     "header": {
       "computed": "Calcolato alle {time} ({how})",

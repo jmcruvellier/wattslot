@@ -30,7 +30,7 @@ Le plan en détail, pour **Hier**, **Aujourd'hui**, **Demain** et la **Semaine**
 - **Courbes détaillées** (repliées) : cartes de synthèse (batterie, réseau, production, estimé et mesuré), le Planning des équipements, la charge de la batterie, les échanges avec le réseau et les courbes de production et de consommation, prévues (en pointillés) et mesurées.
 - **Personnaliser** choisit les cartes affichées et leur ordre.
 - Une mesure impossible pour la maison (un compteur qui compte des milliers de kWh en une heure) est écartée : un trou dans les courbes, rien dans les totaux, et une ligne au-dessus des cartes avec **Voir les données** (**Ma maison › Données**).
-- **Semaine** : une carte par jour avec son soleil, les appareils prévus et la batterie, puis les courbes de la semaine.
+- **Semaine** : un tableau d'une ligne par jour (météo, production, batterie, achat dont heures pleines, surplus, appareils) ; touchez un jour pour déplier son détail (appareils et leurs heures, avertissements, **Voir le détail**). Sur téléphone, le tableau garde le jour, la production, la batterie et l'achat, le reste est dans le détail. Puis les courbes de la semaine.
 
 ![Planning en thème sombre](../images/fr/planning-desktop-dark.png)
 

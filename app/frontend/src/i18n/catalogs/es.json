@@ -177,7 +177,12 @@
       "battery_line": "Batería: {start} %, hasta {max} %, {end} % por la noche",
       "open_day": "Abrir {day}",
       "missing": "Sin plan para este día: el cálculo se detuvo antes, consulte el mensaje al principio de la semana.",
-      "missing_curves": "Sin plan para este día: el cálculo se detuvo antes. La causa se explica en Planificación, pestaña Semana."
+      "missing_curves": "Sin plan para este día: el cálculo se detuvo antes. La causa se explica en Planificación, pestaña Semana.",
+      "table": {
+        "day": "Día",
+        "weather": "Tiempo",
+        "battery": "Batería"
+      }
     },
     "header": {
       "computed": "Calculado a las {time} ({how})",

@@ -652,39 +652,129 @@ pre {
   white-space: pre-line;
 }
 
-/* Vue Semaine (lot 5.4) : une carte par jour ; défilement horizontal sur téléphone. */
-.week-days {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(15rem, 85%);
-  gap: var(--gap);
+/* Vue Semaine (lot 5.4) : les jours dans un seul tableau, une ligne par jour ; sur téléphone,
+   quatre colonnes, le reste dans le détail déplié du jour. */
+.week-table-card {
   overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  padding-bottom: 0.5rem;
 }
 
-.week-day {
-  scroll-snap-align: start;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+.week-table {
+  display: table;
+  width: 100%;
+  font-variant-numeric: tabular-nums;
 }
 
-@media (min-width: 48rem) {
-  .week-days {
-    grid-auto-flow: row;
-    grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
-    overflow-x: visible;
+.week-table th,
+.week-table td {
+  padding: 0.55rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+  text-align: right;
+  vertical-align: top;
+}
+
+.week-table thead th {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-dim);
+}
+
+.week-table th:first-child {
+  text-align: left;
+  white-space: nowrap;
+}
+
+.week-table td {
+  white-space: nowrap;
+}
+
+.week-table td small {
+  display: block;
+}
+
+/* Étiquette « Aujourd'hui » ou « Demain » sous le jour sur téléphone, à côté sur ordinateur. */
+.week-table th .week-tag {
+  display: block;
+  width: fit-content;
+  margin: 0.2rem 0 0;
+}
+
+.week-table .week-today > * {
+  background: var(--surface-alt);
+}
+
+.week-day-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  text-transform: capitalize;
+  cursor: pointer;
+}
+
+.week-devices-cell {
+  max-width: 14rem;
+  white-space: normal;
+}
+
+.week-detail td {
+  text-align: left;
+  white-space: normal;
+}
+
+.week-detail p {
+  margin: 0 0 0.4rem;
+}
+
+.week-detail button.link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.week-wide,
+.week-wide-inline,
+.week-table .week-wide-block {
+  display: none;
+}
+
+@media (max-width: 47.99rem) {
+  .week-table th,
+  .week-table td {
+    padding: 0.5rem 0.3rem;
+    font-size: 0.9rem;
   }
 }
 
-.week-today {
-  border-color: var(--battery);
-}
+@media (min-width: 48rem) {
+  .week-wide {
+    display: table-cell;
+  }
 
-.week-day header h3 {
-  margin: 0;
-  text-transform: capitalize;
+  .week-wide-inline {
+    display: inline;
+  }
+
+  .week-table .week-wide-block {
+    display: block;
+  }
+
+  .week-narrow,
+  .week-narrow-inline {
+    display: none;
+  }
+
+  .week-table th .week-tag {
+    display: inline-block;
+    margin-left: 0.5rem;
+  }
 }
 
 .week-tag {
@@ -695,52 +785,6 @@ pre {
   border-radius: 999px;
   border: 1px solid var(--border);
   text-transform: none;
-}
-
-.week-day h4 {
-  margin: 0.25rem 0 0;
-}
-
-.week-figures {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 0.15rem 1rem;
-  margin: 0;
-}
-
-.week-figures dd {
-  margin: 0;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-
-.week-figures .sub {
-  padding-left: 0.75rem;
-  font-size: 0.85rem;
-  color: var(--text-dim);
-}
-
-.week-devices {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.week-devices li {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-
-.week-day button.link {
-  background: none;
-  border: none;
-  padding: 0;
-  color: inherit;
-  text-decoration: underline;
-  cursor: pointer;
-  align-self: flex-start;
-  margin-top: auto;
 }
 
 .week-legend {
@@ -1677,12 +1721,8 @@ a.ui-setting-row {
 
 /* Jour que le calcul n'a pas atteint : grisé, sans données. */
 .week-row-missing .week-row-day,
-.week-missing h3 {
+.week-missing th {
   color: var(--text-dim);
-}
-
-.week-missing {
-  border-style: dashed;
 }
 
 /* Ma maison en phrases (lot 6b.5). */

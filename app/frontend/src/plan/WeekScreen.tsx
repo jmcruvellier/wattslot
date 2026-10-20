@@ -1,17 +1,17 @@
 // Vue Semaine (lot 5.4), comme `dashboard_semaine.py` de la v1 : aujourd'hui puis les 7 jours de
-// l'horizon, une carte par jour (production et météo, SoC, achat dont heures pleines, surplus,
-// équipements placés ce jour-là, avertissements), avertissements du calcul de l'horizon ;
+// l'horizon, un tableau d'une ligne par jour (production et météo, SoC, achat dont heures pleines,
+// surplus, équipements placés ce jour-là, avertissements), avertissements du calcul de l'horizon ;
 // graphiques de la production, de la consommation de base et du SoC sur toute la semaine.
 // Section Planning (lot 6b.4) : la semaine d'abord en agenda, une ligne par jour (`WeekAgenda`) ;
-// les cartes des jours et les graphiques (`WeekDetails`) vont dans la section Courbes.
+// le tableau des jours et les graphiques (`WeekDetails`) vont dans la section Courbes.
 
-import { Suspense } from "react";
+import { Fragment, Suspense, useState } from "react";
 
 import { useI18n } from "../i18n/I18nProvider";
 import { clock, kwh, percent, time } from "./format";
 import { availableWeekCards, shownCards, type ViewLayout, type WeekCardId } from "./layout";
 import { WeekChart } from "./lazyCharts";
-import type { DayKind, Notice, WeekDay, WeekView } from "./types";
+import type { DayKind, Notice, WeekView } from "./types";
 import type { WeekSeries } from "./Charts";
 import Icon from "../ui/Icon";
 import type { IconName } from "../ui/iconPaths";
@@ -33,81 +33,124 @@ function Notices({ notices, label }: { notices: Notice[]; label: string }) {
   );
 }
 
-function DayCard({ day, onOpen }: { day: WeekDay; onOpen: (kind: DayKind) => void }) {
+/** Les jours de la semaine dans un seul tableau, une ligne par jour (section Courbes) : on compare
+ * les jours d'un coup d'œil. Une ligne touchée déplie le détail du jour (équipements et leurs
+ * heures, avertissements, « Voir le détail ») ; sur téléphone, il porte aussi les colonnes
+ * masquées faute de place (météo, heures pleines, surplus). */
+function WeekTable({ view, onOpen }: { view: WeekView; onOpen: (kind: DayKind) => void }) {
   const { language, t } = useI18n();
-  const title = new Date(`${day.day}T12:00:00`).toLocaleDateString(language, { weekday: "long", day: "numeric" });
-  const withBattery = day.soc_start_percent !== null || day.soc_end_percent !== null;
+  const [open, setOpen] = useState<string | null>(null);
+  const withBattery = view.days.some((day) => day.soc_start_percent !== null || day.soc_end_percent !== null);
+  const columns = withBattery ? 8 : 7;
   return (
-    <article className={day.detail_view === "today" ? "card week-day week-today" : "card week-day"} aria-label={title}>
-      <header>
-        <h3>
-          {title}
-          {day.detail_view && <span className="week-tag">{t(`plan.tabs.${day.detail_view}`)}</span>}
-        </h3>
-        {day.weather && (
-          <span className="dim">
-            <Icon name={WEATHER_ICONS[day.weather]} size={18} /> {t(`plan.week.weather.${day.weather}`)}
-          </span>
-        )}
-      </header>
-      <dl className="week-figures">
-        <dt>{t("plan.week.production")}</dt>
-        <dd>{kwh(day.production_kwh, 1)} kWh</dd>
-        {withBattery && (
-          <>
-            <dt>{t("plan.week.soc")}</dt>
-            <dd>
-              {t("plan.week.soc_value", { start: percent(day.soc_start_percent), end: percent(day.soc_end_percent) })}
-            </dd>
-            <dt className="sub">{t("plan.week.soc_max")}</dt>
-            <dd className="sub">{percent(day.soc_max_percent)} %</dd>
-          </>
-        )}
-        <dt>{t("plan.week.import")}</dt>
-        <dd>{kwh(day.grid_import_kwh)} kWh</dd>
-        <dt className="sub">{t("plan.week.import_peak")}</dt>
-        <dd className="sub">{kwh(day.grid_import_peak_kwh)} kWh</dd>
-        <dt>{t("plan.week.export")}</dt>
-        <dd>{kwh(day.grid_export_kwh)} kWh</dd>
-      </dl>
-      <h4>{t("plan.week.devices")}</h4>
-      <ul className="week-devices">
-        {day.devices.length ? (
-          day.devices.map((device) => (
-            <li key={`${device.device}-${device.start_min}`}>
-              <span>{device.device === "Batterie" ? t("plan.timeline.battery") : device.device}</span>
-              <span className="dim">
-                {clock(device.start_min, language)}–{clock(device.end_min, language)}
-              </span>
-            </li>
-          ))
-        ) : (
-          <li className="dim">{t("plan.week.no_device")}</li>
-        )}
-      </ul>
-      <Notices notices={day.notices} label={t("plan.notices")} />
-      {day.detail_view && (
-        <button type="button" className="link" onClick={() => onOpen(day.detail_view!)}>
-          {t("plan.week.detail")} →
-        </button>
-      )}
-    </article>
-  );
-}
-
-/** Carte d'un jour que le calcul n'a pas atteint (section Courbes). */
-function MissingDayCard({ day }: { day: string }) {
-  const { language, t } = useI18n();
-  const title = dayName(day, language);
-  return (
-    <article className="card week-day week-missing" aria-label={title}>
-      <header>
-        <h3>{title}</h3>
-      </header>
-      <p className="dim">
-        <Icon name="warning" size={18} /> {t("plan.week.missing_curves")}
-      </p>
-    </article>
+    <section className="card card-wide week-table-card" aria-label={t("plan.tabs.week")}>
+      <table className="week-table">
+        <thead>
+          <tr>
+            <th scope="col">{t("plan.week.table.day")}</th>
+            <th scope="col" className="week-wide">{t("plan.week.table.weather")}</th>
+            <th scope="col">{t("plan.week.production")}</th>
+            {withBattery && <th scope="col">{t("plan.week.table.battery")}</th>}
+            <th scope="col">{t("plan.week.import")}</th>
+            <th scope="col" className="week-wide">{t("plan.week.import_peak")}</th>
+            <th scope="col" className="week-wide">{t("plan.week.export")}</th>
+            <th scope="col" className="week-wide">{t("plan.week.devices")}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {view.days.map((day) => {
+            const name = dayName(day.day, language);
+            // Sur téléphone, le jour abrégé (« mer. 21 ») : quatre colonnes tiennent dans l'écran.
+            const short = new Date(`${day.day}T12:00:00`).toLocaleDateString(language, {
+              weekday: "short",
+              day: "numeric",
+            });
+            const expanded = open === day.day;
+            const devices = day.devices.map((device) => ({
+              name: device.device === "Batterie" ? t("plan.timeline.battery") : device.device,
+              hours: `${clock(device.start_min, language)}–${clock(device.end_min, language)}`,
+            }));
+            return (
+              <Fragment key={day.day}>
+                <tr className={day.detail_view === "today" ? "week-today" : undefined}>
+                  <th scope="row">
+                    <button
+                      type="button"
+                      className="week-day-button"
+                      aria-expanded={expanded}
+                      aria-label={name}
+                      onClick={() => setOpen(expanded ? null : day.day)}
+                    >
+                      <span className="week-wide-inline">{name}</span>
+                      <span className="week-narrow-inline" aria-hidden="true">
+                        {short}
+                      </span>
+                      {day.notices.length > 0 && <Icon name="warning" size={16} />}
+                    </button>
+                    {day.detail_view && <span className="week-tag">{t(`plan.tabs.${day.detail_view}`)}</span>}
+                  </th>
+                  <td className="week-wide">
+                    {day.weather && (
+                      <span title={t(`plan.week.weather.${day.weather}`)}>
+                        <Icon name={WEATHER_ICONS[day.weather]} size={18} />
+                      </span>
+                    )}
+                  </td>
+                  <td>{kwh(day.production_kwh, 1)} kWh</td>
+                  {withBattery && (
+                    <td>
+                      {t("plan.week.soc_value", { start: percent(day.soc_start_percent), end: percent(day.soc_end_percent) })}
+                      <small className="dim week-wide-block">
+                        {t("plan.week.soc_max")} {percent(day.soc_max_percent)} %
+                      </small>
+                    </td>
+                  )}
+                  <td>{kwh(day.grid_import_kwh)} kWh</td>
+                  <td className="week-wide">{kwh(day.grid_import_peak_kwh)} kWh</td>
+                  <td className="week-wide">{kwh(day.grid_export_kwh)} kWh</td>
+                  <td className="week-wide week-devices-cell">
+                    {devices.length ? devices.map((device) => device.name).join(", ") : "—"}
+                  </td>
+                </tr>
+                {expanded && (
+                  <tr className="week-detail">
+                    <td colSpan={columns}>
+                      <p className="week-narrow">
+                        {day.weather && `${t(`plan.week.weather.${day.weather}`)} · `}
+                        {withBattery &&
+                          `${t("plan.week.soc_max")} ${percent(day.soc_max_percent)} % · `}
+                        {t("plan.week.import_peak")} {kwh(day.grid_import_peak_kwh)} kWh · {t("plan.week.export")}{" "}
+                        {kwh(day.grid_export_kwh)} kWh
+                      </p>
+                      <p>
+                        {devices.length
+                          ? devices.map((device) => `${device.name} ${device.hours}`).join(" · ")
+                          : t("plan.week.no_device")}
+                      </p>
+                      <Notices notices={day.notices} label={t("plan.notices")} />
+                      {day.detail_view && (
+                        <button type="button" className="link" onClick={() => onOpen(day.detail_view!)}>
+                          {t("plan.week.detail")} →
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
+            );
+          })}
+          {/* Jours que le calcul n'a pas atteints : affichés quand même, sans données. */}
+          {view.missing_days.map((day) => (
+            <tr key={day} className="week-missing">
+              <th scope="row">{dayName(day, language)}</th>
+              <td colSpan={columns - 1} className="dim">
+                <Icon name="warning" size={16} /> {t("plan.week.missing_curves")}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
   );
 }
 
@@ -203,8 +246,7 @@ export function WeekDetails({
   onOpen: (kind: DayKind) => void;
   layout: ViewLayout;
 }) {
-  const { t } = useI18n();
-  // Les graphiques se rangent en grilles avant ou après les cartes des jours, selon l'ordre choisi.
+  // Les graphiques se rangent en grilles avant ou après le tableau des jours, selon l'ordre choisi.
   const segments: WeekCardId[][] = [];
   for (const id of shownCards(layout, availableWeekCards(view))) {
     const last = segments[segments.length - 1];
@@ -215,14 +257,7 @@ export function WeekDetails({
     <div className="card-stack">
       {segments.map((segment) =>
         segment[0] === "days" ? (
-          <section key="days" className="week-days" aria-label={t("plan.tabs.week")}>
-            {view.days.map((day) => (
-              <DayCard key={day.day} day={day} onOpen={onOpen} />
-            ))}
-            {view.missing_days.map((day) => (
-              <MissingDayCard key={day} day={day} />
-            ))}
-          </section>
+          <WeekTable key="days" view={view} onOpen={onOpen} />
         ) : (
           <div key={segment[0]} className="cards cards-fill">
             {segment.map((series) => (
