@@ -55,6 +55,7 @@ function renderCard() {
 describe("discussion avec l'assistant", () => {
   beforeEach(() => {
     window.localStorage.clear();
+    window.sessionStorage.clear();
     vi.spyOn(navigator, "languages", "get").mockReturnValue(["fr-FR"]);
   });
 
@@ -92,6 +93,34 @@ describe("discussion avec l'assistant", () => {
       history: [], // HA garde le fil lui-même
     });
     expect(sent[1].conversation_id).toBe("c1");
+  });
+
+  it("garde la conversation quand on quitte la page et qu'on y revient", async () => {
+    mockApi(() => Response.json({ text: "Réponse 1", conversation_id: "c1", error: false }));
+    const user = userEvent.setup();
+    const first = render(
+      <I18nProvider>
+        <Harness />
+      </I18nProvider>,
+    );
+    await screen.findByLabelText("Répondre avec");
+    await user.selectOptions(screen.getByLabelText("Répondre avec"), "conversation.home_assistant");
+    await user.type(screen.getByLabelText("Votre message"), "Pourquoi 11 h ?{Enter}");
+    expect(await screen.findByText("Réponse 1")).toBeInTheDocument();
+    first.unmount(); // une autre page de l'application
+
+    const calls = mockApi(() => Response.json({ text: "Réponse 2", conversation_id: "c1", error: false }));
+    renderCard();
+
+    expect(screen.getByText("Pourquoi 11 h ?")).toBeInTheDocument();
+    expect(screen.getByText("Réponse 1")).toBeInTheDocument();
+    expect(await screen.findByLabelText("Répondre avec")).toHaveValue("conversation.home_assistant");
+    await user.type(screen.getByLabelText("Votre message"), "Et demain ?{Enter}");
+    expect(await screen.findByText("Réponse 2")).toBeInTheDocument();
+    expect(calls.find((call) => call.url === "api/assistant/chat")!.body).toMatchObject({
+      conversation_id: "c1",
+      agent_id: "conversation.home_assistant",
+    });
   });
 
   it("Maj+Entrée passe à la ligne sans envoyer", async () => {

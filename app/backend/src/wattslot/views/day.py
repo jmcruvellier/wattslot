@@ -143,6 +143,59 @@ def _value(values: Mapping[Any, Any] | None, h: int) -> float | None:
     return None if found is None else round(float(found), 3)
 
 
+def whole_day(
+    planned: Indicators,
+    state: Mapping[str, Any],
+    actual: Mapping[str, Any] | None,
+    context: Context,
+) -> Indicators:
+    """Indicateurs de la journée entière (Aujourd'hui, Hier) : le plan ne chiffre que les heures
+    qui restaient à son calcul (à 22 h, deux heures : 1,3 kWh d'achat pour une journée de
+    11 kWh) ; les heures d'avant y sont ajoutées, mesurées, au tarif de la maison. Sans mesure ni
+    tarif, ceux du plan seuls."""
+    # Heure locale du calcul : ses indicateurs portent sur elle et les suivantes.
+    first = state.get("heure_execution")
+    if not isinstance(first, int) or not 0 < first <= 24:
+        return planned
+    planned_hours = range(first, 24)
+    past = range(first)
+    if not past or not actual or context.tariff is None:
+        return planned
+    imported = {h: _value(actual.get("reseau_reel_soutire_horaire"), h) or 0.0 for h in past}
+    exported = {h: _value(actual.get("reseau_reel_injecte_horaire"), h) or 0.0 for h in past}
+    produced_past = sum(_value(actual.get("production_reelle_horaire"), h) or 0.0 for h in past)
+    day = state.get("date_cible")
+    day = day if isinstance(day, date) else date.fromisoformat(str(day))
+    price, export_price = context.tariff.hourly(day), context.tariff.export_hourly(day)
+    production = state.get("production_solaire_horaire") or {}
+    produced = produced_past + sum(_value(production, h) or 0.0 for h in planned_hours)
+    exported_total = planned.export_kwh + sum(exported.values())
+    battery = sum(
+        float(s.get("energie_kwh") or 0)
+        for s in actual.get("batterie_reelle_segments") or []
+        if isinstance(s.get("debut_iso"), str)
+        and datetime.fromisoformat(s["debut_iso"]).hour < first
+    )
+    return planned.model_copy(
+        update={
+            "cost_eur": round(
+                planned.cost_eur
+                + sum(price[h] * kwh for h, kwh in imported.items())
+                - sum(export_price[h] * kwh for h, kwh in exported.items()),
+                3,
+            ),
+            "import_kwh": round(planned.import_kwh + sum(imported.values()), 3),
+            "export_kwh": round(exported_total, 3),
+            "self_consumption_percent": round(100 * (produced - exported_total) / produced, 1)
+            if produced > 0.01
+            else None,
+            "battery_throughput_kwh": round(planned.battery_throughput_kwh + battery, 3),
+            # Intensité carbone des heures passées inconnue : pas de total à moitié.
+            "co2_kg": None,
+        }
+    )
+
+
 def _datetime(value: Any) -> datetime | None:
     try:
         return datetime.fromisoformat(value) if isinstance(value, str) else None
@@ -219,6 +272,8 @@ def build_day(
     else:
         start = departure(state, actual, capacity, initial, context)
     indicators, explained = explanations(state, lang)
+    if kind != "tomorrow" and indicators is not None:
+        indicators = whole_day(indicators, state, actual, context)
     summary = day_summary(state, curve.soc_percent)
     cards = None
     if kind != "tomorrow":

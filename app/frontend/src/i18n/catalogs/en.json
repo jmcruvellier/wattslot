@@ -1300,10 +1300,11 @@
       "input": "Your message",
       "placeholder": "How much did the panels produce yesterday?",
       "send": "Send",
-      "help": "Enter to send, Shift+Enter for a new line. The conversation is not saved.",
-      "empty": "Your questions and the assistant's answers will appear here.",
+      "help": "Enter to send, Shift+Enter for a new line. The conversation is kept while the browser tab stays open.",
+      "empty": "The assistant gave no answer.",
       "failed": "The assistant did not answer, try again.",
-      "not_connected": "Home Assistant is not connected: the chat is unavailable."
+      "not_connected": "Home Assistant is not connected: the chat is unavailable.",
+      "log_empty": "Your questions and the assistant's answers will appear here."
     }
   },
   "ui": {

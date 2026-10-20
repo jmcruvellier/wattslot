@@ -39,6 +39,7 @@ function renderScreen() {
 describe("page « Assistant »", () => {
   beforeEach(() => {
     window.localStorage.clear();
+    window.sessionStorage.clear();
     vi.spyOn(navigator, "languages", "get").mockReturnValue(["fr-FR"]);
   });
 

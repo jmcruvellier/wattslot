@@ -84,6 +84,7 @@ def house_context(state: Any, day: date) -> Context:
         ),
         objective=objective_of(state, saved).value,
         solar=has_production(home),
+        tariff=configuration.tariff_of(saved),
     )
     speeds = filtration_speeds(home, saved)
     return replace(context, pool_speeds=speeds) if speeds is not None else context

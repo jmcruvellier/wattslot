@@ -1,6 +1,7 @@
 """Vues des jours (lot 5.1) : mêmes nombres que le dashboard de la v1 d'origine (résultats figés),
 sur les 13 journées types, avec et sans données réelles."""
 
+from dataclasses import replace
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -15,8 +16,10 @@ from wattslot.battery_settings import BatterySettings
 from wattslot.main import create_app
 from wattslot.planning.store import PlanStore
 from wattslot.storage.database import open_database
+from wattslot.tariff import PriceBand, Tariff, TariffKind
 from wattslot.views import display
-from wattslot.views.day import build_day
+from wattslot.views.banners import Indicators
+from wattslot.views.day import build_day, whole_day
 from wattslot.views.display import Context
 
 IDS = [p.stem for p in STATES]
@@ -170,3 +173,35 @@ def test_route_sets_aside_impossible_measurements(tmp_path: Path) -> None:
     assert found["hours"][0]["grid_import_actual_kwh"] is None
     total = sum(h["grid_import_actual_kwh"] or 0 for h in found["hours"])
     assert total < 1000
+
+
+def test_indicators_cover_the_whole_day() -> None:
+    """Le plan calculé à 21 h ne chiffre que 21 h → minuit ; la vue y ajoute les heures d'avant,
+    mesurées, au tarif de la maison (heures creuses de 0 h à 6 h)."""
+    planned = Indicators(
+        cost_eur=1.0, import_kwh=1.3, export_kwh=0.0, end_soc_percent=7.0, co2_kg=0.1
+    )
+    state = {"date_cible": "2026-10-20", "heure_execution": 21}
+    actual = {
+        "reseau_reel_soutire_horaire": {"0": 1.0, "12": 2.0, "21": 9.0},  # 21 h : déjà dans le plan
+        "reseau_reel_injecte_horaire": {"13": 0.5},
+        "production_reelle_horaire": {"13": 1.0},
+    }
+    tariff = Tariff(
+        kind=TariffKind.TIME_OF_USE,
+        base_eur_kwh=0.2,
+        bands=[PriceBand(start_hour=0, end_hour=6, eur_kwh=0.1)],
+        export_eur_kwh=0.05,
+    )
+
+    found = whole_day(planned, state, actual, replace(V1_CONTEXT, tariff=tariff))
+
+    assert found.import_kwh == 4.3
+    assert found.export_kwh == 0.5
+    assert found.cost_eur == round(1.0 + 1.0 * 0.1 + 2.0 * 0.2 - 0.5 * 0.05, 3)
+    assert found.self_consumption_percent == 50.0
+    assert found.end_soc_percent == 7.0  # celui du plan
+    assert found.co2_kg is None  # heures passées sans intensité connue
+    # Sans tarif ou sans mesure : le plan seul.
+    assert whole_day(planned, state, actual, V1_CONTEXT) == planned
+    assert whole_day(planned, state, None, replace(V1_CONTEXT, tariff=tariff)) == planned

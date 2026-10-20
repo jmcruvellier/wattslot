@@ -1300,10 +1300,11 @@
       "input": "Il tuo messaggio",
       "placeholder": "Quanto hanno prodotto i pannelli ieri?",
       "send": "Invia",
-      "help": "Invio per inviare, Maiusc+Invio per andare a capo. La conversazione non viene salvata.",
-      "empty": "Le tue domande e le risposte dell'assistente appariranno qui.",
+      "help": "Invio per inviare, Maiusc+Invio per andare a capo. La conversazione resta finché la scheda del browser è aperta.",
+      "empty": "L'assistente non ha risposto nulla.",
       "failed": "L'assistente non ha risposto, riprova.",
-      "not_connected": "Home Assistant non è connesso: la chat non è disponibile."
+      "not_connected": "Home Assistant non è connesso: la chat non è disponibile.",
+      "log_empty": "Le tue domande e le risposte dell'assistente appariranno qui."
     }
   },
   "ui": {

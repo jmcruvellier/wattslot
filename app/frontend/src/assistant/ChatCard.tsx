@@ -1,7 +1,8 @@
 // Discussion avec l'assistant de Home Assistant (page Assistant) : chaque message part vers un
 // agent de conversation de HA (/api/assistant/chat), par défaut celui de l'assistant préféré ;
 // en choisir un autre sert à le tester, sans rien changer dans HA. L'identifiant de conversation
-// rendu par HA revient avec le message suivant ; rien n'est enregistré (perdu au rechargement).
+// rendu par HA revient avec le message suivant. La conversation est gardée le temps de l'onglet
+// du navigateur (sessionStorage) : on peut changer de page et revenir ; rien côté serveur.
 // Les modèles d'Open WebUI configuré (Réglages, Assistant vocal) s'ajoutent à la liste
 // (« open_webui:<modèle> ») ; l'historique de la page leur est renvoyé avec chaque message.
 
@@ -32,6 +33,33 @@ type Line = { from: "me" | "assistant"; text: string; error?: boolean };
 
 const OPEN_WEBUI = "open_webui:";
 
+// Conversation gardée le temps de l'onglet : fil, identifiant de HA, agent choisi.
+const CHAT_KEY = "wattslot.chat";
+
+interface SavedChat {
+  lines: Line[];
+  conversation: string | null;
+  agent: string;
+}
+
+function savedChat(): SavedChat {
+  try {
+    const found = JSON.parse(window.sessionStorage.getItem(CHAT_KEY) ?? "null") as SavedChat | null;
+    if (found && Array.isArray(found.lines)) return found;
+  } catch {
+    // stockage indisponible ou illisible : conversation neuve
+  }
+  return { lines: [], conversation: null, agent: "" };
+}
+
+function saveChat(chat: SavedChat) {
+  try {
+    window.sessionStorage.setItem(CHAT_KEY, JSON.stringify(chat));
+  } catch {
+    // stockage indisponible : la conversation vit le temps de la page
+  }
+}
+
 export default function ChatCard({
   inputId,
   draft,
@@ -44,9 +72,10 @@ export default function ChatCard({
   const { language, t } = useI18n();
   const [home, setHome] = useState<AssistantHome | null>(null);
   const [models, setModels] = useState<Named[]>([]);
-  const [agent, setAgent] = useState("");
-  const [lines, setLines] = useState<Line[]>([]);
-  const [conversation, setConversation] = useState<string | null>(null);
+  const [saved] = useState(savedChat);
+  const [agent, setAgent] = useState(saved.agent);
+  const [lines, setLines] = useState<Line[]>(saved.lines);
+  const [conversation, setConversation] = useState<string | null>(saved.conversation);
   const [waiting, setWaiting] = useState(false);
   const log = useRef<HTMLDivElement>(null);
 
@@ -56,7 +85,8 @@ export default function ChatCard({
       .then((found) => {
         setHome(found);
         const preferred = found.pipelines.find((p) => p.id === found.preferred_pipeline);
-        setAgent(preferred?.conversation_engine ?? "");
+        // L'agent d'une conversation reprise est gardé ; sinon, celui de l'assistant préféré.
+        setAgent((current) => current || (preferred?.conversation_engine ?? ""));
       })
       .catch(() => undefined);
     getJson<Named[]>("api/assistant/open-webui/models", controller.signal)
@@ -64,6 +94,10 @@ export default function ChatCard({
       .catch(() => undefined);
     return () => controller.abort();
   }, []);
+
+  useEffect(() => {
+    saveChat({ lines, conversation, agent });
+  }, [lines, conversation, agent]);
 
   // La dernière réponse reste visible : le fil, de hauteur fixe, défile jusqu'en bas (sans faire
   // défiler la page).
@@ -165,7 +199,7 @@ export default function ChatCard({
 
       {/* Toujours là, de hauteur fixe : la carte ne grandit plus au fil des questions. */}
       <div className="assistant-chat-log" role="log" aria-live="polite" ref={log}>
-        {lines.length === 0 && !waiting && <p className="assistant-chat-empty dim">{t("assistant.chat.empty")}</p>}
+        {lines.length === 0 && !waiting && <p className="assistant-chat-empty dim">{t("assistant.chat.log_empty")}</p>}
         {lines.map((line, index) => (
           <p
             key={index}

@@ -1300,10 +1300,11 @@
       "input": "Ihre Nachricht",
       "placeholder": "Wie viel haben die Module gestern erzeugt?",
       "send": "Senden",
-      "help": "Eingabe zum Senden, Umschalt+Eingabe für eine neue Zeile. Die Unterhaltung wird nicht gespeichert.",
-      "empty": "Ihre Fragen und die Antworten des Assistenten erscheinen hier.",
+      "help": "Eingabe zum Senden, Umschalt+Eingabe für eine neue Zeile. Das Gespräch bleibt erhalten, solange der Browser-Tab geöffnet ist.",
+      "empty": "Der Assistent hat nichts geantwortet.",
       "failed": "Der Assistent hat nicht geantwortet, versuchen Sie es erneut.",
-      "not_connected": "Home Assistant ist nicht verbunden: Der Chat ist nicht verfügbar."
+      "not_connected": "Home Assistant ist nicht verbunden: Der Chat ist nicht verfügbar.",
+      "log_empty": "Ihre Fragen und die Antworten des Assistenten erscheinen hier."
     }
   },
   "ui": {

@@ -1300,10 +1300,11 @@
       "input": "Uw bericht",
       "placeholder": "Hoeveel hebben de panelen gisteren opgewekt?",
       "send": "Versturen",
-      "help": "Enter om te versturen, Shift+Enter voor een nieuwe regel. Het gesprek wordt niet bewaard.",
-      "empty": "Uw vragen en de antwoorden van de assistent verschijnen hier.",
+      "help": "Enter om te verzenden, Shift+Enter voor een nieuwe regel. Het gesprek blijft bewaard zolang het browsertabblad open is.",
+      "empty": "De assistent gaf geen antwoord.",
       "failed": "De assistent antwoordde niet, probeer het opnieuw.",
-      "not_connected": "Home Assistant is niet verbonden: de chat is niet beschikbaar."
+      "not_connected": "Home Assistant is niet verbonden: de chat is niet beschikbaar.",
+      "log_empty": "Uw vragen en de antwoorden van de assistent verschijnen hier."
     }
   },
   "ui": {
