@@ -360,7 +360,9 @@
       "until": "Until {time}",
       "empty": "Nothing to start that day.",
       "now": "Now"
-    }
+    },
+    "discarded": "Impossible measurement set aside at {hours}: probably a sensor dropout.",
+    "discarded_link": "See the data"
   },
   "requests": {
     "title": "My requests",

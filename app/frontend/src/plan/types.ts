@@ -209,6 +209,8 @@ export interface DayView {
   weather: WeatherBanner;
   // Faux : maison sans installation solaire (lot 7.4), ni carte Soleil ni bandeau météo.
   solar?: boolean;
+  // Heures dont une mesure impossible a été écartée (qualité des données).
+  discarded_hours?: number[];
   notices: Notice[];
   freshness: Freshness | null;
   indicators: Indicators | null;

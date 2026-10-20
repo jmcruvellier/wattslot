@@ -27,10 +27,10 @@ plus une) ; sinon, ou si le recalcul n'est pas plausible, elle est écartée.
 
 import asyncio
 import logging
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
-from typing import Protocol
+from typing import Any, Protocol
 
 from fastapi import APIRouter, HTTPException, Request, Response
 from pydantic import BaseModel
@@ -133,6 +133,56 @@ def sensors(home: HomeModel, saved: Configuration) -> list[Sensor]:
                 sensor.entity_id, device.key, sensor.role, limit * MARGIN
             )
     return list(found.values())
+
+
+# Mesures horaires du jour gardées avec le plan (``planning.actual``), relues sur le brut.
+ACTUAL_SERIES = (
+    "production_reelle_horaire",
+    "consommation_reelle_horaire",
+    "reseau_reel_soutire_horaire",
+    "reseau_reel_injecte_horaire",
+)
+
+
+def house_limit_kwh(home: HomeModel, saved: Configuration) -> float:
+    """Le plus que la maison peut tirer, produire ou échanger en une heure : réseau,
+    panneaux et décharge de la batterie réunis, avec la marge."""
+    contract = (saved.tariff.contract_kva if saved.tariff else None) or DEFAULT_CONTRACT_KVA
+    peak = sum(
+        array.kwp
+        for settings in saved.devices
+        if settings.panels
+        for array in settings.panels.arrays
+    )
+    capacity = sum(d.capacity_kwh or 0.0 for d in home.devices if d.kind is DeviceKind.BATTERY)
+    battery = saved.battery or DEFAULT_BATTERY
+    discharge_w = battery.powers_w(capacity)[1] if capacity > 0 else 0.0
+    return (contract + peak + discharge_w / 1000) * MARGIN
+
+
+def plausible_actual(
+    content: Mapping[str, Any], limit_kwh: float
+) -> tuple[dict[str, Any], list[int]]:
+    """Plan gardé dont les mesures horaires impossibles (au-delà de ``limit_kwh``, ou
+    négatives) sont écartées, et les heures écartées : une valeur fausse ne cache plus les autres
+    dans les vues (graphiques, cartes, totaux)."""
+    actual = content.get("donnees_reelles_cache")
+    if not isinstance(actual, Mapping):
+        return dict(content), []
+    discarded: set[int] = set()
+    cleaned = dict(actual)
+    for key in ACTUAL_SERIES:
+        series = actual.get(key)
+        if not isinstance(series, Mapping):
+            continue
+        kept = {}
+        for hour, value in series.items():
+            if isinstance(value, int | float) and not NEGATIVE_KWH <= value <= limit_kwh:
+                discarded.add(int(hour))
+            else:
+                kept[hour] = value
+        cleaned[key] = kept
+    return {**content, "donnees_reelles_cache": cleaned}, sorted(discarded)
 
 
 def hours(period: str) -> float:

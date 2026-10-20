@@ -67,6 +67,26 @@ describe("CurvesScreen", () => {
     expect(fetchMock).toHaveBeenCalledWith("api/views/today?lang=fr", expect.anything());
   });
 
+  it("signale une mesure impossible écartée et mène à l'onglet Données de Ma maison", async () => {
+    mockApi(() => ({ yesterday: null, today: 1, tomorrow: null, week: null }), { ...TODAY, discarded_hours: [0] });
+    renderScreen();
+
+    const note = await screen.findByRole("note");
+    expect(note).toHaveTextContent("Mesure impossible écartée à 0 h : sans doute une coupure d'un capteur.");
+    const link = screen.getByRole("link", { name: "Voir les données" });
+    expect(link).toHaveAttribute("href", "#/home");
+    await userEvent.click(link);
+    expect(window.localStorage.getItem("home.tab")).toBe("data");
+  });
+
+  it("ne signale rien sans mesure écartée", async () => {
+    mockApi(() => ({ yesterday: null, today: 1, tomorrow: null, week: null }));
+    renderScreen();
+
+    await screen.findByText("graphique 24 heures, relevé 14.5");
+    expect(screen.queryByRole("note")).toBeNull();
+  });
+
   it("montre la frise et les graphiques de la batterie et du réseau", async () => {
     mockApi(() => ({ yesterday: null, today: 1, tomorrow: null, week: null }));
     renderScreen();

@@ -13,6 +13,7 @@ import { LoadMessage, PlanTabs } from "./PlanTabs";
 import { useDashboardLayout, usePlanView } from "./planView";
 import type { DayView } from "./types";
 import { WeekDetails } from "./WeekScreen";
+import { rememberTab } from "../home/tab";
 
 // Cartes affichées dans Planning, à côté de l'agenda : pas ici.
 const IN_PLANNING: DayCardId[] = ["indicators", "explanations"];
@@ -62,6 +63,17 @@ export default function CurvesScreen() {
         />
       )}
 
+      {load.status === "day" && (load.view.discarded_hours ?? []).length > 0 && (
+        <p className="card discarded-note" role="note">
+          {t("plan.discarded", {
+            hours: (load.view.discarded_hours ?? []).map((hour) => `${hour} h`).join(", "),
+          })}{" "}
+          {/* Ouvre Ma maison sur l'onglet « Données ». */}
+          <a href="#/home" onClick={() => rememberTab("data")}>
+            {t("plan.discarded_link")}
+          </a>
+        </p>
+      )}
       {load.status === "day" && (
         <DayCards view={load.view} layout={layout[load.view.kind]} indicators={layout.indicators} available={curveCards(load.view)} />
       )}

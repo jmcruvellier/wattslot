@@ -4,7 +4,7 @@
 import asyncio
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import ClassVar, cast
+from typing import Any, ClassVar, cast
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -27,7 +27,16 @@ from wattslot.corrections import CorrectionStore, Kind, Method, apply
 from wattslot.detection import DeviceKind, Role
 from wattslot.home_model import HomeDevice, HomeModel, HomeSensor
 from wattslot.ingestion import Ingestor, Target
-from wattslot.quality import Sensor, correct, detect, router, scan, sensors
+from wattslot.quality import (
+    Sensor,
+    correct,
+    detect,
+    house_limit_kwh,
+    plausible_actual,
+    router,
+    scan,
+    sensors,
+)
 from wattslot.solar_panels import PanelArray, SolarPanels
 from wattslot.storage.database import open_database
 from wattslot.storage.graph import GraphStore
@@ -377,3 +386,31 @@ def test_routes_scan_correct_list_and_undo(tmp_path: Path) -> None:
         )
         assert naive.status_code == 422
         assert api.get("/api/quality/status").json()["running"] is False
+
+
+# --- Vues du jour --------------------------------------------------------------------------
+
+
+def test_house_limit_adds_the_grid_the_panels_and_the_battery() -> None:
+    # 9 kVA + 3 kWc + 2,5 kW de décharge (0,5 C de 5 kWh), marge de 20 %.
+    assert round(house_limit_kwh(HOME, SAVED), 6) == round((9 + 3 + 2.5) * 1.2, 6)
+
+
+def test_impossible_hourly_measurements_are_set_aside() -> None:
+    content: dict[str, Any] = {
+        "planning": [],
+        "donnees_reelles_cache": {
+            "reseau_reel_soutire_horaire": {"0": 64073.34, "1": 0.4},
+            "production_reelle_horaire": {"12": 1.2, "13": -3.0},
+            "soc_pct_reel": {"0": 50},
+        },
+    }
+
+    cleaned, discarded = plausible_actual(content, 20.0)
+
+    assert discarded == [0, 13]
+    assert cleaned["donnees_reelles_cache"]["reseau_reel_soutire_horaire"] == {"1": 0.4}
+    assert cleaned["donnees_reelles_cache"]["production_reelle_horaire"] == {"12": 1.2}
+    assert cleaned["donnees_reelles_cache"]["soc_pct_reel"] == {"0": 50}  # pas une énergie
+    assert content["donnees_reelles_cache"]["reseau_reel_soutire_horaire"]["0"] == 64073.34
+    assert plausible_actual({"planning": []}, 20.0) == ({"planning": []}, [])
