@@ -1,6 +1,6 @@
-// Ma maison en phrases (lot 6b.5).
+// Ma maison en phrases (lot 6b.5), rangées en onglets (refonte de Ma maison).
 
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -8,7 +8,7 @@ import { reveal } from "../common/reveal";
 import { I18nProvider } from "../i18n/I18nProvider";
 import { translate } from "../i18n/translate";
 import type { Configuration, DeviceSettings, Tariff } from "./configuration";
-import HomeSummary from "./HomeSummary";
+import HomeScreen, { TAB_KEY } from "./HomeScreen";
 import { cheapestRanges, deviceText, direction, tariffText } from "./summaryText";
 import type { HomeModel } from "./types";
 
@@ -119,8 +119,17 @@ const CONFIGURATION: Configuration = {
   objective: { preset: "cost", weights: null },
 };
 
-describe("HomeSummary", () => {
+function renderHome(props: { anchor?: string; onAnchor?: () => void; onNavigate?: (target: string) => void } = {}) {
+  return render(
+    <I18nProvider>
+      <HomeScreen page="main" onNavigate={props.onNavigate ?? vi.fn()} anchor={props.anchor} onAnchor={props.onAnchor} />
+    </I18nProvider>,
+  );
+}
+
+describe("Ma maison en onglets", () => {
   beforeEach(() => {
+    window.localStorage.clear();
     vi.spyOn(navigator, "languages", "get").mockReturnValue(["fr-FR"]);
     vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
       const url = String(input);
@@ -134,28 +143,52 @@ describe("HomeSummary", () => {
     vi.restoreAllMocks();
   });
 
-  it("résume la maison en phrases et ouvre le réglage d'un clic", async () => {
-    const onOpen = vi.fn();
-    render(
-      <I18nProvider>
-        <HomeSummary version={0} onOpen={onOpen} />
-      </I18nProvider>,
-    );
+  it("résume l'essentiel en phrases et ouvre la feuille d'un réglage", async () => {
+    renderHome();
+    expect(screen.getByRole("tab", { name: "L'essentiel" })).toHaveAttribute("aria-selected", "true");
     expect(await screen.findByRole("button", { name: /Ma priorité\s*Payer le moins cher/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Mon contrat\s*Heures creuses 22 h – 6 h/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Panneaux\s*2 champ\(s\), sud et est · 6 kWc/ })).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /Batterie\s*5,1 kWh, jamais sous 12 % · pleine au moins tous les 6 jours/ }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Lave-linge\s*Quand une tâche de Home Assistant ou une demande le prévoit/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Frigo\s*Mesurés, pas placés/ })).toBeInTheDocument();
+    // Les appareils sont dans leur onglet.
+    expect(screen.queryByRole("button", { name: /Lave-linge/ })).toBeNull();
 
     await userEvent.click(screen.getByRole("button", { name: /Batterie/ }));
-    expect(onOpen).toHaveBeenLastCalledWith("battery");
-    await userEvent.click(screen.getByRole("button", { name: /Lave-linge/ }));
-    expect(onOpen).toHaveBeenLastCalledWith("settings-washer");
+    const sheet = screen.getByRole("dialog", { name: "Batterie" });
+    expect(within(sheet).getByLabelText(/Ne jamais décharger en dessous de/)).toHaveValue(12);
+    await userEvent.click(within(sheet).getByRole("button", { name: "Fermer" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("range les appareils placés, replie ceux suivis seulement, et garde l'onglet", async () => {
+    const onNavigate = vi.fn();
+    renderHome({ onNavigate });
+    await userEvent.click(await screen.findByRole("tab", { name: "Appareils" }));
+    expect(window.localStorage.getItem(TAB_KEY)).toBe("devices");
+    expect(screen.getByRole("button", { name: /Lave-linge\s*Quand une tâche de Home Assistant ou une demande le prévoit/ })).toBeInTheDocument();
+    const summary = screen.getByText("Frigo", { selector: "summary .ui-row-label" });
+    const followed = summary.closest("details")!;
+    expect(followed.open).toBe(false);
+    expect(followed).toHaveTextContent("Mesurés, pas placés");
+
+    await userEvent.click(summary);
+    await userEvent.click(within(followed).getByRole("button", { name: "Frigo" }));
+    expect(screen.getByRole("dialog", { name: "Frigo" })).toBeInTheDocument();
+    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Fermer" }));
+
     await userEvent.click(screen.getByRole("button", { name: "Ajouter un appareil" }));
-    expect(onOpen).toHaveBeenLastCalledWith("add-device");
+    expect(onNavigate).toHaveBeenLastCalledWith("devices#add-device");
+  });
+
+  it("ouvre la feuille demandée par un lien, dans son onglet", async () => {
+    window.localStorage.setItem(TAB_KEY, "more");
+    const onAnchor = vi.fn();
+    renderHome({ anchor: "settings-washer", onAnchor });
+    expect(await screen.findByRole("dialog", { name: "Lave-linge" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Appareils" })).toHaveAttribute("aria-selected", "true");
+    expect(onAnchor).toHaveBeenCalled();
   });
 });
 

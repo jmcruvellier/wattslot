@@ -625,7 +625,12 @@
     },
     "sensors_summary": "Linked Home Assistant sensors: {count}.",
     "include_hint": "Uncheck a proposed device that does not belong in the home.",
-    "kind_hint": "The type decides what the plan can do with the device."
+    "kind_hint": "The type decides what the plan can do with the device.",
+    "tabs": {
+      "essentials": "Essentials",
+      "devices": "Devices",
+      "more": "Advanced"
+    }
   },
   "graph": {
     "title": "My home as a graph",
@@ -711,10 +716,6 @@
     "name_suggests_cost": "{entity} looks like a cost (from its name), not consumed energy: it is not kept by default. Check it again if it really is a meter."
   },
   "configuration": {
-    "title": "Planning settings",
-    "intro": "For each saved device: how planning handles it, and whether it should schedule it.",
-    "loading": "Reading settings…",
-    "error": "Settings could not be read.",
     "empty": "Save your home first: its devices will appear here.",
     "behavior": "Behavior",
     "planned": "Scheduled by planning",
@@ -765,12 +766,11 @@
     },
     "import_rules": "Import the rules of the Home Assistant tasks",
     "rules": {
-      "applied": "Rules imported from the task descriptions: review them, then save.",
+      "applied": "Rules taken from the task descriptions and saved: each device concerned shows them in its settings.",
       "none": "No rule to import from the Home Assistant tasks.",
       "not_connected": "Home Assistant is not connected.",
       "failed": "Unable to read the Home Assistant tasks."
     },
-    "to_device": "Device and sensors",
     "behavior_hints": {
       "CycleBehavior": "A program that runs for a while once started: the plan tells you when to start it.",
       "EnergyByDeadlineBehavior": "An amount of energy to deliver before an hour (charging a car, power-controlled water heater).",
@@ -1354,10 +1354,8 @@
     }
   },
   "home_summary": {
-    "title": "My home at a glance",
     "loading": "Reading the home…",
     "error": "Unable to read the home.",
-    "details": "Detailed settings",
     "priority": "My priority",
     "presets": {
       "cost": "Pay as little as possible",

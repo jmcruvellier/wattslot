@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { I18nProvider } from "../i18n/I18nProvider";
-import HomeScreen, { DETAILS_KEY } from "./HomeScreen";
+import HomeScreen from "./HomeScreen";
 import type { HomeModel, HomeProposal } from "./types";
 
 const PROPOSAL: HomeProposal = {
@@ -59,8 +59,6 @@ function renderScreen() {
 describe("HomeScreen", () => {
   beforeEach(() => {
     window.localStorage.clear();
-    // Les écrans de réglage sont sous « Réglages détaillés » (lot 6b.5) : ouverts ici.
-    window.localStorage.setItem(DETAILS_KEY, "open");
     vi.spyOn(navigator, "languages", "get").mockReturnValue(["fr-FR"]);
   });
 

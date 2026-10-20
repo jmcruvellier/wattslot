@@ -625,7 +625,12 @@
     },
     "sensors_summary": "Capteurs de Home Assistant liés : {count}.",
     "include_hint": "Décochez un équipement proposé qui n'a pas sa place dans la maison.",
-    "kind_hint": "Le type décide de ce que le calcul peut faire de l'équipement."
+    "kind_hint": "Le type décide de ce que le calcul peut faire de l'équipement.",
+    "tabs": {
+      "essentials": "L'essentiel",
+      "devices": "Appareils",
+      "more": "Avancé"
+    }
   },
   "graph": {
     "title": "Ma maison en graphe",
@@ -711,10 +716,6 @@
     "name_suggests_cost": "{entity} ressemble à un coût (d'après son nom), pas à une énergie consommée : il n'est pas retenu d'office. Recochez-le s'il s'agit bien d'un compteur."
   },
   "configuration": {
-    "title": "Réglages du calcul",
-    "intro": "Pour chaque équipement enregistré : comment le calcul le traite, et s'il doit le placer.",
-    "loading": "Lecture des réglages…",
-    "error": "Les réglages n'ont pas pu être lus.",
     "empty": "Enregistrez d'abord votre maison : ses équipements apparaîtront ici.",
     "behavior": "Comportement",
     "planned": "Pris en compte par le calcul",
@@ -765,12 +766,11 @@
     },
     "import_rules": "Reprendre les règles des tâches de Home Assistant",
     "rules": {
-      "applied": "Règles reprises des descriptions des tâches : relisez-les, puis enregistrez.",
+      "applied": "Règles reprises des descriptions des tâches et enregistrées : chaque appareil concerné les montre dans ses réglages.",
       "none": "Aucune règle à reprendre dans les tâches de Home Assistant.",
       "not_connected": "Home Assistant n'est pas connecté.",
       "failed": "Impossible de lire les tâches de Home Assistant."
     },
-    "to_device": "Équipement et capteurs",
     "behavior_hints": {
       "CycleBehavior": "Un programme qui dure un moment une fois lancé : le calcul vous dit quand le démarrer.",
       "EnergyByDeadlineBehavior": "Une quantité d'énergie à fournir avant une heure (recharge d'une voiture, ballon piloté en puissance).",
@@ -1354,10 +1354,8 @@
     }
   },
   "home_summary": {
-    "title": "Ma maison en bref",
     "loading": "Lecture de la maison…",
     "error": "Impossible de lire la maison.",
-    "details": "Réglages détaillés",
     "priority": "Ma priorité",
     "presets": {
       "cost": "Payer le moins cher",

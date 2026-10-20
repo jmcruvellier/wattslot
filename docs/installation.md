@@ -43,7 +43,7 @@ In **Settings › Apps › WattSlot › Configuration**:
 
 ### Uninstalling
 
-**Settings › Apps › WattSlot › Uninstall** removes the app **and its data**. Make a backup first if you may come back, or export your home (**My home › Back up or share**).
+**Settings › Apps › WattSlot › Uninstall** removes the app **and its data**. Make a backup first if you may come back, or export your home (**My home › Advanced › Back up or share**).
 
 ## Standalone (Docker)
 

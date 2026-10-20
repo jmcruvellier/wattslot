@@ -625,7 +625,12 @@
     },
     "sensors_summary": "Gekoppelde Home Assistant-sensoren: {count}.",
     "include_hint": "Vink een voorgesteld apparaat uit dat niet bij het huis hoort.",
-    "kind_hint": "Het type bepaalt wat het plan met het apparaat kan doen."
+    "kind_hint": "Het type bepaalt wat het plan met het apparaat kan doen.",
+    "tabs": {
+      "essentials": "Het belangrijkste",
+      "devices": "Apparaten",
+      "more": "Geavanceerd"
+    }
   },
   "graph": {
     "title": "Mijn huis als graaf",
@@ -711,10 +716,6 @@
     "name_suggests_cost": "{entity} lijkt naar zijn naam een kostenpost, geen verbruikte energie: hij wordt standaard niet behouden. Vink hem weer aan als het echt een meter is."
   },
   "configuration": {
-    "title": "Planningsinstellingen",
-    "intro": "Voor elk opgeslagen apparaat: hoe de planning ermee omgaat en of ze het moet inplannen.",
-    "loading": "Instellingen worden gelezen…",
-    "error": "De instellingen konden niet worden gelezen.",
     "empty": "Sla eerst uw huis op: de apparaten verschijnen dan hier.",
     "behavior": "Gedrag",
     "planned": "Door de planning ingepland",
@@ -765,12 +766,11 @@
     },
     "import_rules": "De regels van de Home Assistant-taken overnemen",
     "rules": {
-      "applied": "Regels overgenomen uit de beschrijvingen van de taken: controleer ze en sla daarna op.",
+      "applied": "Regels overgenomen uit de taakbeschrijvingen en opgeslagen: elk betrokken apparaat toont ze in zijn instellingen.",
       "none": "Geen regel over te nemen uit de Home Assistant-taken.",
       "not_connected": "Home Assistant is niet verbonden.",
       "failed": "De taken van Home Assistant kunnen niet worden gelezen."
     },
-    "to_device": "Apparaat en sensoren",
     "behavior_hints": {
       "CycleBehavior": "Een programma dat na het starten een tijd draait: het plan zegt u wanneer u het moet starten.",
       "EnergyByDeadlineBehavior": "Een hoeveelheid energie die vóór een tijdstip geleverd moet worden (een auto laden, een op vermogen geregelde boiler).",
@@ -1354,10 +1354,8 @@
     }
   },
   "home_summary": {
-    "title": "Mijn huis in het kort",
     "loading": "Huis wordt gelezen…",
     "error": "Het huis kan niet worden gelezen.",
-    "details": "Gedetailleerde instellingen",
     "priority": "Mijn prioriteit",
     "presets": {
       "cost": "Zo weinig mogelijk betalen",

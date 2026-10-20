@@ -625,7 +625,12 @@
     },
     "sensors_summary": "Sensori di Home Assistant collegati: {count}.",
     "include_hint": "Tolga la spunta a un apparecchio proposto che non fa parte della casa.",
-    "kind_hint": "Il tipo decide che cosa il piano può fare con l'apparecchio."
+    "kind_hint": "Il tipo decide che cosa il piano può fare con l'apparecchio.",
+    "tabs": {
+      "essentials": "L'essenziale",
+      "devices": "Apparecchi",
+      "more": "Avanzate"
+    }
   },
   "graph": {
     "title": "La mia casa come grafo",
@@ -711,10 +716,6 @@
     "name_suggests_cost": "{entity} sembra un costo (dal nome), non energia consumata: non viene mantenuto per impostazione predefinita. Rimetta la spunta se è davvero un contatore."
   },
   "configuration": {
-    "title": "Impostazioni di pianificazione",
-    "intro": "Per ogni apparecchio salvato: come la pianificazione lo gestisce e se deve programmarlo.",
-    "loading": "Lettura delle impostazioni…",
-    "error": "Impossibile leggere le impostazioni.",
     "empty": "Salvi prima la sua casa: i suoi apparecchi compariranno qui.",
     "behavior": "Comportamento",
     "planned": "Programmato dalla pianificazione",
@@ -765,12 +766,11 @@
     },
     "import_rules": "Importa le regole delle attività di Home Assistant",
     "rules": {
-      "applied": "Regole importate dalle descrizioni delle attività: le controlli, poi salvi.",
+      "applied": "Regole riprese dalle descrizioni delle attività e salvate: ogni apparecchio interessato le mostra nelle sue impostazioni.",
       "none": "Nessuna regola da importare dalle attività di Home Assistant.",
       "not_connected": "Home Assistant non è connesso.",
       "failed": "Impossibile leggere le attività di Home Assistant."
     },
-    "to_device": "Apparecchio e sensori",
     "behavior_hints": {
       "CycleBehavior": "Un programma che funziona per un po' una volta avviato: il piano le dice quando avviarlo.",
       "EnergyByDeadlineBehavior": "Una quantità di energia da fornire entro un'ora (ricarica di un'auto, scaldabagno regolato in potenza).",
@@ -1354,10 +1354,8 @@
     }
   },
   "home_summary": {
-    "title": "La mia casa in breve",
     "loading": "Lettura della casa…",
     "error": "Impossibile leggere la casa.",
-    "details": "Impostazioni dettagliate",
     "priority": "La mia priorità",
     "presets": {
       "cost": "Pagare il meno possibile",

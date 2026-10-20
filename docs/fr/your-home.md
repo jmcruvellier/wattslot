@@ -2,7 +2,7 @@
 
 *[English version](../your-home.md) · [Guide d'utilisation](README.md)*
 
-Tout se trouve dans **Ma maison › Réglages détaillés**. Un modèle prêt à l'emploi règle presque tout d'un coup ; ajustez ensuite ce qui diffère chez vous.
+Tout se trouve dans **Ma maison** : les règles de chaque appareil dans l'onglet **Appareils**, votre priorité, votre contrat, vos panneaux et votre batterie dans **L'essentiel**. Un modèle prêt à l'emploi règle presque tout d'un coup ; ajustez ensuite ce qui diffère chez vous.
 
 ## Ce que WattSlot fait de chaque équipement
 

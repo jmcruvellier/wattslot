@@ -13,11 +13,12 @@ interface SheetProps {
   title: string;
   onClose: () => void;
   children: ReactNode;
+  wide?: boolean; // formulaire sur ordinateur : fenêtre plus large
 }
 
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
-export default function Sheet({ open, title, onClose, children }: SheetProps) {
+export default function Sheet({ open, title, onClose, children, wide = false }: SheetProps) {
   const { t } = useI18n();
   const id = useId();
   const panel = useRef<HTMLDivElement>(null);
@@ -62,7 +63,7 @@ export default function Sheet({ open, title, onClose, children }: SheetProps) {
   if (!open) return null;
   return createPortal(
     <div className="ui-sheet-backdrop" onClick={(event) => event.target === event.currentTarget && onClose()}>
-      <div ref={panel} className="ui-sheet" role="dialog" aria-modal="true" aria-labelledby={id}>
+      <div ref={panel} className={wide ? "ui-sheet ui-sheet-wide" : "ui-sheet"} role="dialog" aria-modal="true" aria-labelledby={id}>
         <div className="ui-sheet-header">
           <h2 id={id}>{title}</h2>
           <button type="button" className="ui-icon-button" aria-label={t("ui.close")} onClick={onClose}>
