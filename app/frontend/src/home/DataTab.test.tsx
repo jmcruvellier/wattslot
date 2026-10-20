@@ -107,7 +107,12 @@ describe("onglet Données", () => {
 
     expect(await screen.findByText("1 valeur(s) corrigée(s)")).toBeInTheDocument();
     const [row] = screen.getAllByRole("button", { name: /^Réseau · sensor.grid_off_peak/ }); // l'autre : annulée
-    expect(row).toHaveTextContent(/20\/10, 00:00 – 01:00 · 23148 kWh → 0,12 kWh/);
+    // Période dans l'heure du navigateur : la CI tourne en UTC, la maison à Paris.
+    const from = new Date(START);
+    const time = (d: Date) => d.toLocaleTimeString("fr", { hour: "2-digit", minute: "2-digit" });
+    const day = from.toLocaleDateString("fr", { day: "2-digit", month: "2-digit" });
+    const to = new Date(from.getTime() + 3_600_000);
+    expect(row).toHaveTextContent(`${day}, ${time(from)} – ${time(to)} · 23148 kWh → 0,12 kWh`);
     expect(screen.getByText("Frigo")).toBeInTheDocument(); // un seul compteur : le nom seul
     expect(screen.getByText("3 h sans valeur depuis le 18/10")).toBeInTheDocument();
     expect(screen.getByText("Corrections annulées (1)").closest("details")!.open).toBe(false);
