@@ -118,6 +118,23 @@ describe("onglet Données", () => {
     expect(screen.getByText("Corrections annulées (1)").closest("details")!.open).toBe(false);
   });
 
+  it("montre une heure et son quart d'heure sur une seule ligne, et les corrige ensemble", async () => {
+    const quarter = correction({ id: 5, period: "PT15M", start: "2026-10-19T22:00:00Z", corrected_kwh: 0.1 });
+    const calls = mockApi([correction({}), quarter], (call) =>
+      call.method === "POST" && call.url === "api/quality/corrections" ? Response.json({}, { status: 201 }) : undefined,
+    );
+    renderTab();
+
+    expect(await screen.findByText("1 valeur(s) corrigée(s)")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: /^Réseau/ }));
+    const sheet = screen.getByRole("dialog");
+    expect(sheet).toHaveTextContent(/Avec le quart d'heure .* : 23148 kWh → 0,10 kWh/);
+    await userEvent.click(within(sheet).getByRole("button", { name: "Écarter" }));
+
+    const posted = calls.filter((c) => c.method === "POST" && c.url === "api/quality/corrections");
+    expect(posted.map((c) => (c.body as { period: string }).period)).toEqual(["PT1H", "PT15M"]);
+  });
+
   it("dit quand les données sont saines", async () => {
     mockApi([]);
     renderTab();

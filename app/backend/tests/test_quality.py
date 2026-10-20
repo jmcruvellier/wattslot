@@ -28,6 +28,7 @@ from wattslot.detection import DeviceKind, Role
 from wattslot.home_model import HomeDevice, HomeModel, HomeSensor
 from wattslot.ingestion import Ingestor, Target
 from wattslot.quality import (
+    Anomaly,
     Sensor,
     correct,
     detect,
@@ -38,7 +39,7 @@ from wattslot.quality import (
     sensors,
 )
 from wattslot.solar_panels import PanelArray, SolarPanels
-from wattslot.storage.database import open_database
+from wattslot.storage.database import MIGRATIONS, migrate, open_database
 from wattslot.storage.graph import GraphStore
 from wattslot.storage.raw import RawStores, Reading
 from wattslot.tariff import Tariff
@@ -137,14 +138,14 @@ def hourly(*values: float | None, entity_id: str = LINKY) -> list[Aggregate]:
 
 
 def test_detects_a_spike_a_negative_value_and_a_gap() -> None:
-    found = detect(GRID, HOUR, hourly(0.4, 23147.73, 0.3, -0.2, None, None, 0.5))
+    found = detect(GRID, HOUR, hourly(0.4, 23147.73, -0.01, -0.2, None, None, 0.5))
 
     assert [(a.kind, a.start, a.energy_kwh, a.missing) for a in found] == [
         (Kind.SPIKE, T0 + timedelta(hours=1), 23147.73, 0),
         (Kind.NEGATIVE, T0 + timedelta(hours=3), -0.2, 0),
         (Kind.GAP, T0 + timedelta(hours=4), None, 2),
     ]
-    assert found[0].limit_kwh == 10.8
+    assert found[0].limit_kwh == 10.8  # -0,01 : l'arrondi de HA, pas un recul
     assert found[0].device == "grid"
 
 
@@ -414,3 +415,28 @@ def test_impossible_hourly_measurements_are_set_aside() -> None:
     assert cleaned["donnees_reelles_cache"]["soc_pct_reel"] == {"0": 50}  # pas une énergie
     assert content["donnees_reelles_cache"]["reseau_reel_soutire_horaire"]["0"] == 64073.34
     assert plausible_actual({"planning": []}, 20.0) == ({"planning": []}, [])
+
+
+def test_rounding_corrections_of_the_old_threshold_are_undone_by_the_migration(
+    tmp_path: Path,
+) -> None:
+    """Migration 15 : les corrections automatiques de -0,01 kWh sont annulées, pas les autres."""
+    database = open_database(tmp_path)
+    store = CorrectionStore(database)
+    for hour, (value, automatic) in enumerate([(-0.01, True), (-0.54, True), (-0.01, False)]):
+        anomaly = Anomaly(
+            entity_id=LINKY,
+            device="grid",
+            period=HOUR,
+            start=T0 + timedelta(hours=hour),
+            kind=Kind.NEGATIVE,
+            energy_kwh=value,
+        )
+        store.add(anomaly, Method.DISCARD, None, automatic=automatic)
+    database.execute("DELETE FROM schema_migrations WHERE version = ?", (len(MIGRATIONS),))
+    migrate(database)
+
+    assert sorted((c.original_kwh, c.automatic) for c in store.list()) == [
+        (-0.54, True),
+        (-0.01, False),  # faite à la main : gardée
+    ]

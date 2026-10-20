@@ -49,7 +49,9 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_CONTRACT_KVA = 36.0  # plus forte puissance souscrite d'un particulier (planning.engine)
 MARGIN = 1.2  # marge sur la limite physique (pointes, horodatages décalés)
-NEGATIVE_KWH = -0.001  # en dessous : valeur négative (bruit des calculs écarté)
+# En dessous : valeur négative. Au-dessus, l'arrondi des statistiques de HA (-0,01 kWh sur un
+# quart d'heure de surplus), pas un compteur qui recule.
+NEGATIVE_KWH = -0.05
 ESTIMATE_NEIGHBOURS = 3  # périodes voisines, de part et d'autre, pour une estimation
 INTERVAL_S = 15 * 60.0  # surveillance automatique
 RECENT = timedelta(hours=26)  # surveillance : dernières périodes closes

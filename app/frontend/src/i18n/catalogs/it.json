@@ -1543,6 +1543,7 @@
       "none": "Nessuna anomalia in questo periodo.",
       "found": "{count} anomalia/e: quelle evidenti sono corrette automaticamente.",
       "failed": "L'analisi non è riuscita."
-    }
+    },
+    "related": "Con il quarto d'ora {period}: {value}"
   }
 }
