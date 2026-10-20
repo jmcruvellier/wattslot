@@ -11,10 +11,12 @@ import pytest
 from tests.fake_home_assistant import default_responses, fake_home_assistant, running_client
 from wattslot import aggregation
 from wattslot.aggregation import (
+    GLITCH_MAX,
     HOUR,
     QUARTER,
     Aggregator,
     Carry,
+    Drop,
     compute,
     period_start,
 )
@@ -52,6 +54,42 @@ def test_counter_reset_and_small_dips() -> None:
 
     assert values is not None and values.energy_kwh is not None
     assert round(values.energy_kwh, 6) == 0.4
+
+
+def test_a_meter_dropping_to_zero_an_instant_is_not_a_reset() -> None:
+    """Compteur coupé un instant (0 envoyé, puis l'index) : seule la hausse réelle compte."""
+    points = [(at(1), 23147.10), (at(3), 0.0), (at(4), 23147.15), (at(9), 23147.20)]
+
+    values, carry = compute(Role.ENERGY_IMPORTED, T0, QUARTER_END, Carry(at(-1), 23147.0), points)
+
+    assert values is not None and values.energy_kwh is not None
+    assert round(values.energy_kwh, 6) == 0.2
+    assert carry == Carry(at(9), 23147.2)
+
+
+def test_a_dropped_meter_back_in_the_next_period_is_not_counted_either() -> None:
+    first, carry = compute(
+        Role.ENERGY_IMPORTED, T0, QUARTER_END, Carry(at(-1), 23147.0), [(at(14), 0.0)]
+    )
+    assert carry is not None and carry.drop == Drop(at(14), 23147.0)
+
+    second, carry = compute(Role.ENERGY_IMPORTED, QUARTER_END, at(30), carry, [(at(17), 23147.05)])
+
+    assert first is not None and second is not None
+    assert (first.energy_kwh, round(second.energy_kwh or 0, 6)) == (0.0, 0.05)
+    assert carry == Carry(at(17), 23147.05)
+
+
+def test_a_reset_stays_a_reset_after_the_glitch_delay_or_for_a_small_counter() -> None:
+    late = [(at(1), 0.0), (at(1) + GLITCH_MAX + timedelta(seconds=1), 30.0)]
+    values, carry = compute(Role.ENERGY_PRODUCED, T0, at(30), Carry(at(0), 30.0), late)
+    assert values is not None and values.energy_kwh == 30.0  # remise à zéro, puis 30 kWh
+    assert carry is not None and carry.drop is None
+
+    # Petit compteur quotidien remis à zéro qui remonte vite : pas une coupure.
+    small = [(at(1), 0.0), (at(2), 0.6), (at(3), 1.2)]
+    values, _ = compute(Role.ENERGY_CONSUMED, T0, QUARTER_END, Carry(at(0), 1.3), small)
+    assert values is not None and round(values.energy_kwh or 0, 6) == 1.2
 
 
 def test_first_counter_reading_is_the_baseline() -> None:

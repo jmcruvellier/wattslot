@@ -143,6 +143,10 @@ MIGRATIONS: tuple[str, ...] = (
     )
     """,
     "CREATE INDEX quality_corrections_period ON quality_corrections (entity_id, period, start)",
+    # 13 et 14 : baisse d'un compteur en suspens (coupure ou remise à zéro, ``aggregation.Drop``),
+    # reportée d'une période à la suivante comme le dernier relevé.
+    "ALTER TABLE aggregation_state ADD COLUMN drop_time TEXT",
+    "ALTER TABLE aggregation_state ADD COLUMN drop_value REAL",
 )
 
 

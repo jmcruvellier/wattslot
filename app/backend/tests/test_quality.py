@@ -5,12 +5,22 @@ import asyncio
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import ClassVar, cast
+from zoneinfo import ZoneInfo
 
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from wattslot import configuration, home_model
-from wattslot.aggregation import HOUR, QUARTER, Aggregate, Aggregator
+from wattslot.aggregation import (
+    HOUR,
+    QUARTER,
+    Aggregate,
+    Aggregator,
+    Values,
+    aggregate_nquads,
+    graph_iri,
+)
 from wattslot.battery_settings import BatterySettings
 from wattslot.configuration import Behavior, Configuration, DeviceSettings
 from wattslot.corrections import CorrectionStore, Kind, Method, apply
@@ -245,11 +255,9 @@ class StubIngestor:
     }
 
 
-def test_a_meter_dropping_to_zero_is_corrected_in_what_the_application_reads(
-    tmp_path: Path,
-) -> None:
-    """Nuit du 19 au 20/10 : un compteur Linky envoie 0 un instant, puis son index ; la remise à
-    zéro supposée ajoute tout l'index (23 147 kWh) à un quart d'heure et à son heure."""
+def _linky(tmp_path: Path) -> tuple[Aggregator, CorrectionStore]:
+    """Nuit du 19 au 20/10 : un compteur Linky envoie 0 un instant, puis son index ; relevés
+    bruts de trois heures, 0,01 kWh toutes les cinq minutes."""
     graph = GraphStore(tmp_path)
     raw = RawStores(tmp_path, "Europe/Paris")
     iri = StubIngestor.targets[LINKY].sensor_iri
@@ -259,24 +267,55 @@ def test_a_meter_dropping_to_zero_is_corrected_in_what_the_application_reads(
     readings.append(Reading(LINKY, iri, 0.0, T0 + timedelta(hours=2, minutes=50, seconds=30)))
     raw.write(sorted(readings, key=lambda r: r.time))
     database = open_database(tmp_path)
-    aggregator = Aggregator(cast(Ingestor, StubIngestor()), raw, graph, database)
+    return Aggregator(cast(Ingestor, StubIngestor()), raw, graph, database), CorrectionStore(
+        database
+    )
+
+
+def test_a_meter_dropping_to_zero_is_no_longer_counted(tmp_path: Path) -> None:
+    aggregator, store = _linky(tmp_path)
     asyncio.run(aggregator.step(T0 + timedelta(hours=3, minutes=2)))
-    store = CorrectionStore(database)
     end = T0 + timedelta(hours=3)
 
-    before = [a.energy_kwh or 0 for a in aggregator.read(LINKY, HOUR, T0, end)]
-    assert max(before) > 23000  # le saut, tel que l'agrégation le compte aujourd'hui
+    hours = [round(a.energy_kwh or 0, 6) for a in aggregator.read(LINKY, HOUR, T0, end)]
 
-    found = scan(aggregator, store, HOME, SAVED, {HOUR: (T0, end), QUARTER: (T0, end)})
+    assert hours == [0.11, 0.12, 0.12]  # la première heure part de son premier relevé
+    assert (
+        scan(aggregator, store, HOME, SAVED, {HOUR: (T0, end), QUARTER: (T0, end)}).anomalies == []
+    )
 
-    assert {(a.kind, a.period) for a in found.anomalies} == {
-        (Kind.SPIKE, HOUR),
-        (Kind.SPIKE, QUARTER),
-    }
-    assert found.corrected == 2
-    assert all((a.energy_kwh or 0) < 1 for a in aggregator.read(LINKY, HOUR, T0, end))
-    assert all((a.energy_kwh or 0) < 1 for a in aggregator.read(LINKY, QUARTER, T0, end))
-    assert max(a.energy_kwh or 0 for a in aggregator.read(LINKY, HOUR, T0, end, False)) > 23000
+
+def test_a_spike_counted_by_the_old_rule_is_recomputed_on_the_raw_readings(tmp_path: Path) -> None:
+    """Heure déjà agrégée avec l'ancienne règle (tout l'index compté) : tant que le brut existe,
+    la correction automatique la recalcule au lieu de l'écarter."""
+    aggregator, store = _linky(tmp_path)
+    spike = T0 + timedelta(hours=2)
+    zone = ZoneInfo("Europe/Paris")
+    target = StubIngestor.targets[LINKY]
+    aggregator._graph.add_nquads(
+        aggregate_nquads(
+            LINKY, target, HOUR, spike, Values(energy_kwh=23147.36), graph_iri(HOUR, spike, zone)
+        )
+    )
+
+    found = scan(
+        aggregator,
+        store,
+        HOME,
+        SAVED,
+        {HOUR: (T0, T0 + timedelta(hours=3))},
+        recompute=aggregator.recompute,
+    )
+
+    [anomaly] = found.anomalies
+    assert anomaly.correction is not None
+    assert anomaly.correction.method is Method.RAW
+    assert anomaly.correction.corrected_kwh == pytest.approx(0.12)
+    assert [
+        a.energy_kwh for a in aggregator.read(LINKY, HOUR, spike, spike + timedelta(hours=1))
+    ] == [pytest.approx(0.12)]
+    # Sans brut (au-delà de sa conservation), rien à recalculer.
+    assert aggregator.recompute(LINKY, HOUR, T0 - timedelta(days=5)) is None
 
 
 # --- Routes ----------------------------------------------------------------------------------
