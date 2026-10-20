@@ -111,7 +111,9 @@ describe("CurvesScreen", () => {
     renderScreen();
 
     await user.click(await screen.findByRole("tab", { name: "Semaine" }));
-    await user.click((await screen.findAllByRole("button", { name: /Voir le détail/ }))[0]);
+    // Le détail d'un jour se déplie d'abord dans le tableau de la semaine.
+    await user.click((await screen.findAllByRole("button", { expanded: false }))[0]);
+    await user.click(screen.getByRole("button", { name: /Voir le détail/ }));
     expect(screen.getByRole("tab", { name: "Aujourd'hui" })).toHaveAttribute("aria-selected", "true");
     expect(await screen.findByText("graphique 24 heures, relevé 14.5")).toBeInTheDocument();
   });
