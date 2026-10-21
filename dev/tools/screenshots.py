@@ -6,7 +6,7 @@ Sur la démonstration de ``tools.demo`` (maison synthétique, aucune donnée ré
 1. génère le dossier de données (31 jours simulés, calculs horaires du vrai serveur) ;
 2. lance l'application sur ce dossier, heure figée, connectée au faux Home Assistant ;
 3. photographie les écrans (``SHOTS``) sur téléphone et sur ordinateur, en thème clair (Ivoire)
-   et sombre (Graphite), dans ``public/docs/images/<langue>/`` ; le navigateur est à la même
+   et sombre (Graphite), dans ``docs/images/<langue>/`` ; le navigateur est à la même
    heure que le serveur et n'atteint aucun site extérieur.
 
 Prérequis : l'interface construite (``npm run build`` dans ``app/frontend``), l'environnement du
@@ -28,11 +28,12 @@ import urllib.request
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 DEV = ROOT / "dev"
-OUTPUT = ROOT / "public" / "docs" / "images"
+OUTPUT = ROOT / "docs" / "images"
 LANGUAGES = ("en", "fr")
 THEMES = {"light": "ivory", "dark": "graphite"}
 DEVICES = {"phone": (390, 844), "desktop": (1440, 900)}
@@ -47,6 +48,8 @@ class Shot:
     device: str  # clé de DEVICES
     theme: str  # clé de THEMES
     full_page: bool = False
+    # Préférences de la capture : onglet de Courbes (``plan.tab``) ou de Ma maison (``home.tab``).
+    extra: tuple[tuple[str, str], ...] = ()
 
 
 SHOTS: tuple[Shot, ...] = (
@@ -56,11 +59,19 @@ SHOTS: tuple[Shot, ...] = (
     Shot("planning-desktop-light", "/planning", "desktop", "light", full_page=True),
     Shot("planning-desktop-dark", "/planning", "desktop", "dark", full_page=True),
     Shot("planning-phone-light", "/planning", "phone", "light"),
+    Shot("curves-desktop-light", "/curves", "desktop", "light", full_page=True),
+    Shot("curves-week-desktop-light", "/curves", "desktop", "light", extra=(("plan.tab", "week"),)),
     Shot("home-desktop-light", "/home", "desktop", "light"),
+    Shot("home-data-desktop-light", "/home", "desktop", "light", extra=(("home.tab", "data"),)),
     Shot("assistant-desktop-light", "/assistant", "desktop", "light"),
-    Shot("settings-desktop-light", "/settings", "desktop", "light"),
+    Shot("settings-desktop-light", "/settings", "desktop", "light", full_page=True),
     Shot("status-desktop-light", "/settings/status", "desktop", "light"),
 )
+
+
+def browser_now() -> datetime:
+    """Heure figée du navigateur, celle de la démonstration."""
+    return datetime.fromtimestamp(NOW_MS / 1000, tz=UTC)
 
 
 def output_path(language: str, shot: Shot) -> Path:
@@ -70,10 +81,10 @@ def output_path(language: str, shot: Shot) -> Path:
 def storage(language: str, shot: Shot) -> dict[str, str]:
     """Préférences du navigateur posées avant la capture (clés de l'interface)."""
     return {
+        **dict(shot.extra),
         "wattslot.language": language,
         "wattslot.theme": THEMES[shot.theme],
         "wattslot.menu": "open",
-        "plan.curves": "open",  # « Courbes détaillées » dépliées dans Planning
     }
 
 
@@ -169,7 +180,8 @@ def capture(app_url: str, language: str, shots: tuple[Shot, ...]) -> list[Path]:
                 + ")) localStorage.setItem(k, v);"
             )
             page = context.new_page()
-            page.clock.set_fixed_time(NOW_MS)
+            # Une date, pas un nombre : Playwright lit un nombre en secondes (an 58410 avec des ms).
+            page.clock.set_fixed_time(browser_now())
             page.goto(f"{app_url}/?lang={language}#{shot.route}")
             page.wait_for_load_state("networkidle")
             page.wait_for_timeout(1500)  # graphiques chargés à la demande, animations

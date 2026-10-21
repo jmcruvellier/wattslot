@@ -4,6 +4,8 @@
 
 WattSlot trouve le bon créneau pour lancer vos appareils : quand votre électricité solaire est là, ou quand l'électricité est la moins chère. Il lit votre maison dans Home Assistant, calcule un plan pour aujourd'hui et la semaine, et vous dit quoi lancer et quand. Il recommande ; vous décidez.
 
+> **Bêta.** Vos retours décident de la suite : [donnez votre avis](https://github.com/jmcruvellier/wattslot/issues/new?template=beta_feedback.yml), ou utilisez **Donner mon avis** en bas des **Réglages**.
+
 ![Aujourd'hui, sur un téléphone](../images/fr/today-phone-light.png)
 
 ## Par où commencer

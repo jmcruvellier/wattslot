@@ -24,7 +24,7 @@
 <p align="center">
   <img src="docs/images/en/today-phone-light.png" alt="Today, on a phone" height="360">
   &nbsp;
-  <img src="docs/images/en/planning-desktop-light.png" alt="Planning, on a computer" height="360">
+  <img src="docs/images/en/today-desktop-light.png" alt="Today, on a computer" height="360">
 </p>
 
 ## Features
@@ -32,7 +32,7 @@
 - **Reads your home from Home Assistant**: the Energy dashboard gives the solar production, the grid, the battery and the tracked appliances; past data comes from the statistics. Nothing to type in to get started.
 - **Daily plan and seven-day horizon**: when to start each appliance, when to charge or discharge the battery, from the solar forecast and your prices (single price, off-peak hours, colour days, dynamic prices read from an entity).
 - **Your home, your rules**: appliance behaviours, time windows, recurrences, battery settings, and what to optimise (cost, self-consumption, grid draw, CO₂). Ready-made templates, backup and sharing.
-- **Made for every day**: Today, Planning, Curves, My home, Assistant, Settings. Phone first, five themes with automatic light and dark, six languages.
+- **Made for every day**: Today, Planning, Charts, My home, Assistant, Settings. Phone first, five themes with automatic light and dark, six languages.
 - **Requests and reminders**: ask for an appliance from the app or from Home Assistant's Assist, get notified at the right time.
 - **Data you can trust**: WattSlot checks your sensors, flags glitches and lets you correct them, so one wrong reading does not spoil the rest.
 - **Assistant (optional)**: a built-in MCP server lets Home Assistant's Assist answer questions about your plan, with the language model you already use.

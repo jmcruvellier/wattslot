@@ -43,4 +43,6 @@
 
 **How much does it write to the disk?** A few GB per day at most in normal use; the first history import writes more, once. Use an SSD rather than an SD card.
 
+**How do I give feedback on the beta?** With **Give feedback**, at the bottom of **Settings**, or directly with the [beta feedback form](https://github.com/jmcruvellier/wattslot/issues/new?template=beta_feedback.yml): what works, what bothers you, what you did not understand. English or French.
+
 **Where do I ask a question?** In the [Discussions](https://github.com/jmcruvellier/wattslot/discussions); for a bug, open a [GitHub issue](https://github.com/jmcruvellier/wattslot/issues/new/choose).

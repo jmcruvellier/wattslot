@@ -2,7 +2,7 @@
 
 *[English version](../screens.md) · [Guide d'utilisation](README.md)*
 
-Cinq sections, dans le menu en bas de l'écran sur un téléphone, à gauche sur un ordinateur (il se replie en icônes avec la flèche en haut). Deux choses sont toujours à portée : la **pastille d'état** (verte : tout fonctionne ; orange : à vérifier ; rouge : le calcul est bloqué) et **Demander un appareil** (le bouton `+`).
+Six sections, dans le menu en bas de l'écran sur un téléphone, à gauche sur un ordinateur (il se replie en icônes avec la flèche en haut). Deux choses sont toujours à portée : la **pastille d'état** (verte : tout fonctionne ; orange : à vérifier ; rouge : le calcul est bloqué) et **Demander un appareil** (le bouton `+`).
 
 ## Aujourd'hui
 
@@ -31,12 +31,22 @@ Le plan en détail, pour **Hier**, **Aujourd'hui**, **Demain** et la **Semaine**
   - Aujourd'hui, les autres départs possibles de chaque appareil se choisissent aussi ici.
 - **Indicateurs du plan** (coût, achat, surplus, autoconsommation…) : sur la journée entière, mesurés pour les heures déjà passées, prévus pour la suite.
 - **Mes demandes** (sous chaque onglet) : les appareils que vous avez demandés, avec ou sans échéance, à marquer faits ou à annuler.
-- **Courbes détaillées** (repliées) : cartes de synthèse (batterie, réseau, production, estimé et mesuré), le Planning des équipements, la charge de la batterie, les échanges avec le réseau et les courbes de production et de consommation, prévues (en pointillés) et mesurées.
-- **Personnaliser** choisit les cartes affichées et leur ordre.
-- Une mesure impossible pour la maison (un compteur qui compte des milliers de kWh en une heure) est écartée : un trou dans les courbes, rien dans les totaux, et une ligne au-dessus des cartes avec **Voir les données** (**Ma maison › Données**).
-- **Semaine** : un tableau d'une ligne par jour (météo, production, batterie, achat dont heures pleines, surplus, appareils) ; touchez un jour pour déplier son détail (appareils et leurs heures, avertissements, **Voir le détail**). Sur téléphone, le tableau garde le jour, la production, la batterie et l'achat, le reste est dans le détail. Puis les courbes de la semaine.
+- **Semaine** : les jours à venir en agenda, une ligne par jour avec ce qui est prévu ; touchez un jour pour l'ouvrir.
 
 ![Planning en thème sombre](../images/fr/planning-desktop-dark.png)
+
+## Courbes
+
+Les chiffres et les graphiques du plan, avec les mêmes onglets que Planning.
+
+![Courbes](../images/fr/curves-desktop-light.png)
+
+- **Un jour** : cartes de synthèse (batterie, réseau, production, estimé et mesuré), le Planning des équipements, la charge de la batterie, les échanges avec le réseau et les courbes de production et de consommation, prévues (en pointillés) et mesurées.
+- **Personnaliser** choisit les cartes affichées et leur ordre.
+- Une mesure impossible pour la maison (un compteur qui compte des milliers de kWh en une heure) est écartée : un trou dans les courbes, rien dans les totaux, et une ligne au-dessus des cartes avec **Voir les données** (**Ma maison › Données**). Les autres mesures restent affichées.
+- **Semaine** : un tableau d'une ligne par jour (météo, production, batterie, achat dont heures pleines, surplus, appareils) ; touchez un jour pour déplier son détail (appareils et leurs heures, avertissements, **Voir le détail**). Sur téléphone, le tableau garde le jour, la production, la batterie et l'achat, le reste est dans le détail. Puis les courbes de la semaine.
+
+![La semaine dans Courbes](../images/fr/curves-week-desktop-light.png)
 
 ## Ma maison
 
@@ -47,6 +57,9 @@ Votre maison en phrases, en quatre onglets. Touchez une ligne : son réglage s'o
 - **L'essentiel** : votre priorité (payer le moins cher, consommer mon soleil…), votre contrat, vos panneaux et votre batterie : voir [Tarifs](tariffs.md) et [Batterie](battery.md).
 - **Appareils** : les appareils placés au meilleur moment, puis, repliés, ceux seulement suivis (souvent de nombreuses prises, avec un champ de recherche), la production, le réseau et la batterie, et les appareils que Home Assistant propose mais que WattSlot ne suit pas encore ; **Ajouter un appareil** et **Relire Home Assistant**. Chaque appareil ouvre sa fiche : ses règles (voir [Votre maison et ses règles](your-home.md)), puis, repliés, ses **capteurs, nom et type**, avec les points à vérifier et **Retirer de ma maison**.
 - **Données** : le contrôle des données de vos compteurs. Un compteur qui compte plus que la maison ne peut tirer (une coupure du capteur comptée comme une remise à zéro : des milliers de kWh en une heure) est corrigé automatiquement : recalculé sur le relevé brut tant qu'il est gardé (trois jours), sinon écarté, et le calcul comme les courbes l'ignorent. Chaque correction s'ouvre dans une feuille : ce qui s'est passé, ce qui a été fait, et les autres choix (recalculer, estimer d'après les heures voisines, écarter, annuler). Les données d'origine ne changent jamais. **Analyser une période** contrôle un compteur ou tous, sur les jours que vous choisissez.
+
+  ![L'onglet Données](../images/fr/home-data-desktop-light.png)
+
 - **Avancé** : **Reprendre les règles des tâches de Home Assistant**, puis **Modèles prêts à l'emploi**, **Sauvegarder ou partager** (exporter ou importer votre maison dans un fichier), **Graphe de la maison** et **Bibliothèque d'appareils** (pour les curieux), et le lexique.
 
 ## Assistant
@@ -64,5 +77,6 @@ Votre maison en phrases, en quatre onglets. Touchez une ligne : son réglage s'o
 - **Langue et affichage** : six langues, cinq thèmes (Ivoire, Graphite, Océan, Prairie, Crépuscule) ou **Automatique**, qui suit le mode clair ou sombre de votre appareil, et la **devise** de vos prix et de vos coûts. Par défaut, celle de Home Assistant (Paramètres › Système › Général) ; en changer ne convertit pas les prix déjà saisis.
 - **État de l'application** : ce qui ne va pas, s'il y a lieu, et comment le corriger ; la version, et s'il en existe une nouvelle ; les liens pour soutenir le projet ; un rapport à joindre à un signalement ([Dépannage](troubleshooting.md)).
 - **Connexion à Home Assistant** (mode autonome).
+- En bas, **Version bêta**, avec **Donner mon avis** (un formulaire tout prêt sur GitHub), et **Soutenir WattSlot** (GitHub Sponsors et Ko-fi).
 
 ![État de l'application](../images/fr/status-desktop-light.png)

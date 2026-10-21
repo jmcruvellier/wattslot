@@ -2,7 +2,7 @@
 
 *[Version française](fr/screens.md) · [User guide](README.md)*
 
-Five sections, in the menu at the bottom of the screen on a phone, on the left on a computer (it folds into icons with the arrow at its top). Two things are always at hand: the **status dot** (green: all good; orange: needs a look; red: planning is blocked) and **Request an appliance** (the `+` button).
+Six sections, in the menu at the bottom of the screen on a phone, on the left on a computer (it folds into icons with the arrow at its top). Two things are always at hand: the **status dot** (green: all good; orange: needs a look; red: planning is blocked) and **Request an appliance** (the `+` button).
 
 ## Today
 
@@ -31,12 +31,22 @@ The plan in detail, for **Yesterday**, **Today**, **Tomorrow** and the **Week**.
   - Today, the other possible starts of each appliance can be chosen here too.
 - **Plan indicators** (cost, purchases, surplus, self-consumption…): for the whole day, measured for the hours already past, planned for the rest.
 - **My requests** (under each tab): the appliances you asked for, with or without a deadline, to mark done or cancel.
-- **Detailed charts** (folded): summary cards (battery, grid, production, estimated against measured), the appliance schedule, the battery charge, the grid exchanges and the production and consumption curves, planned (dotted) and measured.
-- **Customize** chooses which cards appear and their order.
-- A measurement the home cannot reach (a meter counting thousands of kWh in one hour) is set aside: a gap in the curves, nothing in the totals, and a line above the cards with **See the data** (**My home › Data**).
-- **Week**: a table with one row per day (weather, production, battery, purchases including peak hours, surplus, appliances); tap a day to unfold its details (appliances and their times, warnings, **See the detail**). On a phone, the table keeps day, production, battery and purchases, the rest is in the details. Then the week's charts.
+- **Week**: the coming days as an agenda, one line per day with what is planned; tap a day to open it.
 
 ![Planning in the dark theme](images/en/planning-desktop-dark.png)
+
+## Charts
+
+The figures and charts of the plan, with the same tabs as Planning.
+
+![Charts](images/en/curves-desktop-light.png)
+
+- **A day**: summary cards (battery, grid, production, estimated against measured), the appliance schedule, the battery charge, the grid exchanges and the production and consumption curves, planned (dotted) and measured.
+- **Customize** chooses which cards appear and their order.
+- A measurement the home cannot reach (a meter counting thousands of kWh in one hour) is set aside: a gap in the curves, nothing in the totals, and a line above the cards with **See the data** (**My home › Data**). The other measurements stay displayed.
+- **Week**: a table with one row per day (weather, production, battery, purchases including peak hours, surplus, appliances); tap a day to unfold its details (appliances and their times, warnings, **See the detail**). On a phone, the table keeps day, production, battery and purchases, the rest is in the details. Then the week's charts.
+
+![The week in Charts](images/en/curves-week-desktop-light.png)
 
 ## My home
 
@@ -47,6 +57,9 @@ Your home in plain sentences, in four tabs. Tap a line: its setting opens on its
 - **Essentials**: your priority (pay as little as possible, use my own sun…), your contract, your panels and your battery: see [Tariffs](tariffs.md) and [Battery](battery.md).
 - **Devices**: the appliances placed at the best time, then, folded, those only monitored (often many plugs, with a search field), the production, grid and battery, and the devices Home Assistant suggests but WattSlot does not follow yet; **Add a device** and **Re-read Home Assistant**. Each device opens its sheet: its rules (see [Your home and its rules](your-home.md)), then, folded, its **sensors, name and type**, with the points to check and **Remove from my home**.
 - **Data**: the check of your meters' data. A meter that counts more than the home can draw (a sensor dropout counted as a reset: thousands of kWh in one hour) is corrected automatically: recomputed from the raw readings while they are kept (three days), otherwise set aside, so the calculation and the charts ignore it. Each correction opens in a sheet: what happened, what was done, and the other choices (recompute, estimate from the neighbouring hours, set aside, undo). The original data is never changed. **Check a period** analyses one meter or all of them over the days you choose.
+
+  ![The Data tab](images/en/home-data-desktop-light.png)
+
 - **Advanced**: **Import the rules of Home Assistant tasks**, then **Ready-made templates**, **Back up or share** (export or import your home as a file), **Home graph** and **Appliance library** (for the curious), and the glossary.
 
 ## Assistant
@@ -64,5 +77,6 @@ Your home in plain sentences, in four tabs. Tap a line: its setting opens on its
 - **Language and display**: six languages, five themes (Ivory, Graphite, Ocean, Meadow, Dusk) or **Automatic**, which follows your device's light or dark mode, and the **currency** of your prices and costs. By default it is Home Assistant's (Settings › System › General); changing it does not convert the prices already entered.
 - **App status**: what is wrong, if anything, and how to fix it; the version, and whether a new one exists; links to support the project; a report to attach to a bug report ([Troubleshooting](troubleshooting.md)).
 - **Home Assistant connection** (standalone mode).
+- At the bottom, **Beta version**, with **Give feedback** (a ready-made form on GitHub), and **Support WattSlot** (GitHub Sponsors and Ko-fi).
 
 ![App status](images/en/status-desktop-light.png)
