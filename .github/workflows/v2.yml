@@ -289,7 +289,9 @@ jobs:
   publish:
     name: Publication de l'image
     needs: [privacy, backend, frontend, image, addon, integration, bench]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # Aussi au lancement manuel sur main : rattrape un push que GitHub n'a pas déclenché (fusion
+    # de la 0.9.2, 21/10/2026), sans quoi l'étiquette de version ne trouve pas l'image du commit.
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: read
