@@ -4,6 +4,7 @@ import asyncio
 import json
 from datetime import date, timedelta
 from pathlib import Path
+from types import SimpleNamespace
 
 from tests.planning.test_assemble import MODEL, TODAY, Reader, client, local
 from wattslot.aggregation import HOUR, QUARTER
@@ -153,6 +154,33 @@ def test_a_full_run_then_an_hourly_run_then_the_next_day(tmp_path: Path) -> None
     current = store.load("today")
     assert current is not None and current.day == TODAY + timedelta(days=1)
     assert current.content["derniere_execution"]["manuel"] is False
+
+
+def test_a_plan_computed_during_the_history_import_is_provisional(tmp_path: Path) -> None:
+    """Reprise de l'historique de HA en cours : le plan le note (plan provisoire), puis ne le
+    note plus au calcul suivant, une fois la reprise finie (essai du 21/10/2026)."""
+
+    class ImportingReader(Reader):
+        def __init__(self) -> None:
+            super().__init__()
+            self.pending = ["sensor.imp", "sensor.exp"]
+
+        def status(self) -> SimpleNamespace:
+            return SimpleNamespace(history=SimpleNamespace(pending=self.pending))
+
+    reader = ImportingReader()
+    reader.__dict__.update(reader_with_history().__dict__)
+    ctx = context(tmp_path, reader)
+    store = PlanStore(ctx.database)
+
+    asyncio.run(run(ctx, local(TODAY, 9, 20), manual=True))
+    first = store.load("today")
+    reader.pending = []
+    asyncio.run(run(ctx, local(TODAY, 10, 5)))
+    second = store.load("today")
+
+    assert first is not None and first.content["historique_en_reprise"] == 2
+    assert second is not None and "historique_en_reprise" not in second.content
 
 
 def test_planning_routes_without_home_assistant(tmp_path: Path) -> None:

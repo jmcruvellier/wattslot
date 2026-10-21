@@ -377,7 +377,8 @@
       "revert": "Terug naar de keuze van de berekening",
       "running": "Nieuwe berekening met deze start…",
       "failed": "De start kon niet worden gewijzigd."
-    }
+    },
+    "provisional": "Voorlopig plan: WattSlot haalt de geschiedenis van Home Assistant nog op ({count} meter(s) over). Je gebruikelijke verbruik is nog niet bekend: de cijfers worden nauwkeuriger bij de eerste berekening na het ophalen."
   },
   "requests": {
     "title": "Mijn verzoeken",

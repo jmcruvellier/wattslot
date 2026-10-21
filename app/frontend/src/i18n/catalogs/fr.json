@@ -377,7 +377,8 @@
       "revert": "Revenir au choix du calcul",
       "running": "Nouveau calcul avec ce départ…",
       "failed": "Le départ n'a pas pu être changé."
-    }
+    },
+    "provisional": "Plan provisoire : WattSlot reprend encore l'historique de Home Assistant ({count} compteur(s) restant(s)). Votre consommation habituelle n'est pas encore connue : les chiffres se préciseront au premier calcul après la reprise."
   },
   "requests": {
     "title": "Mes demandes",

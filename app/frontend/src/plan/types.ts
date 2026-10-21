@@ -221,6 +221,8 @@ export interface DayView {
   weather: WeatherBanner;
   // Faux : maison sans installation solaire (lot 7.4), ni carte Soleil ni bandeau météo.
   solar?: boolean;
+  // Plan calculé pendant la reprise de l'historique de HA : compteurs restants (plan provisoire).
+  history_pending?: number | null;
   // Heures dont une mesure impossible a été écartée (qualité des données).
   discarded_hours?: number[];
   notices: Notice[];

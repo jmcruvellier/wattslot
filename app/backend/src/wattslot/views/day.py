@@ -121,6 +121,9 @@ class DayView(BaseModel):
     departure: Departure | None = None  # maison avec batterie
     weather: WeatherBanner
     solar: bool = True  # faux : maison sans installation solaire, ni carte Soleil ni bandeau
+    # Plan calculé pendant la reprise de l'historique de HA : compteurs qui restaient ; aucun :
+    # plan complet.
+    history_pending: int | None = None
     # Heures dont une mesure impossible a été écartée (qualité des données) : un trou dans les
     # courbes, rien dans les totaux.
     discarded_hours: list[int] = []
@@ -316,6 +319,7 @@ def build_day(
         departure=start,
         weather=weather(state, actual, curve.production, kind, today_estimate_kwh),
         solar=context.solar,
+        history_pending=state.get("historique_en_reprise") or None,
         notices=notices(state, kind, lang),
         freshness=freshness(computed_at, kind, datetime.now(context.zone)),
         indicators=indicators,

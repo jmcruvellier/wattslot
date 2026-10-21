@@ -12,6 +12,7 @@ import Banners from "./Banners";
 import { ExplanationsCard, IndicatorsCard } from "./InsightCards";
 import { availableDayCards } from "./layout";
 import PlanActions from "./PlanActions";
+import ProvisionalNote from "./ProvisionalNote";
 import { LoadMessage, PlanTabs } from "./PlanTabs";
 import { useDashboardLayout, usePlanView } from "./planView";
 import ViewHeader from "./ViewHeader";
@@ -41,6 +42,7 @@ export default function PlanScreen() {
       {load.status === "day" && (
         <>
           <ViewHeader view={load.view} />
+          <ProvisionalNote view={load.view} />
           <Banners view={load.view} />
           <div className="plan-agenda">
             <DaySummaryCard view={load.view} />

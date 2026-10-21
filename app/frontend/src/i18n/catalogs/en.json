@@ -377,7 +377,8 @@
       "revert": "Back to the calculation's choice",
       "running": "Recalculating with this start…",
       "failed": "The start could not be changed."
-    }
+    },
+    "provisional": "Provisional plan: WattSlot is still importing the Home Assistant history ({count} meter(s) left). Your usual consumption is not known yet: the figures will become accurate at the first calculation after the import."
   },
   "requests": {
     "title": "My requests",
