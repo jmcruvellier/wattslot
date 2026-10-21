@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.9.1
+
+Public beta for testers: clearer screens, data you can trust, and an easy way to give feedback.
+
+- Beta: a "Beta" badge, a **Give feedback** button at the bottom of Settings (a ready-made form on GitHub), and a **Support WattSlot** card (GitHub Sponsors, Ko-fi).
+- New **Charts** section: the figures and charts of the plan, moved out of Planning. The week is a table with one row per day.
+- **My home** in four tabs (Essentials, Devices, Data, Advanced), one setting per sheet, and a complete sheet for each device.
+- **Data quality**: WattSlot checks your meters, corrects impossible readings (a sensor dropout counted as a reset) and lets you choose another correction or undo it. One wrong reading no longer hides the others in the charts. The original data is never changed.
+- **Other possible starts**: up to three other starts proposed by the plan, with their effect on the cost; choose one, or go back to the calculation's choice.
+- Planning: **My requests** under the plan; Compute and Refresh next to the tabs; plan indicators for the whole day.
+- **Assistant**: chat with Home Assistant's assistant (or Open WebUI) from the app, with the conversation kept; the internal address of the MCP server is remembered and can be changed.
+- Your contract: subscription and subscribed power; the currency of your prices, shown everywhere.
+- Week: where the horizon stops is explained, and missing days are shown.
+- Fixes: a clear message when the expected consumption is impossible; the forecast production axis of the week starts at 0; no more tiny negative values or duplicated hours; no more occasional "Unable to read the plan".
+- New README and user guide in English and French, with new screenshots.
+
 ## 0.9.0
 
 Public beta, under the new name WattSlot.
