@@ -119,6 +119,46 @@ def test_solar_power_comes_from_the_dashboard_or_the_same_device() -> None:
     assert shed.sensors[0].resets_daily
 
 
+def test_a_power_setting_of_the_same_device_is_not_a_measure() -> None:
+    # Essai du 21/10/2026 : la limite de puissance d'un micro-onduleur (``number.``, en W) était
+    # prise pour la puissance produite.
+    states = {s["entity_id"]: s for s in STATES}
+    states["number.shed_limit"] = _state("number.shed_limit", "W", None)
+    entities = {
+        "number.shed_limit": {"entity_id": "number.shed_limit", "device_id": "shed"},
+        **{k: v for k, v in ENTITIES.items() if k != "sensor.shed_power"},
+    }
+    snapshot = HomeSnapshot(energy_preferences=PREFERENCES, states=states, entities=entities)
+
+    shed = next(d for d in propose(snapshot).devices if d.key == "solar-sensor-shed-daily-energy")
+    assert [s.entity_id for s in shed.sensors] == ["sensor.shed_daily_energy"]
+    assert _codes(shed.issues) == ["no_power_sensor"]
+
+
+@pytest.mark.parametrize(
+    ("language", "grid", "battery"),
+    [
+        ("fr", "Réseau", "Batterie"),
+        ("en", "Grid", "Battery"),
+        ("de-DE", "Netz", "Batterie"),
+        (None, "Grid", "Battery"),
+    ],
+)
+def test_grid_and_unnamed_battery_are_named_in_the_language_of_ha(
+    language: str | None, grid: str, battery: str
+) -> None:
+    snapshot = HomeSnapshot(
+        energy_preferences=PREFERENCES,
+        states={s["entity_id"]: s for s in STATES},
+        entities=ENTITIES,
+        config={"language": language} if language else {},
+    )
+    devices = {d.kind: d for d in propose(snapshot).devices}
+
+    assert devices[DeviceKind.GRID].name == grid
+    assert devices[DeviceKind.BATTERY].name == battery
+
+
 def test_a_cost_declared_as_a_grid_meter_is_flagged() -> None:
     grid = _proposal()["grid"]
 

@@ -279,6 +279,22 @@ def test_dashboard_issues_follow_the_saved_home() -> None:
     ]
 
 
+def test_a_missing_sensor_of_the_home_is_reported_once() -> None:
+    """Capteur de la maison disparu de HA : « sensor_missing » (avec son geste) suffit, sans la
+    même anomalie du tableau Énergie en plus (essai d'installation du 21/10/2026)."""
+    gone = Issue(code="entity_missing", params={"entity": "sensor.solar_gone"})
+    diagnostic = Diagnostic(
+        generated_at=NOW,
+        issues=[
+            DeviceIssue(device="Solar", key="solar", entity_id="sensor.solar_gone", issue=gone)
+        ],
+    )
+
+    found = collect(_ready(), diagnostic, HOME, Configuration(), None)
+
+    assert "energy_dashboard_issue" not in codes(found)
+
+
 def test_a_missing_forecast_is_not_an_internal_error() -> None:
     """Calcul planifié sans prévision : déjà signalé par « no_forecast » (constaté au banc
     d'intégration, calcul de hh:59 pendant le contrôle)."""
