@@ -258,6 +258,7 @@ export function WeekChart({
             domain={soc ? [0, 100] : [0, "auto"]}
             width="auto"
           />
+          {series === "production" && <YAxis yAxisId="surplus" hide />}
           <Tooltip
             contentStyle={TOOLTIP}
             labelFormatter={(index) => label(Number(index))}
@@ -288,7 +289,9 @@ export function WeekChart({
             isAnimationActive={false}
           />
           {series === "production" && (
-            <Area type="monotone" dataKey="surplus" name={t("plan.week.series.surplus")} stroke="none" fill="none" legendType="none" activeDot={false} />
+            // Surplus (souvent négatif : production moins consommation) pour l'infobulle seulement,
+            // sur son propre axe caché : l'axe de la production reste à partir de 0.
+            <Area yAxisId="surplus" type="monotone" dataKey="surplus" name={t("plan.week.series.surplus")} stroke="none" fill="none" legendType="none" activeDot={false} />
           )}
         </AreaChart>
       </ResponsiveContainer>
