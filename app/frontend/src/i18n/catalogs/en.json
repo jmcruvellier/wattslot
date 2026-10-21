@@ -367,7 +367,14 @@
       "now": "Now"
     },
     "discarded": "Impossible measurement set aside at {hours}: probably a sensor dropout.",
-    "discarded_link": "See the data"
+    "discarded_link": "See the data",
+    "choice": {
+      "others": "Other possible starts:",
+      "choose": "Choose the {time} start ({cost}, {grid} kWh drawn compared with the plan)",
+      "revert": "Back to the calculation's choice",
+      "running": "Recalculating with this start…",
+      "failed": "The start could not be changed."
+    }
   },
   "requests": {
     "title": "My requests",

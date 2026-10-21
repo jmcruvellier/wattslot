@@ -52,7 +52,11 @@ class Alternative(_V1):
 
 class Explanation(_V1):
     reasons: list[Reason] = _v1_key("raisons", default=[])
-    alternative: Alternative | None = None
+    alternative: Alternative | None = None  # le meilleur des autres départs (texte)
+    # Autres départs permis, les meilleurs d'abord (au plus ``explain.ALTERNATIVES``), à choisir
+    # depuis l'interface ; ``chosen`` : le départ du plan a été choisi par l'utilisateur.
+    alternatives: list[Alternative] = []
+    chosen: bool = _v1_key("choisi", default=False)
 
 
 class Slot(_V1):

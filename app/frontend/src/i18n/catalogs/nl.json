@@ -367,7 +367,14 @@
       "now": "Nu"
     },
     "discarded": "Onmogelijke meting weggelaten om {hours}: waarschijnlijk een sensoronderbreking.",
-    "discarded_link": "Gegevens bekijken"
+    "discarded_link": "Gegevens bekijken",
+    "choice": {
+      "others": "Andere mogelijke starts:",
+      "choose": "Start om {time} kiezen ({cost}, {grid} kWh afname ten opzichte van het plan)",
+      "revert": "Terug naar de keuze van de berekening",
+      "running": "Nieuwe berekening met deze start…",
+      "failed": "De start kon niet worden gewijzigd."
+    }
   },
   "requests": {
     "title": "Mijn verzoeken",

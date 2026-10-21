@@ -48,7 +48,9 @@ export default function PlanScreen() {
           </div>
           {/* Côte à côte quand la largeur le permet, l'un sous l'autre sur téléphone. */}
           <div className="plan-insights">
-            {availableDayCards(load.view).includes("explanations") && <ExplanationsCard view={load.view} />}
+            {availableDayCards(load.view).includes("explanations") && (
+              <ExplanationsCard view={load.view} onChanged={reload} />
+            )}
             <IndicatorsCard view={load.view} layout={layout.indicators} />
           </div>
         </>

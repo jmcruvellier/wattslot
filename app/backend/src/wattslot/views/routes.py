@@ -159,7 +159,8 @@ async def day_view_of(state: Any, kind: DayKind, lang: str = "fr") -> DayView | 
     # Aujourd'hui (lot 6b.3) : le moment, d'après les agrégats, et le prochain appareil à lancer.
     moment = datetime.now(UTC)
     explanations = {e.device: e.text for e in view.explanations}
-    action = next_action(view.timeline, explanations, moment, context)
+    details = {e.device: e.explanation for e in view.explanations}
+    action = next_action(view.timeline, explanations, moment, context, details)
     if action is not None:
         action = action.model_copy(
             update={

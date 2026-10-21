@@ -367,7 +367,14 @@
       "now": "Adesso"
     },
     "discarded": "Misura impossibile scartata alle {hours}: probabilmente un'interruzione di un sensore.",
-    "discarded_link": "Vedi i dati"
+    "discarded_link": "Vedi i dati",
+    "choice": {
+      "others": "Altri avvii possibili:",
+      "choose": "Scegli l'avvio delle {time} ({cost}, {grid} kWh prelevati rispetto al piano)",
+      "revert": "Torna alla scelta del calcolo",
+      "running": "Nuovo calcolo con questo avvio…",
+      "failed": "Impossibile cambiare l'avvio."
+    }
   },
   "requests": {
     "title": "Le mie richieste",

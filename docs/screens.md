@@ -12,6 +12,7 @@ What you need right now.
 
 - **Right now**: the average of the last quarter hour for the panels, the home, the battery (charging or supplying) and the grid (buying or surplus).
 - **Next action**: the next appliance to start and its slot, for instance *Start the washing machine, between 11:15 and 13:30*. **It's started** tells the app you did it; **Remind me** sends a notification at the right time (see [Notifications](notifications.md)).
+  - **Other possible starts**: up to three other starts the plan allows, with what they change to the cost. Choosing one imposes it on today's calculation, which runs again; **Back to the calculation's choice** undoes it. When the battery's full charge is due, the text says why a cheaper start was set aside.
 - **Battery** and **Sun**: the charge now, its highest point and its level at midnight; the solar energy expected and already produced.
 - **Appliance schedule**: one line per device, the planned slot on top (dotted) and what was measured below (filled), with the energy of each block. Tap a block for its details.
 
@@ -27,6 +28,7 @@ The plan in detail, for **Yesterday**, **Today**, **Tomorrow** and the **Week**.
 - Banners for what matters: warnings, the battery at midnight, the forecast production compared with what was measured.
 - **The day as an agenda**: what happens and when.
 - **Why this plan**: the explanation of each decision, in plain words.
+  - Today, the other possible starts of each appliance can be chosen here too.
 - **Plan indicators** (cost, purchases, surplus, self-consumption…): for the whole day, measured for the hours already past, planned for the rest.
 - **My requests** (under each tab): the appliances you asked for, with or without a deadline, to mark done or cancel.
 - **Detailed charts** (folded): summary cards (battery, grid, production, estimated against measured), the appliance schedule, the battery charge, the grid exchanges and the production and consumption curves, planned (dotted) and measured.

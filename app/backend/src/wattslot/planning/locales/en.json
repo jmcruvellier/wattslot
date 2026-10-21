@@ -34,5 +34,7 @@
   "recommendation.balance_self": "Self-consumption: {percent} %.",
   "recommendation.balance_co2": "CO₂ of the import: {co2} kg.",
   "recommendation.warnings": "Warnings:",
-  "recommendation.appliance": "- {device}: {start}-{end} ({energy} kWh)."
+  "recommendation.appliance": "- {device}: {start}-{end} ({energy} kWh).",
+  "reason.chosen": "Start chosen by you.",
+  "reason.full_charge_first": "The battery's full charge, due today, comes first: the solar surplus goes to it."
 }

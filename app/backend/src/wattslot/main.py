@@ -78,6 +78,7 @@ from wattslot.ontology import GRAPH_CONFIGURATION, GRAPH_HOME
 from wattslot.ontology import migration as ontology_migration
 from wattslot.planning import journal, open_meteo, past
 from wattslot.planning.assemble import TaskRules, build_input, rules_from_tasks, to_v1
+from wattslot.planning.choices import router as choices_routes
 from wattslot.planning.cycles import Segment
 from wattslot.planning.journal import CycleJournal, cycle_appliances
 from wattslot.planning.runner import Context, RunReport, refresh_actual, run, stored_plan
@@ -469,6 +470,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(assistant_prompts.router)
     app.include_router(reminders_routes)
     app.include_router(quality_routes)
+    app.include_router(choices_routes)
 
     @app.get("/api/assistant/connection")
     def assistant_connection(request: Request) -> assistant_prompts.AssistantConnection:

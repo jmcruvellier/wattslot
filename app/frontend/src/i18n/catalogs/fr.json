@@ -367,7 +367,14 @@
       "now": "Maintenant"
     },
     "discarded": "Mesure impossible écartée à {hours} : sans doute une coupure d'un capteur.",
-    "discarded_link": "Voir les données"
+    "discarded_link": "Voir les données",
+    "choice": {
+      "others": "Autres départs possibles :",
+      "choose": "Choisir le départ de {time} ({cost}, {grid} kWh soutirés par rapport au plan)",
+      "revert": "Revenir au choix du calcul",
+      "running": "Nouveau calcul avec ce départ…",
+      "failed": "Le départ n'a pas pu être changé."
+    }
   },
   "requests": {
     "title": "Mes demandes",
