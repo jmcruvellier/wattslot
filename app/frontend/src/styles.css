@@ -1963,6 +1963,19 @@ a.ui-setting-row {
   margin-top: 0.75rem;
 }
 
+/* Étapes indispensables qui manquent avant le premier plan (prévision solaire…). */
+.onboarding-missing {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0.75rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.onboarding-missing p {
+  margin: 0.25rem 0 0.5rem;
+}
+
 .onboarding-devices,
 .onboarding-templates {
   margin: 0.75rem 0;

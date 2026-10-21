@@ -46,6 +46,7 @@ export default function StartScreen({ onNavigate }: { onNavigate: (target: strin
   const [load, setLoad] = useState<Load>({ status: "loading" });
   const [version, setVersion] = useState(0);
   const [running, setRunning] = useState(false);
+  const [failed, setFailed] = useState(false); // calcul refusé (étape indispensable manquante…)
 
   useEffect(() => {
     const controller = new AbortController();
@@ -59,8 +60,12 @@ export default function StartScreen({ onNavigate }: { onNavigate: (target: strin
 
   const runNow = async () => {
     setRunning(true);
+    setFailed(false);
     try {
-      await fetch("api/planning/run", { method: "POST" });
+      const response = await fetch("api/planning/run", { method: "POST" });
+      if (!response.ok) setFailed(true);
+    } catch {
+      setFailed(true);
     } finally {
       setRunning(false);
       setVersion((count) => count + 1);
@@ -114,6 +119,7 @@ export default function StartScreen({ onNavigate }: { onNavigate: (target: strin
         <h2 id="setup-title" className="visually-hidden">
           {t("setup.title")}
         </h2>
+        {failed && <p role="alert">{t("setup.run_failed")}</p>}
         <Suspense fallback={<p>{t("setup.loading")}</p>}>
           <Onboarding
             setup={setup}

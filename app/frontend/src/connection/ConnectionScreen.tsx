@@ -35,7 +35,11 @@ export default function ConnectionScreen({ returned }: { returned: string | null
   useEffect(() => {
     const controller = new AbortController();
     getJson<ConnectionInfo>("api/connection", controller.signal)
-      .then((info) => setLoad({ status: "ready", info }))
+      .then((info) => {
+        setLoad({ status: "ready", info });
+        // Sans connexion, l'adresse de HA_URL (commande Docker du README) est proposée.
+        if (info.source === null && info.url) setUrl(info.url);
+      })
       .catch(() => {
         if (!controller.signal.aborted) setLoad({ status: "error" });
       });

@@ -1,8 +1,8 @@
 // Premiers pas guidés (lot 6b.6) : tant que la mise en route n'est pas finie, quatre écrans, une
 // question par écran. Connexion à Home Assistant (sautée si elle est faite), appareils trouvés
 // dans le tableau Énergie (à décocher, puis enregistrés), contrat (un modèle prêt à l'emploi, ou
-// plus tard), puis le premier plan. Chargé à la demande : une installation déjà en route ne le
-// lit jamais.
+// plus tard), puis le premier plan, ou ce qu'il manque d'indispensable avant lui (la prévision
+// solaire, par exemple). Chargé à la demande : une installation déjà en route ne le lit jamais.
 
 import { useEffect, useState } from "react";
 
@@ -29,6 +29,14 @@ function stateOf(setup: Setup, key: string) {
   return setup.steps.find((step) => step.key === key);
 }
 
+/** Étapes indispensables encore à faire avant le premier plan (hors connexion, maison et
+ * contrat, qui ont leur écran). */
+function missingBefore(setup: Setup) {
+  return setup.steps.filter(
+    (step) => step.required && step.state === "todo" && !(STEPS as string[]).includes(step.key),
+  );
+}
+
 export default function Onboarding({ setup, running, onNavigate, onRun, onChanged }: OnboardingProps) {
   const { t } = useI18n();
   // La connexion faite n'est pas une étape à montrer.
@@ -36,6 +44,8 @@ export default function Onboarding({ setup, running, onNavigate, onRun, onChange
   const firstTodo = steps.findIndex((key) => stateOf(setup, key)?.state !== "done");
   const [index, setIndex] = useState(firstTodo < 0 ? steps.length - 1 : firstTodo);
   const current = steps[Math.min(index, steps.length - 1)];
+  const missing = missingBefore(setup);
+  const title = current === "first_plan" && missing.length > 0 ? "onboarding.first_plan.missing_title" : `onboarding.${current}.title`;
   const next = () => {
     onChanged();
     setIndex((value) => Math.min(value + 1, steps.length - 1));
@@ -45,12 +55,20 @@ export default function Onboarding({ setup, running, onNavigate, onRun, onChange
     <section className="onboarding ui-card" aria-labelledby="onboarding-title">
       <p className="ui-eyebrow">{t("onboarding.progress", { step: index + 1, count: steps.length })}</p>
       <h2 id="onboarding-title" className="ui-card-title">
-        {t(`onboarding.${current}.title`)}
+        {t(title)}
       </h2>
       {current === "connection" && <ConnectionStep onNavigate={onNavigate} />}
       {current === "home" && <HomeStep onNavigate={onNavigate} onDone={next} />}
       {current === "tariff" && <TariffStep onNavigate={onNavigate} onDone={next} />}
-      {current === "first_plan" && <FirstPlanStep setup={setup} running={running} onRun={onRun} />}
+      {current === "first_plan" && (
+        <FirstPlanStep
+          setup={setup}
+          missing={missing}
+          running={running}
+          onNavigate={onNavigate}
+          onRun={onRun}
+        />
+      )}
       <div className="onboarding-buttons">
         {index > 0 && (
           <Button variant="quiet" onClick={() => setIndex((value) => value - 1)}>
@@ -243,9 +261,42 @@ function TariffStep({ onNavigate, onDone }: { onNavigate: (target: string) => vo
   );
 }
 
-function FirstPlanStep({ setup, running, onRun }: { setup: Setup; running: boolean; onRun: () => void }) {
+function FirstPlanStep({
+  setup,
+  missing,
+  running,
+  onNavigate,
+  onRun,
+}: {
+  setup: Setup;
+  missing: Setup["steps"];
+  running: boolean;
+  onNavigate: (target: string) => void;
+  onRun: () => void;
+}) {
   const { t } = useI18n();
   const history = stateOf(setup, "history");
+  // Une étape indispensable manque : le calcul serait refusé, on dit plutôt quoi faire.
+  if (missing.length > 0) {
+    return (
+      <>
+        <p>{t("onboarding.first_plan.missing_help")}</p>
+        <ul className="onboarding-missing">
+          {missing.map((step) => (
+            <li key={step.key}>
+              <strong>{t(`setup.steps.${step.key}`)}</strong>
+              {step.reason && <p>{t(`setup.reason.${step.reason}`, step.params)}</p>}
+              {step.target && (
+                <Button variant="primary" onClick={() => onNavigate(step.target as string)}>
+                  {t("setup.open")}
+                </Button>
+              )}
+            </li>
+          ))}
+        </ul>
+      </>
+    );
+  }
   return (
     <>
       <p>{t("onboarding.first_plan.help")}</p>

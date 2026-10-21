@@ -111,7 +111,8 @@
       "no_notification": "Kies een apparaat dat elke dag het advies van het plan ontvangt.",
       "needs_home": "Mogelijk zodra uw huis is opgeslagen.",
       "template_suggested": "Begin met een sjabloon (daluren, Tempo, dynamische prijs…) dat uw apparaten en uw tarief in één keer instelt, en pas daarna aan."
-    }
+    },
+    "run_failed": "De berekening is niet gelukt. Controleer de noodzakelijke stappen en probeer het opnieuw."
   },
   "plan": {
     "title": "Dagplan",
@@ -1517,7 +1518,9 @@
     "first_plan": {
       "title": "Alles klaar",
       "help": "De app berekent je eerste plan: wanneer je apparaten starten, wanneer de batterij laden. Daarna rekent ze vanzelf opnieuw.",
-      "run": "Mijn eerste plan berekenen"
+      "run": "Mijn eerste plan berekenen",
+      "missing_title": "Nog één stap",
+      "missing_help": "Voor het eerste plan ontbreekt nog:"
     }
   },
   "state": {
