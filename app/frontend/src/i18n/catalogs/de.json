@@ -377,7 +377,8 @@
       "revert": "Zurück zur Wahl der Berechnung",
       "running": "Neue Berechnung mit diesem Start…",
       "failed": "Der Start konnte nicht geändert werden."
-    }
+    },
+    "provisional": "Vorläufiger Plan: WattSlot übernimmt noch den Verlauf von Home Assistant ({count} Zähler übrig). Ihr üblicher Verbrauch ist noch nicht bekannt: Die Zahlen werden bei der ersten Berechnung nach der Übernahme genauer."
   },
   "requests": {
     "title": "Meine Anfragen",

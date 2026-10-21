@@ -9,6 +9,7 @@ import { useI18n } from "../i18n/I18nProvider";
 import DayCards from "./DayCards";
 import { availableDayCards, availableIndicators, availableWeekCards, type CardId, type DayCardId } from "./layout";
 import LayoutEditor from "./LayoutEditor";
+import ProvisionalNote from "./ProvisionalNote";
 import { LoadMessage, PlanTabs } from "./PlanTabs";
 import { useDashboardLayout, usePlanView } from "./planView";
 import type { DayView } from "./types";
@@ -74,6 +75,7 @@ export default function CurvesScreen() {
           </a>
         </p>
       )}
+      {load.status === "day" && <ProvisionalNote view={load.view} />}
       {load.status === "day" && (
         <DayCards view={load.view} layout={layout[load.view.kind]} indicators={layout.indicators} available={curveCards(load.view)} />
       )}

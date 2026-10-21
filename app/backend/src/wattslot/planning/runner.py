@@ -421,6 +421,14 @@ def goal(configuration: Configuration | None, fallback: Objective) -> Goal:
     return PRESETS.get(settings.preset, Objective.COST)
 
 
+def _history_pending(ctx: Context) -> int:
+    """Compteurs dont l'historique de HA n'est pas encore repris (0 sans agrégateur)."""
+    status = getattr(ctx.reader, "status", None)
+    if not callable(status):
+        return 0
+    return len(status().history.pending)
+
+
 async def run(ctx: Context, now: datetime, manual: bool = False) -> RunReport:
     """Calcul complet ; le plan du jour est gardé même si demain ou l'horizon échouent."""
     zone = ctx.raw.zone
@@ -497,6 +505,13 @@ async def run(ctx: Context, now: datetime, manual: bool = False) -> RunReport:
         }
     elif old.get("prevision_initiale"):
         merged["prevision_initiale"] = old["prevision_initiale"]
+    # Calculé pendant la reprise de l'historique de HA : consommation habituelle et mesures du
+    # jour encore incomplètes, le plan est provisoire (essai d'installation du 21/10/2026).
+    pending = _history_pending(ctx)
+    if pending:
+        merged["historique_en_reprise"] = pending
+    else:
+        merged.pop("historique_en_reprise", None)
     merged["texte_recommandation"] = recommendation(merged)
     seconds_today = time.perf_counter() - began
     store.save("today", today, merged, seconds_today, manual)

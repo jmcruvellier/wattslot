@@ -151,6 +151,13 @@ describe("TodayView", () => {
     expect(onNavigate).toHaveBeenCalledWith("devices#add-device");
   });
 
+  it("dit qu'un plan calculé pendant la reprise de l'historique est provisoire", async () => {
+    mockApi({ ...TODAY, now: NOW, history_pending: 3 });
+    renderView();
+    expect(await screen.findByRole("note")).toHaveTextContent("Plan provisoire");
+    expect(screen.getByRole("note")).toHaveTextContent("3 compteur(s) restant(s)");
+  });
+
   it("dit quand il n'y a pas encore de plan", async () => {
     mockApi(null);
     renderView();

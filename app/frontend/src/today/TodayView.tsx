@@ -12,6 +12,7 @@ import { IndicatorsCard } from "../plan/InsightCards";
 import { DEFAULT_LAYOUT } from "../plan/layout";
 import TimelineCard from "../plan/TimelineCard";
 import OtherStarts from "../plan/OtherStarts";
+import ProvisionalNote from "../plan/ProvisionalNote";
 import { useHomeFeatures } from "../home/features";
 import type { DayView, NextAction, Now } from "../plan/types";
 import Button from "../ui/Button";
@@ -83,6 +84,7 @@ export default function TodayView({ onNavigate }: { onNavigate?: (target: string
 
   return (
     <div className="today">
+      <ProvisionalNote view={view} />
       <NowCard now={view.now ?? null} recommendation={view.recommendation} />
       <NextActionCard view={view} onChanged={() => setAttempt((count) => count + 1)} onNavigate={onNavigate} />
       <TimelineCard timeline={view.timeline} readingHour={readingHour(view)} />

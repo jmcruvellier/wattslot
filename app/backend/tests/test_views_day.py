@@ -138,6 +138,15 @@ def test_a_home_without_battery_shows_no_battery() -> None:
     assert with_battery.battery_capacity_kwh and "Batterie" in (with_battery.recommendation or "")
 
 
+def test_a_provisional_plan_says_so() -> None:
+    state = state_of(STATES[0])
+
+    assert (
+        build_day({**state, "historique_en_reprise": 3}, "today", V1_CONTEXT).history_pending == 3
+    )
+    assert build_day(state, "today", V1_CONTEXT).history_pending is None
+
+
 def test_tomorrow_ignores_actual_data() -> None:
     state = state_of(STATES[0])
     view = build_day({**state, "donnees_reelles_cache": actual_of(state)}, "tomorrow", V1_CONTEXT)

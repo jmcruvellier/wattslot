@@ -377,7 +377,8 @@
       "revert": "Torna alla scelta del calcolo",
       "running": "Nuovo calcolo con questo avvio…",
       "failed": "Impossibile cambiare l'avvio."
-    }
+    },
+    "provisional": "Piano provvisorio: WattSlot sta ancora recuperando lo storico di Home Assistant ({count} contatore/i rimanente/i). Il vostro consumo abituale non è ancora noto: le cifre si preciseranno al primo calcolo dopo il recupero."
   },
   "requests": {
     "title": "Le mie richieste",
