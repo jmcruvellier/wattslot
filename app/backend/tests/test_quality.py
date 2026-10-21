@@ -2,6 +2,7 @@
 à la lecture des agrégats."""
 
 import asyncio
+import threading
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, ClassVar, cast
@@ -443,3 +444,35 @@ def test_rounding_corrections_of_the_old_threshold_are_undone_by_the_migration(
         (-0.54, True),
         (-0.01, False),  # faite à la main : gardée
     ]
+
+
+def test_corrections_are_read_from_several_threads_at_once(tmp_path: Path) -> None:
+    """Les vues, le calcul et la surveillance lisent les corrections en même temps : chaque fil a
+    sa propre connexion (la connexion partagée échouait sous Linux : « bad parameter or other API
+    misuse »), et une correction écrite par l'un se lit dans les autres."""
+    database = open_database(tmp_path)
+    store = CorrectionStore(database)
+    anomaly = Anomaly(
+        entity_id=LINKY, device="grid", period=HOUR, start=T0, kind=Kind.SPIKE, energy_kwh=40918.0
+    )
+    store.add(anomaly, Method.DISCARD, None, automatic=True)
+    seen: list[object] = []
+    errors: list[Exception] = []
+
+    def read() -> None:
+        try:
+            for _ in range(50):
+                assert T0 in store.active(LINKY, HOUR, T0, T0 + timedelta(hours=1))
+            seen.append(store._database)
+        except Exception as error:  # noqa: BLE001 — relevée par l'assertion du test
+            errors.append(error)
+
+    threads = [threading.Thread(target=read) for _ in range(6)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    assert errors == []
+    assert len({id(connection) for connection in seen}) == 6  # une connexion par fil
+    assert store._database is not database  # pas la connexion partagée de l'application
