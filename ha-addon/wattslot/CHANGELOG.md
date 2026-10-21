@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.2
+
+Fixes found while installing the beta on a fresh Home Assistant.
+
+- First steps: when something required is missing before the first plan (a solar forecast, for instance), the last step says what and opens the right setting, instead of "All set" and a calculation that silently did nothing. A calculation that fails is now reported.
+- Standalone (Docker): the Home Assistant address given in `HA_URL` is filled in on the connection page.
+
 ## 0.9.1
 
 Public beta for testers: clearer screens, data you can trust, and an easy way to give feedback.
