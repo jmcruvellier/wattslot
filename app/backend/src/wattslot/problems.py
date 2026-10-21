@@ -246,6 +246,8 @@ def _dashboard_problems(diagnostic: Diagnostic, home: HomeModel) -> list[Problem
             (item.key is not None and item.key not in names) or (entity and entity not in used)
         ):
             continue
+        if item.issue.code == "entity_missing" and entity in used:
+            continue  # déjà signalé par « sensor_missing », avec son geste
         found.append(
             Problem(
                 code="energy_dashboard_issue",

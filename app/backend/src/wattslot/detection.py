@@ -151,10 +151,26 @@ def classify_appliance(*names: str | None) -> DeviceKind:
     return DeviceKind.OTHER_LOAD
 
 
+# Noms donnés au réseau et à une batterie sans nom dans HA, dans la langue de Home Assistant
+# (enregistrés avec la maison, puis modifiables).
+DEFAULT_NAMES: dict[str, dict[str, str]] = {
+    "fr": {"grid": "Réseau", "battery": "Batterie"},
+    "en": {"grid": "Grid", "battery": "Battery"},
+    "de": {"grid": "Netz", "battery": "Batterie"},
+    "nl": {"grid": "Net", "battery": "Batterij"},
+    "es": {"grid": "Red", "battery": "Batería"},
+    "it": {"grid": "Rete", "battery": "Batteria"},
+}
+
+
 class _Detector:
     def __init__(self, snapshot: HomeSnapshot) -> None:
         self.snapshot = snapshot
         self.used: set[str] = set()
+
+    def default_name(self, key: str) -> str:
+        language = str(self.snapshot.config.get("language") or "en").split("-")[0]
+        return DEFAULT_NAMES.get(language, DEFAULT_NAMES["en"])[key]
 
     def attributes(self, entity_id: str) -> dict[str, Any]:
         state = self.snapshot.states.get(entity_id) or {}
@@ -259,6 +275,9 @@ class _Detector:
             return None
         for other_id, entry in self.snapshot.entities.items():
             if other_id == entity_id or entry.get("device_id") != device_id:
+                continue
+            # Une mesure seulement : un ``number.`` en W est un réglage (limite d'onduleur…).
+            if not other_id.startswith("sensor."):
                 continue
             attributes = self.attributes(other_id)
             if (
@@ -373,7 +392,7 @@ def propose(snapshot: HomeSnapshot) -> HomeProposal:
                 DeviceProposal(
                     key=f"battery-{slug(discharge)}",
                     kind=DeviceKind.BATTERY,
-                    name=detector.device_name(discharge) or "Battery",
+                    name=detector.device_name(discharge) or detector.default_name("battery"),
                     sensors=sensors,
                     capacity_kwh=capacity,
                     capacity_source=capacity_source,
@@ -383,7 +402,12 @@ def propose(snapshot: HomeSnapshot) -> HomeProposal:
 
     if grid_sensors:
         devices.append(
-            DeviceProposal(key="grid", kind=DeviceKind.GRID, name="Grid", sensors=grid_sensors)
+            DeviceProposal(
+                key="grid",
+                kind=DeviceKind.GRID,
+                name=detector.default_name("grid"),
+                sensors=grid_sensors,
+            )
         )
 
     for device in preferences.get("device_consumption", []):
