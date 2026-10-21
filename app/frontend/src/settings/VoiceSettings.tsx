@@ -7,8 +7,8 @@
 import { useEffect, useState } from "react";
 
 import { ApiError, getJson, putJson } from "../api";
-import { checkTitle, mcpAddress, useConnection, useMcpCheck } from "../assistant/mcp";
-import { CheckResult, CopyButton } from "../assistant/McpParts";
+import { checkTitle, useConnection, useMcpCheck } from "../assistant/mcp";
+import { CheckResult, McpAddress } from "../assistant/McpParts";
 import { useI18n } from "../i18n/I18nProvider";
 import { routeHash } from "../nav/routes";
 import StateMessage from "../ui/StateMessage";
@@ -39,7 +39,7 @@ function mcpState(state: string): "loaded" | "error" | "not_loaded" {
 
 export default function VoiceSettings() {
   const { t } = useI18n();
-  const connection = useConnection();
+  const [connection, setConnection] = useConnection();
   const [check, verify] = useMcpCheck();
   const [load, setLoad] = useState<Load>({ status: "loading" });
   const [attempt, setAttempt] = useState(0); // « Réessayer »
@@ -64,7 +64,6 @@ export default function VoiceSettings() {
     return () => controller.abort();
   }, [attempt]);
 
-  const address = mcpAddress(connection);
 
   const onSave = async () => {
     setSave("saving");
@@ -88,10 +87,7 @@ export default function VoiceSettings() {
 
       <h3>{t("settings.voice.current")}</h3>
       <p>{t("settings.voice.address")}</p>
-      <p>
-        <code className="assistant-address">{address}</code>{" "}
-        <CopyButton text={address} label={t("assistant.copy_address")} />
-      </p>
+      <McpAddress connection={connection} onChange={setConnection} />
       <p className="dim">{t(connection?.mode === "addon" ? "assistant.step1.addon" : "assistant.step1.standalone")}</p>
 
       {load.status === "loading" && <StateMessage kind="loading" title={t("settings.loading")} />}

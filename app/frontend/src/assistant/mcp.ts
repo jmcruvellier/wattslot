@@ -4,11 +4,12 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import { getJson } from "../api";
+import { getJson, putJson } from "../api";
 
 export interface Connection {
   mode: "addon" | "standalone";
   mcp_url: string | null;
+  saved?: boolean; // adresse retenue par l'application (depuis le réseau local, ou corrigée)
 }
 
 export type Check = { status: "idle" | "checking" } | { status: "ok"; tools: number } | { status: "failed"; detail: string };
@@ -17,11 +18,22 @@ export type Check = { status: "idle" | "checking" } | { status: "ok"; tools: num
 const MCP_URL = "mcp";
 const ACCEPT = { "Content-Type": "application/json", Accept: "application/json, text/event-stream" };
 
-/** Adresse que HA donnera à son intégration MCP : celle de l'extension sur le réseau interne,
- * sinon celle par laquelle le navigateur joint l'application. */
-export function mcpAddress(connection: Connection | null): string {
+// Le serveur MCP n'est appelé que sur le réseau local (HA, Open WebUI) : l'adresse du navigateur
+// ne vaut que si la page est ouverte depuis ce réseau.
+const PRIVATE = [/^localhost$/, /^127\./, /^10\./, /^192\.168\./, /^172\.(1[6-9]|2\d|3[01])\./, /\.local$/, /^\[::1\]$/];
+
+function browserAddress(): string | null {
+  const host = window.location.hostname;
+  const local = PRIVATE.some((pattern) => pattern.test(host)) || !host.includes(".");
+  return local ? new URL(MCP_URL, window.location.href.replace(/[?#].*$/, "")).href : null;
+}
+
+/** Adresse que HA donnera à son intégration MCP : celle retenue par l'application ou celle de
+ * l'extension sur le réseau interne, sinon celle du navigateur ouvert depuis le réseau local ;
+ * `null` depuis l'extérieur tant qu'aucune n'est retenue. */
+export function mcpAddress(connection: Connection | null): string | null {
   if (connection?.mcp_url) return connection.mcp_url;
-  return new URL(MCP_URL, window.location.href.replace(/[?#].*$/, "")).href;
+  return browserAddress();
 }
 
 async function rpc(method: string, id: number, params: object = {}): Promise<Record<string, unknown>> {
@@ -36,17 +48,24 @@ async function rpc(method: string, id: number, params: object = {}): Promise<Rec
   return body.result;
 }
 
-/** Mode de l'application et adresse du serveur MCP (`null` tant qu'ils ne sont pas lus). */
-export function useConnection(): Connection | null {
+/** Mode de l'application et adresse du serveur MCP (`null` tant qu'ils ne sont pas lus). Page
+ * ouverte depuis le réseau local, sans adresse connue : celle du navigateur est retenue. */
+export function useConnection(): [Connection | null, (connection: Connection) => void] {
   const [connection, setConnection] = useState<Connection | null>(null);
   useEffect(() => {
     const controller = new AbortController();
     getJson<Connection>("api/assistant/connection", controller.signal)
-      .then(setConnection)
+      .then(async (found) => {
+        const local = browserAddress();
+        if (!found.mcp_url && local) {
+          found = await putJson<Connection>("api/assistant/connection", { mcp_url: local }).catch(() => found);
+        }
+        if (!controller.signal.aborted) setConnection(found);
+      })
       .catch(() => undefined);
     return () => controller.abort();
   }, []);
-  return connection;
+  return [connection, setConnection];
 }
 
 /** Vérification du serveur MCP, lancée à l'ouverture (lot 6b.6) ; `verify` la relance. */

@@ -471,11 +471,26 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(quality_routes)
 
     @app.get("/api/assistant/connection")
-    def assistant_connection() -> assistant_prompts.AssistantConnection:
+    def assistant_connection(request: Request) -> assistant_prompts.AssistantConnection:
         """Adresse du serveur MCP à donner à l'intégration « Model Context Protocol » de HA
-        (lot 6.3) : en extension, celle que HA Core joint sur le réseau interne ; en mode
-        autonome, aucune (la page reprend l'adresse du navigateur)."""
-        return assistant_prompts.connection(settings.mode)
+        (lot 6.3) : celle retenue, sinon, en extension, celle que HA Core joint sur le réseau
+        interne ; en mode autonome, aucune tant que la page ne l'a pas retenue."""
+        saved = assistant_prompts.load_address(request.app.state.database)
+        return assistant_prompts.connection(settings.mode, saved=saved)
+
+    @app.put("/api/assistant/connection")
+    def save_assistant_connection(
+        request: Request, body: assistant_prompts.McpAddress
+    ) -> assistant_prompts.AssistantConnection:
+        """Retient (ou oublie, ``null``) l'adresse interne du serveur MCP ; 422 si ce n'est pas
+        une adresse http(s)."""
+        database = request.app.state.database
+        try:
+            assistant_prompts.save_address(database, body.mcp_url)
+        except ValueError as error:
+            raise HTTPException(status_code=422, detail=str(error)) from error
+        saved = assistant_prompts.load_address(database)
+        return assistant_prompts.connection(settings.mode, saved=saved)
 
     if settings.mode is RunMode.ADDON:
         app.add_middleware(IngressOnlyMiddleware)

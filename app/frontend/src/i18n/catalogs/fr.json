@@ -1305,6 +1305,16 @@
       "failed": "L'assistant n'a pas répondu, réessayez.",
       "not_connected": "Home Assistant n'est pas connecté : la discussion est indisponible.",
       "log_empty": "Vos questions et les réponses de l'assistant s'afficheront ici."
+    },
+    "address": {
+      "label": "Adresse interne du serveur MCP",
+      "edit": "Modifier",
+      "save": "Enregistrer",
+      "reset": "Revenir à l'adresse trouvée",
+      "cancel": "Annuler",
+      "unknown": "Ouvrez cette page depuis votre réseau local : l'application retiendra l'adresse à donner à Home Assistant.",
+      "invalid": "Adresse attendue : http://… ou https://…",
+      "failed": "L'adresse n'a pas pu être enregistrée."
     }
   },
   "ui": {

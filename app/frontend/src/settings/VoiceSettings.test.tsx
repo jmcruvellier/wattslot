@@ -1,7 +1,7 @@
 // Sous-page « Assistant vocal » des Réglages : état du serveur MCP, configuration lue dans
 // Home Assistant, choix de l'assistant préféré et de son agent de conversation.
 
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -31,6 +31,14 @@ function mockApi(home: unknown = HOME, put: (body: unknown) => Response = () => 
     const method = init?.method ?? "GET";
     const body = init?.body ? JSON.parse(String(init.body)) : null;
     calls.push({ url, method, body });
+    if (url === "api/assistant/connection" && method === "PUT") {
+      const { mcp_url } = body as { mcp_url: string | null };
+      return mcp_url?.startsWith("http")
+        ? Response.json({ mode: "standalone", mcp_url, saved: true })
+        : mcp_url === null
+          ? Response.json({ mode: "standalone", mcp_url: null, saved: false })
+          : Response.json({ detail: "invalid_url" }, { status: 422 });
+    }
     if (url === "api/assistant/connection") return Response.json({ mode: "standalone", mcp_url: null });
     if (url === "api/assistant/home" && method === "PUT") return put(body);
     if (url === "api/assistant/home") return Response.json(home);
@@ -74,6 +82,30 @@ describe("sous-page « Assistant vocal »", () => {
     expect(screen.getByRole("link", { name: "Brancher l'Assist pas à pas" })).toHaveAttribute("href", "#/assistant");
   });
 
+  it("retient l'adresse interne vue du réseau local, et la laisse corriger", async () => {
+    const calls = mockApi();
+    renderPage();
+    const user = userEvent.setup();
+
+    // Page ouverte depuis le réseau local (localhost) : son adresse est retenue.
+    expect(await screen.findByText(`${window.location.origin}/mcp`)).toBeInTheDocument();
+    expect(calls.find((call) => call.method === "PUT" && call.url === "api/assistant/connection")?.body).toEqual({
+      mcp_url: `${window.location.origin}/mcp`,
+    });
+
+    await user.click(screen.getByRole("button", { name: "Modifier" }));
+    const field = screen.getByLabelText("Adresse interne du serveur MCP");
+    const form = within(field.closest("form")!);
+    await user.clear(field);
+    await user.type(field, "192.0.2.10:8100");
+    await user.click(form.getByRole("button", { name: "Enregistrer" }));
+    expect(await form.findByRole("alert")).toHaveTextContent("Adresse attendue");
+    await user.clear(field);
+    await user.type(field, "http://192.0.2.10:8100/mcp");
+    await user.click(form.getByRole("button", { name: "Enregistrer" }));
+    expect(await screen.findByText("http://192.0.2.10:8100/mcp")).toBeInTheDocument();
+  });
+
   it("change l'agent de l'assistant préféré dans Home Assistant", async () => {
     const calls = mockApi(HOME, (body) =>
       Response.json({
@@ -89,7 +121,7 @@ describe("sous-page « Assistant vocal »", () => {
     await user.click(screen.getByRole("button", { name: "Enregistrer" }));
 
     expect(await screen.findByText("Assistant modifié dans Home Assistant.")).toBeInTheDocument();
-    expect(calls.find((call) => call.method === "PUT")?.body).toEqual({
+    expect(calls.find((call) => call.method === "PUT" && call.url === "api/assistant/home")?.body).toEqual({
       pipeline_id: "p1",
       conversation_engine: "conversation.llm",
     });
