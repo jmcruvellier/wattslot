@@ -73,6 +73,8 @@ def test_a_cut_forecast_blocks_the_plan_and_says_where_to_act(tmp_path: Path) ->
     found = asyncio.run(_with_client(tmp_path, responses))
 
     assert found[0].code == "no_forecast" and found[0].severity is Severity.BLOCKING
+    # Pas encore de premier plan : une étape de la mise en route (« Mise en route »).
+    assert found[0].setup
     assert found[0].target == "home#solar" and found[0].doc is not None
 
 

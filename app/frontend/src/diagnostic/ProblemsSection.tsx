@@ -15,6 +15,7 @@ export interface Problem {
   params: Record<string, string>;
   target: string | null;
   doc: string | null;
+  setup?: boolean; // étape de la mise en route, avant le premier plan
 }
 
 type Load = { status: "loading" } | { status: "ready"; problems: Problem[] } | { status: "error" };

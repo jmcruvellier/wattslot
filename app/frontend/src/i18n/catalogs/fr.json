@@ -63,7 +63,8 @@
     "display": "Langue et affichage",
     "calculation": "Calcul automatique",
     "voice": "Assistant vocal",
-    "beta": "Bêta"
+    "beta": "Bêta",
+    "status_setup": "Mise en route"
   },
   "setup": {
     "loading": "Lecture de la mise en route…",
@@ -1509,7 +1510,7 @@
     },
     "tariff": {
       "title": "Quel est votre contrat d'électricité ?",
-      "help": "Choisissez le modèle le plus proche : le tarif, la batterie et les appareils sont réglés d'un coup. Tout reste modifiable ensuite.",
+      "help": "Choisissez le modèle le plus proche : le tarif et les réglages de vos appareils sont posés d'un coup. Tout reste modifiable ensuite.",
       "loading": "Lecture des modèles…",
       "apply": "Utiliser ce modèle",
       "later": "Je réglerai plus tard",
@@ -1520,7 +1521,8 @@
       "help": "L'application calcule votre premier plan : quand lancer vos appareils, quand charger la batterie. Il se recalcule ensuite tout seul.",
       "run": "Calculer mon premier plan",
       "missing_title": "Encore une étape",
-      "missing_help": "Avant le premier plan, il manque :"
+      "missing_help": "Avant le premier plan, il manque :",
+      "help_no_battery": "L'application calcule votre premier plan : quand lancer vos appareils. Il se recalcule ensuite tout seul."
     }
   },
   "state": {

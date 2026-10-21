@@ -63,7 +63,8 @@
     "display": "Taal en weergave",
     "calculation": "Automatische berekening",
     "voice": "Spraakassistent",
-    "beta": "Bèta"
+    "beta": "Bèta",
+    "status_setup": "Eerste stappen"
   },
   "setup": {
     "loading": "Inrichting wordt gelezen…",
@@ -1509,7 +1510,7 @@
     },
     "tariff": {
       "title": "Wat is je stroomcontract?",
-      "help": "Kies het sjabloon dat het dichtst in de buurt komt: tarief, batterij en apparaten in één keer ingesteld. Alles blijft daarna aanpasbaar.",
+      "help": "Kies het sjabloon dat het dichtst in de buurt komt: tarief en instellingen van je apparaten in één keer ingesteld. Alles blijft daarna aanpasbaar.",
       "loading": "Sjablonen worden gelezen…",
       "apply": "Dit sjabloon gebruiken",
       "later": "Ik stel het later in",
@@ -1520,7 +1521,8 @@
       "help": "De app berekent je eerste plan: wanneer je apparaten starten, wanneer de batterij laden. Daarna rekent ze vanzelf opnieuw.",
       "run": "Mijn eerste plan berekenen",
       "missing_title": "Nog één stap",
-      "missing_help": "Voor het eerste plan ontbreekt nog:"
+      "missing_help": "Voor het eerste plan ontbreekt nog:",
+      "help_no_battery": "De app berekent je eerste plan: wanneer je apparaten starten. Daarna rekent ze vanzelf opnieuw."
     }
   },
   "state": {

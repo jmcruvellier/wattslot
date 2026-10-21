@@ -63,7 +63,8 @@
     "display": "Lingua e visualizzazione",
     "calculation": "Calcolo automatico",
     "voice": "Assistente vocale",
-    "beta": "Beta"
+    "beta": "Beta",
+    "status_setup": "Configurazione iniziale"
   },
   "setup": {
     "loading": "Lettura della configurazione iniziale…",
@@ -1509,7 +1510,7 @@
     },
     "tariff": {
       "title": "Qual è il tuo contratto di elettricità?",
-      "help": "Scegli il modello più vicino: tariffa, batteria e apparecchi impostati in un colpo. Tutto resta modificabile.",
+      "help": "Scegli il modello più vicino: tariffa e impostazioni degli apparecchi impostate in un colpo. Tutto resta modificabile.",
       "loading": "Lettura dei modelli…",
       "apply": "Usa questo modello",
       "later": "Lo imposterò più tardi",
@@ -1520,7 +1521,8 @@
       "help": "L'app calcola il tuo primo piano: quando avviare gli apparecchi, quando caricare la batteria. Poi si ricalcola da sola.",
       "run": "Calcola il mio primo piano",
       "missing_title": "Ancora un passo",
-      "missing_help": "Prima del primo piano manca:"
+      "missing_help": "Prima del primo piano manca:",
+      "help_no_battery": "L'app calcola il tuo primo piano: quando avviare gli apparecchi. Poi si ricalcola da sola."
     }
   },
   "state": {

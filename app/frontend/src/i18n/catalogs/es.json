@@ -63,7 +63,8 @@
     "display": "Idioma y visualización",
     "calculation": "Cálculo automático",
     "voice": "Asistente de voz",
-    "beta": "Beta"
+    "beta": "Beta",
+    "status_setup": "Puesta en marcha"
   },
   "setup": {
     "loading": "Leyendo la configuración inicial…",
@@ -1509,7 +1510,7 @@
     },
     "tariff": {
       "title": "¿Cuál es su contrato de electricidad?",
-      "help": "Elija la plantilla más parecida: tarifa, batería y aparatos se ajustan de una vez. Todo sigue siendo modificable.",
+      "help": "Elija la plantilla más parecida: la tarifa y los ajustes de sus aparatos se fijan de una vez. Todo sigue siendo modificable.",
       "loading": "Leyendo las plantillas…",
       "apply": "Usar esta plantilla",
       "later": "Lo ajustaré más tarde",
@@ -1520,7 +1521,8 @@
       "help": "La aplicación calcula su primer plan: cuándo poner los aparatos, cuándo cargar la batería. Después se recalcula sola.",
       "run": "Calcular mi primer plan",
       "missing_title": "Un paso más",
-      "missing_help": "Antes del primer plan, falta:"
+      "missing_help": "Antes del primer plan, falta:",
+      "help_no_battery": "La aplicación calcula su primer plan: cuándo poner los aparatos. Después se recalcula sola."
     }
   },
   "state": {

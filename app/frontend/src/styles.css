@@ -1299,6 +1299,12 @@ a.ui-setting-row {
   background: var(--warning);
 }
 
+/* Mise en route : rien d'anormal, un point neutre. */
+.status-pill[data-level="setup"] .status-dot,
+.status-dot[data-level="setup"] {
+  background: var(--text-dim);
+}
+
 .status-pill[data-level="blocking"] .status-dot {
   background: var(--danger);
 }

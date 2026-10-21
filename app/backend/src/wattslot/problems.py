@@ -46,6 +46,9 @@ class Problem(BaseModel):
     params: dict[str, str] = {}
     target: str | None = None  # page de l'application où agir, ancre comprise
     doc: str | None = None  # documentation de HA (ou tickets du projet)
+    # Étape de la mise en route avant le premier plan : la pastille dit « Mise en route », pas
+    # « Le calcul est bloqué » (essai d'installation du 21/10/2026).
+    setup: bool = False
 
 
 def _problem(
@@ -59,6 +62,7 @@ def _problem(
 
 
 def _setup_problems(setup: Setup) -> list[Problem]:
+    first_plan = any(s.key == "first_plan" and s.state is StepState.DONE for s in setup.steps)
     found = []
     for step in setup.steps:
         if step.state is not StepState.TODO or not step.required:
@@ -83,6 +87,8 @@ def _setup_problems(setup: Setup) -> list[Problem]:
                     "no_forecast", Severity.BLOCKING, target="home#solar", doc=DOCS["forecast"]
                 )
             )
+    for problem in found:
+        problem.setup = not first_plan
     return found
 
 
