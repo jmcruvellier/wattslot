@@ -41,19 +41,20 @@ function WeekTable({ view, onOpen }: { view: WeekView; onOpen: (kind: DayKind) =
   const { language, t } = useI18n();
   const [open, setOpen] = useState<string | null>(null);
   const withBattery = view.days.some((day) => day.soc_start_percent !== null || day.soc_end_percent !== null);
-  const columns = withBattery ? 8 : 7;
+  const withSolar = view.solar !== false; // sans panneaux : ni météo, ni production, ni surplus
+  const columns = 4 + (withBattery ? 1 : 0) + (withSolar ? 3 : 0);
   return (
     <section className="card card-wide week-table-card" aria-label={t("plan.tabs.week")}>
       <table className="week-table">
         <thead>
           <tr>
             <th scope="col">{t("plan.week.table.day")}</th>
-            <th scope="col" className="week-wide">{t("plan.week.table.weather")}</th>
-            <th scope="col">{t("plan.week.production")}</th>
+            {withSolar && <th scope="col" className="week-wide">{t("plan.week.table.weather")}</th>}
+            {withSolar && <th scope="col">{t("plan.week.production")}</th>}
             {withBattery && <th scope="col">{t("plan.week.table.battery")}</th>}
             <th scope="col">{t("plan.week.import")}</th>
             <th scope="col" className="week-wide">{t("plan.week.import_peak")}</th>
-            <th scope="col" className="week-wide">{t("plan.week.export")}</th>
+            {withSolar && <th scope="col" className="week-wide">{t("plan.week.export")}</th>}
             <th scope="col" className="week-wide">{t("plan.week.devices")}</th>
           </tr>
         </thead>
@@ -89,14 +90,16 @@ function WeekTable({ view, onOpen }: { view: WeekView; onOpen: (kind: DayKind) =
                     </button>
                     {day.detail_view && <span className="week-tag">{t(`plan.tabs.${day.detail_view}`)}</span>}
                   </th>
-                  <td className="week-wide">
-                    {day.weather && (
-                      <span title={t(`plan.week.weather.${day.weather}`)}>
-                        <Icon name={WEATHER_ICONS[day.weather]} size={18} />
-                      </span>
-                    )}
-                  </td>
-                  <td>{kwh(day.production_kwh, 1)} kWh</td>
+                  {withSolar && (
+                    <td className="week-wide">
+                      {day.weather && (
+                        <span title={t(`plan.week.weather.${day.weather}`)}>
+                          <Icon name={WEATHER_ICONS[day.weather]} size={18} />
+                        </span>
+                      )}
+                    </td>
+                  )}
+                  {withSolar && <td>{kwh(day.production_kwh, 1)} kWh</td>}
                   {withBattery && (
                     <td>
                       {t("plan.week.soc_value", { start: percent(day.soc_start_percent), end: percent(day.soc_end_percent) })}
@@ -107,7 +110,7 @@ function WeekTable({ view, onOpen }: { view: WeekView; onOpen: (kind: DayKind) =
                   )}
                   <td>{kwh(day.grid_import_kwh)} kWh</td>
                   <td className="week-wide">{kwh(day.grid_import_peak_kwh)} kWh</td>
-                  <td className="week-wide">{kwh(day.grid_export_kwh)} kWh</td>
+                  {withSolar && <td className="week-wide">{kwh(day.grid_export_kwh)} kWh</td>}
                   <td className="week-wide week-devices-cell">
                     {devices.length ? devices.map((device) => device.name).join(", ") : "—"}
                   </td>
@@ -116,11 +119,11 @@ function WeekTable({ view, onOpen }: { view: WeekView; onOpen: (kind: DayKind) =
                   <tr className="week-detail">
                     <td colSpan={columns}>
                       <p className="week-narrow">
-                        {day.weather && `${t(`plan.week.weather.${day.weather}`)} · `}
+                        {withSolar && day.weather && `${t(`plan.week.weather.${day.weather}`)} · `}
                         {withBattery &&
                           `${t("plan.week.soc_max")} ${percent(day.soc_max_percent)} % · `}
-                        {t("plan.week.import_peak")} {kwh(day.grid_import_peak_kwh)} kWh · {t("plan.week.export")}{" "}
-                        {kwh(day.grid_export_kwh)} kWh
+                        {t("plan.week.import_peak")} {kwh(day.grid_import_peak_kwh)} kWh
+                        {withSolar && ` · ${t("plan.week.export")} ${kwh(day.grid_export_kwh)} kWh`}
                       </p>
                       <p>
                         {devices.length
@@ -192,11 +195,13 @@ function WeekAgenda({ view, onOpen }: { view: WeekView; onOpen: (kind: DayKind) 
                 {name}
                 {day.detail_view && <span className="week-tag">{t(`plan.tabs.${day.detail_view}`)}</span>}
               </span>
-              <span className="week-row-sun">
-                {day.weather && <Icon name={WEATHER_ICONS[day.weather]} size={18} />}{" "}
-                {day.weather ? `${t(`plan.week.weather.${day.weather}`)} · ` : ""}
-                {kwh(day.production_kwh, 1)} kWh
-              </span>
+              {view.solar !== false && (
+                <span className="week-row-sun">
+                  {day.weather && <Icon name={WEATHER_ICONS[day.weather]} size={18} />}{" "}
+                  {day.weather ? `${t(`plan.week.weather.${day.weather}`)} · ` : ""}
+                  {kwh(day.production_kwh, 1)} kWh
+                </span>
+              )}
             </div>
             {withBattery && (
               <p className="week-row-battery">

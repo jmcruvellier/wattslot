@@ -1372,7 +1372,10 @@
       "reminder_set": "Herinnering gepland",
       "remind_failed": "De herinnering kon niet worden opgeslagen.",
       "none": "Niets te starten tot vanavond",
-      "none_help": "Het plan meldt het volgende apparaat dat moet starten."
+      "none_help": "Het plan meldt het volgende apparaat dat moet starten.",
+      "no_appliance": "Geen apparaat om in te plannen",
+      "no_appliance_help": "WattSlot plant je apparaten op het beste moment: wasmachine, vaatwasser, boiler… Voeg er een toe om te weten wanneer je hem start.",
+      "add_appliance": "Apparaat toevoegen"
     },
     "battery": {
       "eyebrow": "Batterij",
@@ -1505,7 +1508,8 @@
         "Dishwasher": "Op het beste moment gestart",
         "PoolPump": "Filtering op het beste moment",
         "OtherLoad": "Alleen gevolgd"
-      }
+      },
+      "no_appliance": "In het energiedashboard is geen apparaat gevonden om in te plannen. Voeg je wasmachine, je boiler… toe: zonder hen heeft WattSlot niets aan te raden."
     },
     "tariff": {
       "title": "Wat is je stroomcontract?",

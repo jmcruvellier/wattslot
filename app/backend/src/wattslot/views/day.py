@@ -295,14 +295,17 @@ def build_day(
             battery,
         )
     day = state.get("date_cible")
+    has_battery = battery is not None and (state.get("capacite_batterie_kwh") or 0) > 0
     return DayView(
         kind=kind,
         day=day if isinstance(day, date) else date.fromisoformat(str(day)),
         computed_at=computed_at,
         manual=bool(execution.get("manuel")),
         actual_updated_at=_datetime((actual or {}).get("heure_maj_iso")),
-        battery_capacity_kwh=state.get("capacite_batterie_kwh") if battery else None,
-        battery_floor_percent=context.battery.floor_percent if battery else None,
+        # Le calcul garde une ligne « Batterie » de 0 kWh pour une maison sans batterie : rien
+        # n'en est affiché (essai d'installation du 21/10/2026).
+        battery_capacity_kwh=state.get("capacite_batterie_kwh") if has_battery else None,
+        battery_floor_percent=context.battery.floor_percent if has_battery else None,
         hours=hours,
         summary=DaySummary.model_validate(summary),
         initial_forecast=summary_from_v1(state.get("prevision_initiale"))

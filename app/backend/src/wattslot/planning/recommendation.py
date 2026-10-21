@@ -148,7 +148,9 @@ def recommendation(state: Mapping[str, Any], lang: str = "fr") -> str:
             _text(lang, "postponed"),
             *(f"- {warning_text(r, lang)}" for r in reports),
         ]
-    lines += ["", _battery(day, lang)]
+    capacity = state.get("capacite_batterie_kwh")
+    # Sans batterie (capacité nulle), rien à en dire ; plan ancien sans capacité : comme avant.
+    lines += ["", _battery(day, lang)] if capacity is None or capacity > 0 else [""]
     runtimes = day.runtimes
     lines += [_runtime(item, lang) for item in runtimes] or [_text(lang, "runtime_none")]
     balance = _balance(day.indicators, lang)

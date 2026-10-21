@@ -1372,7 +1372,10 @@
       "reminder_set": "Erinnerung geplant",
       "remind_failed": "Die Erinnerung konnte nicht gespeichert werden.",
       "none": "Bis heute Abend nichts zu starten",
-      "none_help": "Der Plan meldet das nächste Gerät, das gestartet werden soll."
+      "none_help": "Der Plan meldet das nächste Gerät, das gestartet werden soll.",
+      "no_appliance": "Kein Gerät zu planen",
+      "no_appliance_help": "WattSlot legt Ihre Geräte auf den besten Zeitpunkt: Waschmaschine, Geschirrspüler, Warmwasserbereiter… Fügen Sie eines hinzu, um zu wissen, wann Sie es starten.",
+      "add_appliance": "Gerät hinzufügen"
     },
     "battery": {
       "eyebrow": "Batterie",
@@ -1505,7 +1508,8 @@
         "Dishwasher": "Zum besten Zeitpunkt gestartet",
         "PoolPump": "Filterung zum besten Zeitpunkt",
         "OtherLoad": "Nur beobachtet"
-      }
+      },
+      "no_appliance": "Im Energie-Dashboard wurde kein zu planendes Gerät gefunden. Fügen Sie Ihre Waschmaschine, Ihren Warmwasserbereiter… hinzu: ohne sie hat WattSlot nichts zu empfehlen."
     },
     "tariff": {
       "title": "Welchen Stromvertrag haben Sie?",

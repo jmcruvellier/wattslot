@@ -1372,7 +1372,10 @@
       "reminder_set": "Reminder set",
       "remind_failed": "The reminder could not be saved.",
       "none": "Nothing to start before tonight",
-      "none_help": "The plan will tell you about the next appliance to start."
+      "none_help": "The plan will tell you about the next appliance to start.",
+      "no_appliance": "No appliance to place",
+      "no_appliance_help": "WattSlot places your appliances at the best time: washing machine, dishwasher, water heater… Add one to know when to start it.",
+      "add_appliance": "Add an appliance"
     },
     "battery": {
       "eyebrow": "Battery",
@@ -1505,7 +1508,8 @@
         "Dishwasher": "Started at the best time",
         "PoolPump": "Filtration at the best time",
         "OtherLoad": "Monitored only"
-      }
+      },
+      "no_appliance": "No appliance to place was found in the Energy dashboard. Add your washing machine, your water heater…: without them, WattSlot has nothing to recommend."
     },
     "tariff": {
       "title": "What is your electricity contract?",

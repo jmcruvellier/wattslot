@@ -1372,7 +1372,10 @@
       "reminder_set": "Recordatorio previsto",
       "remind_failed": "No se pudo guardar el recordatorio.",
       "none": "Nada que poner antes de esta noche",
-      "none_help": "El plan le avisará del próximo aparato que poner en marcha."
+      "none_help": "El plan le avisará del próximo aparato que poner en marcha.",
+      "no_appliance": "Ningún aparato que colocar",
+      "no_appliance_help": "WattSlot coloca sus aparatos en el mejor momento: lavadora, lavavajillas, termo… Añada uno para saber cuándo ponerlo.",
+      "add_appliance": "Añadir un aparato"
     },
     "battery": {
       "eyebrow": "Batería",
@@ -1505,7 +1508,8 @@
         "Dishwasher": "Puesto en el mejor momento",
         "PoolPump": "Filtración en el mejor momento",
         "OtherLoad": "Solo seguido"
-      }
+      },
+      "no_appliance": "No se ha encontrado ningún aparato que colocar en el panel de energía. Añada su lavadora, su termo…: sin ellos, WattSlot no tendrá nada que recomendarle."
     },
     "tariff": {
       "title": "¿Cuál es su contrato de electricidad?",

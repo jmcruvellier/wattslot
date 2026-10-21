@@ -22,6 +22,7 @@ export function DaySummaryCard({ view }: { view: DayView }) {
   const quality = view.weather.quality;
   const sun = sunWindow(view);
   const production = kwh(view.summary.production_kwh, 1);
+  if (view.solar === false) return null; // sans panneaux, la journée n'a pas de soleil à raconter
   return (
     <Card
       tone="sun"

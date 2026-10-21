@@ -31,9 +31,10 @@ const ACTION: NextAction = {
   can_remind: true,
 };
 
-function mockApi(view: DayView | null) {
+function mockApi(view: DayView | null, features: object | null = null) {
   return vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
     const url = String(input);
+    if (url === "api/home/features" && features) return Response.json(features);
     if (url.startsWith("api/views/today")) {
       return view === null ? new Response(null, { status: 404 }) : Response.json(view);
     }
@@ -135,6 +136,19 @@ describe("TodayView", () => {
     expect(await screen.findByRole("heading", { name: "64 % en ce moment" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "10,0 kWh prévus aujourd'hui" })).not.toBeInTheDocument();
     expect(screen.queryByText("Soleil")).not.toBeInTheDocument();
+  });
+
+  it("sans appareil à placer : invite à en ajouter un", async () => {
+    mockApi({ ...TODAY, now: NOW, next_action: null }, { solar: true, battery: false, appliances: 0 });
+    const onNavigate = vi.fn();
+    render(
+      <I18nProvider>
+        <TodayView onNavigate={onNavigate} />
+      </I18nProvider>,
+    );
+    expect(await screen.findByRole("heading", { name: "Aucun appareil à placer" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Ajouter un appareil" }));
+    expect(onNavigate).toHaveBeenCalledWith("devices#add-device");
   });
 
   it("dit quand il n'y a pas encore de plan", async () => {

@@ -132,6 +132,17 @@ describe("vue Semaine", () => {
     expect(headers).toContain("Achat");
   });
 
+  it("sans panneaux : ni météo, ni production, ni graphique de production", async () => {
+    renderWeek({ ...WEEK, solar: false });
+    expect(await screen.findByText("consumption 72 heures, relevé 13.5")).toBeInTheDocument();
+    expect(screen.queryByText("production 72 heures, relevé 13.5")).toBeNull();
+    const headers = within(screen.getByRole("table")).getAllByRole("columnheader").map((cell) => cell.textContent);
+    expect(headers).not.toContain("Météo");
+    expect(headers).not.toContain("Production");
+    expect(headers).not.toContain("Surplus");
+    expect(headers).toContain("Achat");
+  });
+
   it("tableau des jours avant les graphiques, production masquée", async () => {
     renderWeek(WEEK, vi.fn(), vi.fn(), { order: ["days", "soc", "consumption", "production"], hidden: ["production"] });
     expect(await screen.findByText("soc 72 heures, relevé 13.5")).toBeInTheDocument();

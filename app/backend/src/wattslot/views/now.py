@@ -17,7 +17,7 @@ from pydantic import BaseModel
 
 from wattslot import home_model
 from wattslot.aggregation import PERIODS, QUARTER
-from wattslot.detection import Role
+from wattslot.detection import DeviceKind, Role
 from wattslot.languages import Language
 from wattslot.planning.plan import Explanation
 from wattslot.views.display import Context
@@ -126,11 +126,14 @@ TEXTS: dict[str, dict[str, str]] = {
 }
 
 
-def sentence(flows: Mapping[str, float], off_peak: bool, lang: Language) -> str | None:
+def sentence(
+    flows: Mapping[str, float], off_peak: bool, lang: Language, solar: bool = True
+) -> str | None:
     """Phrase du moment d'après les puissances moyennes du quart d'heure ; ``None`` sans
-    production ni achat mesurés."""
+    production ni achat mesurés. Sans panneaux (``solar`` faux), la production est nulle : la
+    maison est sur le réseau ou sur la batterie."""
     texts = TEXTS[lang]
-    production = flows.get("production_w")
+    production = flows.get("production_w", None if solar else 0.0)
     consumption = flows.get("consumption_w")
     if production is None or consumption is None or consumption <= 0:
         return None
@@ -156,7 +159,9 @@ def measure_now(state: Any, moment: datetime, context: Context, lang: Language) 
         return found
     since = until - QUARTER_LENGTH
     flows: dict[str, float] = {}
-    for device in home_model.load(state.graph).devices:
+    devices = home_model.load(state.graph).devices
+    solar = not devices or any(device.kind is DeviceKind.SOLAR for device in devices)
+    for device in devices:
         for sensor in device.sensors:
             key = FLOWS.get(sensor.role)
             if key is None:
@@ -192,7 +197,7 @@ def measure_now(state: Any, moment: datetime, context: Context, lang: Language) 
             "grid_w": (
                 round(flows.get("import_w", 0.0) - flows.get("export_w", 0.0)) if has_grid else None
             ),
-            "sentence": sentence(flows, found.off_peak, lang),
+            "sentence": sentence(flows, found.off_peak, lang, solar),
         }
     )
 

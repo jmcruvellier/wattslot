@@ -63,6 +63,7 @@ class WeekView(BaseModel):
     days: list[WeekDay]
     points: list[WeekPoint]  # une heure par point, tous jours bout à bout
     floor_percent: float  # plancher de décharge de la batterie
+    solar: bool = True  # faux : maison sans installation solaire, ni météo ni production
     now_index: float | None = None  # position du dernier relevé sur l'axe des points
     notices: list[Notice] = []  # avertissements du calcul de l'horizon
     waiting_not_assigned: bool = False  # tâches en attente sans affectation à un jour
@@ -296,6 +297,7 @@ def build_week(
             for p in points
         ],
         floor_percent=context.battery.floor_percent,
+        solar=context.solar,
         now_index=reading_index(today_state, context) if with_today and today_state else None,
         notices=notices({"avertissements": content.get("avertissements", [])}, "week", lang),
         waiting_not_assigned=bool(first.get("taches_en_attente") and not first.get("affectations")),
