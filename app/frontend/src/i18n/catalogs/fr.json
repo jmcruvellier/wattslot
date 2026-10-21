@@ -111,7 +111,8 @@
       "no_notification": "Choisissez un appareil pour recevoir chaque jour la recommandation du plan.",
       "needs_home": "Possible une fois votre maison enregistrée.",
       "template_suggested": "Partez d'un modèle (heures creuses, Tempo, prix dynamique…) qui règle vos équipements et votre tarif d'un coup, puis ajustez."
-    }
+    },
+    "run_failed": "Le calcul n'a pas abouti. Vérifiez les étapes indispensables, puis réessayez."
   },
   "plan": {
     "title": "Plan du jour",
@@ -1517,7 +1518,9 @@
     "first_plan": {
       "title": "Tout est prêt",
       "help": "L'application calcule votre premier plan : quand lancer vos appareils, quand charger la batterie. Il se recalcule ensuite tout seul.",
-      "run": "Calculer mon premier plan"
+      "run": "Calculer mon premier plan",
+      "missing_title": "Encore une étape",
+      "missing_help": "Avant le premier plan, il manque :"
     }
   },
   "state": {

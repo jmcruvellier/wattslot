@@ -111,7 +111,8 @@
       "no_notification": "Choose a device to receive the plan's recommendation every day.",
       "needs_home": "Possible once your home is saved.",
       "template_suggested": "Start from a template (off-peak hours, Tempo, dynamic price…) that sets your devices and tariff at once, then adjust."
-    }
+    },
+    "run_failed": "The calculation did not complete. Check the required steps, then try again."
   },
   "plan": {
     "title": "Today's plan",
@@ -1517,7 +1518,9 @@
     "first_plan": {
       "title": "All set",
       "help": "The app calculates your first plan: when to start your appliances, when to charge the battery. It then recalculates on its own.",
-      "run": "Calculate my first plan"
+      "run": "Calculate my first plan",
+      "missing_title": "One more step",
+      "missing_help": "Before the first plan, this is missing:"
     }
   },
   "state": {

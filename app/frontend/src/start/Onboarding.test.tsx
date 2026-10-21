@@ -130,4 +130,22 @@ describe("Onboarding", () => {
     await user.click(await screen.findByRole("button", { name: "Je réglerai plus tard" }));
     expect(screen.getByRole("heading", { name: "Tout est prêt" })).toBeInTheDocument();
   });
+
+  it("dit ce qui manque avant le premier plan au lieu de proposer un calcul refusé", async () => {
+    const user = userEvent.setup();
+    mockApi();
+    const forecast: SetupStep = { ...step("forecast", "todo"), reason: "no_forecast", target: "home#solar" };
+    const setup: Setup = {
+      ...CONNECTED,
+      steps: [step("connection", "done"), step("home", "done"), step("tariff", "done"), forecast, step("first_plan", "blocked")],
+    };
+    const { onNavigate } = renderFlow(setup);
+
+    expect(screen.getByRole("heading", { name: "Encore une étape" })).toBeInTheDocument();
+    expect(screen.getByText("Prévision solaire")).toBeInTheDocument();
+    expect(screen.getByText(/Aucune prévision solaire/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Calculer mon premier plan" })).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Y aller" }));
+    expect(onNavigate).toHaveBeenCalledWith("home#solar");
+  });
 });

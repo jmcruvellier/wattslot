@@ -178,6 +178,14 @@ def test_connect_with_home_assistant_then_disconnect(tmp_path: Path, ha: FakeHA)
         assert ha.forms[-1][1]["action"] == "revoke" and restarts == [1, 1]
 
 
+def test_the_address_of_ha_url_is_proposed_without_token(tmp_path: Path) -> None:
+    settings = load_settings({"WATTSLOT_DATA_DIR": str(tmp_path), "HA_URL": HA})
+    with TestClient(create_app(settings)) as api:
+        info = api.get("/api/connection").json()
+
+    assert info["source"] is None and info["url"] == HA
+
+
 def test_a_connection_set_by_the_environment_cannot_be_changed(tmp_path: Path) -> None:
     with TestClient(create_app(_settings(tmp_path, connection_source="env"))) as api:
         changed = api.post("/api/connection/token", json={"url": HA, "token": "good"})

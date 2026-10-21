@@ -180,7 +180,8 @@ def configure_logging(level: str = "info") -> None:
 class ConnectionInfo(BaseModel):
     mode: RunMode
     source: str | None  # supervisor, env, saved ; aucune : pas de connexion
-    url: str | None = None  # connexion enregistrée par l'interface seulement
+    # Connexion enregistrée par l'interface ; sans connexion, ``HA_URL`` à proposer.
+    url: str | None = None
     method: str | None = None  # oauth ou token
     state: ConnectionState
     error: str | None = None
@@ -1321,7 +1322,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return ConnectionInfo(
             mode=settings.mode,
             source=settings.connection_source,
-            url=stored.url if stored else None,
+            url=stored.url if stored else settings.suggested_url,
             method=stored.method if stored else None,
             state=client.status.state if client else ConnectionState.NOT_CONFIGURED,
             error=client.status.error if client else None,

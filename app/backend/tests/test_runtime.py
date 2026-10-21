@@ -49,7 +49,11 @@ def test_standalone_reads_url_and_token() -> None:
 
 
 def test_standalone_without_token_is_not_configured() -> None:
-    assert load_settings({"HA_URL": "http://ha.local:8123"}).home_assistant is None
+    settings = load_settings({"HA_URL": "http://ha.local:8123"})
+
+    assert settings.home_assistant is None
+    # L'adresse reste proposée sur la page de connexion (commande Docker du README).
+    assert settings.suggested_url == "http://ha.local:8123"
 
 
 @pytest.mark.parametrize(

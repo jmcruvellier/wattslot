@@ -46,6 +46,8 @@ class Settings:
     home_assistant: HomeAssistantTarget | None
     # D'où vient la connexion à HA : Supervisor, environnement, interface (lot 4.6) ou aucune.
     connection_source: str | None = None
+    # ``HA_URL`` sans jeton (commande du README) : adresse proposée sur la page de connexion.
+    suggested_url: str | None = None
 
 
 def detect_run_mode(environ: Mapping[str, str] | None = None) -> RunMode:
@@ -116,4 +118,5 @@ def load_settings(environ: Mapping[str, str] | None = None) -> Settings:
         static_dir=Path(static_dir) if static_dir else None,
         home_assistant=target,
         connection_source=source,
+        suggested_url=(env.get("HA_URL") or None) if source is None else None,
     )

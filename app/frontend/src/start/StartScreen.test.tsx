@@ -67,6 +67,18 @@ describe("StartScreen", () => {
     expect(calls.filter((c) => c === "GET api/setup")).toHaveLength(2);
   });
 
+  it("dit quand le calcul demandé n'aboutit pas", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (_input, init) =>
+      init?.method === "POST" ? Response.json({ detail: "refusé" }, { status: 409 }) : Response.json(NOT_READY),
+    );
+    renderScreen();
+
+    await userEvent.click(await screen.findByText("Voir toutes les étapes"));
+    await userEvent.click(await screen.findByRole("button", { name: "Calculer le plan maintenant" }));
+
+    expect(await screen.findByText(/Le calcul n'a pas abouti/)).toHaveAttribute("role", "alert");
+  });
+
   it("montre l'écran Aujourd'hui une fois la mise en route faite, le reste replié en tête", async () => {
     const ready: Setup = { ready: true, steps: [{ ...NOT_READY.steps[0] }, { ...NOT_READY.steps[4] }] };
     vi.spyOn(globalThis, "fetch").mockImplementation(async (input) =>

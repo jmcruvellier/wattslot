@@ -111,7 +111,8 @@
       "no_notification": "Wählen Sie ein Gerät, das täglich die Empfehlung des Plans erhält.",
       "needs_home": "Möglich, sobald Ihr Zuhause gespeichert ist.",
       "template_suggested": "Starten Sie mit einer Vorlage (Nebenzeiten, Tempo, dynamischer Preis…), die Ihre Geräte und Ihren Tarif auf einmal einstellt, und passen Sie dann an."
-    }
+    },
+    "run_failed": "Die Berechnung wurde nicht abgeschlossen. Prüfen Sie die erforderlichen Schritte und versuchen Sie es erneut."
   },
   "plan": {
     "title": "Tagesplan",
@@ -1517,7 +1518,9 @@
     "first_plan": {
       "title": "Alles bereit",
       "help": "Die App berechnet Ihren ersten Plan: wann Geräte starten, wann die Batterie laden. Danach rechnet sie selbstständig neu.",
-      "run": "Meinen ersten Plan berechnen"
+      "run": "Meinen ersten Plan berechnen",
+      "missing_title": "Noch ein Schritt",
+      "missing_help": "Vor dem ersten Plan fehlt noch:"
     }
   },
   "state": {

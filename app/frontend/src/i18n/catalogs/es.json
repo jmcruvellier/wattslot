@@ -111,7 +111,8 @@
       "no_notification": "Elija un dispositivo que reciba cada día la recomendación del plan.",
       "needs_home": "Posible en cuanto su casa esté guardada.",
       "template_suggested": "Empiece con una plantilla (horas valle, Tempo, precio dinámico…) que ajusta de una vez sus aparatos y su tarifa, y luego afine."
-    }
+    },
+    "run_failed": "El cálculo no se completó. Revise los pasos imprescindibles y vuelva a intentarlo."
   },
   "plan": {
     "title": "Plan del día",
@@ -1517,7 +1518,9 @@
     "first_plan": {
       "title": "Todo listo",
       "help": "La aplicación calcula su primer plan: cuándo poner los aparatos, cuándo cargar la batería. Después se recalcula sola.",
-      "run": "Calcular mi primer plan"
+      "run": "Calcular mi primer plan",
+      "missing_title": "Un paso más",
+      "missing_help": "Antes del primer plan, falta:"
     }
   },
   "state": {

@@ -111,7 +111,8 @@
       "no_notification": "Scelga un dispositivo che riceva ogni giorno la raccomandazione del piano.",
       "needs_home": "Possibile non appena la sua casa è salvata.",
       "template_suggested": "Parta da un modello (fasce orarie, Tempo, prezzo dinamico…) che imposta in una volta apparecchi e tariffa, poi affini."
-    }
+    },
+    "run_failed": "Il calcolo non è andato a buon fine. Controllate i passaggi indispensabili, poi riprovate."
   },
   "plan": {
     "title": "Piano del giorno",
@@ -1517,7 +1518,9 @@
     "first_plan": {
       "title": "Tutto pronto",
       "help": "L'app calcola il tuo primo piano: quando avviare gli apparecchi, quando caricare la batteria. Poi si ricalcola da sola.",
-      "run": "Calcola il mio primo piano"
+      "run": "Calcola il mio primo piano",
+      "missing_title": "Ancora un passo",
+      "missing_help": "Prima del primo piano manca:"
     }
   },
   "state": {
