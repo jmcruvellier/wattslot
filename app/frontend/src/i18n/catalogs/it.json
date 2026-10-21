@@ -62,7 +62,8 @@
     "notifications": "Notifiche",
     "display": "Lingua e visualizzazione",
     "calculation": "Calcolo automatico",
-    "voice": "Assistente vocale"
+    "voice": "Assistente vocale",
+    "beta": "Beta"
   },
   "setup": {
     "loading": "Lettura della configurazione iniziale…",
@@ -1465,7 +1466,16 @@
     "notifications_on": "{count} attiva/e, su {device}",
     "notifications_count": "{count} attiva/e",
     "scheduler_on": "Ogni ora, al minuto {minute}",
-    "scheduler_off": "Disattivato: calcolo a mano"
+    "scheduler_off": "Disattivato: calcolo a mano",
+    "beta": {
+      "title": "Versione beta",
+      "text": "State provando una versione beta: i vostri riscontri decidono il seguito. Cosa funziona, cosa dà fastidio, cosa non è chiaro: tutto aiuta.",
+      "feedback": "Dai il tuo parere"
+    },
+    "support": {
+      "title": "Sostieni WattSlot",
+      "text": "WattSlot è libero e gratuito, senza pubblicità né raccolta di dati. Se l'app vi è utile, potete sostenerne lo sviluppo."
+    }
   },
   "onboarding": {
     "progress": "Passo {step} di {count}",

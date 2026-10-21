@@ -2105,3 +2105,62 @@ p[role="status"]:not(.state-message) {
   margin-top: 0.25rem;
   overflow-x: auto;
 }
+
+/* Bêta publique (0.9.1) : étiquette à côté du nom, cartes « Version bêta » et « Soutenir
+   WattSlot » en bas des Réglages. */
+.beta-badge {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.05rem 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-alt);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+.beta-cards {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .beta-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.support-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.support-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: inherit;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.support-link:hover {
+  background: var(--surface-alt);
+}
+
+/* Couleurs des deux plateformes, les mêmes dans tous les thèmes. */
+.support-link-sponsors svg {
+  color: #ea4aaa;
+}
+
+.support-link-kofi svg {
+  color: #ff5e5b;
+}

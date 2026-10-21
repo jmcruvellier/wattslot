@@ -79,3 +79,33 @@ describe("SettingsHome", () => {
     expect(await link(/Connexion à Home Assistant\s*Connecté/)).toHaveAttribute("href", "#/settings/connection");
   });
 });
+
+describe("cartes de la bêta", () => {
+  beforeEach(() => {
+    vi.spyOn(navigator, "languages", "get").mockReturnValue(["fr-FR"]);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("propose de donner son avis et de soutenir le projet", async () => {
+    mockApi();
+    render(
+      <I18nProvider>
+        <SettingsHome />
+      </I18nProvider>,
+    );
+    expect(await screen.findByRole("heading", { name: "Version bêta" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Donner mon avis" })).toHaveAttribute(
+      "href",
+      "https://github.com/jmcruvellier/wattslot/issues/new?template=beta_feedback.yml",
+    );
+    expect(screen.getByRole("heading", { name: "Soutenir WattSlot" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "GitHub Sponsors" })).toHaveAttribute(
+      "href",
+      "https://github.com/sponsors/jmcruvellier",
+    );
+    expect(screen.getByRole("link", { name: "Ko-fi" })).toHaveAttribute("href", "https://ko-fi.com/jmcruvellier");
+  });
+});

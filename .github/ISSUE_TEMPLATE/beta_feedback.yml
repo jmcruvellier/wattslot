@@ -1,0 +1,52 @@
+name: Beta feedback
+description: Tell us how WattSlot works in your home during the beta.
+title: "[Beta] "
+labels: ["beta"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for testing WattSlot! Your feedback decides what comes next. You can write in
+        English or French. One issue per topic makes it easier to follow up.
+  - type: input
+    id: version
+    attributes:
+      label: WattSlot version
+      description: Shown in Settings → App status.
+      placeholder: "0.9.1"
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Installation mode
+      options:
+        - Home Assistant app (add-on)
+        - Standalone (Docker)
+    validations:
+      required: true
+  - type: textarea
+    id: home
+    attributes:
+      label: Your home in a few words
+      description: Solar panels (kWp), battery, tariff (single price, off-peak hours, colour days, dynamic), the appliances WattSlot places.
+      placeholder: "3 kWp, 5 kWh battery, off-peak hours 22:00-06:00, washing machine and water heater"
+  - type: textarea
+    id: works
+    attributes:
+      label: What works well
+  - type: textarea
+    id: bothers
+    attributes:
+      label: What bothers you, or what you did not understand
+      description: The screen concerned, what you expected, screenshots if useful.
+    validations:
+      required: true
+  - type: textarea
+    id: report
+    attributes:
+      label: Anonymised report (optional)
+      description: |
+        Settings → App status → Prepare a report, then paste or attach the file. It contains no
+        device name, sensor ID or location.
+      render: json

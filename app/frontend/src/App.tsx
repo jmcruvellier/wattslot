@@ -3,6 +3,7 @@ import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { reveal } from "./common/reveal";
 import { returnedFromHomeAssistant } from "./connection/address";
 import PlanScreen from "./plan/PlanScreen";
+import { SupportLinks } from "./settings/BetaCards";
 import StartScreen from "./start/StartScreen";
 import { useI18n } from "./i18n/I18nProvider";
 import MainMenu from "./nav/MainMenu";
@@ -187,7 +188,10 @@ export default function App() {
                       <dd>{t("health.version", { version: state.health.version })}</dd>
                       <UpdateNotice update={update} />
                       <dt>{t("health.support")}</dt>
-                      <SupportLinks />
+                      {/* Liens de soutien, aussi en bas des Réglages (bêta 0.9.1). */}
+                      <dd>
+                        <SupportLinks />
+                      </dd>
                     </dl>
                   )}
                 </DiagnosticScreen>
@@ -208,22 +212,6 @@ function UpdateNotice({ update }: { update: UpdateState }) {
   if (update.status === "unavailable") return <dd className="dim">{t("updates.unavailable")}</dd>;
   if (update.status === "current") return <dd className="dim">{t("updates.current")}</dd>;
   return <dd>{t("updates.available", { version: update.latest.version })}</dd>;
-}
-
-/** Liens de soutien du détail technique d'État de l'application (lot 7.1), seul endroit de
- * l'interface où ils figurent : rien dans les écrans du quotidien. */
-function SupportLinks() {
-  return (
-    <dd>
-      <a href="https://github.com/sponsors/jmcruvellier" target="_blank" rel="noreferrer">
-        GitHub Sponsors
-      </a>
-      {" · "}
-      <a href="https://ko-fi.com/jmcruvellier" target="_blank" rel="noreferrer">
-        Ko-fi
-      </a>
-    </dd>
-  );
 }
 
 /** Encadré en tête d'État de l'application quand une version plus récente existe (lot 7.1). */
