@@ -10,6 +10,7 @@ import Glossary from "../common/Glossary";
 import { DEFAULT_PRICE_EUR_KWH } from "../home/configuration";
 import { useCurrency } from "../i18n/currency";
 import { useI18n } from "../i18n/I18nProvider";
+import { refreshStatus } from "../nav/status";
 import TodayView from "../today/TodayView";
 import StateMessage from "../ui/StateMessage";
 
@@ -69,6 +70,7 @@ export default function StartScreen({ onNavigate }: { onNavigate: (target: strin
     } finally {
       setRunning(false);
       setVersion((count) => count + 1);
+      refreshStatus();
     }
   };
 

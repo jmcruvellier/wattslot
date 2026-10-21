@@ -299,7 +299,14 @@ function FirstPlanStep({
   }
   return (
     <>
-      <p>{t("onboarding.first_plan.help")}</p>
+      {/* Sans batterie (étape « sans objet »), la phrase n'en parle pas. */}
+      <p>
+        {t(
+          stateOf(setup, "battery")?.state === "not_applicable"
+            ? "onboarding.first_plan.help_no_battery"
+            : "onboarding.first_plan.help",
+        )}
+      </p>
       {history && history.state !== "done" && history.reason && (
         <p className="dim">{t(`setup.reason.${history.reason}`, history.params)}</p>
       )}

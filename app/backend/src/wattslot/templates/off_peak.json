@@ -2,12 +2,12 @@
   "format": "wattslot/template",
   "version": 1,
   "name": {
-    "fr": "Solaire, heures creuses",
-    "en": "Solar, off-peak hours"
+    "fr": "Heures creuses",
+    "en": "Off-peak hours"
   },
   "description": {
-    "fr": "Heures creuses de 0 h à 6 h et de 22 h à 24 h (prix indicatifs, à remplacer par les vôtres). Chauffe-eau tous les deux jours, sèche-linge après le lave-linge, lave-vaisselle et lave-linge placés au meilleur moment, filtration de la piscine selon la saison, pompe à chaleur surtout l'hiver, voiture électrique chargée avant 7 h. Batterie et vitesses de la piscine : réglages par défaut, à ajuster.",
-    "en": "Off-peak hours from midnight to 6 am and 10 pm to midnight (indicative prices, to replace with yours). Water heater every other day, dryer after the washing machine, dishwasher and washing machine placed at the best time, pool filtration by season, heat pump mostly in winter, electric car charged before 7 am. Battery and pool speeds: default settings, to adjust."
+    "fr": "Heures creuses de 0 h à 6 h et de 22 h à 24 h (prix indicatifs, à remplacer par les vôtres). Les appareils de votre maison reçoivent aussi des réglages habituels, modifiables ensuite.",
+    "en": "Off-peak hours from midnight to 6 am and 10 pm to midnight (indicative prices, to replace with yours). The appliances of your home also get usual settings, which you can change afterwards."
   },
   "devices": [
     {

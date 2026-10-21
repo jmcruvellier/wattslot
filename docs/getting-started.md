@@ -12,10 +12,10 @@ The first time you open WattSlot, a guided path of four screens replaces the hom
 
    | Template | For |
    |---|---|
-   | Solar, single price | The same price all day |
-   | Solar, off-peak hours | Cheaper hours at night (indicative: midnight to 6 am and 10 pm to midnight) |
-   | Solar, Tempo | French Tempo contract, day colour read from Home Assistant |
-   | Solar, dynamic price | Hourly market prices read from a Home Assistant entity |
+   | Single price | The same price all day |
+   | Off-peak hours | Cheaper hours at night (indicative: midnight to 6 am and 10 pm to midnight) |
+   | Tempo | French Tempo contract, day colour read from Home Assistant |
+   | Dynamic price | Hourly market prices read from a Home Assistant entity |
 
 4. **All set.** Click **Calculate my first plan**. WattSlot then recalculates every hour on its own.
 

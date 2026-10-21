@@ -2,12 +2,12 @@
   "format": "wattslot/template",
   "version": 1,
   "name": {
-    "fr": "Solaire, tarif unique",
-    "en": "Solar, single price"
+    "fr": "Tarif unique",
+    "en": "Single price"
   },
   "description": {
-    "fr": "Un seul prix toute la journée (indicatif, à remplacer par le vôtre). Chauffe-eau tous les deux jours, sèche-linge après le lave-linge, lave-vaisselle et lave-linge placés au meilleur moment, filtration de la piscine selon la saison, pompe à chaleur surtout l'hiver, voiture électrique chargée avant 7 h. Batterie et vitesses de la piscine : réglages par défaut, à ajuster.",
-    "en": "A single price all day (indicative, to replace with yours). Water heater every other day, dryer after the washing machine, dishwasher and washing machine placed at the best time, pool filtration by season, heat pump mostly in winter, electric car charged before 7 am. Battery and pool speeds: default settings, to adjust."
+    "fr": "Un seul prix toute la journée (indicatif, à remplacer par le vôtre). Les appareils de votre maison reçoivent aussi des réglages habituels, modifiables ensuite.",
+    "en": "A single price all day (indicative, to replace with yours). The appliances of your home also get usual settings, which you can change afterwards."
   },
   "devices": [
     {

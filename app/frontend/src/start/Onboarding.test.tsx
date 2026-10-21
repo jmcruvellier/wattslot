@@ -131,6 +131,17 @@ describe("Onboarding", () => {
     expect(screen.getByRole("heading", { name: "Tout est prêt" })).toBeInTheDocument();
   });
 
+  it("ne parle pas de batterie quand la maison n'en a pas", () => {
+    mockApi();
+    const setup: Setup = {
+      ...CONNECTED,
+      steps: [step("connection", "done"), step("home", "done"), step("tariff", "done"), step("battery", "not_applicable"), step("first_plan", "todo")],
+    };
+    renderFlow(setup);
+
+    expect(screen.getByText(/calcule votre premier plan/)).not.toHaveTextContent("batterie");
+  });
+
   it("dit ce qui manque avant le premier plan au lieu de proposer un calcul refusé", async () => {
     const user = userEvent.setup();
     mockApi();

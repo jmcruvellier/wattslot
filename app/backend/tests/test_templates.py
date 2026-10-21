@@ -113,7 +113,7 @@ def test_api(tmp_path: Path) -> None:
         assert [t["key"] for t in listed] == ["dynamic", "off_peak", "single", "tempo"]
         off_peak = next(t for t in listed if t["key"] == "off_peak")
         assert "ev" in off_peak["devices"] and "solar" not in off_peak["devices"]
-        assert off_peak["name"]["fr"] == "Solaire, heures creuses"
+        assert off_peak["name"]["fr"] == "Heures creuses"
 
         assert api.post("/api/templates/unknown/preview").status_code == 404
         preview = api.post("/api/templates/tempo/preview").json()

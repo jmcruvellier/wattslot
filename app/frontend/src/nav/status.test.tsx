@@ -20,6 +20,12 @@ describe("niveau de la pastille", () => {
     expect(statusLevel([problem("watch"), problem("degraded")])).toBe("degraded");
     expect(statusLevel([problem("degraded"), problem("blocking")])).toBe("blocking");
   });
+
+  it("dit « Mise en route » quand seules les étapes avant le premier plan bloquent", () => {
+    const setup = { ...problem("blocking"), setup: true };
+    expect(statusLevel([setup, problem("degraded")])).toBe("setup");
+    expect(statusLevel([setup, problem("blocking")])).toBe("blocking");
+  });
 });
 
 interface Api {

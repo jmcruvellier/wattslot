@@ -63,7 +63,8 @@
     "display": "Sprache und Darstellung",
     "calculation": "Automatische Berechnung",
     "voice": "Sprachassistent",
-    "beta": "Beta"
+    "beta": "Beta",
+    "status_setup": "Einrichtung"
   },
   "setup": {
     "loading": "Einrichtung wird gelesen…",
@@ -1509,7 +1510,7 @@
     },
     "tariff": {
       "title": "Welchen Stromvertrag haben Sie?",
-      "help": "Wählen Sie die passendste Vorlage: Tarif, Batterie und Geräte werden auf einmal eingestellt. Alles bleibt danach änderbar.",
+      "help": "Wählen Sie die passendste Vorlage: Tarif und Einstellungen Ihrer Geräte werden auf einmal gesetzt. Alles bleibt danach änderbar.",
       "loading": "Vorlagen werden gelesen…",
       "apply": "Diese Vorlage verwenden",
       "later": "Später einstellen",
@@ -1520,7 +1521,8 @@
       "help": "Die App berechnet Ihren ersten Plan: wann Geräte starten, wann die Batterie laden. Danach rechnet sie selbstständig neu.",
       "run": "Meinen ersten Plan berechnen",
       "missing_title": "Noch ein Schritt",
-      "missing_help": "Vor dem ersten Plan fehlt noch:"
+      "missing_help": "Vor dem ersten Plan fehlt noch:",
+      "help_no_battery": "Die App berechnet Ihren ersten Plan: wann Geräte starten. Danach rechnet sie selbstständig neu."
     }
   },
   "state": {

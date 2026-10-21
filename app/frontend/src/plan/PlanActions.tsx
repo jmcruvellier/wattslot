@@ -5,6 +5,7 @@
 import { useState } from "react";
 
 import { useI18n } from "../i18n/I18nProvider";
+import { refreshStatus } from "../nav/status";
 import type { ViewKind } from "./types";
 
 type Action = "idle" | "running" | "failed";
@@ -24,6 +25,7 @@ export default function PlanActions({ kind, onChanged }: { kind: ViewKind; onCha
     } catch {
       setAction("failed");
     }
+    refreshStatus();
   };
 
   return (
