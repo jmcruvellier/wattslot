@@ -6,6 +6,7 @@ quoi l'annuler, et plus tard la reporter dans le recorder de HA.
 """
 
 import sqlite3
+import threading
 from datetime import UTC, datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING, Protocol
@@ -94,11 +95,34 @@ class Target(Protocol):
     energy_kwh: float | None
 
 
+# Une connexion par fil d'exécution et par fichier de base : les corrections sont lues à chaque
+# lecture d'agrégats, depuis plusieurs fils à la fois (vues, calcul, serveur MCP, surveillance) ;
+# la connexion partagée de l'application y échouait (« bad parameter or other API misuse »).
+_LOCAL = threading.local()
+
+
+def _connection(path: str) -> sqlite3.Connection:
+    connections: dict[str, sqlite3.Connection] = getattr(_LOCAL, "connections", None) or {}
+    _LOCAL.connections = connections
+    if path not in connections:
+        connection = sqlite3.connect(path, timeout=10)
+        connection.execute("PRAGMA journal_mode=WAL")
+        connections[path] = connection
+    return connections[path]
+
+
 class CorrectionStore:
-    """Corrections des agrégats, dans la base de l'application."""
+    """Corrections des agrégats, dans la base de l'application, lues et écrites par une connexion
+    propre à chaque fil (base en mémoire des tests : la connexion donnée)."""
 
     def __init__(self, database: sqlite3.Connection) -> None:
-        self._database = database
+        row = database.execute("PRAGMA database_list").fetchone()
+        self._path: str | None = str(row[2]) if row and row[2] else None
+        self._shared = database
+
+    @property
+    def _database(self) -> sqlite3.Connection:
+        return _connection(self._path) if self._path else self._shared
 
     def active(
         self, entity_id: str, period: str, start: datetime, end: datetime
