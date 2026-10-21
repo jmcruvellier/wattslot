@@ -7,6 +7,7 @@ from tools.screenshots import (
     OUTPUT,
     SHOTS,
     THEMES,
+    browser_now,
     local_url,
     output_path,
     storage,
@@ -20,18 +21,21 @@ def test_every_shot_has_a_distinct_file_per_language() -> None:
     assert output_path("fr", SHOTS[0]) == OUTPUT / "fr" / "today-phone-light.png"
 
 
-def test_preferences_set_the_language_the_theme_and_open_curves() -> None:
+def test_preferences_set_the_language_the_theme_and_the_tab() -> None:
     dark = next(shot for shot in SHOTS if shot.theme == "dark")
+    week = next(shot for shot in SHOTS if shot.name == "curves-week-desktop-light")
 
     prefs = storage("fr", dark)
 
     assert prefs["wattslot.language"] == "fr"
     assert prefs["wattslot.theme"] == THEMES["dark"] == "graphite"
-    assert prefs["plan.curves"] == "open"
+    assert "plan.tab" not in prefs
+    assert storage("fr", week)["plan.tab"] == "week"
 
 
 def test_the_browser_clock_is_the_demo_time() -> None:
     assert int(NOW.timestamp() * 1000) == NOW_MS
+    assert browser_now() == NOW
 
 
 def test_only_local_addresses_are_reached() -> None:

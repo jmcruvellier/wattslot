@@ -24,7 +24,7 @@
 <p align="center">
   <img src="docs/images/fr/today-phone-light.png" alt="Aujourd'hui, sur un téléphone" height="360">
   &nbsp;
-  <img src="docs/images/fr/planning-desktop-light.png" alt="Planning, sur un ordinateur" height="360">
+  <img src="docs/images/fr/today-desktop-light.png" alt="Aujourd'hui, sur un ordinateur" height="360">
 </p>
 
 ## Fonctions

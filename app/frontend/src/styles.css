@@ -2122,6 +2122,11 @@ p[role="status"]:not(.state-message) {
   vertical-align: middle;
 }
 
+/* « Donner mon avis » : un lien qui a l'air d'un bouton, sans soulignement. */
+.beta-cards a.ui-button {
+  text-decoration: none;
+}
+
 .beta-cards {
   display: grid;
   gap: 1rem;

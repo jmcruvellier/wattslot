@@ -4,6 +4,8 @@
 
 WattSlot finds the right slot to run your household appliances: when your own solar power is there, or when electricity is cheapest. It reads your home from Home Assistant, computes a plan for today and the coming week, and tells you what to start and when. It recommends; you decide.
 
+> **Beta.** Your feedback decides what comes next: [give feedback](https://github.com/jmcruvellier/wattslot/issues/new?template=beta_feedback.yml), or use **Give feedback** at the bottom of **Settings**.
+
 ![Today, on a phone](images/en/today-phone-light.png)
 
 ## Where to start

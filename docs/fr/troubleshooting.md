@@ -43,4 +43,6 @@
 
 **Combien écrit-il sur le disque ?** Quelques Go par jour au plus en usage normal ; la première reprise de l'historique écrit davantage, une seule fois. Prenez un SSD plutôt qu'une carte SD.
 
+**Comment donner mon avis sur la bêta ?** Avec **Donner mon avis**, en bas des **Réglages**, ou directement avec le [formulaire de retour de bêta](https://github.com/jmcruvellier/wattslot/issues/new?template=beta_feedback.yml) : ce qui marche, ce qui gêne, ce que vous n'avez pas compris. En français ou en anglais.
+
 **Où poser une question ?** Dans les [Discussions](https://github.com/jmcruvellier/wattslot/discussions) ; pour un bogue, ouvrez un [ticket GitHub](https://github.com/jmcruvellier/wattslot/issues/new/choose).
