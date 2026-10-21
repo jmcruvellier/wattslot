@@ -1,5 +1,8 @@
 blank_issues_enabled: false
 contact_links:
+  - name: Beta questions
+    url: https://github.com/jmcruvellier/wattslot/discussions/categories/beta
+    about: Ask anything about the beta and talk with other testers.
   - name: Questions and discussion
     url: https://github.com/jmcruvellier/wattslot/discussions
     about: Ask questions, suggest ideas and share your setup in the Discussions.

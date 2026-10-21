@@ -1,0 +1,29 @@
+title: "[Beta] "
+labels: ["beta"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Questions and exchanges about the WattSlot beta, in English or French. For a precise
+        problem or suggestion, the [beta feedback form](https://github.com/jmcruvellier/wattslot/issues/new?template=beta_feedback.yml)
+        is easier to follow up.
+  - type: input
+    id: version
+    attributes:
+      label: WattSlot version
+      description: Shown in Settings → App status.
+      placeholder: "0.9.1"
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Installation mode
+      options:
+        - Home Assistant app (add-on)
+        - Standalone (Docker)
+        - Not installed yet
+  - type: textarea
+    id: message
+    attributes:
+      label: Your question or comment
+    validations:
+      required: true
