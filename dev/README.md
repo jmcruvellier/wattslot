@@ -4,6 +4,8 @@ Un Home Assistant de test qui rejoue des journées réalistes, et l'application 
 
 Prérequis : Docker avec Docker Compose.
 
+Pendant la bêta publique : tri des retours, étiquettes et réponses types dans [beta.md](beta.md).
+
 ## Démarrer
 
 Depuis la racine du repo :
