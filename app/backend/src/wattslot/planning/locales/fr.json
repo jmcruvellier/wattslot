@@ -34,5 +34,7 @@
   "recommendation.balance_self": "Autoconsommation : {percent} %.",
   "recommendation.balance_co2": "CO₂ du soutirage : {co2} kg.",
   "recommendation.warnings": "Avertissements :",
-  "recommendation.appliance": "- {device} : {start}-{end} ({energy} kWh)."
+  "recommendation.appliance": "- {device} : {start}-{end} ({energy} kWh).",
+  "reason.chosen": "Départ choisi par vous.",
+  "reason.full_charge_first": "La charge complète de la batterie, due aujourd'hui, passe d'abord : le surplus solaire lui revient."
 }

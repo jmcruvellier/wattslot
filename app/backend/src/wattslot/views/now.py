@@ -19,6 +19,7 @@ from wattslot import home_model
 from wattslot.aggregation import PERIODS, QUARTER
 from wattslot.detection import Role
 from wattslot.languages import Language
+from wattslot.planning.plan import Explanation
 from wattslot.views.display import Context
 from wattslot.views.timeline import Timeline
 
@@ -50,11 +51,24 @@ class Now(BaseModel):
     sentence: str | None = None
 
 
+class OtherStart(BaseModel):
+    """Autre départ permis du prochain appareil, à choisir (écarts par rapport au plan)."""
+
+    start_min: int
+    end_min: int
+    cost_eur_delta: float
+    import_kwh_delta: float
+
+
 class NextAction(BaseModel):
     device: str
     start_min: int  # minutes depuis minuit, heure locale
     end_min: int
     explanation: str | None = None
+    # Autres départs proposés par le plan, les meilleurs d'abord, et départ choisi par
+    # l'utilisateur (« Revenir au choix du calcul »).
+    alternatives: list[OtherStart] = []
+    chosen: bool = False
     # « Me le rappeler » (lot 6b.3) : rappel posé, et service de notification réglé.
     reminder: bool = False
     can_remind: bool = False
@@ -196,7 +210,11 @@ def _soc(state: Any) -> float | None:
 
 
 def next_action(
-    timeline: Timeline, explanations: Mapping[str, str], moment: datetime, context: Context
+    timeline: Timeline,
+    explanations: Mapping[str, str],
+    moment: datetime,
+    context: Context,
+    details: Mapping[str, Explanation] | None = None,
 ) -> NextAction | None:
     """Prochain appareil à cycle à lancer d'après le plan du jour : pas encore lancé, et dont la
     plage n'est pas finie."""
@@ -213,9 +231,23 @@ def next_action(
     if not upcoming:
         return None
     first = min(upcoming, key=lambda status: status.planned_start_min)
+    detail = (details or {}).get(first.device)
+    length = first.planned_end_min - first.planned_start_min
     return NextAction(
         device=first.device,
         start_min=first.planned_start_min,
         end_min=first.planned_end_min,
         explanation=explanations.get(first.device),
+        # Départs à venir seulement : un départ déjà passé ne se choisit plus.
+        alternatives=[
+            OtherStart(
+                start_min=a.start_min,
+                end_min=a.start_min + length,
+                cost_eur_delta=a.cost_eur_delta,
+                import_kwh_delta=a.import_kwh_delta,
+            )
+            for a in (detail.alternatives if detail else [])
+            if a.start_min > now_min
+        ],
+        chosen=bool(detail and detail.chosen),
     )

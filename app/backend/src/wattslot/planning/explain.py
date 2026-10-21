@@ -36,6 +36,7 @@ from wattslot.time_constraints import labels
 
 LOCALES = Path(__file__).parent / "locales"
 PRICE_SPREAD_EUR = 0.005  # en dessous, toutes les heures coûtent pareil : pas d'« heures creuses »
+ALTERNATIVES = 3  # autres départs proposés au plus, par cycle
 
 # Départs (tâche → minutes) → indicateurs du plan ainsi modifié ; indicateurs → note (plus bas :
 # meilleur) selon l'objectif.
@@ -90,16 +91,17 @@ def _common(
     return reasons
 
 
-def _alternative(
+def _alternatives(
     task: Task,
     starts: dict[str, int],
     problem: Problem,
     base: Indicators,
     evaluate: Evaluate,
     score: Score,
-) -> Alternative | None:
-    """Meilleur autre départ permis du cycle (contraintes dures, ordre avec les cycles liés), le
-    reste du plan inchangé."""
+) -> tuple[list[Alternative], bool]:
+    """Meilleurs autres départs permis du cycle (contraintes dures, ordre avec les cycles liés),
+    le reste du plan inchangé, et si le meilleur d'entre eux note mieux que le départ du plan.
+    Le départ choisi par l'utilisateur n'en retire aucun."""
     by_key = {t.key: t for t in problem.tasks}
     parent = by_key.get(task.depends_on or "")
     earliest = task.earliest_min
@@ -109,24 +111,25 @@ def _alternative(
         starts[t.name] for t in problem.tasks if t.depends_on == task.key and t.name in starts
     ]
     latest_end = min(children) if children else math.inf
-    best: tuple[float, int, Indicators] | None = None
-    for start in task.candidates(earliest):
+    found: list[tuple[float, int, Indicators]] = []
+    for start in task.candidates(earliest, chosen=False):
         if start == starts[task.name] or start + task.slot_min > latest_end:
             continue
         if problem.hard_blocks(task.name, start, start + task.slot_min):
             continue
-        found = evaluate({**starts, task.name: start})
-        key = (score(found), start)
-        if best is None or key < (best[0], best[1]):
-            best = (key[0], start, found)
-    if best is None:
-        return None
-    _, start, found = best
-    return Alternative(
-        start_min=start,
-        cost_eur_delta=round(found.cost_eur - base.cost_eur, 3),
-        import_kwh_delta=round(found.import_kwh - base.import_kwh, 3),
-    )
+        indicators = evaluate({**starts, task.name: start})
+        found.append((score(indicators), start, indicators))
+    found.sort(key=lambda item: (item[0], item[1]))
+    alternatives = [
+        Alternative(
+            start_min=start,
+            cost_eur_delta=round(indicators.cost_eur - base.cost_eur, 3),
+            import_kwh_delta=round(indicators.import_kwh - base.import_kwh, 3),
+        )
+        for _, start, indicators in found[:ALTERNATIVES]
+    ]
+    better = bool(found) and found[0][0] < score(base) - 1e-6
+    return alternatives, better
 
 
 def explain(
@@ -205,12 +208,26 @@ def explain(
             parent = by_key.get(task.depends_on or "")
             if parent is not None:
                 reasons.append(Reason(code="after", params={"device": parent.name}))
-            alternative = (
-                _alternative(task, dict(starts), problem, base, evaluate, score)
+            alternatives, better = (
+                _alternatives(task, dict(starts), problem, base, evaluate, score)
                 if base is not None
-                else None
+                else ([], False)
             )
-            explanation = Explanation(reasons=reasons, alternative=alternative)
+            chosen = task.chosen_min is not None and starts[task.name] == task.chosen_min
+            if chosen:
+                # Départ choisi par l'utilisateur : ni objectif ni « batterie d'abord ».
+                reasons = [Reason(code="chosen")] + [r for r in reasons if r.code != "objective"]
+            elif better and problem.battery.full_priority:
+                # Un autre départ coûterait moins : le surplus va d'abord à la charge complète.
+                reasons = [Reason(code="full_charge_first")] + [
+                    r for r in reasons if r.code != "objective"
+                ]
+            explanation = Explanation(
+                reasons=reasons,
+                alternative=alternatives[0] if alternatives else None,
+                alternatives=alternatives,
+                chosen=chosen,
+            )
         if explanation.reasons:
             item = item.model_copy(
                 update={"explanation": explanation, "justification": render(explanation, "fr")}

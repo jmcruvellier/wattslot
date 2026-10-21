@@ -367,7 +367,14 @@
       "now": "Ahora"
     },
     "discarded": "Medida imposible descartada a las {hours}: probablemente un corte de un sensor.",
-    "discarded_link": "Ver los datos"
+    "discarded_link": "Ver los datos",
+    "choice": {
+      "others": "Otros inicios posibles:",
+      "choose": "Elegir el inicio de las {time} ({cost}, {grid} kWh consumidos respecto al plan)",
+      "revert": "Volver a la elección del cálculo",
+      "running": "Nuevo cálculo con este inicio…",
+      "failed": "No se pudo cambiar el inicio."
+    }
   },
   "requests": {
     "title": "Mis peticiones",

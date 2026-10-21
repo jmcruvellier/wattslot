@@ -1725,6 +1725,17 @@ a.ui-setting-row {
   color: var(--text-dim);
 }
 
+/* Autres départs proposés par le plan (Prochaine action, Pourquoi ce plan). */
+.other-starts p {
+  margin: 0.4rem 0 0;
+}
+
+.other-starts-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 /* « Mes demandes » sous le plan, dans Planning. */
 .plan-requests {
   margin-top: 1rem;

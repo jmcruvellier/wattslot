@@ -12,6 +12,7 @@ Ce dont vous avez besoin tout de suite.
 
 - **En ce moment** : la moyenne du dernier quart d'heure pour les panneaux, la maison, la batterie (qui charge ou fournit) et le réseau (achat ou surplus).
 - **Prochaine action** : le prochain appareil à lancer et son créneau, par exemple *Lancez le lave-linge, entre 11 h 15 et 13 h 30*. **C'est lancé** indique à l'application que vous l'avez fait ; **Me le rappeler** envoie une notification au bon moment (voir [Notifications](notifications.md)).
+  - **Autres départs possibles** : jusqu'à trois autres départs que le plan permet, avec ce qu'ils changent au coût. En choisir un l'impose au calcul du jour, qui est relancé ; **Revenir au choix du calcul** l'annule. Quand la charge complète de la batterie est due, le texte dit pourquoi un départ moins cher a été écarté.
 - **Batterie** et **Soleil** : la charge maintenant, son point le plus haut et son niveau à minuit ; l'énergie solaire prévue et déjà produite.
 - **Planning des équipements** : une ligne par équipement, le créneau prévu en haut (en pointillés) et ce qui a été mesuré en dessous (plein), avec l'énergie de chaque bloc. Touchez un bloc pour son détail.
 
@@ -27,6 +28,7 @@ Le plan en détail, pour **Hier**, **Aujourd'hui**, **Demain** et la **Semaine**
 - Des bandeaux pour l'essentiel : avertissements, batterie à minuit, production prévue comparée à la production mesurée.
 - **La journée en agenda** : ce qui se passe, et quand.
 - **Pourquoi ce plan** : l'explication de chaque décision, en clair.
+  - Aujourd'hui, les autres départs possibles de chaque appareil se choisissent aussi ici.
 - **Indicateurs du plan** (coût, achat, surplus, autoconsommation…) : sur la journée entière, mesurés pour les heures déjà passées, prévus pour la suite.
 - **Mes demandes** (sous chaque onglet) : les appareils que vous avez demandés, avec ou sans échéance, à marquer faits ou à annuler.
 - **Courbes détaillées** (repliées) : cartes de synthèse (batterie, réseau, production, estimé et mesuré), le Planning des équipements, la charge de la batterie, les échanges avec le réseau et les courbes de production et de consommation, prévues (en pointillés) et mesurées.

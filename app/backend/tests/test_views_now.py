@@ -18,6 +18,7 @@ from wattslot.detection import DeviceKind, Role
 from wattslot.home_model import HomeDevice, HomeModel, HomeSensor
 from wattslot.languages import LANGUAGES
 from wattslot.main import create_app
+from wattslot.planning.plan import Alternative, Explanation, Reason
 from wattslot.planning.store import PlanStore
 from wattslot.storage.database import open_database
 from wattslot.storage.graph import GraphStore
@@ -219,6 +220,24 @@ def test_next_action_is_the_next_cycle_still_to_start() -> None:
     assert found is not None
     assert (found.device, found.start_min, found.end_min) == ("Lave-linge", 780, 900)
     assert found.explanation == "Au plus fort du soleil."
+
+
+def test_next_action_offers_the_other_starts_still_to_come() -> None:
+    timeline = _timeline(("Lave-linge", "planned", 1260, 1402))
+    detail = Explanation(
+        reasons=[Reason(code="full_charge_first")],
+        alternatives=[
+            Alternative(start_min=1200, cost_eur_delta=-0.099, import_kwh_delta=-0.732),
+            Alternative(start_min=600, cost_eur_delta=-0.2, import_kwh_delta=-1.0),  # passé
+        ],
+    )
+
+    found = next_action(timeline, {}, NOON, CONTEXT, {"Lave-linge": detail})
+
+    assert found is not None and not found.chosen
+    assert [(a.start_min, a.end_min, a.cost_eur_delta) for a in found.alternatives] == [
+        (1200, 1342, -0.099)
+    ]
 
 
 def test_next_action_while_its_slot_is_running_then_none() -> None:

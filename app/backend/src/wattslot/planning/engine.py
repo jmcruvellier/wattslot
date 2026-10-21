@@ -208,7 +208,8 @@ def solve(problem: Problem, objective: Goal = Objective.COST, time_limit_s: floa
     for task in problem.tasks:
         candidates = set(task.candidates())
         parent = by_key.get(task.depends_on or "")
-        if parent is not None:  # peut aussi démarrer dès la fin exacte de la précédente
+        # Départ choisi par l'utilisateur : lui seul ; sinon, aussi dès la fin de la précédente.
+        if parent is not None and task.chosen_min is None:
             candidates |= {
                 s + parent.slot_min
                 for s in parent.candidates()

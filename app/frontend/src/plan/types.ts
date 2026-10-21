@@ -166,9 +166,18 @@ export interface Indicators {
   co2_kg: number | null;
 }
 
+// Autre départ d'un cycle (clés de la v1 gardées par le plan typé).
+export interface PlanAlternative {
+  debut_min: number;
+  ecart_cout_eur: number;
+  ecart_soutirage_kwh: number;
+}
+
 export interface DeviceExplanation {
   device: string;
   text: string;
+  // Explication structurée : autres départs proposés, départ choisi par l'utilisateur.
+  explanation?: { alternatives?: PlanAlternative[]; choisi?: boolean };
 }
 
 // Aujourd'hui (lot 6b.3) : puissances moyennes du dernier quart d'heure clos, en watts.
@@ -191,6 +200,9 @@ export interface NextAction {
   explanation: string | null;
   reminder: boolean;
   can_remind: boolean;
+  // Autres départs à venir, proposés par le plan, et départ choisi par l'utilisateur.
+  alternatives?: { start_min: number; end_min: number; cost_eur_delta: number; import_kwh_delta: number }[];
+  chosen?: boolean;
 }
 
 export interface DayView {

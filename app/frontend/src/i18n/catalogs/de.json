@@ -367,7 +367,14 @@
       "now": "Jetzt"
     },
     "discarded": "Unmöglicher Messwert um {hours} verworfen: vermutlich ein Sensorausfall.",
-    "discarded_link": "Daten ansehen"
+    "discarded_link": "Daten ansehen",
+    "choice": {
+      "others": "Weitere mögliche Starts:",
+      "choose": "Start um {time} wählen ({cost}, {grid} kWh Bezug gegenüber dem Plan)",
+      "revert": "Zurück zur Wahl der Berechnung",
+      "running": "Neue Berechnung mit diesem Start…",
+      "failed": "Der Start konnte nicht geändert werden."
+    }
   },
   "requests": {
     "title": "Meine Anfragen",

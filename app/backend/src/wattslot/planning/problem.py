@@ -54,6 +54,7 @@ class Task:
     priority: int  # 1 : récurrente du jour ; 3 : à la demande
     earliest_min: int
     depends_on: str | None = None  # clé d'une autre tâche à placer, à finir avant
+    chosen_min: int | None = None  # départ choisi par l'utilisateur, imposé au calcul
 
     def cycle(self, start_min: int) -> PlannedCycle:
         return PlannedCycle(start_min, start_min + self.slot_min, self.energy_kwh, self.shape)
@@ -61,9 +62,13 @@ class Task:
     def hourly_kwh(self, start_min: int) -> dict[int, float]:
         return planned_hourly(self.cycle(start_min))
 
-    def candidates(self, earliest_min: int | None = None) -> list[int]:
-        """Départs possibles : au plus tôt, puis chaque heure pile, sans franchir minuit."""
+    def candidates(self, earliest_min: int | None = None, chosen: bool = True) -> list[int]:
+        """Départs possibles : au plus tôt, puis chaque heure pile, sans franchir minuit ; le
+        départ choisi seul s'il est encore possible (``chosen=False`` : sans en tenir compte)."""
         earliest = self.earliest_min if earliest_min is None else earliest_min
+        chosen_min = self.chosen_min if chosen else None
+        if chosen_min is not None and earliest <= chosen_min <= DAY_MIN - self.slot_min:
+            return [chosen_min]
         first_full_hour = math.ceil(earliest / 60) * 60
         starts = [earliest] + [m for m in range(first_full_hour, DAY_MIN, 60) if m != earliest]
         return [s for s in starts if s + self.slot_min <= DAY_MIN]
@@ -385,6 +390,7 @@ def from_input(data: PlanningInput, reference: Reference = REFERENCE) -> Problem
                     depends_on=task_key(request.depends_on)
                     if priority == 3 and request.depends_on
                     else None,
+                    chosen_min=data.chosen_starts.get(request.name),
                 )
             )
 

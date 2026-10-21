@@ -8,6 +8,7 @@ import { kwh, percent } from "./format";
 import { availableIndicators, type IndicatorLayout } from "./layout";
 import type { DayView, Indicators, ObjectivePreset } from "./types";
 import Icon from "../ui/Icon";
+import OtherStarts from "./OtherStarts";
 
 type IndicatorKey = keyof Indicators;
 
@@ -68,8 +69,13 @@ export function IndicatorsCard({ view, layout }: { view: DayView; layout: Indica
   );
 }
 
-export function ExplanationsCard({ view }: { view: DayView }) {
+/** « Pourquoi ce plan » ; aujourd'hui, avec ``onChanged``, les autres départs encore à venir de
+ * chaque cycle se choisissent ici. */
+export function ExplanationsCard({ view, onChanged }: { view: DayView; onChanged?: () => void }) {
   const { t } = useI18n();
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const choosable = view.kind === "today" && onChanged !== undefined;
   return (
     <article className="card" aria-label={t("plan.explanations.title")}>
       <h3>
@@ -80,6 +86,20 @@ export function ExplanationsCard({ view }: { view: DayView }) {
           {view.explanations.map((item) => (
             <li key={item.device}>
               <strong>{item.device}</strong> {item.text}
+              {choosable && (
+                <OtherStarts
+                  device={item.device}
+                  alternatives={(item.explanation?.alternatives ?? [])
+                    .filter((other) => other.debut_min > nowMin)
+                    .map((other) => ({
+                      start_min: other.debut_min,
+                      cost_eur_delta: other.ecart_cout_eur,
+                      import_kwh_delta: other.ecart_soutirage_kwh,
+                    }))}
+                  chosen={item.explanation?.choisi ?? false}
+                  onChanged={onChanged}
+                />
+              )}
             </li>
           ))}
         </ul>

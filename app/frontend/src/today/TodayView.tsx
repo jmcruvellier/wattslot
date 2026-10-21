@@ -11,6 +11,7 @@ import { clock, kwh, percent } from "../plan/format";
 import { IndicatorsCard } from "../plan/InsightCards";
 import { DEFAULT_LAYOUT } from "../plan/layout";
 import TimelineCard from "../plan/TimelineCard";
+import OtherStarts from "../plan/OtherStarts";
 import type { DayView, NextAction, Now } from "../plan/types";
 import Button from "../ui/Button";
 import Card from "../ui/Card";
@@ -82,7 +83,7 @@ export default function TodayView() {
   return (
     <div className="today">
       <NowCard now={view.now ?? null} recommendation={view.recommendation} />
-      <NextActionCard view={view} />
+      <NextActionCard view={view} onChanged={() => setAttempt((count) => count + 1)} />
       <TimelineCard timeline={view.timeline} readingHour={readingHour(view)} />
       <div className="today-grid">
         {view.battery_capacity_kwh !== null && (
@@ -151,7 +152,7 @@ function NowCard({ now, recommendation }: { now: Now | null; recommendation: str
   );
 }
 
-function NextActionCard({ view }: { view: DayView }) {
+function NextActionCard({ view, onChanged }: { view: DayView; onChanged: () => void }) {
   const { language, t } = useI18n();
   const action = view.next_action ?? null;
   const [launched, setLaunched] = useState(readLaunched);
@@ -210,6 +211,12 @@ function NextActionCard({ view }: { view: DayView }) {
         )}
       </div>
       {failed && <p role="alert">{t("today.next.remind_failed")}</p>}
+      <OtherStarts
+        device={action.device}
+        alternatives={action.alternatives ?? []}
+        chosen={action.chosen ?? false}
+        onChanged={onChanged}
+      />
     </section>
   );
 }

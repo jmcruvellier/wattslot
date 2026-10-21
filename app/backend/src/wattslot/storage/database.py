@@ -142,16 +142,28 @@ MIGRATIONS: tuple[str, ...] = (
         undone_at TEXT
     )
     """,
+    # 13 : index des corrections par capteur et période.
     "CREATE INDEX quality_corrections_period ON quality_corrections (entity_id, period, start)",
-    # 13 et 14 : baisse d'un compteur en suspens (coupure ou remise à zéro, ``aggregation.Drop``),
+    # 14 et 15 : baisse d'un compteur en suspens (coupure ou remise à zéro, ``aggregation.Drop``),
     # reportée d'une période à la suivante comme le dernier relevé.
     "ALTER TABLE aggregation_state ADD COLUMN drop_time TEXT",
     "ALTER TABLE aggregation_state ADD COLUMN drop_value REAL",
-    # 15 : valeurs négatives signalées à partir de -0,05 kWh (avant : -0,001) ; les corrections
+    # 16 : valeurs négatives signalées à partir de -0,05 kWh (avant : -0,001) ; les corrections
     # automatiques de l'arrondi des statistiques de HA sont annulées (gardées, pour la trace).
     """
     UPDATE quality_corrections SET undone_at = created_at
     WHERE kind = 'negative' AND automatic = 1 AND undone_at IS NULL AND original_kwh >= -0.05
+    """,
+    # 17 : départs choisis par l'utilisateur parmi ceux que le plan propose, un par appareil et
+    # par jour, imposés au calcul de ce jour.
+    """
+    CREATE TABLE chosen_starts (
+        day TEXT NOT NULL,
+        device TEXT NOT NULL,
+        start_min INTEGER NOT NULL,
+        created_at TEXT NOT NULL,
+        PRIMARY KEY (day, device)
+    )
     """,
 )
 

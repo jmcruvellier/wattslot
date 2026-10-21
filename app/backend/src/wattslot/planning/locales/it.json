@@ -34,5 +34,7 @@
   "recommendation.balance_self": "Autoconsumo: {percent} %.",
   "recommendation.balance_co2": "CO₂ dei prelievi: {co2} kg.",
   "recommendation.warnings": "Avvisi:",
-  "recommendation.appliance": "- {device}: {start}-{end} ({energy} kWh)."
+  "recommendation.appliance": "- {device}: {start}-{end} ({energy} kWh).",
+  "reason.chosen": "Avvio scelto da te.",
+  "reason.full_charge_first": "La carica completa della batteria, prevista oggi, viene prima: il surplus solare va a lei."
 }

@@ -39,7 +39,7 @@ from wattslot.quality import (
     sensors,
 )
 from wattslot.solar_panels import PanelArray, SolarPanels
-from wattslot.storage.database import MIGRATIONS, migrate, open_database
+from wattslot.storage.database import MIGRATIONS, open_database
 from wattslot.storage.graph import GraphStore
 from wattslot.storage.raw import RawStores, Reading
 from wattslot.tariff import Tariff
@@ -420,7 +420,8 @@ def test_impossible_hourly_measurements_are_set_aside() -> None:
 def test_rounding_corrections_of_the_old_threshold_are_undone_by_the_migration(
     tmp_path: Path,
 ) -> None:
-    """Migration 15 : les corrections automatiques de -0,01 kWh sont annulées, pas les autres."""
+    """Migration du seuil (16) : les corrections automatiques de -0,01 kWh sont annulées, pas
+    les autres."""
     database = open_database(tmp_path)
     store = CorrectionStore(database)
     for hour, (value, automatic) in enumerate([(-0.01, True), (-0.54, True), (-0.01, False)]):
@@ -433,8 +434,10 @@ def test_rounding_corrections_of_the_old_threshold_are_undone_by_the_migration(
             energy_kwh=value,
         )
         store.add(anomaly, Method.DISCARD, None, automatic=automatic)
-    database.execute("DELETE FROM schema_migrations WHERE version = ?", (len(MIGRATIONS),))
-    migrate(database)
+    # La migration du seuil elle-même, rejouée sur ces corrections.
+    threshold = next(m for m in MIGRATIONS if "UPDATE quality_corrections" in m)
+    with database:
+        database.execute(threshold)
 
     assert sorted((c.original_kwh, c.automatic) for c in store.list()) == [
         (-0.54, True),
