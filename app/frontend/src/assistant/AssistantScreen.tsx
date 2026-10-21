@@ -8,8 +8,8 @@ import { useEffect, useState } from "react";
 import { getJson } from "../api";
 import { useI18n } from "../i18n/I18nProvider";
 import ChatCard from "./ChatCard";
-import { checkTitle, mcpAddress, useConnection, useMcpCheck } from "./mcp";
-import { CheckResult, CopyButton } from "./McpParts";
+import { checkTitle, useConnection, useMcpCheck } from "./mcp";
+import { CheckResult, CopyButton, McpAddress } from "./McpParts";
 
 const CHAT_INPUT = "assistant-chat-input";
 const EXAMPLES = ["why", "yesterday", "battery", "request"] as const;
@@ -26,7 +26,7 @@ interface AssistantPrompt {
 
 export default function AssistantScreen() {
   const { language, t } = useI18n();
-  const connection = useConnection();
+  const [connection, setConnection] = useConnection();
   const [prompt, setPrompt] = useState<string | null>(null);
   const [check, verify] = useMcpCheck();
   const [draft, setDraft] = useState("");
@@ -39,7 +39,6 @@ export default function AssistantScreen() {
     return () => controller.abort();
   }, [language]);
 
-  const address = mcpAddress(connection);
   // La discussion avec l'assistant, puis l'assistant vocal (lot 6b.6) : son état, des exemples
   // de questions (qui remplissent la zone de saisie du chat), et le branchement pas à pas, replié
   // une fois le serveur vérifié. « Mes demandes » est dans Planning, à côté du plan.
@@ -75,10 +74,7 @@ export default function AssistantScreen() {
           <summary>{t("assistant.setup")}</summary>
           <h3>{t("assistant.step1.title")}</h3>
           <p>{t("assistant.step1.help")}</p>
-          <p>
-            <code className="assistant-address">{address}</code>{" "}
-            <CopyButton text={address} label={t("assistant.copy_address")} />
-          </p>
+          <McpAddress connection={connection} onChange={setConnection} />
           <p className="dim">{t(connection?.mode === "addon" ? "assistant.step1.addon" : "assistant.step1.standalone")}</p>
 
           <h3>{t("assistant.step2.title")}</h3>

@@ -11,7 +11,7 @@ The **Assistant** screen guides you step by step and checks the connection.
 In Home Assistant: **Settings › Devices & services › Add integration › Model Context Protocol**, with the address shown on the **Assistant** screen (**Copy the MCP server address**):
 
 - **As a Home Assistant app**: an address on Home Assistant's internal network, that only Home Assistant can reach.
-- **Standalone**: `http://<WattSlot's address>:8100/mcp`. Home Assistant must be able to reach it; keep it on your local network.
+- **Standalone**: `http://<WattSlot's address>:8100/mcp`, its address on your local network: only Home Assistant (and Open WebUI) call the MCP server, never your browser. WattSlot remembers it the first time you open the page from your local network, and shows it afterwards even from outside; **Change** corrects it.
 
 ## 2. Choose the conversation agent
 

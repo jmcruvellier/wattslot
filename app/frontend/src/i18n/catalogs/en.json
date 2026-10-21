@@ -1305,6 +1305,16 @@
       "failed": "The assistant did not answer, try again.",
       "not_connected": "Home Assistant is not connected: the chat is unavailable.",
       "log_empty": "Your questions and the assistant's answers will appear here."
+    },
+    "address": {
+      "label": "Internal address of the MCP server",
+      "edit": "Change",
+      "save": "Save",
+      "reset": "Back to the address found",
+      "cancel": "Cancel",
+      "unknown": "Open this page from your local network: the application will remember the address to give Home Assistant.",
+      "invalid": "Expected address: http://… or https://…",
+      "failed": "The address could not be saved."
     }
   },
   "ui": {

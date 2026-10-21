@@ -16,7 +16,28 @@ def test_in_standalone_mode_the_page_uses_the_browser_address(tmp_path: Path) ->
     )
     with TestClient(create_app(settings)) as api:
         found = api.get("/api/assistant/connection").json()
-    assert found == {"mode": "standalone", "mcp_url": None}
+    assert found == {"mode": "standalone", "mcp_url": None, "saved": False}
+
+
+def test_the_internal_address_is_kept_and_can_be_corrected(tmp_path: Path) -> None:
+    """En mode autonome, la page retient l'adresse interne ; elle se corrige ou s'oublie."""
+    settings = Settings(
+        mode=RunMode.STANDALONE, data_dir=tmp_path, static_dir=None, home_assistant=None
+    )
+    with TestClient(create_app(settings)) as api:
+        saved = api.put("/api/assistant/connection", json={"mcp_url": "http://192.0.2.10:8100/mcp"})
+        assert saved.json() == {
+            "mode": "standalone",
+            "mcp_url": "http://192.0.2.10:8100/mcp",
+            "saved": True,
+        }
+        assert (
+            api.get("/api/assistant/connection").json()["mcp_url"] == "http://192.0.2.10:8100/mcp"
+        )
+        refused = api.put("/api/assistant/connection", json={"mcp_url": "192.0.2.10:8100"})
+        assert (refused.status_code, refused.json()["detail"]) == (422, "invalid_url")
+        forgotten = api.put("/api/assistant/connection", json={"mcp_url": None}).json()
+    assert forgotten == {"mode": "standalone", "mcp_url": None, "saved": False}
 
 
 def test_in_addon_mode_home_assistant_joins_the_container_by_its_hostname(tmp_path: Path) -> None:

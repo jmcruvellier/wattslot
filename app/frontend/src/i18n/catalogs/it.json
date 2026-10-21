@@ -1305,6 +1305,16 @@
       "failed": "L'assistente non ha risposto, riprova.",
       "not_connected": "Home Assistant non è connesso: la chat non è disponibile.",
       "log_empty": "Le tue domande e le risposte dell'assistente appariranno qui."
+    },
+    "address": {
+      "label": "Indirizzo interno del server MCP",
+      "edit": "Modifica",
+      "save": "Salva",
+      "reset": "Torna all'indirizzo trovato",
+      "cancel": "Annulla",
+      "unknown": "Apri questa pagina dalla tua rete locale: l'applicazione ricorderà l'indirizzo da dare a Home Assistant.",
+      "invalid": "Indirizzo atteso: http://… o https://…",
+      "failed": "Impossibile salvare l'indirizzo."
     }
   },
   "ui": {
