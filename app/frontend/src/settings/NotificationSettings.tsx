@@ -6,6 +6,7 @@
 import { useState } from "react";
 
 import { putJson } from "../api";
+import { useHomeFeatures } from "../home/features";
 import { useI18n } from "../i18n/I18nProvider";
 import { LANGUAGE_NAMES, LANGUAGES, type Language } from "../i18n/translate";
 
@@ -93,6 +94,7 @@ export default function NotificationSettingsSection({
   onChange: (settings: NotificationSettings) => void;
 }) {
   const { t } = useI18n();
+  const features = useHomeFeatures();
   const [freeService, setFreeService] = useState("");
   const [tests, setTests] = useState<Partial<Record<NotificationKind, Test>>>({});
 
@@ -171,7 +173,12 @@ export default function NotificationSettingsSection({
         </select>
       </label>
 
-      {KINDS.map((kind) => {
+      {KINDS.filter(
+        // Sans batterie ni panneaux, leurs messages n'ont pas lieu d'être (sauf déjà activés).
+        (kind) =>
+          settings[kind].enabled ||
+          ((kind !== "battery_full" || features.battery) && (kind !== "forecast_drop" || features.solar)),
+      ).map((kind) => {
         const rule = settings[kind];
         const test = tests[kind] ?? { status: "idle" };
         const service = rule.service ?? settings.service;

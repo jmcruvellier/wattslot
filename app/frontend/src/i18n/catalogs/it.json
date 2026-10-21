@@ -1373,7 +1373,10 @@
       "reminder_set": "Promemoria previsto",
       "remind_failed": "Impossibile salvare il promemoria.",
       "none": "Niente da avviare entro stasera",
-      "none_help": "Il piano la avviserà del prossimo apparecchio da avviare."
+      "none_help": "Il piano la avviserà del prossimo apparecchio da avviare.",
+      "no_appliance": "Nessun apparecchio da collocare",
+      "no_appliance_help": "WattSlot colloca i vostri apparecchi nel momento migliore: lavatrice, lavastoviglie, scaldabagno… Aggiungetene uno per sapere quando avviarlo.",
+      "add_appliance": "Aggiungi un apparecchio"
     },
     "battery": {
       "eyebrow": "Batteria",
@@ -1506,7 +1509,8 @@
         "Dishwasher": "Avviato nel momento migliore",
         "PoolPump": "Filtrazione nel momento migliore",
         "OtherLoad": "Solo seguito"
-      }
+      },
+      "no_appliance": "Nella dashboard energia non è stato trovato alcun apparecchio da collocare. Aggiungete la lavatrice, lo scaldabagno…: senza di loro, WattSlot non avrà nulla da consigliare."
     },
     "tariff": {
       "title": "Qual è il tuo contratto di elettricità?",

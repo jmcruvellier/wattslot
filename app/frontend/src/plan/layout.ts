@@ -42,13 +42,18 @@ export const INDICATORS: IndicatorKey[] = [
 ];
 
 const BATTERY_ONLY: IndicatorKey[] = ["end_soc_percent", "battery_throughput_kwh"];
+const SOLAR_ONLY: IndicatorKey[] = ["export_kwh", "self_consumption_percent"];
 
 /** Indicateurs que le plan et l'installation justifient, dans leur ordre. */
 export function availableIndicators(view: DayView): IndicatorKey[] {
   const indicators = view.indicators;
   if (!indicators) return [];
   return INDICATORS.filter(
-    (key) => indicators[key] !== null && (view.battery_capacity_kwh !== null || !BATTERY_ONLY.includes(key)),
+    (key) =>
+      indicators[key] !== null &&
+      (view.battery_capacity_kwh !== null || !BATTERY_ONLY.includes(key)) &&
+      // Sans panneaux, pas de surplus ni d'autoconsommation à suivre.
+      (view.solar !== false || !SOLAR_ONLY.includes(key)),
   );
 }
 
@@ -78,6 +83,7 @@ export function availableWeekCards(view: WeekView): WeekCardId[] {
   return WEEK_CARDS.filter((id) => {
     if (id === "days") return true;
     if (!view.points.length) return false;
+    if (id === "production") return view.solar !== false;
     return id !== "soc" || view.points.some((point) => point.soc_percent !== null);
   });
 }

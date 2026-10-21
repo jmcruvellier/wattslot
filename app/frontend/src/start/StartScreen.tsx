@@ -151,7 +151,7 @@ export default function StartScreen({ onNavigate }: { onNavigate: (target: strin
           {list}
         </details>
       )}
-      <TodayView />
+      <TodayView onNavigate={onNavigate} />
       <Glossary />
     </>
   );

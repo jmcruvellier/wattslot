@@ -125,6 +125,19 @@ def test_series_and_summary_are_those_of_the_v1(path: Path, with_actual: bool) -
     )
 
 
+def test_a_home_without_battery_shows_no_battery() -> None:
+    """Le calcul garde une ligne « Batterie » de 0 kWh sans batterie : ni capacité, ni plancher,
+    ni ligne « Batterie » dans le texte du plan (essai d'installation du 21/10/2026)."""
+    state = {**state_of(STATES[0]), "capacite_batterie_kwh": 0}
+
+    view = build_day(state, "today", V1_CONTEXT)
+
+    assert view.battery_capacity_kwh is None and view.battery_floor_percent is None
+    assert view.recommendation is not None and "Batterie" not in view.recommendation
+    with_battery = build_day(state_of(STATES[0]), "today", V1_CONTEXT)
+    assert with_battery.battery_capacity_kwh and "Batterie" in (with_battery.recommendation or "")
+
+
 def test_tomorrow_ignores_actual_data() -> None:
     state = state_of(STATES[0])
     view = build_day({**state, "donnees_reelles_cache": actual_of(state)}, "tomorrow", V1_CONTEXT)

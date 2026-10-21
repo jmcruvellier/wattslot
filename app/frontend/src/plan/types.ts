@@ -276,6 +276,7 @@ export interface WeekView {
   notices: Notice[];
   waiting_not_assigned: boolean;
   missing_days: string[]; // jours de l'horizon que le calcul n'a pas atteints (cause dans notices)
+  solar?: boolean; // faux : maison sans panneaux, ni météo ni production
 }
 
 export type Versions = Record<ViewKind, number | null>;

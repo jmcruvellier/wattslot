@@ -2188,3 +2188,11 @@ p[role="status"]:not(.state-message) {
 .support-link-kofi svg {
   color: #ff5e5b;
 }
+
+/* Premiers pas sans appareil à placer : l'ajout mis en avant. */
+.onboarding-no-appliance {
+  display: grid;
+  gap: 0.5rem;
+  justify-items: start;
+  margin: 0.75rem 0;
+}

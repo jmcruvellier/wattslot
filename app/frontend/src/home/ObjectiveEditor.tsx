@@ -4,6 +4,7 @@
 
 import Advanced from "../common/Advanced";
 import { useI18n } from "../i18n/I18nProvider";
+import { useHomeFeatures } from "./features";
 import { PRESETS, type ObjectiveSettings, type Preset, type Weights } from "./configuration";
 
 const DEFAULT_WEIGHTS: Weights = { cost: 1, grid_import: 0, grid_export: 0 };
@@ -18,9 +19,20 @@ export default function ObjectiveEditor({ objective, onChange }: {
   const co2Entity = objective?.co2_entity ?? null;
   // CO₂ : seulement avec une entité d'intensité du réseau ; poids libres : réglés dans les
   // réglages avancés, puis proposés dans la liste.
-  const choices = PRESETS.filter((p) => (p !== "custom" || preset === "custom") && (p !== "co2" || co2Entity));
+  const features = useHomeFeatures();
+  // Sans panneaux, ni autoconsommation ni surplus ; sans batterie, pas de critère « batterie » ;
+  // un choix déjà fait reste proposé, pour pouvoir le changer.
+  const choices = PRESETS.filter(
+    (p) =>
+      (p !== "custom" || preset === "custom") &&
+      (p !== "co2" || co2Entity) &&
+      (p !== "self_consumption" || features.solar || preset === p),
+  );
   const criteria = (["cost", "grid_import", "grid_export", "co2", "battery"] as const).filter(
-    (name) => name !== "co2" || co2Entity,
+    (name) =>
+      (name !== "co2" || co2Entity) &&
+      (name !== "grid_export" || features.solar) &&
+      (name !== "battery" || features.battery),
   );
   const setWeight = (name: keyof Weights, value: number) =>
     onChange({ preset: "custom", weights: { ...weights, [name]: Math.max(0, value) }, co2_entity: co2Entity });

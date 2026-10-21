@@ -120,6 +120,22 @@ describe("Onboarding", () => {
     expect(screen.getByText("Étape 1 sur 4")).toBeInTheDocument();
   });
 
+  it("sans appareil à placer dans le tableau Énergie : le dit et propose d'en ajouter un", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const url = String(input);
+      if (url === "api/home/proposals") {
+        return Response.json({ ...PROPOSAL, devices: PROPOSAL.devices.filter((d) => d.kind !== "OtherLoad") });
+      }
+      if (url === "api/home") return Response.json({ devices: [] });
+      return new Response(null, { status: 404 });
+    });
+    const { onNavigate } = renderFlow(CONNECTED);
+
+    expect(await screen.findByText(/Aucun appareil à placer n'a été trouvé/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Ajouter un appareil" }));
+    expect(onNavigate).toHaveBeenCalledWith("devices#add-device");
+  });
+
   it("reprend à la première étape pas encore faite, et laisse le contrat pour plus tard", async () => {
     const user = userEvent.setup();
     mockApi();

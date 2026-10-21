@@ -12,6 +12,7 @@ import { IndicatorsCard } from "../plan/InsightCards";
 import { DEFAULT_LAYOUT } from "../plan/layout";
 import TimelineCard from "../plan/TimelineCard";
 import OtherStarts from "../plan/OtherStarts";
+import { useHomeFeatures } from "../home/features";
 import type { DayView, NextAction, Now } from "../plan/types";
 import Button from "../ui/Button";
 import Card from "../ui/Card";
@@ -47,7 +48,7 @@ function kw(watts: number): string {
   return value < 1000 ? `${kwh(value, 0)} W` : `${kwh(value / 1000, 1)} kW`;
 }
 
-export default function TodayView() {
+export default function TodayView({ onNavigate }: { onNavigate?: (target: string) => void }) {
   const { language, t } = useI18n();
   const [load, setLoad] = useState<Load>({ status: "loading" });
   const [attempt, setAttempt] = useState(0); // « Réessayer »
@@ -83,7 +84,7 @@ export default function TodayView() {
   return (
     <div className="today">
       <NowCard now={view.now ?? null} recommendation={view.recommendation} />
-      <NextActionCard view={view} onChanged={() => setAttempt((count) => count + 1)} />
+      <NextActionCard view={view} onChanged={() => setAttempt((count) => count + 1)} onNavigate={onNavigate} />
       <TimelineCard timeline={view.timeline} readingHour={readingHour(view)} />
       <div className="today-grid">
         {view.battery_capacity_kwh !== null && (
@@ -152,17 +153,34 @@ function NowCard({ now, recommendation }: { now: Now | null; recommendation: str
   );
 }
 
-function NextActionCard({ view, onChanged }: { view: DayView; onChanged: () => void }) {
+function NextActionCard({
+  view,
+  onChanged,
+  onNavigate,
+}: {
+  view: DayView;
+  onChanged: () => void;
+  onNavigate?: (target: string) => void;
+}) {
   const { language, t } = useI18n();
+  const features = useHomeFeatures();
   const action = view.next_action ?? null;
   const [launched, setLaunched] = useState(readLaunched);
   const [reminded, setReminded] = useState(false);
   const [failed, setFailed] = useState(false);
 
   if (action === null || launched === launchedKey(view, action)) {
+    // Aucun appareil placé par le calcul (tableau Énergie sans appareil) : rien ne sera jamais à
+    // lancer tant qu'on n'en ajoute pas un.
+    const noAppliance = features.appliances === 0;
     return (
-      <Card eyebrow={t("today.next.eyebrow")} title={t("today.next.none")}>
-        <p className="dim">{t("today.next.none_help")}</p>
+      <Card eyebrow={t("today.next.eyebrow")} title={t(noAppliance ? "today.next.no_appliance" : "today.next.none")}>
+        <p className="dim">{t(noAppliance ? "today.next.no_appliance_help" : "today.next.none_help")}</p>
+        {noAppliance && onNavigate && (
+          <Button variant="primary" icon="plus" onClick={() => onNavigate("devices#add-device")}>
+            {t("today.next.add_appliance")}
+          </Button>
+        )}
       </Card>
     );
   }

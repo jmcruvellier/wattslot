@@ -1373,7 +1373,10 @@
       "reminder_set": "Rappel prévu",
       "remind_failed": "Le rappel n'a pas pu être enregistré.",
       "none": "Rien à lancer d'ici ce soir",
-      "none_help": "Le plan vous préviendra du prochain appareil à lancer."
+      "none_help": "Le plan vous préviendra du prochain appareil à lancer.",
+      "no_appliance": "Aucun appareil à placer",
+      "no_appliance_help": "WattSlot place vos appareils au meilleur moment : lave-linge, lave-vaisselle, chauffe-eau… Ajoutez-en un pour savoir quand le lancer.",
+      "add_appliance": "Ajouter un appareil"
     },
     "battery": {
       "eyebrow": "Batterie",
@@ -1506,7 +1509,8 @@
         "Dishwasher": "Lancé au meilleur moment",
         "PoolPump": "Filtration au meilleur moment",
         "OtherLoad": "Suivi seulement"
-      }
+      },
+      "no_appliance": "Aucun appareil à placer n'a été trouvé dans le tableau Énergie. Ajoutez votre lave-linge, votre chauffe-eau… : sans eux, WattSlot n'aura rien à vous recommander."
     },
     "tariff": {
       "title": "Quel est votre contrat d'électricité ?",

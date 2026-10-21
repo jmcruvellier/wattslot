@@ -15,6 +15,8 @@ import Button from "../ui/Button";
 import type { Setup } from "./StartScreen";
 
 type StepKey = "connection" | "home" | "tariff" | "first_plan";
+// Types placés au meilleur moment par le calcul : sans eux, rien à recommander.
+const APPLIANCES: string[] = ["WaterHeater", "WashingMachine", "Dryer", "Dishwasher", "PoolPump"];
 const STEPS: StepKey[] = ["connection", "home", "tariff", "first_plan"];
 
 interface OnboardingProps {
@@ -173,11 +175,22 @@ function HomeStep({ onNavigate, onDone }: { onNavigate: (target: string) => void
           </li>
         ))}
       </ul>
-      <p>
-        <button type="button" className="link" onClick={() => onNavigate("devices#add-device")}>
-          {t("onboarding.home.missing")}
-        </button>
-      </p>
+      {/* Aucun appareil à placer dans le tableau Énergie : sans en ajouter un, WattSlot n'aura
+          rien à recommander ; on le dit, et l'ajout devient un vrai bouton. */}
+      {draft.some((device) => device.included && APPLIANCES.includes(device.kind)) ? (
+        <p>
+          <button type="button" className="link" onClick={() => onNavigate("devices#add-device")}>
+            {t("onboarding.home.missing")}
+          </button>
+        </p>
+      ) : (
+        <div className="onboarding-no-appliance">
+          <p>{t("onboarding.home.no_appliance")}</p>
+          <Button icon="plus" onClick={() => onNavigate("devices#add-device")}>
+            {t("today.next.add_appliance")}
+          </Button>
+        </div>
+      )}
       {failed && <p role="alert">{t("onboarding.failed")}</p>}
       <Button variant="primary" disabled={saving} onClick={() => void save()}>
         {t("onboarding.continue")}

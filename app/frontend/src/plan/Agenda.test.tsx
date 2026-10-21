@@ -89,6 +89,12 @@ describe("Agenda", () => {
     );
   }
 
+  it("sans panneaux : pas de résumé du soleil", () => {
+    renderAgenda({ ...TOMORROW, solar: false });
+    expect(screen.queryByText(/kWh de soleil/)).toBeNull();
+    expect(screen.getByRole("list", { name: "Agenda de la journée" })).toBeInTheDocument();
+  });
+
   it("résume la journée et liste les actions", () => {
     renderAgenda(TOMORROW);
     expect(screen.getByRole("heading", { name: "Samedi, journée ensoleillée" })).toBeInTheDocument();

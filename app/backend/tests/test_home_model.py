@@ -95,3 +95,28 @@ def test_home_api_rejects_duplicate_keys(tmp_path: Path) -> None:
 def test_proposals_need_home_assistant(tmp_path: Path) -> None:
     with _client(tmp_path) as client:
         assert client.get("/api/home/proposals").status_code == 503
+
+
+def test_home_features_say_what_the_home_has(tmp_path: Path) -> None:
+    """Panneaux, batterie et équipements placés : l'interface n'affiche que ce qui existe."""
+    washer = home_model.HomeDevice(
+        key="washer",
+        kind=DeviceKind.WASHING_MACHINE,
+        name="Lave-linge",
+        sensors=[home_model.HomeSensor(entity_id="sensor.washer", role=Role.ENERGY_CONSUMED)],
+    )
+    only_solar = home_model.HomeModel(devices=[MODEL.devices[1]])
+    with _client(tmp_path) as client:
+        unsaved = client.get("/api/home/features").json()
+        client.put("/api/home", json=MODEL.model_dump(mode="json"))
+        full = client.get("/api/home/features").json()
+        client.put("/api/home", json=only_solar.model_dump(mode="json"))
+        solar = client.get("/api/home/features").json()
+        with_washer = home_model.HomeModel(devices=[*only_solar.devices, washer])
+        client.put("/api/home", json=with_washer.model_dump(mode="json"))
+        appliance = client.get("/api/home/features").json()
+
+    assert unsaved == {"solar": True, "battery": True, "appliances": 0}
+    assert full == {"solar": True, "battery": True, "appliances": 0}
+    assert solar == {"solar": True, "battery": False, "appliances": 0}
+    assert appliance["appliances"] == 1

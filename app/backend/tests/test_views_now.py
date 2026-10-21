@@ -84,6 +84,15 @@ def test_sentence_follows_the_flows(
     assert sentence(flows, off_peak, "fr") == expected
 
 
+def test_without_panels_the_home_is_on_the_grid_or_the_battery() -> None:
+    """Sans panneaux, pas de production mesurée : la phrase parle du réseau ou de la batterie au
+    lieu de laisser la place au texte du plan (essai d'installation du 21/10/2026)."""
+    assert sentence({"consumption_w": 500, "import_w": 500}, True, "fr", solar=False) == (
+        "La maison tire sur le réseau, en heures creuses"
+    )
+    assert sentence({"consumption_w": 500, "import_w": 500}, True, "fr") is None
+
+
 def test_sentence_in_english() -> None:
     flows = {"production_w": 1800, "consumption_w": 2200}
     assert sentence(flows, False, "en") == "The sun covers 82% of the home"

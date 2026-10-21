@@ -187,6 +187,15 @@ class ConnectionInfo(BaseModel):
     error: str | None = None
 
 
+class HomeFeatures(BaseModel):
+    """Ce que la maison possède, pour que l'interface ne parle ni de soleil sans panneaux, ni de
+    batterie sans batterie ; maison pas encore enregistrée : tout est supposé présent."""
+
+    solar: bool
+    battery: bool
+    appliances: int  # équipements placés par le calcul (cycles, besoins, durées)
+
+
 class TokenLogin(BaseModel):
     url: str
     token: str
@@ -623,6 +632,24 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         """Capteurs de HA qu'on peut lier à un équipement ajouté à la main, avec leurs rôles
         possibles (lot 2t.2) ; 503 sans HA connecté."""
         return sensor_choices(connected_client(request).snapshot)
+
+    @app.get("/api/home/features")
+    def home_features(request: Request) -> HomeFeatures:
+        """Panneaux, batterie et nombre d'équipements placés de la maison enregistrée."""
+        graph = request.app.state.graph
+        home = home_model.load(graph)
+        if not home.devices:
+            return HomeFeatures(solar=True, battery=True, appliances=0)
+        settings = configuration.effective(home, configuration.load(graph))
+        return HomeFeatures(
+            solar=has_production(home),
+            battery=any(device.kind is DeviceKind.BATTERY for device in home.devices),
+            appliances=sum(
+                1
+                for device in settings.devices
+                if device.planned and device.behavior in configuration.CONSTRAINED
+            ),
+        )
 
     @app.get("/api/home")
     def get_home(request: Request) -> home_model.HomeModel:
