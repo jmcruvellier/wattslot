@@ -1,30 +1,64 @@
-<p align="center"><img src="ha-addon/wattslot/logo.png" alt="WattSlot" width="250"></p>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/banner-fr-dark.svg">
+    <img src="docs/images/banner-fr-light.svg" alt="WattSlot, bêta : le bon moment pour lancer vos appareils, avec ou sans panneaux solaires." width="100%">
+  </picture>
+</p>
 
-# WattSlot
+<p align="center">
+  <a href="https://github.com/sponsors/jmcruvellier"><img src="docs/images/support-github-sponsors.svg" alt="Soutenir WattSlot sur GitHub Sponsors" height="40"></a>
+  &nbsp;
+  <a href="https://ko-fi.com/jmcruvellier"><img src="docs/images/support-ko-fi.svg" alt="Soutenir WattSlot sur Ko-fi" height="40"></a>
+</p>
 
 *[English version](README.md)*
 
 **WattSlot trouve le bon créneau pour lancer vos appareils**, pour consommer votre propre électricité solaire ou les heures les moins chères de votre contrat. Il lit votre maison dans Home Assistant, planifie la journée et la semaine, et vous dit quoi lancer et quand : il recommande, vous décidez.
 
-Il fonctionne avec ou sans panneaux solaires ni batterie : un contrat en heures creuses, à jours de couleur (comme Tempo d'EDF) ou à prix dynamiques suffit pour faire des économies.
+## Pour qui ?
 
-> **État : bêta.** WattSlot sert tous les jours dans la maison de son auteur et cherche maintenant des testeurs. Vos retours sont les bienvenus.
+- **Pas besoin de panneaux solaires ni de batterie.** Un contrat dont le prix change selon l'heure suffit : heures creuses, jours de couleur (comme Tempo d'EDF) ou prix dynamiques. Avec des panneaux ou une batterie, WattSlot tient compte en plus du soleil et de la charge.
+- **Pour tout le monde.** Une fois installé, les écrans du quotidien parlent en clair : ni formule, ni YAML, rien de technique à apprendre pour l'essentiel des fonctions.
+- **Léger.** Il tourne comme application dans Home Assistant (une publication dans la boutique officielle est prévue), ou sur un hôte séparé avec Docker pour ceux qui préfèrent.
+
+<p align="center">
+  <img src="docs/images/fr/today-phone-light.png" alt="Aujourd'hui, sur un téléphone" height="360">
+  &nbsp;
+  <img src="docs/images/fr/planning-desktop-light.png" alt="Planning, sur un ordinateur" height="360">
+</p>
 
 ## Fonctions
 
-- **Lit votre maison dans Home Assistant** : le tableau Énergie donne la production solaire, le réseau, la batterie et les appareils suivis ; l'historique vient des statistiques de Home Assistant. Rien à saisir pour commencer.
+- **Lit votre maison dans Home Assistant** : le tableau Énergie donne la production solaire, le réseau, la batterie et les appareils suivis ; l'historique vient des statistiques. Rien à saisir pour commencer.
 - **Plan du jour et horizon de sept jours** : quand lancer chaque appareil, quand charger ou décharger la batterie, d'après la prévision solaire et vos prix (prix unique, heures creuses, jours de couleur, prix dynamiques lus dans une entité).
-- **Votre maison, vos règles** : comportement des appareils, plages horaires, récurrences, réglages de la batterie, et ce qu'il faut optimiser (coût, autoconsommation, achat au réseau, CO₂). Modèles prêts à l'emploi, sauvegarde et partage des réglages.
-- **Une interface pour tous les jours** : Aujourd'hui, Planning (agenda et courbes détaillées), Ma maison en phrases, Assistant, Réglages. Pensée d'abord pour le téléphone, cinq thèmes avec clair et sombre automatiques, six langues (français, anglais, allemand, néerlandais, espagnol, italien).
+- **Votre maison, vos règles** : comportement des appareils, plages horaires, récurrences, réglages de la batterie, et ce qu'il faut optimiser (coût, autoconsommation, achat au réseau, CO₂). Modèles prêts à l'emploi, sauvegarde et partage.
+- **Fait pour tous les jours** : Aujourd'hui, Planning, Courbes, Ma maison, Assistant, Réglages. Pensé d'abord pour le téléphone, cinq thèmes avec clair et sombre automatiques, six langues.
 - **Demandes et rappels** : demandez un appareil depuis l'application ou depuis l'Assist de Home Assistant, soyez prévenu au bon moment.
+- **Des données fiables** : WattSlot vérifie vos capteurs, signale les mesures aberrantes et vous laisse les corriger, pour qu'une mauvaise mesure ne gâche pas le reste.
 - **Assistant (facultatif)** : un serveur MCP intégré permet à l'Assist de Home Assistant de répondre aux questions sur votre plan, avec le modèle de langage que vous utilisez déjà.
-- **Diagnostic en clair**, avec un rapport anonymisé à joindre à un signalement.
+
+## Bêta : on a besoin de vous
+
+WattSlot sert tous les jours dans la maison de son auteur et cherche maintenant des testeurs. Vos retours décident de la suite.
+
+- **[Donner mon avis](https://github.com/jmcruvellier/wattslot/issues/new?template=beta_feedback.yml)** : ce qui marche, ce qui gêne, ce que vous n'avez pas compris, en français ou en anglais. Le même lien est dans l'application, en bas des **Réglages**.
+- **Limites connues** :
+  - WattSlot **recommande seulement** : il ne lance jamais un appareil et ne pilote jamais votre batterie. C'est vous qui lancez l'appareil, ou qui écrivez l'automatisation.
+  - Il part du **tableau Énergie** de Home Assistant : celui-ci doit être configuré.
+  - La bêta est surtout testée avec des contrats français (heures creuses, Tempo). Les autres tarifs fonctionnent, et vos retours sur eux sont particulièrement bienvenus.
+- **Relecteurs natifs recherchés** : les traductions allemande, néerlandaise, espagnole et italienne attendent un relecteur dont c'est la langue. Voir [CONTRIBUTING.md](CONTRIBUTING.md) ou ouvrir un [ticket de traduction](https://github.com/jmcruvellier/wattslot/issues/new/choose).
+
+## Vie privée
+
+- WattSlot tourne **entièrement chez vous** : pas de compte, pas de service en ligne, pas de télémétrie.
+- Votre maison, vos réglages, vos mesures et vos plans restent dans son dossier de données, compris dans les sauvegardes de Home Assistant.
+- Rien sur vous ne sort de chez vous. En dehors de Home Assistant, WattSlot n'appelle qu'**Open-Meteo** pour la prévision solaire, quand Home Assistant n'en donne pas (position arrondie à 1 km environ), et GitHub pour connaître les nouvelles versions. Le détail dans [Vie privée](docs/fr/privacy.md).
 
 ## Prérequis
 
-- **Home Assistant OS ou Supervised** pour installer WattSlot comme application (module complémentaire), sur `amd64` ou `aarch64` (Raspberry Pi 4 ou 5 avec un SSD, mini PC…).
-- Ou **Docker** à côté de n'importe quelle installation de Home Assistant (mode autonome, voir plus bas).
-- Le **tableau Énergie** de Home Assistant configuré : WattSlot part de lui.
+- **Home Assistant OS ou Supervised** pour installer WattSlot comme application, sur `amd64` ou `aarch64` (Raspberry Pi 5 avec un SSD, mini PC…). Voir les [conseils de matériel](docs/fr/installation.md).
+- Ou **Docker** à côté de n'importe quelle installation de Home Assistant (mode autonome, plus bas).
+- Le **tableau Énergie** de Home Assistant configuré.
 
 ## Installation
 
@@ -51,17 +85,24 @@ Ouvrez `http://<hôte>:8100` et connectez-vous avec Home Assistant depuis la pag
 
 ## Documentation
 
-- [Guide d'utilisation](docs/) (installation, premiers pas, écrans, tarifs, batterie, assistant, FAQ)
+- [Guide d'utilisation](docs/fr/) (installation, premiers pas, écrans, tarifs, batterie, assistant, FAQ)
 - [Journal des versions](ha-addon/wattslot/CHANGELOG.md)
 
 ## Aide et contributions
 
-- **Questions et idées** : posez-les dans les [Discussions](https://github.com/jmcruvellier/wattslot/discussions), en français ou en anglais.
-- **Bogues et idées** : [ouvrez un ticket](https://github.com/jmcruvellier/wattslot/issues/new/choose), en français ou en anglais. Pour un bogue, joignez le rapport anonymisé de **Réglages → État de l'application → Préparer un rapport**.
-- **Contribuer** (code, traductions) : voir [CONTRIBUTING.md](CONTRIBUTING.md).
-- **Sécurité** : voir [SECURITY.md](SECURITY.md).
+- **Questions et idées** : les [Discussions](https://github.com/jmcruvellier/wattslot/discussions), en français ou en anglais.
+- **Bogues** : [ouvrez un ticket](https://github.com/jmcruvellier/wattslot/issues/new/choose) et joignez le rapport anonymisé de **Réglages → État de l'application → Préparer un rapport**.
+- **Contribuer** (code, traductions) : [CONTRIBUTING.md](CONTRIBUTING.md). **Sécurité** : [SECURITY.md](SECURITY.md).
 
-Si WattSlot vous fait faire des économies, vous pouvez soutenir son développement sur [GitHub Sponsors](https://github.com/sponsors/jmcruvellier) (chaque mois ou une fois) ou [Ko-fi](https://ko-fi.com/jmcruvellier) (une fois), liens aussi donnés par le bouton **Sponsor** de cette page et dans **Réglages → État de l'application** de l'application.
+## Soutenir WattSlot
+
+WattSlot est libre et gratuit, sans publicité ni collecte de données. S'il vous fait faire des économies, vous pouvez soutenir son développement, chaque mois ou une fois :
+
+<p>
+  <a href="https://github.com/sponsors/jmcruvellier"><img src="docs/images/support-github-sponsors.svg" alt="Soutenir WattSlot sur GitHub Sponsors" height="40"></a>
+  &nbsp;
+  <a href="https://ko-fi.com/jmcruvellier"><img src="docs/images/support-ko-fi.svg" alt="Soutenir WattSlot sur Ko-fi" height="40"></a>
+</p>
 
 ## Licence
 

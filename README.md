@@ -1,30 +1,64 @@
-<p align="center"><img src="ha-addon/wattslot/logo.png" alt="WattSlot" width="250"></p>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/banner-en-dark.svg">
+    <img src="docs/images/banner-en-light.svg" alt="WattSlot, beta: the right time to run your appliances, with or without solar panels." width="100%">
+  </picture>
+</p>
 
-# WattSlot
+<p align="center">
+  <a href="https://github.com/sponsors/jmcruvellier"><img src="docs/images/support-github-sponsors.svg" alt="Support WattSlot on GitHub Sponsors" height="40"></a>
+  &nbsp;
+  <a href="https://ko-fi.com/jmcruvellier"><img src="docs/images/support-ko-fi.svg" alt="Support WattSlot on Ko-fi" height="40"></a>
+</p>
 
 *[Version française](README.fr.md)*
 
 **WattSlot finds the right slot to run your household appliances**, so you use your own solar power or the cheapest hours of your electricity contract. It reads your home from Home Assistant, plans the day and the week, and tells you what to start and when: it recommends, you decide.
 
-It works with or without solar panels and a battery: a contract with off-peak hours, colour days (such as EDF Tempo) or dynamic prices is enough to save money.
+## Who is it for?
 
-> **Status: beta.** WattSlot is used every day on its author's home and is now looking for testers. Feedback is very welcome.
+- **No solar panels or battery needed.** A contract whose price changes with the time of day is enough: off-peak hours, colour days (such as EDF Tempo) or dynamic prices. With panels or a battery, WattSlot also plans around the sun and the charge.
+- **For everyone.** Once installed, the everyday screens speak plain language: no formula, no YAML, nothing technical to learn for most features.
+- **Light.** It runs as an app inside Home Assistant (an entry in the official app store is planned), or on a separate host with Docker for those who prefer.
+
+<p align="center">
+  <img src="docs/images/en/today-phone-light.png" alt="Today, on a phone" height="360">
+  &nbsp;
+  <img src="docs/images/en/planning-desktop-light.png" alt="Planning, on a computer" height="360">
+</p>
 
 ## Features
 
-- **Reads your home from Home Assistant**: the Energy dashboard gives the solar production, the grid, the battery and the tracked appliances; past data comes from Home Assistant's statistics. Nothing to type in to get started.
-- **Daily plan and seven-day horizon**: when to start each appliance, when to charge or discharge the battery, based on the solar forecast and your electricity prices (single price, off-peak hours, colour days, dynamic prices read from an entity).
-- **Your home, your rules**: appliance behaviours, time windows, recurrences, battery settings, and what to optimise (cost, self-consumption, grid draw, CO₂). Ready-made templates, backup and sharing of your settings.
-- **An interface made for every day**: Today, Planning (agenda and detailed charts), My home in plain sentences, Assistant, Settings. Phone first, five themes with automatic light and dark, six languages (English, French, German, Dutch, Spanish and Italian).
+- **Reads your home from Home Assistant**: the Energy dashboard gives the solar production, the grid, the battery and the tracked appliances; past data comes from the statistics. Nothing to type in to get started.
+- **Daily plan and seven-day horizon**: when to start each appliance, when to charge or discharge the battery, from the solar forecast and your prices (single price, off-peak hours, colour days, dynamic prices read from an entity).
+- **Your home, your rules**: appliance behaviours, time windows, recurrences, battery settings, and what to optimise (cost, self-consumption, grid draw, CO₂). Ready-made templates, backup and sharing.
+- **Made for every day**: Today, Planning, Curves, My home, Assistant, Settings. Phone first, five themes with automatic light and dark, six languages.
 - **Requests and reminders**: ask for an appliance from the app or from Home Assistant's Assist, get notified at the right time.
-- **Assistant (optional)**: a built-in MCP server lets Home Assistant's Assist answer questions about your plan with the language model you already use.
-- **Diagnostics in plain words**, with an anonymised report to attach to a bug report.
+- **Data you can trust**: WattSlot checks your sensors, flags glitches and lets you correct them, so one wrong reading does not spoil the rest.
+- **Assistant (optional)**: a built-in MCP server lets Home Assistant's Assist answer questions about your plan, with the language model you already use.
+
+## Beta: we need you
+
+WattSlot is used every day on its author's home and is now looking for testers. Your feedback decides what comes next.
+
+- **[Give feedback](https://github.com/jmcruvellier/wattslot/issues/new?template=beta_feedback.yml)**: what works, what bothers you, what you did not understand. The same link is in the app, at the bottom of **Settings**.
+- **Known limits**:
+  - WattSlot **recommends only**: it never starts an appliance and never controls your battery. You start the appliance, or you build the automation yourself.
+  - It starts from Home Assistant's **Energy dashboard**: it must be set up.
+  - The beta is tested mostly on French contracts (off-peak hours, Tempo). Other tariffs work, and your feedback on them is especially welcome.
+- **Native speakers wanted**: the German, Dutch, Spanish and Italian translations need a native proofreader. See [CONTRIBUTING.md](CONTRIBUTING.md) or open a [translation issue](https://github.com/jmcruvellier/wattslot/issues/new/choose).
+
+## Privacy
+
+- WattSlot runs **entirely at home**: no account, no cloud service, no telemetry.
+- Your home, settings, measurements and plans stay in its data folder, included in Home Assistant's backups.
+- Nothing about you leaves your home. Besides Home Assistant, WattSlot only calls **Open-Meteo** for the solar forecast, when Home Assistant gives none (location rounded to about 1 km), and GitHub to learn about new versions. Details in [Privacy](docs/privacy.md).
 
 ## Requirements
 
-- **Home Assistant OS or Supervised** to install WattSlot as an app (add-on), on `amd64` or `aarch64` (Raspberry Pi 4 or 5 with an SSD, mini PC…).
-- Or **Docker** next to any Home Assistant installation (standalone mode, see below).
-- Home Assistant's **Energy dashboard** set up: WattSlot starts from it.
+- **Home Assistant OS or Supervised** to install WattSlot as an app, on `amd64` or `aarch64` (Raspberry Pi 5 with an SSD, mini PC…). See the [hardware advice](docs/installation.md).
+- Or **Docker** next to any Home Assistant installation (standalone mode, below).
+- Home Assistant's **Energy dashboard** set up.
 
 ## Installation
 
@@ -54,14 +88,21 @@ Open `http://<host>:8100` and sign in with Home Assistant from the connection pa
 - [User guide](docs/) (installation, first steps, screens, tariffs, battery, assistant, FAQ)
 - [Changelog](ha-addon/wattslot/CHANGELOG.md)
 
-## Support and contributing
+## Help and contributing
 
-- **Questions and ideas**: ask in the [Discussions](https://github.com/jmcruvellier/wattslot/discussions).
-- **Bugs and ideas**: [open an issue](https://github.com/jmcruvellier/wattslot/issues/new/choose). For a bug, attach the anonymised report from **Settings → App status → Prepare a report**.
-- **Contributing** (code, translations): see [CONTRIBUTING.md](CONTRIBUTING.md).
-- **Security**: see [SECURITY.md](SECURITY.md).
+- **Questions and ideas**: the [Discussions](https://github.com/jmcruvellier/wattslot/discussions), in English or French.
+- **Bugs**: [open an issue](https://github.com/jmcruvellier/wattslot/issues/new/choose) and attach the anonymised report from **Settings → App status → Prepare a report**.
+- **Contributing** (code, translations): [CONTRIBUTING.md](CONTRIBUTING.md). **Security**: [SECURITY.md](SECURITY.md).
 
-If WattSlot saves you money, you can support its development on [GitHub Sponsors](https://github.com/sponsors/jmcruvellier) (monthly or one-time) or [Ko-fi](https://ko-fi.com/jmcruvellier) (one-time), also linked from the **Sponsor** button of this page and from **Settings → App status** in the app.
+## Support WattSlot
+
+WattSlot is free and open source, with no ads and no data collection. If it saves you money, you can support its development, monthly or once:
+
+<p>
+  <a href="https://github.com/sponsors/jmcruvellier"><img src="docs/images/support-github-sponsors.svg" alt="Support WattSlot on GitHub Sponsors" height="40"></a>
+  &nbsp;
+  <a href="https://ko-fi.com/jmcruvellier"><img src="docs/images/support-ko-fi.svg" alt="Support WattSlot on Ko-fi" height="40"></a>
+</p>
 
 ## License
 

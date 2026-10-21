@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 320" width="1280" height="320" role="img" aria-label="WattSlot, beta: the right time to run your appliances, with or without solar panels.">
+  <rect x="1" y="1" width="1278" height="318" rx="24" fill="#f7f5ef" stroke="#e6e3db" stroke-width="2"/>
+  <g transform="translate(64,92)">
+    <rect width="240" height="136" rx="22" fill="#17191c"/>
+    <rect x="24" y="22" width="192" height="12" rx="6" fill="#3a3e45"/>
+    <rect x="24" y="62" width="192" height="12" rx="6" fill="#3a3e45"/>
+    <rect x="24" y="102" width="192" height="12" rx="6" fill="#3a3e45"/>
+    <rect x="96" y="44" width="70" height="48" rx="10" fill="#f2c26b"/>
+    <path d="M134 52 L120 70 H131 L127 84 L142 64 H131 Z" fill="#17191c"/>
+  </g>
+  <g font-family="Manrope, 'Segoe UI', Helvetica, Arial, sans-serif">
+    <text x="350" y="138" font-size="64" font-weight="800" fill="#17191c">WattSlot</text>
+    <rect x="668" y="94" width="96" height="36" rx="18" fill="#f2c26b" stroke="#f2c26b" stroke-width="2"/>
+    <text x="716" y="119" text-anchor="middle" font-size="18" font-weight="700" fill="#17191c">BETA</text>
+    <text x="350" y="190" font-size="30" fill="#17191c">The right time to run your appliances.</text>
+    <text x="350" y="232" font-size="20" fill="#55585e">With or without solar: off-peak hours, Tempo days, dynamic prices.</text>
+    <text x="350" y="264" font-size="20" fill="#55585e">For Home Assistant · everything stays at home · you decide.</text>
+  </g>
+  <g transform="translate(1040,96)">
+    <path d="M10 120 Q90 -40 170 120" fill="none" stroke="#c98a1b" stroke-width="3" stroke-dasharray="6 6"/>
+    <rect x="0" y="122" width="36" height="10" rx="5" fill="#3d6fd8"/>
+    <rect x="144" y="122" width="36" height="10" rx="5" fill="#3d6fd8"/>
+    <rect x="62" y="122" width="56" height="10" rx="5" fill="#e0a43a"/>
+    <text x="90" y="160" text-anchor="middle" font-size="15" fill="#55585e" font-family="Manrope, 'Segoe UI', Helvetica, Arial, sans-serif">sun · cheaper hours</text>
+  </g>
+</svg>
