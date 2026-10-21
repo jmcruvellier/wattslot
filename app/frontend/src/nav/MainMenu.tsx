@@ -24,7 +24,9 @@ export default function MainMenu({ route, collapsed, onToggle, top, bottom }: Ma
   return (
     <nav className="main-menu" aria-label={t("nav.main")}>
       <div className="main-menu-head">
-        <span className="main-menu-brand">{t("app.title")}</span>
+        <span className="main-menu-brand">
+          {t("app.title")} <span className="beta-badge">{t("nav.beta")}</span>
+        </span>
         <button
           type="button"
           className="ui-icon-button main-menu-toggle"

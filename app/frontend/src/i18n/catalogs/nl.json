@@ -62,7 +62,8 @@
     "notifications": "Meldingen",
     "display": "Taal en weergave",
     "calculation": "Automatische berekening",
-    "voice": "Spraakassistent"
+    "voice": "Spraakassistent",
+    "beta": "Bèta"
   },
   "setup": {
     "loading": "Inrichting wordt gelezen…",
@@ -1465,7 +1466,16 @@
     "notifications_on": "{count} actief, op {device}",
     "notifications_count": "{count} actief",
     "scheduler_on": "Elk uur, op minuut {minute}",
-    "scheduler_off": "Uit: handmatig berekenen"
+    "scheduler_off": "Uit: handmatig berekenen",
+    "beta": {
+      "title": "Bètaversie",
+      "text": "U test een bètaversie: uw feedback bepaalt wat er volgt. Wat werkt, wat stoort, wat u niet begreep: alles helpt.",
+      "feedback": "Feedback geven"
+    },
+    "support": {
+      "title": "WattSlot steunen",
+      "text": "WattSlot is vrij en gratis, zonder reclame en zonder gegevensverzameling. Als de app u helpt, kunt u de ontwikkeling steunen."
+    }
   },
   "onboarding": {
     "progress": "Stap {step} van {count}",

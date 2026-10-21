@@ -15,6 +15,7 @@ import { routeHash, type Route } from "../nav/routes";
 import { readTheme } from "../theme/theme";
 import Icon from "../ui/Icon";
 import { SettingList } from "../ui/SettingRow";
+import BetaCards from "./BetaCards";
 import type { NotificationKind, NotificationSettings } from "./NotificationSettings";
 import type { PlanningSettings, SettingsChoices } from "./SettingsScreen";
 
@@ -124,6 +125,8 @@ export default function SettingsHome() {
           description={connection ? capitalized(t(`connection.${connection}`)) : null}
         />
       </SettingList>
+
+      <BetaCards />
     </section>
   );
 }
