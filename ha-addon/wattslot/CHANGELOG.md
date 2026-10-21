@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.9.3
+
+WattSlot now adapts to your home: no talk of the sun without panels, nor of a battery without one.
+
+- Without solar panels, the weather, production, surplus and self-consumption disappear from every screen; without a battery, everything about the battery too. Use **Read Home Assistant again** in **My home › Devices** if you add them later.
+- No appliance to place yet (none in the Energy dashboard): Today and the first steps invite you to add one.
+- Provisional plan: while WattSlot is still importing your Home Assistant history, the plan says so; its figures become accurate at the first calculation after the import.
+- First steps: the status shows "Getting started" instead of a red "calculation blocked"; it refreshes when you change screen and after a calculation. Templates are named after your contract (single price, off-peak hours, Tempo, dynamic price).
+- Detection: a power setting (an inverter's limit, for instance) is no longer taken for a measured power; the grid and an unnamed battery get a name in your Home Assistant language; a missing sensor is reported once.
+
 ## 0.9.2
 
 Fixes found while installing the beta on a fresh Home Assistant.
