@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -108,15 +108,18 @@ describe("page « Assistant »", () => {
     expect((screen.getByText("Brancher l'Assist pas à pas").closest("details") as HTMLDetailsElement).open).toBe(true);
   });
 
-  it("une question d'exemple remplit la zone de saisie du chat, sans ses guillemets", async () => {
+  it("les questions d'exemple, par thème, remplissent la zone de saisie du chat", async () => {
     mockApi();
     renderScreen();
     const user = userEvent.setup();
 
-    await user.click(await screen.findByRole("button", { name: "« Combien les panneaux ont-ils produit hier ? »" }));
+    const today = await screen.findByRole("list", { name: "Aujourd'hui" });
+    expect(within(today).getAllByRole("button")).toHaveLength(5);
+    expect(screen.getByRole("list", { name: "Demandes et état" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Quelles sont mes demandes en cours ?" }));
 
     const input = screen.getByLabelText("Votre message");
-    expect(input).toHaveValue("Combien les panneaux ont-ils produit hier ?");
+    expect(input).toHaveValue("Quelles sont mes demandes en cours ?");
     expect(input).toHaveFocus();
   });
 

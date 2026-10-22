@@ -54,9 +54,9 @@ def build(state: Callable[[], Any], problems: Callable[[], Awaitable[Sequence[An
         return await tools.get_week(state())
 
     @server.tool(annotations=READ_ONLY)
-    def get_current_status() -> dict[str, Any]:
-        """Latest readings: battery level, solar and appliance power."""
-        return tools.get_current_status(state())
+    async def get_current_status() -> dict[str, Any]:
+        """Right now: what powers the home, battery level, solar and appliance power."""
+        return await tools.get_current_status(state())
 
     @server.tool(annotations=READ_ONLY)
     async def get_energy(day: str = "today") -> dict[str, Any]:
@@ -77,6 +77,16 @@ def build(state: Callable[[], Any], problems: Callable[[], Awaitable[Sequence[An
     async def get_problems() -> dict[str, Any]:
         """What is wrong with the application, most serious first."""
         return await tools.get_problems(problems)
+
+    @server.tool(annotations=READ_ONLY)
+    async def get_tariff(day: Literal["today", "tomorrow"] = "today") -> dict[str, Any]:
+        """Electricity price hour by hour, off-peak hours, color of the day."""
+        return await tools.get_tariff(state(), day)
+
+    @server.tool(annotations=READ_ONLY)
+    def get_requests() -> dict[str, Any]:
+        """Appliances asked to run (My requests): open ones, then recently closed."""
+        return tools.get_requests(state())
 
     @server.tool(annotations=REQUEST)
     def request_device(device: str, latest_date: str | None = None) -> dict[str, Any]:

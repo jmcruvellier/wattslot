@@ -140,9 +140,13 @@ describe("discussion avec l'assistant", () => {
     const user = userEvent.setup();
 
     await user.selectOptions(await screen.findByLabelText("Répondre avec"), "conversation.home_assistant");
+    expect(screen.getByText("Exemples de questions")).toBeInTheDocument();
     await user.type(screen.getByLabelText("Votre message"), "Salut{Enter}");
     await screen.findByText("Bonjour");
+    // Les questions d'exemple laissent la place au fil, et reviennent avec une nouvelle conversation.
+    expect(screen.queryByText("Exemples de questions")).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Nouvelle conversation" }));
+    expect(screen.getByText("Exemples de questions")).toBeInTheDocument();
     await user.type(screen.getByLabelText("Votre message"), "Encore{Enter}");
     await screen.findByText("Bonjour");
 

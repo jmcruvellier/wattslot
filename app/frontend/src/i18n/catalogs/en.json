@@ -1287,10 +1287,25 @@
     },
     "examples": {
       "title": "Example questions",
-      "why": "“Why is the washing machine planned at 11 AM?”",
-      "yesterday": "“How much did the panels produce yesterday?”",
-      "battery": "“Will the battery be full today?”",
-      "request": "“Run the dishwasher at the best time before tomorrow evening.”"
+      "groups": {
+        "today": "Today",
+        "ahead": "Tomorrow and the week",
+        "measured": "Measurements",
+        "requests": "Requests and status"
+      },
+      "today": "What should I do today?",
+      "next": "Which appliance should I start next?",
+      "why": "Why is the washing machine planned at 11 AM?",
+      "now": "What is powering the home right now?",
+      "cost": "How much will today cost me?",
+      "tomorrow": "How much will the panels produce tomorrow?",
+      "sunniest": "Which day of the week will be the sunniest?",
+      "off_peak": "When are the off-peak hours tomorrow?",
+      "yesterday": "How much did the panels produce yesterday?",
+      "on_time": "Did the dishwasher start on time?",
+      "request": "Run the dishwasher at the best time before tomorrow evening.",
+      "requests": "What are my pending requests?",
+      "problems": "Is anything wrong?"
     },
     "security": "The assistant reads the plan, the measurements and the forecast; it does only one thing on its own: file a request, after confirming it with you. It starts no computation and changes no setting.",
     "setup": "Connect Assist step by step",

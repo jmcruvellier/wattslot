@@ -1287,10 +1287,25 @@
     },
     "examples": {
       "title": "Voorbeeldvragen",
-      "why": "„Waarom is de wasmachine om 11 uur gepland?”",
-      "yesterday": "„Hoeveel hebben de panelen gisteren geproduceerd?”",
-      "battery": "„Is de batterij vandaag vol?”",
-      "request": "„Laat de vaatwasser op het beste moment draaien vóór morgenavond.”"
+      "groups": {
+        "today": "Vandaag",
+        "ahead": "Morgen en de week",
+        "measured": "Metingen",
+        "requests": "Verzoeken en status"
+      },
+      "today": "Wat moet ik vandaag doen?",
+      "next": "Welk apparaat moet ik als volgende starten?",
+      "why": "Waarom is de wasmachine om 11 uur gepland?",
+      "now": "Wat voedt het huis op dit moment?",
+      "cost": "Hoeveel gaat vandaag me kosten?",
+      "tomorrow": "Hoeveel gaan de panelen morgen produceren?",
+      "sunniest": "Welke dag van de week wordt het zonnigst?",
+      "off_peak": "Wanneer zijn morgen de daluren?",
+      "yesterday": "Hoeveel hebben de panelen gisteren geproduceerd?",
+      "on_time": "Is de vaatwasser op tijd gestart?",
+      "request": "Laat de vaatwasser op het beste moment draaien vóór morgenavond.",
+      "requests": "Welke verzoeken lopen er nog?",
+      "problems": "Is er iets mis?"
     },
     "security": "De assistent leest het plan, de metingen en de prognose; uit zichzelf doet hij maar één ding: een verzoek indienen, nadat hij het met u heeft bevestigd. Hij start geen berekening en wijzigt geen instelling.",
     "setup": "Assist stap voor stap koppelen",

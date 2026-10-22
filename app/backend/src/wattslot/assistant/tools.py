@@ -3,7 +3,8 @@
 Chaque outil rend un objet JSON court, construit sur ce que la v2 calcule déjà (API des vues,
 configuration, ingestion, diagnostic), avec les textes déjà rédigés dans la langue réglée pour
 les notifications : le LLM n'a rien à recalculer. Tous lisent seulement, sauf
-``request_device``, qui dépose une demande comme « Mes demandes » (lot 4.5).
+``request_device``, qui dépose une demande comme « Mes demandes » (lot 4.5). Les montants sont
+écrits dans la devise de la maison (``currency.amount``).
 """
 
 import unicodedata
@@ -11,10 +12,13 @@ from collections.abc import Awaitable, Callable, Sequence
 from datetime import UTC, date, datetime, time, timedelta
 from typing import Any, Literal
 
-from wattslot import configuration, home_model, notifications, user_requests
+from wattslot import configuration, currency, home_model, notifications, user_requests
 from wattslot.aggregation import HOUR
 from wattslot.detection import Role
+from wattslot.home_assistant import ConnectionState
 from wattslot.planning.journal import cycle_appliances
+from wattslot.planning.tariff_sources import needs_states, tariff_context
+from wattslot.tariff import NO_CONTEXT, Tariff, TariffContext, TariffKind, off_peak_ranges
 from wattslot.views.day import DayView
 from wattslot.views.routes import day_view_of, objective_of, week_view_of
 from wattslot.views.timeline import Bar
@@ -99,7 +103,7 @@ def _max_hour(hour: int) -> str:
     return "00:00" if hour <= 0 else f"{hour - 1:02d}:00-{hour:02d}:00"
 
 
-def _summary(view: DayView) -> dict[str, Any]:
+def _summary(view: DayView, lang: str) -> dict[str, Any]:
     s = view.summary
     found: dict[str, Any] = {
         "production_kwh": round(s.production_kwh, 2),
@@ -112,20 +116,63 @@ def _summary(view: DayView) -> dict[str, Any]:
             battery_max_percent=round(s.soc_max_percent),
             battery_max_at=_max_hour(s.soc_max_hour),
         )
+    # Indicateurs de la journée entière (Aujourd'hui, Hier : heures passées mesurées).
+    found.update(_indicators(view, lang))
+    return found
+
+
+def _indicators(view: DayView, lang: str) -> dict[str, Any]:
+    """Coût de la journée (achat moins revente, abonnement compris), part de la production
+    consommée sur place, CO₂ quand il est connu."""
+    i = view.indicators
+    if i is None:
+        return {}
+    found: dict[str, Any] = {"cost": currency.amount(i.cost_eur, lang)}
+    if i.self_consumption_percent is not None:
+        found["self_consumption_percent"] = round(i.self_consumption_percent)
+    if i.co2_kg is not None:
+        found["co2_kg"] = round(i.co2_kg, 1)
+    return found
+
+
+def _next_action(view: DayView, lang: str) -> dict[str, Any] | None:
+    """Prochain appareil à lancer aujourd'hui, et les autres départs permis avec leur écart de
+    coût par rapport au plan."""
+    action = view.next_action
+    if action is None:
+        return None
+    found: dict[str, Any] = {
+        "device": action.device,
+        "start": clock(action.start_min / 60),
+        "end": clock(action.end_min / 60),
+    }
+    if action.explanation:
+        found["why"] = action.explanation
+    if action.alternatives:
+        found["other_starts"] = [
+            {
+                "start": clock(a.start_min / 60),
+                "extra_cost": currency.amount(a.cost_eur_delta, lang, signed=True),
+            }
+            for a in action.alternatives
+        ]
     return found
 
 
 async def get_day_plan(state: Any, day: Day = "today") -> dict[str, Any]:
-    view = await day_view_of(state, day, language(state))
+    lang = language(state)
+    view = await day_view_of(state, day, lang)
     if view is None:
         return NO_PLAN
     found: dict[str, Any] = {
         "day": view.day.isoformat(),
         "computed_at": view.computed_at.isoformat(timespec="minutes") if view.computed_at else None,
         "recommendation": view.recommendation,
-        "summary": _summary(view),
+        "summary": _summary(view, lang),
         "warnings": [n.text for n in view.notices],
     }
+    if day == "today":
+        found["next_appliance"] = _next_action(view, lang)
     if day != "today":
         # Texte rédigé comme la notification du jour : « aujourd'hui » y désigne ce jour-là.
         found["note"] = f'In the recommendation text, "today" means {view.day.isoformat()}.'
@@ -221,7 +268,7 @@ async def get_week(state: Any) -> dict[str, Any]:
     }
 
 
-def get_current_status(state: Any) -> dict[str, Any]:
+async def get_current_status(state: Any) -> dict[str, Any]:
     ingestor = state.ingestor
     if ingestor is None:
         return {"error": "not_connected", "hint": "Home Assistant is not connected."}
@@ -241,7 +288,14 @@ def get_current_status(state: Any) -> dict[str, Any]:
         for e in ingestor.status().entities
         if e.role in NOW_ROLES and e.last_value is not None
     ]
-    return {"readings": readings}
+    found: dict[str, Any] = {"readings": readings}
+    # Phrase « En ce moment » de Planning (lot 6b.3) : qui alimente la maison, au dernier quart
+    # d'heure clos.
+    view = await day_view_of(state, "today", language(state))
+    if view is not None and view.now is not None and view.now.sentence:
+        found["now"] = view.now.sentence
+        found["off_peak"] = view.now.off_peak
+    return found
 
 
 # Totaux mesurés tirés des compteurs d'énergie de la maison, par rôle.
@@ -439,3 +493,77 @@ def request_device(state: Any, device: str, latest_date: str | None = None) -> d
         "status": found.status.value,
         "note": "Placed at the next computation of the plan, at the best time.",
     }
+
+
+def get_requests(state: Any) -> dict[str, Any]:
+    """Demandes ouvertes, puis celles closes depuis une semaine, comme « Mes demandes »."""
+    names = {d.key: d.name for d in home_model.load(state.graph).devices}
+    return {
+        "requests": [
+            {
+                "device": names.get(r.device, r.device),
+                "status": r.status.value,
+                "asked_on": r.created_at.astimezone(state.raw.zone).date().isoformat(),
+                "latest_date": r.latest.isoformat() if r.latest else None,
+                **({"launched_on": r.launched_on.isoformat()} if r.launched_on else {}),
+            }
+            for r in user_requests.recent(state.database, datetime.now(UTC))
+        ]
+    }
+
+
+async def _tariff_context(state: Any, tariff: Tariff, today: date) -> TariffContext:
+    """Couleur des jours et prix publiés, lus dans HA comme pour le calcul ; sans HA, aucun."""
+    client = getattr(state, "home_assistant", None)
+    if not needs_states(tariff) or client is None:
+        return NO_CONTEXT
+    if client.status.state is not ConnectionState.CONNECTED:
+        return NO_CONTEXT
+    try:
+        states = await client.command("get_states")
+    except Exception:  # noqa: BLE001 — HA injoignable à cet instant : prix saisis seulement
+        return NO_CONTEXT
+    return tariff_context(tariff, states or [], today, state.raw.zone)
+
+
+def _price_ranges(prices: dict[int, float], lang: str) -> list[dict[str, str]]:
+    """Heures consécutives au même prix, réunies : 00:00-06:00, « 0,210 €/kWh »."""
+    ranges: list[tuple[int, int, float]] = []
+    for hour in range(24):
+        if ranges and ranges[-1][2] == prices[hour]:
+            ranges[-1] = (ranges[-1][0], hour + 1, prices[hour])
+        else:
+            ranges.append((hour, hour + 1, prices[hour]))
+    return [
+        {"start": clock(start), "end": clock(end), "price": currency.per_kwh(price, lang)}
+        for start, end, price in ranges
+    ]
+
+
+async def get_tariff(state: Any, day: Literal["today", "tomorrow"] = "today") -> dict[str, Any]:
+    """Prix du kWh par plage horaire, heures creuses, couleur du jour (Tempo) ; prix de revente
+    quand il y en a un."""
+    lang = language(state)
+    tariff = configuration.tariff_of(configuration.load(state.graph))
+    today = datetime.now(state.raw.zone).date()
+    wanted = today + timedelta(days=1) if day == "tomorrow" else today
+    context = await _tariff_context(state, tariff, today)
+    found: dict[str, Any] = {
+        "day": wanted.isoformat(),
+        "tariff": tariff.kind.value,
+        "prices": _price_ranges(tariff.hourly(wanted, context), lang),
+        "off_peak": [
+            {"start": clock(start), "end": clock(end)}
+            for start, end in off_peak_ranges(tariff, wanted, context)
+        ],
+    }
+    if tariff.kind is TariffKind.DAY_COLOR:
+        found["color"] = context.colors.get(wanted)  # aucune : pas encore annoncée
+        if found["color"] is None:
+            found["note"] = "Color of this day not announced yet: default prices shown."
+    if tariff.kind is TariffKind.DYNAMIC and wanted not in context.prices:
+        found["note"] = "Prices of this day not published yet: default price shown."
+    export = tariff.export_hourly(wanted, context)
+    if any(export.values()):
+        found["export_prices"] = _price_ranges(export, lang)
+    return found

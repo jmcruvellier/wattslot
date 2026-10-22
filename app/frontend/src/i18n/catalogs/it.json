@@ -1287,10 +1287,25 @@
     },
     "examples": {
       "title": "Domande di esempio",
-      "why": "«Perché la lavatrice è prevista alle 11?»",
-      "yesterday": "«Quanto hanno prodotto ieri i pannelli?»",
-      "battery": "«La batteria sarà piena oggi?»",
-      "request": "«Avvia la lavastoviglie nel momento migliore entro domani sera.»"
+      "groups": {
+        "today": "Oggi",
+        "ahead": "Domani e la settimana",
+        "measured": "Misure",
+        "requests": "Richieste e stato"
+      },
+      "today": "Cosa devo fare oggi?",
+      "next": "Qual è il prossimo apparecchio da avviare?",
+      "why": "Perché la lavatrice è prevista alle 11?",
+      "now": "Cosa alimenta la casa in questo momento?",
+      "cost": "Quanto mi costerà la giornata?",
+      "tomorrow": "Quanto produrranno domani i pannelli?",
+      "sunniest": "Quale giorno della settimana sarà il più soleggiato?",
+      "off_peak": "Quando sono le fasce economiche domani?",
+      "yesterday": "Quanto hanno prodotto ieri i pannelli?",
+      "on_time": "La lavastoviglie è partita in orario?",
+      "request": "Avvia la lavastoviglie nel momento migliore entro domani sera.",
+      "requests": "Quali richieste ho in corso?",
+      "problems": "C'è qualcosa che non va?"
     },
     "security": "L'assistente legge il piano, le misure e la previsione; da solo fa una sola cosa: presentare una richiesta, dopo averla confermata con lei. Non avvia alcun calcolo e non cambia alcuna impostazione.",
     "setup": "Collegare Assist passo per passo",

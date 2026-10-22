@@ -25,9 +25,22 @@ In Home Assistant: **Settings › Devices & services › Add integration › Mod
 
 **Check** confirms that the MCP server answers.
 
+When WattSlot is updated with new tools, copy the prompt again and replace the one in the agent: an old prompt does not mention them.
+
+## Example questions
+
+The conversation card of the **Assistant** screen suggests questions, by theme, as long as the conversation is empty; a click puts one in the input box, where you can change it (another appliance, another day) before sending it.
+
+| Theme | Questions | What answers |
+|---|---|---|
+| Today | *What should I do today?* · *Which appliance should I start next?* · *Why is the washing machine planned at 11 AM?* · *What is powering the home right now?* · *How much will today cost me?* | the plan of the day, its cost and the next appliance, with its other possible start times; the readings of the moment |
+| Tomorrow and the week | *How much will the panels produce tomorrow?* · *Which day of the week will be the sunniest?* · *When are the off-peak hours tomorrow?* | the forecast, the next days, the tariff (prices hour by hour, off-peak hours, color of the day) |
+| Measurements | *How much did the panels produce yesterday?* · *Did the dishwasher start on time?* | the measured energy of a day, by appliance; what each appliance did compared with the plan |
+| Requests and status | *Run the dishwasher at the best time before tomorrow evening.* · *What are my pending requests?* · *Is anything wrong?* | the requests (as in **My requests**), the problems of the app |
+
 ## What the assistant can and cannot do
 
-- **It reads**: the plan of a day and its explanations, the week, the measurements, the forecast, your home and its problems.
+- **It reads**: the plan of a day, its cost and its explanations, the week, the measurements, the forecast, the tariff, your requests, your home and its problems.
 - **It does one thing on its own**: file a request (*“Run the dishwasher at the best time before tomorrow evening”*), after confirming it with you.
 - **It never** starts a computation, changes a setting or controls a device.
 
