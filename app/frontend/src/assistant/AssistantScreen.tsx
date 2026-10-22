@@ -12,12 +12,6 @@ import { checkTitle, useConnection, useMcpCheck } from "./mcp";
 import { CheckResult, CopyButton, McpAddress } from "./McpParts";
 
 const CHAT_INPUT = "assistant-chat-input";
-const EXAMPLES = ["why", "yesterday", "battery", "request"] as const;
-
-/** Question d'exemple sans ses guillemets, pour la zone de saisie du chat. */
-function unquoted(text: string): string {
-  return text.replace(/^[«"“„‚‘]\s*/, "").replace(/\s*[»"”“‘’]$/, "");
-}
 
 interface AssistantPrompt {
   language: string;
@@ -39,9 +33,9 @@ export default function AssistantScreen() {
     return () => controller.abort();
   }, [language]);
 
-  // La discussion avec l'assistant, puis l'assistant vocal (lot 6b.6) : son état, des exemples
-  // de questions (qui remplissent la zone de saisie du chat), et le branchement pas à pas, replié
-  // une fois le serveur vérifié. « Mes demandes » est dans Planning, à côté du plan.
+  // La discussion avec l'assistant (et ses questions d'exemple), puis l'assistant vocal (lot
+  // 6b.6) : son état et le branchement pas à pas, replié une fois le serveur vérifié. « Mes
+  // demandes » est dans Planning, à côté du plan.
   return (
     <div className="assistant">
       <ChatCard inputId={CHAT_INPUT} draft={draft} onDraft={setDraft} />
@@ -52,23 +46,6 @@ export default function AssistantScreen() {
         </h2>
         <p>{t("assistant.intro")}</p>
         <CheckResult check={check} onVerify={() => void verify()} />
-
-        <h3>{t("assistant.examples.title")}</h3>
-        <ul className="assistant-examples">
-          {EXAMPLES.map((key) => (
-            <li key={key}>
-              <button
-                type="button"
-                onClick={() => {
-                  setDraft(unquoted(t(`assistant.examples.${key}`)));
-                  document.getElementById(CHAT_INPUT)?.focus();
-                }}
-              >
-                {t(`assistant.examples.${key}`)}
-              </button>
-            </li>
-          ))}
-        </ul>
 
         <details className="plan-more" open={check.status !== "ok" || undefined}>
           <summary>{t("assistant.setup")}</summary>

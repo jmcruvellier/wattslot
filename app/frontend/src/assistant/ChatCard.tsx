@@ -33,6 +33,15 @@ type Line = { from: "me" | "assistant"; text: string; error?: boolean };
 
 const OPEN_WEBUI = "open_webui:";
 
+// Questions d'exemple, par thème, montrées tant que le fil est vide : chacune a sa réponse dans
+// un outil du serveur MCP (assistant/tools.py côté serveur).
+const EXAMPLES = {
+  today: ["today", "next", "why", "now", "cost"],
+  ahead: ["tomorrow", "sunniest", "off_peak"],
+  measured: ["yesterday", "on_time"],
+  requests: ["request", "requests", "problems"],
+} as const;
+
 // Conversation gardée le temps de l'onglet : fil, identifiant de HA, agent choisi.
 const CHAT_KEY = "wattslot.chat";
 
@@ -199,7 +208,33 @@ export default function ChatCard({
 
       {/* Toujours là, de hauteur fixe : la carte ne grandit plus au fil des questions. */}
       <div className="assistant-chat-log" role="log" aria-live="polite" ref={log}>
-        {lines.length === 0 && !waiting && <p className="assistant-chat-empty dim">{t("assistant.chat.log_empty")}</p>}
+        {lines.length === 0 && !waiting && (
+          <div className="assistant-chat-empty">
+            <p className="dim">{t("assistant.chat.log_empty")}</p>
+            {/* Un clic remplit la zone de saisie : la question se corrige avant l'envoi. */}
+            <h3>{t("assistant.examples.title")}</h3>
+            {Object.entries(EXAMPLES).map(([group, keys]) => (
+              <div key={group} className="assistant-examples-group">
+                <h4 id={`assistant-examples-${group}`}>{t(`assistant.examples.groups.${group}`)}</h4>
+                <ul className="assistant-examples" aria-labelledby={`assistant-examples-${group}`}>
+                  {keys.map((key) => (
+                    <li key={key}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onDraft(t(`assistant.examples.${key}`));
+                          document.getElementById(inputId)?.focus();
+                        }}
+                      >
+                        {t(`assistant.examples.${key}`)}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )}
         {lines.map((line, index) => (
           <p
             key={index}

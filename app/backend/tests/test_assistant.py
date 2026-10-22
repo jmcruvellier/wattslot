@@ -24,12 +24,16 @@ from wattslot.assistant.prompts import prompt
 from wattslot.assistant.tools import (
     WEATHER,
     _max_hour,
+    _next_action,
     clock,
     day_of,
     find_name,
+    get_current_status,
+    get_tariff,
     measured_energy,
 )
 from wattslot.detection import DeviceKind, Role
+from wattslot.home_assistant import ConnectionState
 from wattslot.home_model import HomeDevice, HomeModel, HomeSensor
 from wattslot.ingress import HOME_ASSISTANT_CORE_ADDRESS
 from wattslot.languages import LANGUAGES
@@ -38,6 +42,8 @@ from wattslot.planning.store import PlanStore
 from wattslot.runtime import RunMode, Settings
 from wattslot.storage.database import open_database
 from wattslot.storage.graph import GraphStore
+from wattslot.tariff import V1, ColorPrices, PriceBand, Tariff, TariffKind
+from wattslot.views.now import NextAction, OtherStart
 
 READ_TOOLS = {
     "get_day_plan",
@@ -48,6 +54,8 @@ READ_TOOLS = {
     "get_forecast",
     "get_home",
     "get_problems",
+    "get_tariff",
+    "get_requests",
 }
 TOOLS = READ_TOOLS | {"request_device"}
 # Budgets (point n° 6) : tokens estimés au plus large, un token pour 3 caractères.
@@ -62,6 +70,12 @@ def api(tmp_path: Path) -> Iterator[TestClient]:
     today = state_of(LINGE)
     today["donnees_reelles_cache"] = actual_of(today, 14)
     tomorrow = {**state_of(STATES[0]), "date_cible": today["date_cible"] + timedelta(days=1)}
+    tomorrow["indicateurs"] = {
+        "cout_eur": 1.23,
+        "soutirage_kwh": 4.5,
+        "injection_kwh": 0.7,
+        "autoconsommation_pct": 82.4,
+    }
     horizon, days = horizon_of(2)
     with TestClient(create_app(_settings(tmp_path))) as client:
         store = PlanStore(open_database(tmp_path / "data"))
@@ -82,7 +96,7 @@ def _call(api: TestClient, name: str, arguments: dict[str, Any] | None = None) -
     return asyncio.run(run())
 
 
-def test_the_client_lists_eight_read_only_tools_and_one_action(api: TestClient) -> None:
+def test_the_client_lists_ten_read_only_tools_and_one_action(api: TestClient) -> None:
     async def run() -> Any:
         async with Client(api.app.state.mcp) as client:  # type: ignore[attr-defined]
             return (await client.list_tools()).tools
@@ -100,6 +114,11 @@ def test_day_plan_and_week(api: TestClient) -> None:
     assert plan["day"] == "2025-10-15"
     assert "Lave-linge : 11h" in plan["recommendation"]  # en français, la langue réglée
     assert plan["summary"]["production_kwh"] > 0 and "battery_end_percent" in plan["summary"]
+    assert "next_appliance" in plan  # selon l'heure : le prochain appareil, ou aucun
+    # « Combien va me coûter la journée ? » : le coût, écrit dans la devise de la maison.
+    tomorrow = _call(api, "get_day_plan", {"day": "tomorrow"})["summary"]
+    assert tomorrow["cost"] == "1,23\u00a0€" and tomorrow["self_consumption_percent"] == 82
+    assert "co2_kg" not in tomorrow
     assert _call(api, "get_day_plan", {"day": "yesterday"})["error"] == "no_plan"
 
     week = _call(api, "get_week")
@@ -317,3 +336,126 @@ def test_weather_labels_in_every_language() -> None:
     assert set(WEATHER) == set(LANGUAGES)
     assert all(set(labels) == {"sunny", "mixed", "cloudy"} for labels in WEATHER.values())
     assert WEATHER["fr"]["mixed"] == "journée mitigée"
+
+
+def test_the_next_appliance_and_its_other_starts() -> None:
+    """« Quel est le prochain appareil à lancer ? » : heure, explication, autres départs avec
+    leur écart de coût."""
+    action = NextAction(
+        device="Lave-linge",
+        start_min=660,
+        end_min=730,
+        explanation="Au soleil.",
+        alternatives=[
+            OtherStart(start_min=780, end_min=850, cost_eur_delta=0.12, import_kwh_delta=0.5)
+        ],
+    )
+    found = _next_action(SimpleNamespace(next_action=action), "fr")  # type: ignore[arg-type]
+    assert found == {
+        "device": "Lave-linge",
+        "start": "11:00",
+        "end": "12:10",
+        "why": "Au soleil.",
+        "other_starts": [{"start": "13:00", "extra_cost": "+0,12\u00a0€"}],
+    }
+    assert _next_action(SimpleNamespace(next_action=None), "fr") is None  # type: ignore[arg-type]
+
+
+def test_requests_list_like_my_requests(api: TestClient) -> None:
+    """« Quelles sont mes demandes en cours ? »"""
+    assert _call(api, "get_requests") == {"requests": []}
+    home_model.save(api.app.state.graph, HOME)  # type: ignore[attr-defined]
+    _call(api, "request_device", {"device": "lave vaisselle", "latest_date": "2099-01-31"})
+    (found,) = _call(api, "get_requests")["requests"]
+    assert found["device"] == "Lave-vaisselle" and found["status"] == "open"
+    assert found["latest_date"] == "2099-01-31" and "launched_on" not in found
+
+
+def test_tariff_of_the_home_without_home_assistant(
+    api: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """« Quand sont les heures creuses aujourd'hui ? » : plages de prix réunies, heures
+    creuses ; sans tarif configuré, un prix unique et aucune heure creuse."""
+    single = _call(api, "get_tariff")
+    assert single["tariff"] == "SingleTariff" and single["off_peak"] == []
+    assert single["prices"] == [{"start": "00:00", "end": "00:00", "price": "0,250\u00a0€/kWh"}]
+
+    monkeypatch.setattr("wattslot.configuration.tariff_of", lambda _: V1)
+    found = _call(api, "get_tariff", {"day": "tomorrow"})
+    assert found["tariff"] == "TimeOfUseTariff"
+    assert found["off_peak"] == [
+        {"start": "00:00", "end": "06:00"},
+        {"start": "22:00", "end": "00:00"},
+    ]
+    assert [p["price"] for p in found["prices"]] == [
+        "0,210\u00a0€/kWh",
+        "0,270\u00a0€/kWh",
+        "0,210\u00a0€/kWh",
+    ]
+    assert "export_prices" not in found
+
+
+class FakeHomeAssistant:
+    """Client de HA connecté qui rend la couleur Tempo du jour et du lendemain."""
+
+    status = SimpleNamespace(state=ConnectionState.CONNECTED)
+
+    async def command(self, command: str, **params: Any) -> Any:
+        assert command == "get_states"
+        return [
+            {"entity_id": "sensor.color_today", "state": "Rouge"},
+            {"entity_id": "sensor.color_tomorrow", "state": "unknown"},
+        ]
+
+
+def test_the_color_of_the_day_comes_from_home_assistant(tmp_path: Path) -> None:
+    """« Quelle est la couleur Tempo demain ? » : couleur lue dans HA comme pour le calcul ;
+    pas encore annoncée, les prix par défaut et une note."""
+    tempo = Tariff(
+        kind=TariffKind.DAY_COLOR,
+        base_eur_kwh=0.2,
+        colors=[
+            ColorPrices(color="Bleu", base_eur_kwh=0.16),
+            ColorPrices(
+                color="Rouge",
+                base_eur_kwh=0.75,
+                bands=[PriceBand(start_hour=0, end_hour=6, eur_kwh=0.15)],
+            ),
+        ],
+        color_entity="sensor.color_today",
+        color_tomorrow_entity="sensor.color_tomorrow",
+    )
+    graph = GraphStore(tmp_path)
+    home_model.load_vocabulary(graph)
+    state = SimpleNamespace(
+        graph=graph,
+        database=open_database(tmp_path),
+        raw=SimpleNamespace(zone=ZoneInfo("Europe/Paris")),
+        home_assistant=FakeHomeAssistant(),
+    )
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr("wattslot.configuration.tariff_of", lambda _: tempo)
+        today = asyncio.run(get_tariff(state, "today"))
+        tomorrow = asyncio.run(get_tariff(state, "tomorrow"))
+    assert today["color"] == "Rouge" and "note" not in today
+    assert today["prices"][0] == {"start": "00:00", "end": "06:00", "price": "0,150\u00a0€/kWh"}
+    assert today["off_peak"] == [{"start": "00:00", "end": "06:00"}]
+    assert tomorrow["color"] is None and "not announced" in tomorrow["note"]
+    graph.flush()
+
+
+def test_current_status_says_what_powers_the_home(
+    api: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """« Qu'est-ce qui alimente la maison en ce moment ? » : la phrase « En ce moment »."""
+    now = SimpleNamespace(sentence="La batterie alimente la maison", off_peak=False)
+
+    async def today(*args: Any) -> Any:
+        return SimpleNamespace(now=now)
+
+    monkeypatch.setattr("wattslot.assistant.tools.day_view_of", today)
+    app = api.app.state  # type: ignore[attr-defined]
+    ingestor = SimpleNamespace(status=lambda: SimpleNamespace(entities=[]))
+    state = SimpleNamespace(graph=app.graph, database=app.database, ingestor=ingestor)
+    found = asyncio.run(get_current_status(state))
+    assert found == {"readings": [], "now": "La batterie alimente la maison", "off_peak": False}

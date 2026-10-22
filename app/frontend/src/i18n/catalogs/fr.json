@@ -1287,10 +1287,25 @@
     },
     "examples": {
       "title": "Exemples de questions",
-      "why": "« Pourquoi le lave-linge est-il prévu à 11 h ? »",
-      "yesterday": "« Combien les panneaux ont-ils produit hier ? »",
-      "battery": "« La batterie sera-t-elle pleine aujourd'hui ? »",
-      "request": "« Lance le lave-vaisselle au meilleur moment avant demain soir. »"
+      "groups": {
+        "today": "Aujourd'hui",
+        "ahead": "Demain et la semaine",
+        "measured": "Mesures",
+        "requests": "Demandes et état"
+      },
+      "today": "Que dois-je faire aujourd'hui ?",
+      "next": "Quel est le prochain appareil à lancer ?",
+      "why": "Pourquoi le lave-linge est-il prévu à 11 h ?",
+      "now": "Qu'est-ce qui alimente la maison en ce moment ?",
+      "cost": "Combien va me coûter la journée ?",
+      "tomorrow": "Combien les panneaux produiront-ils demain ?",
+      "sunniest": "Quel jour de la semaine sera le plus ensoleillé ?",
+      "off_peak": "Quand sont les heures creuses demain ?",
+      "yesterday": "Combien les panneaux ont-ils produit hier ?",
+      "on_time": "Le lave-vaisselle a-t-il démarré à l'heure ?",
+      "request": "Lance le lave-vaisselle au meilleur moment avant demain soir.",
+      "requests": "Quelles sont mes demandes en cours ?",
+      "problems": "Est-ce que quelque chose ne va pas ?"
     },
     "security": "L'assistant lit le plan, les mesures et la prévision ; il ne fait qu'une chose de lui-même : déposer une demande, après vous l'avoir confirmée. Il ne lance aucun calcul et ne change aucun réglage.",
     "setup": "Brancher l'Assist pas à pas",

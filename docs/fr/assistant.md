@@ -25,9 +25,22 @@ Dans Home Assistant : **Paramètres › Appareils et services › Ajouter une in
 
 **Vérifier** confirme que le serveur MCP répond.
 
+Quand une mise à jour de WattSlot apporte de nouveaux outils, copiez à nouveau le prompt et remplacez celui de l'agent : un ancien prompt ne les cite pas.
+
+## Exemples de questions
+
+La carte de discussion de l'écran **Assistant** propose des questions, par thème, tant que la conversation est vide ; un clic en met une dans la zone de saisie, où vous pouvez la modifier (un autre appareil, un autre jour) avant de l'envoyer.
+
+| Thème | Questions | Ce qui répond |
+|---|---|---|
+| Aujourd'hui | *Que dois-je faire aujourd'hui ?* · *Quel est le prochain appareil à lancer ?* · *Pourquoi le lave-linge est-il prévu à 11 h ?* · *Qu'est-ce qui alimente la maison en ce moment ?* · *Combien va me coûter la journée ?* | le plan du jour, son coût et le prochain appareil, avec ses autres heures de départ possibles ; les mesures du moment |
+| Demain et la semaine | *Combien les panneaux produiront-ils demain ?* · *Quel jour de la semaine sera le plus ensoleillé ?* · *Quand sont les heures creuses demain ?* | la prévision, les jours suivants, le tarif (prix heure par heure, heures creuses, couleur du jour) |
+| Mesures | *Combien les panneaux ont-ils produit hier ?* · *Le lave-vaisselle a-t-il démarré à l'heure ?* | l'énergie mesurée d'un jour, par appareil ; ce qu'a fait chaque appareil par rapport au plan |
+| Demandes et état | *Lance le lave-vaisselle au meilleur moment avant demain soir.* · *Quelles sont mes demandes en cours ?* · *Est-ce que quelque chose ne va pas ?* | les demandes (comme dans **Mes demandes**), les problèmes de l'application |
+
 ## Ce que l'assistant peut faire, et ne fait pas
 
-- **Il lit** : le plan d'un jour et ses explications, la semaine, les mesures, la prévision, votre maison et ses problèmes.
+- **Il lit** : le plan d'un jour, son coût et ses explications, la semaine, les mesures, la prévision, le tarif, vos demandes, votre maison et ses problèmes.
 - **Il fait une seule chose de lui-même** : déposer une demande (*« Lance le lave-vaisselle au meilleur moment avant demain soir »*), après vous l'avoir confirmée.
 - **Il ne fait jamais** de calcul, ne change aucun réglage et ne pilote aucun appareil.
 

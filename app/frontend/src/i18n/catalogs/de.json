@@ -1287,10 +1287,25 @@
     },
     "examples": {
       "title": "Beispielfragen",
-      "why": "„Warum ist die Waschmaschine um 11 Uhr geplant?“",
-      "yesterday": "„Wie viel haben die Module gestern erzeugt?“",
-      "battery": "„Wird die Batterie heute voll?“",
-      "request": "„Starte den Geschirrspüler zur besten Zeit vor morgen Abend.“"
+      "groups": {
+        "today": "Heute",
+        "ahead": "Morgen und die Woche",
+        "measured": "Messwerte",
+        "requests": "Anfragen und Zustand"
+      },
+      "today": "Was soll ich heute tun?",
+      "next": "Welches Gerät soll ich als Nächstes starten?",
+      "why": "Warum ist die Waschmaschine um 11 Uhr geplant?",
+      "now": "Was versorgt das Haus gerade?",
+      "cost": "Wie viel kostet mich der heutige Tag?",
+      "tomorrow": "Wie viel werden die Module morgen erzeugen?",
+      "sunniest": "Welcher Tag der Woche wird am sonnigsten?",
+      "off_peak": "Wann ist morgen Niedertarif?",
+      "yesterday": "Wie viel haben die Module gestern erzeugt?",
+      "on_time": "Ist der Geschirrspüler pünktlich gestartet?",
+      "request": "Starte den Geschirrspüler zur besten Zeit vor morgen Abend.",
+      "requests": "Welche Anfragen sind offen?",
+      "problems": "Stimmt etwas nicht?"
     },
     "security": "Der Assistent liest den Plan, die Messwerte und die Prognose; von sich aus tut er nur eines: eine Anfrage stellen, nachdem er sie mit Ihnen bestätigt hat. Er startet keine Berechnung und ändert keine Einstellung.",
     "setup": "Assist Schritt für Schritt anbinden",
