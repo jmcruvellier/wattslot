@@ -2,9 +2,9 @@
 // demande depuis l'onglet Maison. Toute l'ontologie est visible d'un coup, à la façon de
 // l'aperçu de Microsoft Fabric : chaque type de la bibliothèque reçoit un secteur d'angle
 // proportionnel à sa branche, étalée du centre vers l'extérieur (types propres, équipements,
-// capteurs) ; les liaisons gardent leur sens et leur étiquette. Un clic ouvre la fiche de
-// l'élément et met en avant ses liaisons. Sur un écran étroit (téléphone), une liste remplace
-// le graphe.
+// capteurs). Un clic ouvre la fiche de l'élément et met en avant ses liaisons ; un double-clic
+// entre dans l'élément — lui au centre, ses voisins autour. Sur un écran étroit (téléphone),
+// une liste remplace le graphe.
 
 import "@xyflow/react/dist/style.css";
 
@@ -16,6 +16,7 @@ import {
   Panel,
   Position,
   ReactFlow,
+  useReactFlow,
   type Edge,
   type Node,
   type NodeProps,
@@ -128,6 +129,21 @@ function layout(graph: Graph): Map<string, { x: number; y: number }> {
   return positions;
 }
 
+// Vue d'un élément, après un double-clic : il passe au centre et ses voisins l'entourent — les
+// liaisons directes seulement, pour entrer dans le détail de sa branche.
+function layoutInside(graph: Graph, focus: string): { positions: Map<string, { x: number; y: number }>; ids: string[] } {
+  const positions = new Map<string, { x: number; y: number }>([[focus, { x: 0, y: 0 }]]);
+  const links = graph.edges.filter((edge) => edge.source === focus || edge.target === focus);
+  const neighbors = [...new Set(links.flatMap((edge) => [edge.source, edge.target]))].filter((id) => id !== focus);
+  // Rayon du cercle : les voisins assez espacés pour que les étiquettes restent lisibles.
+  const radius = Math.max(360, neighbors.length * 48);
+  neighbors.forEach((id, index) => {
+    const angle = (2 * Math.PI * index) / neighbors.length - Math.PI / 2;
+    positions.set(id, { x: Math.round(Math.cos(angle) * radius), y: Math.round(Math.sin(angle) * radius) });
+  });
+  return { positions, ids: [focus, ...neighbors] };
+}
+
 // Côté du nœud qui fait face à un point : la flèche entre deux objets s'attache au côté le plus
 // direct, quelle que soit la position du voisin.
 function sideFor(angle: number): "top" | "bottom" | "left" | "right" {
@@ -142,10 +158,21 @@ function handleToward(from: { x: number; y: number }, to: { x: number; y: number
   return sideFor(Math.atan2(to.y - from.y, to.x - from.x));
 }
 
+// Recadre le dessin au changement de vue : l'ensemble est plus large que l'intérieur d'un élément.
+function Fitter({ zoomed }: { zoomed: string | null }) {
+  const { fitView } = useReactFlow();
+  useEffect(() => {
+    fitView({ padding: 0.2, maxZoom: 1 });
+  }, [zoomed, fitView]);
+  return null;
+}
+
 export default function HomeGraph() {
   const { t } = useI18n();
   const [load, setLoad] = useState<Load>({ status: "loading" });
   const [selected, setSelected] = useState<GraphNode | null>(null);
+  // Élément zoomé par un double-clic (vue de l'intérieur), null pour la vue d'ensemble.
+  const [zoomed, setZoomed] = useState<string | null>(null);
   const [narrow] = useState(narrowScreen);
 
   useEffect(() => {
@@ -175,37 +202,44 @@ export default function HomeGraph() {
     return () => document.removeEventListener("keydown", onKey);
   }, [selected]);
 
-  // Toute l'ontologie d'un coup : les objets placés en anneaux, et les liaisons qui gardent leur
-  // sens et leur étiquette ; celles de l'élément choisi sont mises en avant.
+  // Le dessin : toute l'ontologie d'un coup (anneaux autour du centre), ou l'intérieur d'un
+  // élément double-cliqué (lui au centre, ses voisins autour). Les liaisons gardent leur sens et
+  // leur étiquette ; celles de l'élément choisi (fiche ouverte) sont mises en avant.
   const view = useMemo(() => {
     if (load.status !== "ready") return null;
-    const positions = layout(load.graph);
-    const nodes: FlowNode[] = load.graph.nodes.map(
-      (node): FlowNode => ({
-        id: node.id,
-        type: "home",
-        position: positions.get(node.id) ?? { x: 0, y: 0 },
-        data: { label: node.label, kind: node.kind, issues: node.issues.length },
-      }),
-    );
-    const edges: Edge[] = load.graph.edges.map((edge): Edge => {
-      const linked = selected !== null && (edge.source === selected.id || edge.target === selected.id);
-      const from = positions.get(edge.source) ?? { x: 0, y: 0 };
-      const to = positions.get(edge.target) ?? { x: 0, y: 0 };
+    const inside = zoomed !== null ? layoutInside(load.graph, zoomed) : null;
+    const positions = inside ? inside.positions : layout(load.graph);
+    const ids = inside ? inside.ids : load.graph.nodes.map((node) => node.id);
+    const nodes: FlowNode[] = ids.map((id): FlowNode => {
+      const node = load.graph.nodes.find((n) => n.id === id)!;
       return {
-        id: edge.id,
-        source: edge.source,
-        target: edge.target,
-        sourceHandle: `source-${handleToward(from, to)}`,
-        targetHandle: `target-${handleToward(to, from)}`,
-        type: "default",
-        label: edge.label,
-        markerEnd: { type: MarkerType.ArrowClosed },
-        animated: linked,
+        id,
+        type: "home",
+        className: id === zoomed ? "graph-focus" : undefined,
+        position: positions.get(id) ?? { x: 0, y: 0 },
+        data: { label: node.label, kind: node.kind, issues: node.issues.length },
       };
     });
+    const edges: Edge[] = load.graph.edges
+      .filter((edge) => inside === null || edge.source === zoomed || edge.target === zoomed)
+      .map((edge): Edge => {
+        const linked = selected !== null && (edge.source === selected.id || edge.target === selected.id);
+        const from = positions.get(edge.source) ?? { x: 0, y: 0 };
+        const to = positions.get(edge.target) ?? { x: 0, y: 0 };
+        return {
+          id: edge.id,
+          source: edge.source,
+          target: edge.target,
+          sourceHandle: `source-${handleToward(from, to)}`,
+          targetHandle: `target-${handleToward(to, from)}`,
+          type: "default",
+          label: edge.label,
+          markerEnd: { type: MarkerType.ArrowClosed },
+          animated: linked,
+        };
+      });
     return { nodes, edges };
-  }, [load, selected]);
+  }, [load, selected, zoomed]);
 
   if (load.status === "loading") return <p>{t("graph.loading")}</p>;
   if (load.status === "error") return <p role="alert">{t("graph.error")}</p>;
@@ -246,10 +280,26 @@ export default function HomeGraph() {
             fitViewOptions={{ padding: 0.15, maxZoom: 1 }}
             minZoom={0.1}
             onNodeClick={(_, node) => setSelected(graph.nodes.find((n) => n.id === node.id) ?? null)}
+            // Double-clic : entre dans l'élément (lui au centre, ses voisins autour) et ouvre sa
+            // fiche ; sur l'élément déjà au centre, ressort à la vue d'ensemble. Le zoom du
+            // double-clic est coupé : il entrerait en conflit avec cette navigation.
+            zoomOnDoubleClick={false}
+            onNodeDoubleClick={(_, node) => {
+              setZoomed((current) => (node.id === current ? null : node.id));
+              setSelected(graph.nodes.find((n) => n.id === node.id) ?? null);
+            }}
             onPaneClick={() => setSelected(null)}
           >
+            <Fitter zoomed={zoomed} />
             <Background gap={28} />
             <Controls showInteractive={false} />
+            {zoomed && (
+              <Panel position="top-left" className="graph-panel graph-panel-back">
+                <button type="button" className="graph-back" onClick={() => setZoomed(null)}>
+                  ← {t("graph.back")}
+                </button>
+              </Panel>
+            )}
             {selected && (
               <Panel position="top-right" className="graph-panel">
                 <NodeDetails node={selected}>
