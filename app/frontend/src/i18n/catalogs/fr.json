@@ -496,6 +496,8 @@
     "appearance": {
       "title": "Langue et affichage",
       "theme": "Thème",
+      "legends": "Légendes des courbes",
+      "legends_help": "Noms des courbes des graphiques de la section Courbes. Votre choix est gardé sur cet appareil.",
       "help": "En automatique, l'application suit le réglage clair ou sombre de votre téléphone, navigateur ou ordinateur. Votre choix est gardé sur cet appareil.",
       "themes": {
         "auto": {

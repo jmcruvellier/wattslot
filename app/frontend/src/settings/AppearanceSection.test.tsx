@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CurrencyProvider } from "../i18n/currency";
 import { I18nProvider } from "../i18n/I18nProvider";
 import type { CurrencyState } from "../i18n/money";
+import { LEGENDS_STORAGE_KEY } from "../plan/legends";
 import { THEME_STORAGE_KEY } from "../theme/theme";
 import AppearanceSection from "./AppearanceSection";
 
@@ -52,6 +53,22 @@ describe("AppearanceSection", () => {
     window.localStorage.setItem(THEME_STORAGE_KEY, "rose");
     renderSection();
     expect(screen.getByRole("radio", { name: /Automatique/ })).toBeChecked();
+  });
+
+  it("montre ou masque les légendes des courbes, gardé sur cet appareil", async () => {
+    renderSection();
+
+    const legends = screen.getByRole("switch", { name: "Légendes des courbes" });
+    expect(legends).toHaveAttribute("aria-checked", "true");
+
+    await userEvent.click(legends);
+    expect(legends).toHaveAttribute("aria-checked", "false");
+    expect(window.localStorage.getItem(LEGENDS_STORAGE_KEY)).toBe("hide");
+
+    // Repris à l'ouverture suivante ; rien de gardé vaut « affichées ».
+    await userEvent.click(legends);
+    expect(window.localStorage.getItem(LEGENDS_STORAGE_KEY)).toBeNull();
+    expect(legends).toHaveAttribute("aria-checked", "true");
   });
 
   it("règle la devise de la maison, Home Assistant par défaut", async () => {

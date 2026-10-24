@@ -3,12 +3,13 @@
 // dernier relevé à côté de chacune (api/planning/last-run), le détail (heure, automatique ou à
 // la main) dans l'infobulle et pour les lecteurs d'écran. L'échec passe sous la barre (styles.css).
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { getJson } from "../api";
 import { useI18n } from "../i18n/I18nProvider";
 import { refreshStatus } from "../nav/status";
 import { since, time } from "./format";
+import { setCurvesEditing, useCurvesEditing } from "./curvesEdit";
 import { RUN_EVENT } from "./planView";
 import Icon from "../ui/Icon";
 
@@ -50,7 +51,7 @@ function useTick(): void {
   }, []);
 }
 
-export default function PlanActions() {
+export default function PlanActions({ leading }: { leading?: ReactNode }) {
   const { language, t } = useI18n();
   // Seul le bouton lancé est animé ; l'autre garde son âge affiché, sans tourner (styles.css).
   const [running, setRunning] = useState<Running>(null);
@@ -86,6 +87,8 @@ export default function PlanActions() {
   return (
     <>
       <div className="run-actions">
+        {/* Icône à gauche des deux actions (section Courbes : « Personnaliser »). */}
+        {leading}
         <button
           type="button"
           className={running === "compute" ? "run-button run-button-primary run-button-running" : "run-button run-button-primary"}
@@ -115,5 +118,26 @@ export default function PlanActions() {
       </div>
       {failed && <p role="alert">{t("plan.header.failed")}</p>}
     </>
+  );
+}
+
+/** « Personnaliser » (section Courbes) en icône, dans la barre de titre, à gauche de « Calculer »
+ * et « Rafraîchir » (même style de pilule, sans l'âge d'une exécution) ; le panneau s'ouvre dans
+ * l'écran (`CurvesScreen`, via curvesEdit) ; le nom complet reste au lecteur d'écran. */
+export function CurvesCustomizeButton() {
+  const { t } = useI18n();
+  const { editing, available } = useCurvesEditing();
+  if (!available) return null;
+  return (
+    <button
+      type="button"
+      className="run-button run-button-icon"
+      aria-pressed={editing}
+      title={t("plan.layout.open")}
+      aria-label={t("plan.layout.open")}
+      onClick={() => setCurvesEditing(!editing)}
+    >
+      <Icon name="layout" size={18} />
+    </button>
   );
 }

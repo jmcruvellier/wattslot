@@ -273,7 +273,7 @@ pre {
   margin-bottom: 0.75rem;
 }
 
-/* Onglets des vues et bouton aligné à droite (section Courbes). */
+/* Onglets des vues (sections Planning et Courbes) ; « Personnaliser » est dans la barre du haut. */
 .view-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -285,10 +285,6 @@ pre {
 
 .view-toolbar > .view-tabs {
   margin-bottom: 0;
-}
-
-.view-toolbar > button {
-  margin-left: auto;
 }
 
 /* Échec d'une action : sur sa propre ligne, sous la barre de titre. */
@@ -1308,6 +1304,20 @@ a.ui-setting-row {
 
 .run-button[disabled] {
   cursor: wait;
+}
+
+/* « Personnaliser » (section Courbes) : même pilule, icône seule, sans l'âge d'une exécution ;
+   enfoncé quand le panneau est ouvert, pour se voir sans texte. */
+.run-button-icon {
+  justify-content: center;
+  width: 2.75rem;
+  padding: 0;
+}
+
+.run-button-icon[aria-pressed="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
 }
 
 /* Seul le bouton lancé tourne : l'autre est désactivé (un calcul à la fois) mais reste tel quel. */

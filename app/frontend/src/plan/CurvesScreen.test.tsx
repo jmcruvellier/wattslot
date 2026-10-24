@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { I18nProvider } from "../i18n/I18nProvider";
 import CurvesScreen from "./CurvesScreen";
+import { CurvesCustomizeButton } from "./PlanActions";
 import { DAY_CARDS, type DashboardLayout, DEFAULT_LAYOUT } from "./layout";
 import { TODAY, WEEK, WITHOUT_BATTERY } from "./testViews";
 import type { DayView, HourPoint } from "./types";
@@ -38,8 +39,12 @@ function mockApi(
 }
 
 function renderScreen() {
+  // Comme dans App : le bouton « Personnaliser » est dans la barre de titre, hors de l'écran.
   render(
     <I18nProvider>
+      <header>
+        <CurvesCustomizeButton />
+      </header>
       <CurvesScreen />
     </I18nProvider>,
   );
@@ -150,14 +155,14 @@ describe("CurvesScreen", () => {
     expect(screen.queryByRole("button", { name: "Masquer « Indicateurs du plan »" })).toBeNull();
   });
 
-  it("range « Personnaliser » sur la ligne des onglets, après eux", async () => {
+  it("montre « Personnaliser » dans la barre de titre une fois la vue ouverte", async () => {
     mockApi(() => ({ yesterday: null, today: 1, tomorrow: null, week: null }));
     renderScreen();
 
+    const tabs = await screen.findByRole("tablist", { name: "Courbes" });
     const button = await screen.findByRole("button", { name: "Personnaliser" });
-    const tabs = screen.getByRole("tablist", { name: "Courbes" });
-    expect(button.parentElement).toHaveClass("view-toolbar");
-    expect(tabs.parentElement).toBe(button.parentElement);
-    expect(tabs.compareDocumentPosition(button)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(tabs).not.toContainElement(button);
+    expect(button).toHaveTextContent(""); // icône seule : le nom reste au lecteur d'écran
+    expect(button).toHaveAttribute("aria-pressed", "false");
   });
 });

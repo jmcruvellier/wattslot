@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App, { type Health } from "./App";
 import { I18nProvider } from "./i18n/I18nProvider";
 import { RELEASES_URL } from "./nav/updates";
+import { TODAY } from "./plan/testViews";
 
 const HEALTH: Health = {
   version: "0.7.0",
@@ -141,6 +142,29 @@ describe("App", () => {
 
     expect(screen.getByRole("heading", { name: "Today's plan" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Previous dashboard" })).toBeNull(); // supprimé (lot 7.1)
+  });
+
+  it("Courbes : « Personnaliser » en icône dans la barre de titre, à gauche de « Calculer »", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const url = String(input).split("?")[0];
+      if (url === "api/health") return Response.json(HEALTH);
+      if (url === "api/setup") return Response.json({ steps: [], ready: false });
+      if (url === "api/views/versions") return Response.json({ yesterday: null, today: 1, tomorrow: null, week: null });
+      if (url === "api/views/today") return Response.json(TODAY);
+      if (url === "api/planning/last-run") return Response.json({ computed_at: null, manual: false, actual_updated_at: null });
+      return new Response(null, { status: 404 });
+    });
+
+    renderApp();
+    await userEvent.click(await screen.findByRole("link", { name: "Charts" }));
+
+    const customize = await screen.findByRole("button", { name: "Customize" });
+    const compute = screen.getByRole("button", { name: /^Compute/ });
+    expect(customize).toHaveClass("run-button", "run-button-icon");
+    expect(compute.parentElement).toHaveClass("run-actions");
+    expect(customize.parentElement).toBe(compute.parentElement);
+    expect(compute.compareDocumentPosition(customize)).toBe(Node.DOCUMENT_POSITION_PRECEDING);
+    expect(customize).toHaveAttribute("aria-pressed", "false");
   });
 
   it("signale une application qui ne répond pas", async () => {

@@ -496,6 +496,8 @@
     "appearance": {
       "title": "Language and display",
       "theme": "Theme",
+      "legends": "Chart legends",
+      "legends_help": "Names of the curves in the graphs of the Charts section. Your choice is kept on this device.",
       "help": "In automatic mode, the app follows the light or dark setting of your phone, browser or computer. Your choice is kept on this device.",
       "themes": {
         "auto": {

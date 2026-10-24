@@ -1,12 +1,14 @@
 // Section Courbes : les cartes et les graphiques de la phase 5 (chiffres du jour, frise, courbes
 // de la batterie, du réseau et de l'énergie ; cartes des jours et courbes de la semaine), sortis
 // de la section Planning, avec le panneau « Personnaliser » (lot 5.5). Mêmes onglets que
-// Planning ; « Pourquoi ce plan » et les indicateurs restent dans Planning.
+// Planning ; « Pourquoi ce plan » et les indicateurs restent dans Planning. Le bouton
+// « Personnaliser » est dans la barre de titre (App, `curvesEdit`) ; son panneau s'ouvre ici.
 
-import { useState } from "react";
+import { useEffect } from "react";
 
 import { useI18n } from "../i18n/I18nProvider";
 import DayCards from "./DayCards";
+import { leaveCurves, setCurvesAvailable, setCurvesEditing, useCurvesEditing } from "./curvesEdit";
 import { availableDayCards, availableIndicators, availableWeekCards, type CardId, type DayCardId } from "./layout";
 import LayoutEditor from "./LayoutEditor";
 import ProvisionalNote from "./ProvisionalNote";
@@ -27,12 +29,19 @@ export default function CurvesScreen() {
   const { t } = useI18n();
   const { tab, load, open, retry } = usePlanView();
   const { layout, saving, failed, change, reset } = useDashboardLayout();
-  const [editing, setEditing] = useState(false);
+  const { editing } = useCurvesEditing();
 
   // Cartes de la vue ouverte, que « Personnaliser » range ou masque.
   const available: CardId[] =
     load.status === "day" ? curveCards(load.view) : load.status === "week" ? availableWeekCards(load.view) : [];
   const loaded = load.status === "day" || load.status === "week";
+
+  // Le bouton de la barre de titre n'apparaît qu'avec une vue ouverte ; quitter la section
+  // referme le panneau, dont l'état vit hors de l'écran (curvesEdit).
+  useEffect(() => {
+    setCurvesAvailable(loaded);
+  }, [loaded]);
+  useEffect(() => leaveCurves, []);
 
   return (
     <section aria-labelledby="curves-title">
@@ -40,14 +49,9 @@ export default function CurvesScreen() {
       <h2 id="curves-title" className="visually-hidden">
         {t("nav.curves")}
       </h2>
-      {/* Onglets à gauche, « Personnaliser » à droite ; dessous quand la ligne est trop étroite. */}
+      {/* Onglets à gauche ; « Personnaliser » est dans la barre du haut, près de « Calculer ». */}
       <div className="view-toolbar">
         <PlanTabs title={t("nav.curves")} tab={tab} onOpen={open} />
-        {loaded && (
-          <button type="button" aria-pressed={editing} onClick={() => setEditing(!editing)}>
-            {t("plan.layout.open")}
-          </button>
-        )}
       </div>
       <LoadMessage load={load} tab={tab} onRetry={retry} />
       {loaded && editing && (
@@ -60,7 +64,7 @@ export default function CurvesScreen() {
           failed={failed}
           onChange={change}
           onReset={reset}
-          onClose={() => setEditing(false)}
+          onClose={() => setCurvesEditing(false)}
         />
       )}
 
