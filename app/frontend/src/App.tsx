@@ -4,7 +4,7 @@ import { reveal } from "./common/reveal";
 import { returnedFromHomeAssistant } from "./connection/address";
 import { connectionError } from "./connection/service";
 import PlanScreen from "./plan/PlanScreen";
-import PlanActions from "./plan/PlanActions";
+import PlanActions, { CurvesCustomizeButton } from "./plan/PlanActions";
 import { SupportLinks } from "./settings/BetaCards";
 import StartScreen from "./start/StartScreen";
 import { useI18n } from "./i18n/I18nProvider";
@@ -137,9 +137,12 @@ export default function App() {
             )}
             <div className="top-bar-row">
               <h1>{title}</h1>
-              {/* « Calculer » et « Rafraîchir les données réelles » : sections qui montrent le plan. */}
+              {/* « Calculer » et « Rafraîchir les données réelles » : sections qui montrent le plan.
+                  Sur Courbes, « Personnaliser » les précède en icône (curvesEdit). */}
               {(route.section === "today" || route.section === "planning" || route.section === "curves") &&
-                !route.sub && <PlanActions />}
+                !route.sub && (
+                  <PlanActions leading={route.section === "curves" ? <CurvesCustomizeButton /> : undefined} />
+                )}
               {/* Sur téléphone ; sur ordinateur, les mêmes sont dans le menu (styles.css). */}
               <div className="top-bar-actions">
                 <StatusPill level={status} />

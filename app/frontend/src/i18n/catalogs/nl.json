@@ -496,6 +496,8 @@
     "appearance": {
       "title": "Taal en weergave",
       "theme": "Thema",
+      "legends": "Grafieklegenda's",
+      "legends_help": "Namen van de curves van de grafieken in de sectie Grafieken. Je keuze wordt op dit apparaat bewaard.",
       "help": "Automatisch volgt de app de lichte of donkere instelling van je telefoon, browser of computer. Je keuze wordt op dit apparaat bewaard.",
       "themes": {
         "auto": {

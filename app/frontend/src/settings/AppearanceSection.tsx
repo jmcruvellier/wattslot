@@ -8,12 +8,15 @@ import { Hint } from "../common/Advanced";
 import { useCurrency } from "../i18n/currency";
 import { useI18n } from "../i18n/I18nProvider";
 import { LANGUAGE_NAMES, reviewed, SUPPORTED_LANGUAGES } from "../i18n/translate";
+import { useChartLegends } from "../plan/legends";
 import { useTheme } from "../theme/theme";
+import Switch from "../ui/Switch";
 import ThemePicker from "../ui/ThemePicker";
 
 export default function AppearanceSection() {
   const { language, setLanguage, t } = useI18n();
   const [theme, setTheme] = useTheme();
+  const [legends, setLegends] = useChartLegends();
   return (
     <>
       <h3 id="appearance">{t("settings.appearance.title")}</h3>
@@ -29,6 +32,12 @@ export default function AppearanceSection() {
       </label>
       <CurrencyPicker />
       <ThemePicker value={theme} onChange={setTheme} />
+      <Switch
+        label={t("settings.appearance.legends")}
+        description={t("settings.appearance.legends_help")}
+        checked={legends}
+        onChange={setLegends}
+      />
       <p className="dim">{t("settings.appearance.help")}</p>
     </>
   );

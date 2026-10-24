@@ -23,6 +23,7 @@ import {
 
 import { useI18n } from "../i18n/I18nProvider";
 import { axisTick, hour, kwh, percent } from "./format";
+import { useChartLegends } from "./legends";
 import type { HourPoint, WeekPoint } from "./types";
 
 interface ChartProps {
@@ -74,6 +75,7 @@ function axes() {
 
 export function EnergyChart({ hours, readingHour }: ChartProps) {
   const { t } = useI18n();
+  const [legends] = useChartLegends();
   const data = hours.map((h) => ({
     hour: h.hour,
     production: h.production_kwh,
@@ -88,7 +90,7 @@ export function EnergyChart({ hours, readingHour }: ChartProps) {
           {axes()}
           <YAxis tick={TICK} stroke="var(--text-dim)" tickFormatter={axisTick("kWh")} width="auto" />
           <Tooltip contentStyle={TOOLTIP} labelFormatter={(h) => `${h}h`} formatter={(v) => `${kwh(Number(v))} kWh`} />
-          <Legend wrapperStyle={LEGEND} />
+          {legends && <Legend wrapperStyle={LEGEND} />}
           <Line type="monotone" dataKey="production" name={t("plan.series.production")} stroke="var(--production)" strokeDasharray="5 4" dot={false} />
           <Line type="monotone" dataKey="productionActual" name={t("plan.series.production_actual")} stroke="var(--production)" dot={false} />
           <Line type="monotone" dataKey="consumption" name={t("plan.series.consumption")} stroke="var(--consumption)" strokeDasharray="5 4" dot={false} />
@@ -102,6 +104,7 @@ export function EnergyChart({ hours, readingHour }: ChartProps) {
 
 export function SocChart({ hours, readingHour, floor }: ChartProps & { floor: number | null }) {
   const { t } = useI18n();
+  const [legends] = useChartLegends();
   const data = hours.map((h) => ({ hour: h.hour, soc: h.soc_percent, socActual: h.soc_actual_percent }));
   return (
     <div className="chart">
@@ -113,7 +116,7 @@ export function SocChart({ hours, readingHour, floor }: ChartProps & { floor: nu
           {axes()}
           <YAxis tick={TICK} stroke="var(--text-dim)" tickFormatter={axisTick("%")} domain={[0, 100]} width="auto" />
           <Tooltip contentStyle={TOOLTIP} labelFormatter={(h) => `${h}h`} formatter={(v) => `${percent(Number(v))} %`} />
-          <Legend wrapperStyle={LEGEND} />
+          {legends && <Legend wrapperStyle={LEGEND} />}
           <Line type="monotone" dataKey="soc" name={t("plan.series.soc")} stroke="var(--battery)" strokeDasharray="5 4" dot={false} />
           <Line type="monotone" dataKey="socActual" name={t("plan.series.soc_actual")} stroke="var(--battery)" dot={false} />
           {floor !== null && (
@@ -128,6 +131,7 @@ export function SocChart({ hours, readingHour, floor }: ChartProps & { floor: nu
 
 export function GridChart({ hours, readingHour }: ChartProps) {
   const { t } = useI18n();
+  const [legends] = useChartLegends();
   // Achat au-dessus de zéro, surplus en dessous ; prévu en ligne (achat moins surplus).
   const data = hours.map((h) => ({
     hour: h.hour,
@@ -143,7 +147,7 @@ export function GridChart({ hours, readingHour }: ChartProps) {
           {axes()}
           <YAxis tick={TICK} stroke="var(--text-dim)" tickFormatter={axisTick("kWh")} width="auto" />
           <Tooltip contentStyle={TOOLTIP} labelFormatter={(h) => `${h}h`} formatter={(v) => `${kwh(Math.abs(Number(v)))} kWh`} />
-          <Legend wrapperStyle={LEGEND} />
+          {legends && <Legend wrapperStyle={LEGEND} />}
           <Bar dataKey="importActual" name={t("plan.series.import_actual")} stackId="actual" fill="var(--grid-import)">
             {data.map((point) => (
               <Cell key={point.hour} fill={point.offPeak ? "var(--grid-import)" : "var(--grid-import-peak)"} />

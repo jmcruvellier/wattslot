@@ -90,7 +90,7 @@ async function violations(): Promise<string[]> {
 const PAGES: [string, string | RegExp][] = [
   ["#/today", "En ce moment"],
   ["#/planning", "Pourquoi ce plan"],
-  ["#/curves", "Personnaliser"],
+  ["#/curves", "Production et consommation"],
   ["#/home", "Ma priorité"],
   ["#/assistant", "Exemples de questions"],
   ["#/settings", "Notifications"],

@@ -496,6 +496,8 @@
     "appearance": {
       "title": "Lingua e visualizzazione",
       "theme": "Tema",
+      "legends": "Legende dei grafici",
+      "legends_help": "Nomi delle curve dei grafici della sezione Grafici. La scelta viene salvata su questo dispositivo.",
       "help": "In automatico, l'app segue l'impostazione chiara o scura del telefono, del browser o del computer. La scelta viene salvata su questo dispositivo.",
       "themes": {
         "auto": {

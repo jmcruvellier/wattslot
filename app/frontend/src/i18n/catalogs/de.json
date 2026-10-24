@@ -496,6 +496,8 @@
     "appearance": {
       "title": "Sprache und Darstellung",
       "theme": "Design",
+      "legends": "Diagrammlegenden",
+      "legends_help": "Namen der Kurven in den Diagrammen des Bereichs Diagramme. Ihre Wahl wird auf diesem Gerät gespeichert.",
       "help": "Im automatischen Modus folgt die App der hellen oder dunklen Einstellung Ihres Telefons, Browsers oder Computers. Ihre Wahl wird auf diesem Gerät gespeichert.",
       "themes": {
         "auto": {

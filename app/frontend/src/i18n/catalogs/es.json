@@ -496,6 +496,8 @@
     "appearance": {
       "title": "Idioma y visualización",
       "theme": "Tema",
+      "legends": "Leyendas de las gráficas",
+      "legends_help": "Nombres de las curvas de las gráficas de la sección Gráficos. Tu elección se guarda en este dispositivo.",
       "help": "En automático, la aplicación sigue el ajuste claro u oscuro de tu teléfono, navegador u ordenador. Tu elección se guarda en este dispositivo.",
       "themes": {
         "auto": {

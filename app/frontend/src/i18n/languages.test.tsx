@@ -6,6 +6,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import CurvesScreen from "../plan/CurvesScreen";
+import { CurvesCustomizeButton } from "../plan/PlanActions";
 import PlanScreen from "../plan/PlanScreen";
 import { TODAY, WEEK } from "../plan/testViews";
 import { I18nProvider } from "./I18nProvider";
@@ -57,6 +58,8 @@ describe("vues du plan dans chaque langue", () => {
         mockApi();
         render(
           <I18nProvider>
+            {/* « Personnaliser » est dans la barre de titre, hors de l'écran (curvesEdit). */}
+            {Screen === CurvesScreen ? <CurvesCustomizeButton /> : null}
             <Screen />
           </I18nProvider>,
         );
