@@ -2487,29 +2487,33 @@ p[role="status"]:not(.state-message) {
 
 .graph-details h4 {
   margin: 0.15rem 2.5rem 0.4rem 0;
-  font-size: 1.15rem;
+  font-size: 1.05rem;
   font-weight: 800;
+  line-height: 1.3;
   overflow-wrap: anywhere;
 }
 
+/* Propriétés empilées : libellé discret au-dessus, valeur dessous — les valeurs longues
+ * (identifiants de capteurs) gardent leur alignement et se replient proprement, séparées par
+ * des filets comme l'onglet Properties de Fabric. */
 .graph-details dl {
-  margin: 0.4rem 0 0;
+  margin: 0.5rem 0 0;
+  display: grid;
+  gap: 0.45rem;
 }
 
 .graph-details dl > div {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 0.9rem;
-  padding: 0.35rem 0;
+  display: grid;
+  gap: 0.1rem;
+  padding-top: 0.45rem;
   border-top: 1px solid var(--border);
 }
 
 .graph-details dt {
-  flex: none;
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  margin: 0;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--text-dim);
 }
@@ -2518,7 +2522,7 @@ p[role="status"]:not(.state-message) {
   margin: 0;
   font-size: 0.9rem;
   font-weight: 600;
-  text-align: right;
+  line-height: 1.35;
   overflow-wrap: anywhere;
 }
 
@@ -2551,8 +2555,10 @@ p[role="status"]:not(.state-message) {
   color: var(--ok);
 }
 
-/* Popup du graphe : la même fiche par-dessus le dessin, au coin haut droit du canevas, limitée
- * en hauteur ; fermée par son bouton, un clic sur le fond ou la touche Échap. */
+/* Popup du graphe : la même fiche par-dessus le dessin, au coin haut droit du canevas. Le fond
+ * est légèrement plus clair que les surfaces du thème (blanc franc en clair), pour se détacher
+ * du dessin sombre, avec sa limite et son ombre ; fermée par son bouton, un clic sur le fond ou
+ * la touche Échap. */
 .graph-panel {
   margin: 0.75rem;
   max-height: calc(100% - 1.5rem);
@@ -2560,30 +2566,30 @@ p[role="status"]:not(.state-message) {
 }
 
 .graph-panel .graph-details {
-  width: 19.5rem;
+  width: 21rem;
   max-height: inherit;
   overflow-y: auto;
-  box-shadow: 0 0.75rem 2rem rgb(0 0 0 / 0.35);
+  background: color-mix(in srgb, var(--surface) 94%, white);
+  box-shadow: 0 0.75rem 2.25rem rgb(0 0 0 / 0.45);
 }
 
 .graph-details-close {
   position: absolute;
   top: 0.55rem;
   right: 0.55rem;
-  width: 1.9rem;
-  height: 1.9rem;
+  width: 2rem;
+  height: 2rem;
   border: none;
   border-radius: 999px;
-  background: none;
-  color: var(--text-dim);
-  font-size: 1rem;
+  background: var(--surface-alt);
+  color: var(--text);
+  font-size: 0.95rem;
   line-height: 1;
   cursor: pointer;
 }
 
 .graph-details-close:hover {
-  background: var(--surface-alt);
-  color: var(--text);
+  background: var(--border);
 }
 
 .graph-details-close:focus-visible {
