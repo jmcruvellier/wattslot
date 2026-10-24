@@ -15,6 +15,14 @@ The plan places your appliances where electricity is free (your surplus) or chea
 | **Day color (Tempo)** | The price depends on the day colour and the hour | The Home Assistant sensor giving today's colour (and tomorrow's, optional), the hour the colour day starts, then each colour with its price outside bands and its bands. The first colour is used when the colour is unknown |
 | **Dynamic price** | A price for every hour, from your supplier or the market | The Home Assistant sensor giving the price of the current and coming hours, its unit, and the price to use when it is not known |
 
+## Minute-precision bands
+
+Bands use local times, with the start included and the end excluded: **01:30–05:38** includes 30 minutes of the first hour and 38 minutes of the last hour. Minutes range from 00 to 59; **24:00** is allowed only as an end time. Older configurations without minutes keep their whole-hour times.
+
+An end earlier than the start crosses midnight, for example **22:30–00:38**. Day-of-week and month filters apply to the **civil day being priced**, including the part after midnight; they do not inherit the previous day's filters. Identical start and end times define an empty band, not a full day; use **00:00–24:00** for a full day. If bands overlap, the **first band wins** for every minute. Time not covered by any band uses the base price. These rules apply to time-of-use and day-color bands.
+
+The planner still uses **hourly prices**, not minute-by-minute prices: each hour is weighted by the number of minutes at each price. Mixed hours are rounded to six decimal places; a uniform hour retains its exact configured price. The dashboard and assistant show these hourly prices and hourly off-peak ranges, so a partially cheaper hour can be shown as off-peak. This is an hourly approximation, not sub-hourly optimization.
+
 ## Selling your surplus
 
 **Export price of the surplus**: what a kWh sent to the grid earns you (0 if you do not sell it). It can also be read from a sensor. With the **lowest cost** objective, the plan prefers using your surplus at home when it is worth more than its resale price.

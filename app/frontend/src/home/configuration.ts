@@ -112,7 +112,9 @@ export interface DeviceSettings {
 
 export interface PriceBand {
   start_hour: number;
+  start_minute?: number; // absent dans les anciennes configurations : 0
   end_hour: number; // exclue
+  end_minute?: number; // 0 lorsque la fin vaut 24 h
   eur_kwh: number;
   weekdays: number[]; // 0 lundi … 6 dimanche ; vide : tous les jours
   months: number[]; // 1 … 12 ; vide : toute l'année
@@ -200,7 +202,9 @@ export const DEFAULT_PRICE_EUR_KWH = 0.25;
 
 const band = (start_hour: number, end_hour: number, eur_kwh: number): PriceBand => ({
   start_hour,
+  start_minute: 0,
   end_hour,
+  end_minute: 0,
   eur_kwh,
   weekdays: [],
   months: [],
