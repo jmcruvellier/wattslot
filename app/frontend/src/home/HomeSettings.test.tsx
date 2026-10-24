@@ -159,7 +159,12 @@ describe("réglages de Ma maison", () => {
     const base = within(sheet).getByLabelText(/Prix hors des plages/);
     await userEvent.clear(base);
     await userEvent.type(base, "0.179076");
-    const nightPrice = within(sheet).getByRole("listitem", { name: "Plage 1" }).querySelector("input")!;
+    const nightBand = within(sheet).getByRole("listitem", { name: "Plage 1" });
+    await userEvent.selectOptions(within(nightBand).getByLabelText("De"), "1");
+    await userEvent.selectOptions(within(nightBand).getByLabelText("Minutes de début"), "30");
+    await userEvent.selectOptions(within(nightBand).getByLabelText("à"), "5");
+    await userEvent.selectOptions(within(nightBand).getByLabelText("Minutes de fin"), "38");
+    const nightPrice = within(nightBand).getByLabelText(/^prix/);
     await userEvent.clear(nightPrice);
     await userEvent.type(nightPrice, "0.138252");
     await userEvent.click(within(sheet).getByRole("button", { name: "Ajouter une plage" }));
@@ -175,8 +180,8 @@ describe("réglages de Ma maison", () => {
       kind: "TimeOfUseTariff",
       base_eur_kwh: 0.179076,
       bands: [
-        { start_hour: 0, end_hour: 6, eur_kwh: 0.138252, weekdays: [], months: [] },
-        { start_hour: 22, end_hour: 24, eur_kwh: 0.15, weekdays: [], months: [] },
+        { start_hour: 1, start_minute: 30, end_hour: 5, end_minute: 38, eur_kwh: 0.138252, weekdays: [], months: [] },
+        { start_hour: 22, start_minute: 0, end_hour: 24, end_minute: 0, eur_kwh: 0.15, weekdays: [], months: [] },
       ],
       export_eur_kwh: 0,
       colors: [],

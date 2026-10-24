@@ -19,6 +19,19 @@ function params(text: string): string[] {
 }
 
 describe("catalogues", () => {
+  const emptyBand = {
+    en: "Tariff: band {band} is empty (start and end have the same hour and minute).",
+    fr: "Tarif : la plage {band} est vide (début et fin à la même heure et à la même minute).",
+    de: "Tarif: Zeitfenster {band} ist leer (Beginn und Ende haben dieselbe Stunde und Minute).",
+    es: "Tarifa: la franja {band} está vacía (inicio y fin tienen la misma hora y el mismo minuto).",
+    it: "Tariffa: la fascia {band} è vuota (inizio e fine hanno la stessa ora e lo stesso minuto).",
+    nl: "Tarief: tijdvak {band} is leeg (begin en einde hebben hetzelfde uur en dezelfde minuut).",
+  };
+
+  it.each(LANGUAGES)("%s décrit une plage vide par l'égalité des heures et minutes, pas par le passage de minuit", async (language) => {
+    expect(entries(await catalogOf(language)).get("configuration.issue.band_empty")).toBe(emptyBand[language]);
+  });
+
   for (const language of LANGUAGES) {
     it(`${language} a les mêmes clés et les mêmes paramètres que l'anglais`, async () => {
       const reference = entries(await catalogOf("en"));

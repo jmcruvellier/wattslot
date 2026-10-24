@@ -15,6 +15,14 @@ Le plan place vos appareils là où l'électricité est gratuite (votre surplus)
 | **Couleur du jour (Tempo)** | Le prix dépend de la couleur du jour et de l'heure | Le capteur de Home Assistant qui donne la couleur du jour (et celle du lendemain, facultatif), l'heure où commence le jour de couleur, puis chaque couleur avec son prix hors plages et ses plages. La première couleur sert quand la couleur n'est pas connue |
 | **Prix dynamique** | Un prix pour chaque heure, par votre fournisseur ou le marché | Le capteur de Home Assistant qui donne le prix de l'heure en cours et des heures à venir, son unité, et le prix à utiliser quand il n'est pas connu |
 
+## Plages à la minute
+
+Les plages utilisent l'heure locale, début inclus et fin exclue : **01:30–05:38** couvre 30 minutes de la première heure et 38 minutes de la dernière. Les minutes vont de 00 à 59 ; **24:00** est autorisé seulement comme fin. Les anciennes configurations sans minutes conservent leurs heures pleines.
+
+Une fin avant le début traverse minuit, par exemple **22:30–00:38**. Les filtres de jour de semaine et de mois portent sur le **jour civil dont on calcule le prix**, y compris après minuit ; ils ne sont pas hérités de la veille. Des bornes identiques définissent une plage vide, pas une journée entière ; utilisez **00:00–24:00** pour celle-ci. En cas de chevauchement, la **première plage l'emporte** à chaque minute. Hors de toute plage, le prix de base s'applique. Ces règles valent pour les plages horaires et les plages par couleur de jour.
+
+Le calcul conserve des **prix horaires**, pas minute par minute : chaque heure est pondérée par le nombre de minutes à chaque prix. Les heures mixtes sont arrondies à six décimales ; une heure uniforme garde exactement son prix configuré. Le tableau de bord et l'assistant présentent ces prix et ces heures creuses horaires ; une heure partiellement moins chère peut donc apparaître comme creuse. C'est une approximation horaire, pas une optimisation infra-horaire.
+
 ## Revendre votre surplus
 
 **Prix de revente du surplus** : ce que vous rapporte un kWh envoyé au réseau (0 si vous ne le vendez pas). Il peut aussi être lu dans un capteur. Avec l'objectif **le coût le plus bas**, le plan préfère consommer votre surplus quand il vaut plus que son prix de revente.
