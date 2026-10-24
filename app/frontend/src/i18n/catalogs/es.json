@@ -697,6 +697,7 @@
     "fullscreen": "Pantalla completa",
     "fullscreen_exit": "Salir de la pantalla completa",
     "search": "Buscar un elemento…",
+    "center": "Centrar",
     "search_clear": "Borrar la búsqueda",
     "search_none": "Sin resultados."
   },

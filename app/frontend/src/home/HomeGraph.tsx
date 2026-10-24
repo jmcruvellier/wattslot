@@ -17,7 +17,10 @@ import {
   Panel,
   Position,
   ReactFlow,
+  getNodesBounds,
+  getViewportForBounds,
   useReactFlow,
+  useStoreApi,
   type Edge,
   type Node,
   type NodeProps,
@@ -88,15 +91,43 @@ function handleToward(from: { x: number; y: number }, to: { x: number; y: number
   return sideFor(Math.atan2(to.y - from.y, to.x - from.x));
 }
 
+// Hauteur réservée en haut du canevas pour la boîte de recherche (et son message « Aucun
+// résultat ») : le dessin recadré ne passe jamais dessous, ni à l'ouverture ni en recadrage.
+const SEARCH_BAND = "76px";
+
 // Recadre le dessin au changement de vue (l'ensemble est plus large que l'intérieur d'un
-// élément), au passage en plein écran, et sur les résultats de la recherche.
-function Fitter({ zoomed, fullscreen, hits }: { zoomed: string | null; fullscreen: boolean; hits: string }) {
-  const { fitView } = useReactFlow();
+// élément), au passage en plein écran, sur les résultats de la recherche et sur demande
+// (« Centrer ») — toujours en réservant la bande de la recherche en haut du canevas.
+function Fitter({
+  zoomed,
+  fullscreen,
+  hits,
+  center,
+}: {
+  zoomed: string | null;
+  fullscreen: boolean;
+  hits: string;
+  center: number;
+}) {
+  const instance = useReactFlow();
+  const store = useStoreApi();
   useEffect(() => {
-    const found = hits ? hits.split(",").map((id) => ({ id })) : [];
-    if (found.length > 0) fitView({ nodes: found, padding: 0.3, maxZoom: 1, duration: 300 });
-    else fitView({ padding: fullscreen ? 0.05 : 0.2, maxZoom: 1 });
-  }, [zoomed, fullscreen, hits, fitView]);
+    const { width, height } = store.getState();
+    if (!width || !height) return;
+    const nodes = instance.getNodes();
+    const ids = hits ? hits.split(",") : [];
+    const targets = ids.length > 0 ? nodes.filter((node) => ids.includes(node.id)) : nodes;
+    if (targets.length === 0) return; // recherche sans résultat : la vue ne bouge pas
+    const margin = hits ? 0.3 : fullscreen ? 0.05 : 0.2;
+    const bounds = getNodesBounds(targets);
+    const viewport = getViewportForBounds(bounds, width, height, 0.1, 1, {
+      top: SEARCH_BAND,
+      right: margin,
+      bottom: margin,
+      left: margin,
+    });
+    instance.setViewport(viewport, { duration: 300 });
+  }, [zoomed, fullscreen, hits, center, instance, store]);
   return null;
 }
 
@@ -109,6 +140,8 @@ export default function HomeGraph() {
   // Canevas plein écran (par-dessus toute l'application) et texte de la recherche courante.
   const [fullscreen, setFullscreen] = useState(false);
   const [search, setSearch] = useState("");
+  // Recadrage demandé par le bouton « Centrer » (compteur : chaque clic recadre).
+  const [centerTick, setCenterTick] = useState(0);
   const [narrow] = useState(narrowScreen);
 
   useEffect(() => {
@@ -240,9 +273,11 @@ export default function HomeGraph() {
           }}
           onPaneClick={() => setSelected(null)}
         >
-          <Fitter zoomed={zoomed} fullscreen={fullscreen} hits={view.matched ? [...view.matched].join(",") : ""} />
+          <Fitter zoomed={zoomed} fullscreen={fullscreen} hits={view.matched ? [...view.matched].join(",") : ""} center={centerTick} />
           <Background gap={28} />
-          <Controls showInteractive={false} />
+          {/* Le bouton de recadrage des commandes est remplacé par « Centrer » : le sien ignore
+           * la bande réservée à la boîte de recherche en haut du canevas. */}
+          <Controls showInteractive={false} showFitView={false} />
           <Panel position="top-left" className="graph-panel graph-panel-tools">
             <div className="graph-tools">
               {zoomed && (
@@ -250,6 +285,15 @@ export default function HomeGraph() {
                   ← {t("graph.back")}
                 </button>
               )}
+              <button
+                type="button"
+                className="graph-back"
+                aria-label={t("graph.center")}
+                title={t("graph.center")}
+                onClick={() => setCenterTick((count) => count + 1)}
+              >
+                ◎
+              </button>
               <button
                 type="button"
                 className="graph-back"
