@@ -39,8 +39,20 @@ function settings(key: string, change: Partial<DeviceSettings>): DeviceSettings 
 
 describe("phrases de la maison", () => {
   it("réunit les heures creuses de part et d'autre de minuit", () => {
-    expect(cheapestRanges(BLANK_TARIFF.bands)).toEqual([[22, 6]]);
-    expect(cheapestRanges([{ start_hour: 12, end_hour: 14, eur_kwh: 0.1, weekdays: [], months: [] }])).toEqual([[12, 14]]);
+    expect(cheapestRanges(BLANK_TARIFF.bands)).toEqual([[1320, 360]]);
+    expect(cheapestRanges([{ start_hour: 12, end_hour: 14, eur_kwh: 0.1, weekdays: [], months: [] }])).toEqual([[720, 840]]);
+  });
+
+  it("résume les minutes exactes et ne réunit que des plages contiguës", () => {
+    const band = (start_hour: number, start_minute: number, end_hour: number, end_minute: number) =>
+      ({ start_hour, start_minute, end_hour, end_minute, eur_kwh: 0.1, weekdays: [], months: [] });
+    const text = (bands: Tariff["bands"]) => tariffText({ ...BLANK_TARIFF, bands }, t, "fr");
+    expect(text([band(1, 30, 5, 38)])).toBe("Heures creuses 1 h 30 – 5 h 38");
+    expect(text([band(1, 30, 5, 38), band(5, 38, 6, 0)])).toBe("Heures creuses 1 h 30 – 6 h");
+    expect(text([band(5, 39, 6, 0), band(1, 30, 5, 38)])).toBe("Heures creuses 1 h 30 – 5 h 38, 5 h 39 – 6 h");
+    expect(text([band(22, 30, 24, 0), band(0, 0, 5, 38)])).toBe("Heures creuses 22 h 30 – 5 h 38");
+    expect(text([band(22, 30, 24, 0), band(0, 1, 5, 38)])).toBe("Heures creuses 0 h 01 – 5 h 38, 22 h 30 – 24 h");
+    expect(text([band(22, 30, 0, 38)])).toBe("Heures creuses 22 h 30 – 0 h 38");
   });
 
   it("décrit chaque sorte de contrat", () => {

@@ -176,7 +176,51 @@
 
 <#PriceBandShape> a sh:NodeShape ;
     sh:targetClass <#PriceBand> ;
-    sh:property [ sh:path <#startHour> ; sh:lessThan <#endHour> ; <#issueCode> "band_empty" ] .
+    <#issueCode> "band_empty" ;
+    sh:sparql [
+        sh:prefixes <ontology/schema/shapes> ;
+        sh:select """
+            SELECT $this WHERE {
+              $this wattslot:startHour ?start ; wattslot:endHour ?end .
+              OPTIONAL { $this wattslot:startMinute ?startMinute }
+              OPTIONAL { $this wattslot:endMinute ?endMinute }
+              FILTER (?start * 60 + COALESCE(?startMinute, 0) =
+                      ?end * 60 + COALESCE(?endMinute, 0))
+            }
+        """
+    ] .
+
+<#PriceBandBoundsShape> a sh:NodeShape ;
+    sh:targetClass <#PriceBand> ;
+    sh:property [
+        sh:path <#startHour> ; sh:datatype xsd:integer ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:minInclusive 0 ; sh:maxInclusive 23 ; <#issueCode> "band_bounds"
+    ] ;
+    sh:property [
+        sh:path <#endHour> ; sh:datatype xsd:integer ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:minInclusive 0 ; sh:maxInclusive 24 ; <#issueCode> "band_bounds"
+    ] ;
+    sh:property [
+        sh:path <#startMinute> ; sh:datatype xsd:integer ; sh:maxCount 1 ;
+        sh:minInclusive 0 ; sh:maxInclusive 59 ; <#issueCode> "band_bounds"
+    ] ;
+    sh:property [
+        sh:path <#endMinute> ; sh:datatype xsd:integer ; sh:maxCount 1 ;
+        sh:minInclusive 0 ; sh:maxInclusive 59 ; <#issueCode> "band_bounds"
+    ] .
+
+<#PriceBandMidnightShape> a sh:NodeShape ;
+    sh:targetClass <#PriceBand> ;
+    <#issueCode> "band_bounds" ;
+    sh:sparql [
+        sh:prefixes <ontology/schema/shapes> ;
+        sh:select """
+            SELECT $this WHERE {
+              $this wattslot:endHour 24 ; wattslot:endMinute ?minute .
+              FILTER (?minute != 0)
+            }
+        """
+    ] .
 
 <#TimeOfUseShape> a sh:NodeShape ;
     sh:targetClass <#TimeOfUseTariff> ;

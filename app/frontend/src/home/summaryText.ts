@@ -20,14 +20,18 @@ const DIRECTIONS = ["north", "north_east", "east", "south_east", "south", "south
 const WEEKDAYS = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"];
 
 const hours = (value: number) => `${value} h`;
+const bandTime = (value: number) => {
+  const minute = value % 60;
+  return `${hours(Math.floor(value / 60))}${minute ? ` ${String(minute).padStart(2, "0")}` : ""}`;
+};
 
-/** Plages les moins chères d'un tarif à plages, réunies à minuit : « 22 h – 6 h ». */
+/** Bornes en minutes des plages les moins chères, réunies à minuit. */
 export function cheapestRanges(bands: PriceBand[]): [number, number][] {
   if (bands.length === 0) return [];
   const lowest = Math.min(...bands.map((band) => band.eur_kwh));
   const ranges = bands
     .filter((band) => band.eur_kwh === lowest)
-    .map((band): [number, number] => [band.start_hour, band.end_hour])
+    .map((band): [number, number] => [band.start_hour * 60 + (band.start_minute ?? 0), band.end_hour * 60 + (band.end_minute ?? 0)])
     .sort((a, b) => a[0] - b[0]);
   const merged: [number, number][] = [];
   for (const range of ranges) {
@@ -36,7 +40,7 @@ export function cheapestRanges(bands: PriceBand[]): [number, number][] {
     else merged.push([...range]);
   }
   // 0 h – 6 h et 22 h – 24 h : une seule plage de nuit.
-  if (merged.length > 1 && merged[0][0] === 0 && merged[merged.length - 1][1] === 24) {
+  if (merged.length > 1 && merged[0][0] === 0 && merged[merged.length - 1][1] === 24 * 60) {
     const night = merged.pop()!;
     merged[0] = [night[0], merged[0][1]];
   }
@@ -58,7 +62,7 @@ export function tariffText(
       const ranges = cheapestRanges(tariff.bands);
       if (ranges.length === 0) return t("home_summary.contract.single", { price: price(tariff.base_eur_kwh) });
       return t("home_summary.contract.off_peak", {
-        ranges: ranges.map(([start, end]) => `${hours(start)} – ${hours(end)}`).join(", "),
+        ranges: ranges.map(([start, end]) => `${bandTime(start)} – ${bandTime(end)}`).join(", "),
       });
     }
     case "DayColorTariff":

@@ -395,6 +395,26 @@ def test_tariff_of_the_home_without_home_assistant(
     assert "export_prices" not in found
 
 
+def test_assistant_tariff_uses_weighted_minute_bands(
+    api: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    tariff = Tariff(
+        kind=TariffKind.TIME_OF_USE,
+        base_eur_kwh=0.30,
+        bands=[PriceBand(start_hour=1, start_minute=30, end_hour=5, end_minute=38, eur_kwh=0.12)],
+    )
+    monkeypatch.setattr("wattslot.configuration.tariff_of", lambda _: tariff)
+    found = _call(api, "get_tariff")
+    assert found["prices"] == [
+        {"start": "00:00", "end": "01:00", "price": "0,300\u00a0€/kWh"},
+        {"start": "01:00", "end": "02:00", "price": "0,210\u00a0€/kWh"},
+        {"start": "02:00", "end": "05:00", "price": "0,120\u00a0€/kWh"},
+        {"start": "05:00", "end": "06:00", "price": "0,186\u00a0€/kWh"},
+        {"start": "06:00", "end": "00:00", "price": "0,300\u00a0€/kWh"},
+    ]
+    assert found["off_peak"] == [{"start": "01:00", "end": "06:00"}]
+
+
 class FakeHomeAssistant:
     """Client de HA connecté qui rend la couleur Tempo du jour et du lendemain."""
 
