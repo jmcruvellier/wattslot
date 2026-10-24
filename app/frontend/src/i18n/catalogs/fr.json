@@ -1323,6 +1323,7 @@
       "you": "Vous",
       "assistant": "Assistant",
       "thinking": "L'assistant réfléchit…",
+      "duration": "réponse en {time} s",
       "input": "Votre message",
       "placeholder": "Combien les panneaux ont-ils produit hier ?",
       "send": "Envoyer",

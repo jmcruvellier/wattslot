@@ -1323,6 +1323,7 @@
       "you": "U",
       "assistant": "Assistent",
       "thinking": "De assistent denkt na…",
+      "duration": "antwoord in {time} s",
       "input": "Uw bericht",
       "placeholder": "Hoeveel hebben de panelen gisteren opgewekt?",
       "send": "Versturen",

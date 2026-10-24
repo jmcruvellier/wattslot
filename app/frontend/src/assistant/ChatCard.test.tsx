@@ -195,6 +195,17 @@ describe("discussion avec l'assistant", () => {
     expect(calls.find((call) => call.url === "api/assistant/chat")?.body.agent_id).toBe("open_webui:qwen2.5:14b");
   });
 
+  it("affiche le temps mis par une réponse à droite de celle-ci", async () => {
+    mockApi(() => Response.json({ text: "Réponse 1", conversation_id: "c1", error: false }));
+    renderCard();
+    const user = userEvent.setup();
+
+    await user.type(await screen.findByLabelText("Votre message"), "Pourquoi 11 h ?{Enter}");
+
+    const reply = await screen.findByText("Réponse 1");
+    expect(reply.querySelector(".assistant-chat-time")?.textContent).toMatch(/^réponse en \d/);
+  });
+
   it("une erreur s'affiche dans la conversation", async () => {
     mockApi(() => Response.json({ detail: "timeout" }, { status: 502 }));
     renderCard();

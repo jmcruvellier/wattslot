@@ -10,6 +10,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { ApiError, getJson, postJson } from "../api";
 import { useI18n } from "../i18n/I18nProvider";
+import { formatNumber } from "../i18n/translate";
 
 interface Named {
   id: string;
@@ -29,7 +30,8 @@ interface ChatReply {
   error: boolean;
 }
 
-type Line = { from: "me" | "assistant"; text: string; error?: boolean };
+// Duration d'une réponse, en secondes (affichée à droite de la réponse).
+type Line = { from: "me" | "assistant"; text: string; error?: boolean; duration?: number };
 
 const OPEN_WEBUI = "open_webui:";
 
@@ -130,6 +132,7 @@ export default function ChatCard({
       .map((line) => ({ role: line.from === "me" ? "user" : "assistant", content: line.text }));
     setLines((current) => [...current, { from: "me", text }]);
     setWaiting(true);
+    const started = performance.now();
     try {
       const reply = await postJson<ChatReply>("api/assistant/chat", {
         text,
@@ -141,12 +144,20 @@ export default function ChatCard({
       setConversation(reply.conversation_id);
       setLines((current) => [
         ...current,
-        { from: "assistant", text: reply.text || t("assistant.chat.empty"), error: reply.error },
+        {
+          from: "assistant",
+          text: reply.text || t("assistant.chat.empty"),
+          error: reply.error,
+          duration: (performance.now() - started) / 1000,
+        },
       ]);
     } catch (error) {
       const lost = error instanceof ApiError && error.status === 503 && !chosen.startsWith(OPEN_WEBUI);
       const key = lost ? "assistant.chat.not_connected" : "assistant.chat.failed";
-      setLines((current) => [...current, { from: "assistant", text: t(key), error: true }]);
+      setLines((current) => [
+        ...current,
+        { from: "assistant", text: t(key), error: true, duration: (performance.now() - started) / 1000 },
+      ]);
     } finally {
       setWaiting(false);
     }
@@ -244,6 +255,13 @@ export default function ChatCard({
             <span className="visually-hidden">
               {t(line.from === "me" ? "assistant.chat.you" : "assistant.chat.assistant")} :{" "}
             </span>
+            {line.from === "assistant" && line.duration !== undefined && (
+              <span className="assistant-chat-time dim">
+                {t("assistant.chat.duration", {
+                  time: formatNumber(language, line.duration, line.duration < 10 ? 1 : 0),
+                })}
+              </span>
+            )}
             {line.text}
           </p>
         ))}
