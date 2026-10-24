@@ -121,5 +121,14 @@ describe("HomeGraph", () => {
     // La fiche se ferme par son bouton.
     fireEvent.click(screen.getByRole("button", { name: "Fermer" }));
     expect(screen.queryByRole("region", { name: "Lave-linge" })).toBeNull();
+
+    // Un double-clic entre dans l'élément : lui au centre, ses voisins autour, et « Retour »
+    // pour revenir à la vue d'ensemble.
+    fireEvent.doubleClick(container.querySelector('[data-id="sensor:washer:sensor.washer_power"]')!);
+    await screen.findByRole("region", { name: "sensor.washer_power" });
+    expect(container.querySelectorAll(".react-flow__node").length).toBe(2); // le capteur et son équipement
+    fireEvent.click(screen.getByRole("button", { name: /Retour/ }));
+    await screen.findAllByText("Lave-linge");
+    expect(container.querySelectorAll(".react-flow__node").length).toBe(3);
   });
 });
