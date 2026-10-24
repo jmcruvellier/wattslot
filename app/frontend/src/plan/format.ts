@@ -50,6 +50,15 @@ export function time(iso: string, language: Language): string {
   return new Date(iso).toLocaleTimeString(language, { hour: "2-digit", minute: "2-digit" });
 }
 
+/** Âge d'un instant : « il y a 12 min », « il y a 3 h », « hier » ; pluriels de la langue. */
+export function since(iso: string, language: Language, now: Date = new Date()): string {
+  const minutes = Math.round((now.getTime() - new Date(iso).getTime()) / 60_000);
+  const format = new Intl.RelativeTimeFormat(language, { numeric: "auto" });
+  if (minutes < 60) return format.format(-minutes, "minute");
+  if (minutes < 24 * 60) return format.format(-Math.round(minutes / 60), "hour");
+  return format.format(-Math.round(minutes / (24 * 60)), "day");
+}
+
 export function longDate(iso: string, language: Language): string {
   return new Date(`${iso}T12:00:00`).toLocaleDateString(language, { weekday: "long", day: "numeric", month: "long" });
 }

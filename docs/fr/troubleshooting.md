@@ -15,7 +15,7 @@
 | Aucune prévision solaire | Ajoutez une prévision au tableau Énergie (Forecast.Solar, Solcast, Open-Meteo…), ou décrivez vos panneaux dans **Ma maison** |
 | Un capteur n'existe plus / est indisponible / n'a rien envoyé depuis un jour | Remplacez-le dans **Ma maison**, ou vérifiez l'appareil et son intégration dans Home Assistant |
 | Pas d'historique dans Home Assistant pour certains capteurs | Ils n'ont pas de statistiques (pas de `state_class`) : le plan part de leurs seules mesures en direct |
-| Aucun plan n'a pu être calculé depuis plus de 2 heures | Regardez les autres problèmes, ou **Calculer** depuis **Planning** |
+| Aucun plan n'a pu être calculé depuis plus de 2 heures | Regardez les autres problèmes, ou **Calculer** depuis la barre de titre d'**Aujourd'hui**, **Planning** ou **Courbes** |
 
 ## Signaler un problème
 

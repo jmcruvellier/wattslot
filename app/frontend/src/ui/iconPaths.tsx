@@ -66,6 +66,7 @@ export const PATHS = {
   ),
   bulb: <path d="M9 18h6M10 21h4M8.5 14.5A6 6 0 1 1 15.5 14.5c-.9.8-1.5 1.6-1.5 2.5h-4c0-.9-.6-1.7-1.5-2.5z" />,
   "arrow-up": <path d="M12 20V5M6 11l6-6 6 6" />,
+  play: <path d="M7 4.5l13 7.5-13 7.5z" />,
   refresh: <path d="M20 11a8 8 0 0 0-14.3-4.6L4 8M4 4v4h4M4 13a8 8 0 0 0 14.3 4.6L20 16M20 20v-4h-4" />,
   layout: (
     <>

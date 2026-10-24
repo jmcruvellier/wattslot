@@ -39,6 +39,10 @@ export type Load =
   | { status: "day"; view: DayView }
   | { status: "week"; view: WeekView };
 
+/** « Calculer » ou « Rafraîchir » a réussi (barre de titre) : les vues et les indicateurs se
+ * relisent tout de suite, sans attendre leur prochain passage (30 s ou 1 min). */
+export const RUN_EVENT = "wattslot:run";
+
 /** Onglet ouvert et sa vue, relue quand un nouveau calcul arrive ou sur `reload`. */
 export function usePlanView() {
   const { language } = useI18n();
@@ -46,6 +50,12 @@ export function usePlanView() {
   const [load, setLoad] = useState<Load>({ status: "loading" });
   const [version, setVersion] = useState<number | null>(null);
   const [count, setCount] = useState(0); // après « Calculer » ou « Réessayer »
+  // « Calculer » ou « Rafraîchir » réussi dans la barre de titre : relecture immédiate.
+  useEffect(() => {
+    const onRun = () => setCount((value) => value + 1);
+    window.addEventListener(RUN_EVENT, onRun);
+    return () => window.removeEventListener(RUN_EVENT, onRun);
+  }, []);
 
   // Version de la vue affichée, relue régulièrement : un nouveau calcul recharge la vue.
   useEffect(() => {

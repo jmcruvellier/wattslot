@@ -1,5 +1,4 @@
 import { render, screen, within } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { I18nProvider } from "../i18n/I18nProvider";
@@ -7,19 +6,16 @@ import Banners from "./Banners";
 import SummaryCards from "./SummaryCards";
 import { TODAY, TOMORROW, WITHOUT_BATTERY, WITHOUT_SOLAR, YESTERDAY } from "./testViews";
 import type { DayView } from "./types";
-import PlanActions from "./PlanActions";
 import ViewHeader from "./ViewHeader";
 
-function renderDay(view: DayView, onChanged = vi.fn()) {
+function renderDay(view: DayView) {
   render(
     <I18nProvider>
-      <PlanActions kind={view.kind} onChanged={onChanged} />
       <ViewHeader view={view} />
       <Banners view={view} />
       <SummaryCards view={view} />
     </I18nProvider>,
   );
-  return onChanged;
 }
 
 describe("vue d'un jour", () => {
@@ -35,8 +31,6 @@ describe("vue d'un jour", () => {
   it("Aujourd'hui : en-tête, bandeaux et cartes au relevé", () => {
     renderDay(TODAY);
 
-    expect(screen.getByRole("button", { name: "Calculer" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Rafraîchir les données réelles" })).toBeInTheDocument();
     expect(screen.getByText(/Sèche-linge reporté au dimanche 18 octobre/)).toBeInTheDocument();
 
     const departure = screen.getByLabelText("Départ de la batterie");
@@ -64,18 +58,15 @@ describe("vue d'un jour", () => {
     expect(grid).not.toHaveTextContent("∞");
   });
 
-  it("Hier : pas de bouton ni de ligne « Journée »", () => {
+  it("Hier : pas de ligne « Journée » dans les cartes", () => {
     renderDay(YESTERDAY);
 
-    expect(screen.queryByRole("button")).not.toBeInTheDocument();
     expect(screen.getByRole("article", { name: "Production" })).not.toHaveTextContent("Journée");
   });
 
   it("Demain : une valeur prévue par carte, pas de bilan des équipements", () => {
     renderDay(TOMORROW);
 
-    expect(screen.getByRole("button", { name: "Calculer" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Rafraîchir les données réelles" })).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Équipements")).not.toBeInTheDocument();
     expect(screen.getByRole("article", { name: "SoC max" })).toHaveTextContent("5,00 kWh 98 % · 16h");
     expect(screen.getByLabelText("Météo")).toHaveTextContent("-12 % par rapport à aujourd'hui (9,5 kWh prévus)");
@@ -97,15 +88,5 @@ describe("vue d'un jour", () => {
     expect(screen.queryByLabelText("Météo")).not.toBeInTheDocument();
     expect(screen.queryByRole("article", { name: "Production" })).not.toBeInTheDocument();
     expect(screen.getByRole("article", { name: "Réseau" })).toBeInTheDocument();
-  });
-
-  it("« Calculer » lance un calcul puis recharge la vue", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(Response.json({}));
-    const onChanged = renderDay(TODAY);
-
-    await userEvent.click(screen.getByRole("button", { name: "Calculer" }));
-
-    expect(fetchMock).toHaveBeenCalledWith("api/planning/run", { method: "POST" });
-    expect(onChanged).toHaveBeenCalledOnce();
   });
 });
