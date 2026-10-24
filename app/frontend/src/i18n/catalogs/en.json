@@ -686,7 +686,13 @@
     "entity": "Home Assistant sensor",
     "subtype_of": "subtype of",
     "is_a": "is a",
-    "has_sensor": "sensor"
+    "has_sensor": "sensor",
+    "node_library": "Library",
+    "node_type": "Type",
+    "node_device": "Device",
+    "node_sensor": "Sensor",
+    "has_issue": "Has issues",
+    "close": "Close"
   },
   "library": {
     "loading": "Loading the library…",

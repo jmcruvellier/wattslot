@@ -2304,3 +2304,191 @@ p[role="status"]:not(.state-message) {
     display: none;
   }
 }
+
+/* Graphe de la maison (React Flow, onglet « Avancé ») : le canevas occupe l'essentiel de l'écran
+ * et tout suit le thème clair ou sombre — nœuds, liens, étiquettes, commandes et popup. */
+.graph-view {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.graph-hint {
+  margin: 0;
+  color: var(--text-dim);
+}
+
+.graph-canvas {
+  height: clamp(30rem, 75dvh, 48rem);
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  background: var(--bg);
+}
+
+/* Fond pointillé et commandes de zoom aux couleurs du thème. */
+.graph-canvas .react-flow__background circle {
+  fill: var(--border);
+}
+
+.graph-canvas .react-flow__controls {
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: none;
+}
+
+.graph-canvas .react-flow__controls button {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+
+.graph-canvas .react-flow__controls button:hover {
+  background: var(--surface-alt);
+}
+
+/* Nœuds : une carte du thème, avec la couleur de sa colonne en liseré et dans sa pastille de
+ * catégorie (bibliothèque, type, équipement, capteur) ; l'avertissement compte les anomalies. */
+.graph-node {
+  --node-color: var(--text-dim);
+  width: 12.5rem;
+  padding: 0.4rem 0.7rem 0.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--node-color);
+  border-radius: 0.6rem;
+  color: var(--text);
+}
+
+.graph-node .graph-node-kind {
+  margin: 0;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--node-color);
+}
+
+.graph-node .graph-node-label {
+  margin: 0.1rem 0 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.graph-node .graph-node-issue {
+  margin-left: 0.35rem;
+  font-weight: 800;
+  color: var(--warning);
+}
+
+.graph-library {
+  --node-color: var(--text-dim);
+}
+
+.graph-type {
+  --node-color: var(--consumption);
+}
+
+.graph-device {
+  --node-color: var(--battery);
+}
+
+.graph-sensor {
+  --node-color: var(--go);
+}
+
+/* Nœud sélectionné : contour de la couleur des liens, plus épais. */
+.react-flow__node.selected .graph-node {
+  border-color: var(--link);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--link) 30%, transparent);
+}
+
+/* Liens : fins et discrets par défaut, en couleur et animés pour l'élément sélectionné, dont
+ * l'étiquette (« est un », « capteur »…) devient alors lisible sur le fond du thème. */
+.graph-canvas .react-flow__edge-path {
+  stroke: var(--text-dim);
+  stroke-width: 1.5px;
+}
+
+.graph-canvas .react-flow__edge.selected .react-flow__edge-path,
+.graph-canvas .react-flow__edge.animated .react-flow__edge-path {
+  stroke: var(--link);
+  stroke-width: 2px;
+}
+
+.graph-canvas .react-flow__edge-text {
+  fill: var(--text);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.graph-canvas .react-flow__edge-textbg {
+  fill: var(--bg);
+}
+
+/* Popup des propriétés de l'élément cliqué : coin haut droit du canevas, par-dessus le dessin,
+ * fermée par son bouton, un clic sur le fond ou la touche Échap. */
+.graph-panel {
+  margin: 0.75rem;
+}
+
+.graph-details {
+  position: relative;
+  width: 17.5rem;
+  max-height: calc(100% - 1.5rem);
+  overflow-y: auto;
+  padding: 0.9rem 1.1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  box-shadow: 0 0.75rem 2rem rgb(0 0 0 / 0.3);
+}
+
+.graph-details-close {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: none;
+  border-radius: 999px;
+  background: none;
+  color: var(--text-dim);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.graph-details-close:hover {
+  background: var(--surface-alt);
+  color: var(--text);
+}
+
+.graph-details h4 {
+  margin: 0 1.5rem 0.4rem 0;
+  font-size: 1rem;
+  overflow-wrap: anywhere;
+}
+
+.graph-details dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.15rem 0.75rem;
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.graph-details dt {
+  color: var(--text-dim);
+}
+
+.graph-details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.graph-details ul {
+  margin: 0.5rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.85rem;
+}

@@ -686,7 +686,13 @@
     "entity": "Sensore di Home Assistant",
     "subtype_of": "sottotipo di",
     "is_a": "è un",
-    "has_sensor": "sensore"
+    "has_sensor": "sensore",
+    "node_library": "Libreria",
+    "node_type": "Tipo",
+    "node_device": "Apparecchio",
+    "node_sensor": "Sensore",
+    "has_issue": "Con problemi",
+    "close": "Chiudi"
   },
   "library": {
     "loading": "Caricamento della libreria…",

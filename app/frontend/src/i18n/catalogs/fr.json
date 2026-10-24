@@ -686,7 +686,13 @@
     "entity": "Capteur de Home Assistant",
     "subtype_of": "sous-type de",
     "is_a": "est un",
-    "has_sensor": "capteur"
+    "has_sensor": "capteur",
+    "node_library": "Bibliothèque",
+    "node_type": "Type",
+    "node_device": "Équipement",
+    "node_sensor": "Capteur",
+    "has_issue": "Avec anomalies",
+    "close": "Fermer"
   },
   "library": {
     "loading": "Chargement de la bibliothèque…",
