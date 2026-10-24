@@ -97,9 +97,13 @@ const SEARCH_BAND = "76px" as const;
 // « centrer » des commandes (sous les boutons de zoom), et à chaque changement de vue ou sur les
 // résultats de la recherche.
 const FIT_MARGIN = 0.2;
+// Plancher de zoom assez bas pour que même une grande maison tienne entière dans le canevas
+// avec sa bande : sinon le cadrage est écrêté, la bande n'est plus respectée et le bas du
+// dessin disparaît.
+const MIN_ZOOM = 0.02;
 const FIT_OPTIONS = {
   padding: { top: SEARCH_BAND, right: FIT_MARGIN, bottom: FIT_MARGIN, left: FIT_MARGIN },
-  minZoom: 0.1,
+  minZoom: MIN_ZOOM,
   maxZoom: 1,
 };
 
@@ -252,7 +256,7 @@ export default function HomeGraph() {
           nodesConnectable={false}
           fitView
           fitViewOptions={FIT_OPTIONS}
-          minZoom={0.1}
+          minZoom={MIN_ZOOM}
           onNodeClick={(_, node) => setSelected(graph.nodes.find((n) => n.id === node.id) ?? null)}
           // Double-clic : entre dans l'élément (lui au centre, ses voisins autour) et ouvre sa
           // fiche ; sur l'élément déjà au centre, ressort à la vue d'ensemble. Le zoom du
