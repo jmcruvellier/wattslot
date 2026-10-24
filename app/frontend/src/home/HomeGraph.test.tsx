@@ -4,10 +4,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { I18nProvider } from "../i18n/I18nProvider";
 import HomeGraph from "./HomeGraph";
 
-// Graphe de la maison : sur téléphone, la liste remplace le dessin. Sur grand écran, l'explorateur
-// d'ontologie met un élément au centre, ses voisins autour, et chaque nœud porte ses poignées
-// d'attache (source et cible, aux quatre côtés) : React Flow les attend pour dessiner les
-// liaisons — un nœud sans poignée les fait disparaître en silence.
+// Graphe de la maison : sur téléphone, la liste remplace le dessin. Sur grand écran, toute
+// l'ontologie est visible d'un coup — bibliothèque, types, équipements, capteurs — et chaque nœud
+// porte ses poignées d'attache (source et cible, aux quatre côtés) : React Flow les attend pour
+// dessiner les liaisons — un nœud sans poignée les fait disparaître en silence.
 
 function mockHomeApi() {
   vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
@@ -86,8 +86,8 @@ describe("HomeGraph", () => {
     expect(washer.querySelector(".issue")).not.toBeNull();
   });
 
-  it("explore l'ontologie : premier équipement au centre, fiche ouverte, voisin puis retour", async () => {
-    // Écran large : l'explorateur d'ontologie remplace la liste.
+  it("montre toute l'ontologie d'un coup, et ouvre la fiche de l'élément cliqué", async () => {
+    // Écran large : le dessin remplace la liste, avec tous les objets du modèle.
     vi.stubGlobal("matchMedia", (query: string) => ({ matches: !query.includes("max-width"), media: query }));
     mockHomeApi();
 
@@ -97,25 +97,29 @@ describe("HomeGraph", () => {
       </I18nProvider>,
     );
 
-    // Le premier équipement est au centre, sa fiche ouverte, ses voisins autour.
+    // Le type de la bibliothèque, l'équipement et son capteur sont tous sur le dessin, sans fiche
+    // ouverte d'office.
     await screen.findByRole("figure", { name: "Ma maison en graphe" });
-    const details = await screen.findByRole("region", { name: "Lave-linge" });
-    expect(details.querySelector(".issue")).not.toBeNull();
+    // Le type de la bibliothèque, l'équipement (même nom) et son capteur sont sur le dessin,
+    // sans fiche ouverte d'office.
+    await screen.findAllByText("Lave-linge");
+    expect(screen.getAllByText("Lave-linge").length).toBe(2); // le type et l'équipement
+    expect(screen.getByText("sensor.washer_power")).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Lave-linge" })).toBeNull();
     const nodes = container.querySelectorAll(".react-flow__node");
     const handles = container.querySelectorAll(".react-flow__handle");
     // Les liaisons ne se dessinent que sur les poignées : huit par nœud, deux par côté.
-    expect(nodes.length).toBeGreaterThan(1);
+    expect(nodes.length).toBe(3);
     expect(handles.length).toBe(nodes.length * 8);
 
-    // Un clic sur un voisin le place au centre et ouvre sa fiche.
-    const sensor = container.querySelector('[data-id="sensor:washer:sensor.washer_power"]');
-    expect(sensor).not.toBeNull();
-    fireEvent.click(sensor!);
-    const sensorDetails = await screen.findByRole("region", { name: "sensor.washer_power" });
-    expect(sensorDetails).toHaveTextContent("Rôle");
+    // Un clic sur l'équipement ouvre sa fiche, avec ses propriétés et son anomalie.
+    fireEvent.click(container.querySelector('[data-id="device:washer"]')!);
+    const details = await screen.findByRole("region", { name: "Lave-linge" });
+    expect(details).toHaveTextContent("Capteurs");
+    expect(details.querySelector(".issue")).not.toBeNull();
 
-    // « Retour » revient à l'élément précédent, dont la fiche s'ouvre.
-    fireEvent.click(screen.getByRole("button", { name: /Retour/ }));
-    await screen.findByRole("region", { name: "Lave-linge" });
+    // La fiche se ferme par son bouton.
+    fireEvent.click(screen.getByRole("button", { name: "Fermer" }));
+    expect(screen.queryByRole("region", { name: "Lave-linge" })).toBeNull();
   });
 });

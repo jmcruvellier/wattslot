@@ -1,8 +1,10 @@
 // Vue en graphe du modèle de la maison (lot 2t.3), en lecture seule : React Flow, chargé à la
-// demande depuis l'onglet Maison. À la façon de l'explorateur d'ontologie de Microsoft Fabric :
-// un élément au centre, ses voisins autour en cercle, reliés par des flèches étiquetées ; un clic
-// sur un voisin le place au centre et ouvre sa fiche, et « Retour » revient à l'élément précédent.
-// Sur un écran étroit (téléphone), une liste remplace le graphe.
+// demande depuis l'onglet Maison. Toute l'ontologie est visible d'un coup, à la façon de
+// l'aperçu de Microsoft Fabric : chaque type de la bibliothèque reçoit un secteur d'angle
+// proportionnel à sa branche, étalée du centre vers l'extérieur (types propres, équipements,
+// capteurs) ; les liaisons gardent leur sens et leur étiquette. Un clic ouvre la fiche de
+// l'élément et met en avant ses liaisons. Sur un écran étroit (téléphone), une liste remplace
+// le graphe.
 
 import "@xyflow/react/dist/style.css";
 
@@ -14,7 +16,6 @@ import {
   Panel,
   Position,
   ReactFlow,
-  useReactFlow,
   type Edge,
   type Node,
   type NodeProps,
@@ -41,7 +42,7 @@ type FlowNode = Node<FlowNodeData, "home">;
 
 // Poignées d'attache des liaisons, aux quatre côtés du nœud : sans elles, React Flow ne peut pas
 // joindre les objets, et elles permettent de rattacher une flèche au côté qui fait face à son
-// voisin, comme dans l'explorateur d'ontologie de Fabric.
+// voisin, quelle que soit la disposition du dessin.
 function HomeNode({ data }: NodeProps<FlowNode>) {
   const { t } = useI18n();
   return (
@@ -69,8 +70,66 @@ function HomeNode({ data }: NodeProps<FlowNode>) {
 
 const NODE_TYPES = { home: HomeNode };
 
+// Profondeur de chaque nature d'objet, du centre du dessin vers l'extérieur.
+const LEVELS: Record<NodeKind, number> = { library: 0, type: 1, device: 2, sensor: 3 };
+const LEVEL_RADIUS = 420; // rayon du premier anneau, puis un pas par niveau
+const RADIUS_STEP = 380;
+
+// Branche d'un type de bibliothèque : ses types propres et équipements, puis leurs capteurs.
+type Branch = { id: string; kind: NodeKind; children: Branch[]; leaves: number };
+
+function branchTree(graph: Graph): Branch[] {
+  const kinds = graph.edges.filter((edge) => edge.target.startsWith("kind:")).map((edge) => edge.target);
+  const childrenOf = (id: string) => graph.edges.filter((edge) => edge.target === id).map((edge) => edge.source);
+  const build = (id: string): Branch => {
+    const node = graph.nodes.find((n) => n.id === id);
+    const children = childrenOf(id).map(build);
+    const leaves = children.length === 0 ? 1 : children.reduce((sum, child) => sum + child.leaves, 0);
+    return { id, kind: node?.kind ?? "library", children, leaves };
+  };
+  return [...new Set(kinds)].map(build);
+}
+
+// Place une branche dans son secteur d'angle : la racine au milieu du secteur, ses enfants côte à
+// côte, chacun avec une part du secteur proportionnelle à ses feuilles.
+function placeBranch(
+  branch: Branch,
+  angleStart: number,
+  angleEnd: number,
+  positions: Map<string, { x: number; y: number }>,
+) {
+  const radius = LEVEL_RADIUS + LEVELS[branch.kind] * RADIUS_STEP;
+  const middle = (angleStart + angleEnd) / 2;
+  positions.set(branch.id, { x: Math.round(Math.cos(middle) * radius), y: Math.round(Math.sin(middle) * radius) });
+  let cursor = angleStart;
+  for (const child of branch.children) {
+    const span = (angleEnd - angleStart) * (child.leaves / branch.leaves);
+    placeBranch(child, cursor, cursor + span, positions);
+    cursor += span;
+  }
+}
+
+// Vue globale de l'ontologie : tous les objets du modèle, placés en anneaux autour du centre —
+// un secteur par type de la bibliothèque, proportionnel à sa branche.
+function layout(graph: Graph): Map<string, { x: number; y: number }> {
+  const positions = new Map<string, { x: number; y: number }>();
+  const branches = branchTree(graph);
+  const total = branches.reduce((sum, branch) => sum + branch.leaves, 0);
+  let cursor = -Math.PI / 2;
+  for (const branch of branches) {
+    const span = (2 * Math.PI * branch.leaves) / total;
+    placeBranch(branch, cursor, cursor + span, positions);
+    cursor += span;
+  }
+  // Objets sans branche (hors arbre) : dernier recours, au centre.
+  for (const node of graph.nodes) {
+    if (!positions.has(node.id)) positions.set(node.id, { x: 0, y: 0 });
+  }
+  return positions;
+}
+
 // Côté du nœud qui fait face à un point : la flèche entre deux objets s'attache au côté le plus
-// direct, quelle que soit la position du voisin dans le cercle.
+// direct, quelle que soit la position du voisin.
 function sideFor(angle: number): "top" | "bottom" | "left" | "right" {
   const cos = Math.cos(angle);
   const sin = Math.sin(angle);
@@ -83,22 +142,10 @@ function handleToward(from: { x: number; y: number }, to: { x: number; y: number
   return sideFor(Math.atan2(to.y - from.y, to.x - from.x));
 }
 
-// Recadre le dessin quand l'élément au centre change : le cercle des voisins grandit ou rétrécit.
-function Fitter({ focus }: { focus: string | null }) {
-  const { fitView } = useReactFlow();
-  useEffect(() => {
-    fitView({ padding: 0.2, maxZoom: 1 });
-  }, [focus, fitView]);
-  return null;
-}
-
 export default function HomeGraph() {
   const { t } = useI18n();
   const [load, setLoad] = useState<Load>({ status: "loading" });
-  // Élément au centre du dessin, fiche ouverte, et éléments déjà visités pour « Retour ».
-  const [focus, setFocus] = useState<string | null>(null);
   const [selected, setSelected] = useState<GraphNode | null>(null);
-  const [previous, setPrevious] = useState<string[]>([]);
   const [narrow] = useState(narrowScreen);
 
   useEffect(() => {
@@ -110,14 +157,7 @@ export default function HomeGraph() {
     ])
       .then(async ([home, types, configuration]) => {
         const check = await postJson<{ issues: ConfigurationIssue[] }>("api/configuration/validate", configuration);
-        const graph = buildGraph(home, types.types, check.issues, t);
-        setLoad({ status: "ready", graph });
-        // À l'ouverture, le premier équipement est au centre et sa fiche est ouverte.
-        const first = graph.nodes.find((node) => node.kind === "device") ?? graph.nodes[0];
-        if (first) {
-          setFocus((current) => current ?? first.id);
-          setSelected((current) => current ?? first);
-        }
+        setLoad({ status: "ready", graph: buildGraph(home, types.types, check.issues, t) });
       })
       .catch(() => {
         if (!controller.signal.aborted) setLoad({ status: "error" });
@@ -135,52 +175,37 @@ export default function HomeGraph() {
     return () => document.removeEventListener("keydown", onKey);
   }, [selected]);
 
-  // Le dessin : l'élément au centre, ses voisins en cercle autour, et les liaisons qui les relient.
+  // Toute l'ontologie d'un coup : les objets placés en anneaux, et les liaisons qui gardent leur
+  // sens et leur étiquette ; celles de l'élément choisi sont mises en avant.
   const view = useMemo(() => {
-    if (load.status !== "ready" || !focus) return null;
-    const byId = new Map(load.graph.nodes.map((node) => [node.id, node]));
-    const center = byId.get(focus);
-    if (!center) return null;
-    const links = load.graph.edges.filter((edge) => edge.source === focus || edge.target === focus);
-    const neighborIds = [...new Set(links.flatMap((edge) => [edge.source, edge.target]))].filter((id) => id !== focus);
-    // Rayon du cercle : les voisins assez espacés pour que les étiquettes restent lisibles.
-    const radius = Math.max(360, neighborIds.length * 48);
-    const neighbors = neighborIds.map((id, index): FlowNode => {
-      const neighbor = byId.get(id)!;
-      const angle = (2 * Math.PI * index) / neighborIds.length - Math.PI / 2;
-      return {
-        id,
+    if (load.status !== "ready") return null;
+    const positions = layout(load.graph);
+    const nodes: FlowNode[] = load.graph.nodes.map(
+      (node): FlowNode => ({
+        id: node.id,
         type: "home",
-        position: { x: Math.round(Math.cos(angle) * radius), y: Math.round(Math.sin(angle) * radius) },
-        data: { label: neighbor.label, kind: neighbor.kind, issues: neighbor.issues.length },
-      };
-    });
-    const centerNode: FlowNode = {
-      id: center.id,
-      type: "home",
-      className: "graph-focus",
-      position: { x: 0, y: 0 },
-      data: { label: center.label, kind: center.kind, issues: center.issues.length },
-    };
-    // Flèches étiquetées, du centre vers ses voisins : chaque extrémité s'attache au côté du nœud
-    // qui fait face à l'autre, et la pointe garde le sens de la relation (l'équipement vers son
-    // type, l'équipement vers son capteur).
-    const edges: Edge[] = links.map((link): Edge => {
-      const source = [centerNode, ...neighbors].find((node) => node.id === link.source)!;
-      const target = [centerNode, ...neighbors].find((node) => node.id === link.target)!;
+        position: positions.get(node.id) ?? { x: 0, y: 0 },
+        data: { label: node.label, kind: node.kind, issues: node.issues.length },
+      }),
+    );
+    const edges: Edge[] = load.graph.edges.map((edge): Edge => {
+      const linked = selected !== null && (edge.source === selected.id || edge.target === selected.id);
+      const from = positions.get(edge.source) ?? { x: 0, y: 0 };
+      const to = positions.get(edge.target) ?? { x: 0, y: 0 };
       return {
-        id: link.id,
-        source: link.source,
-        target: link.target,
-        sourceHandle: `source-${handleToward(source.position, target.position)}`,
-        targetHandle: `target-${handleToward(target.position, source.position)}`,
+        id: edge.id,
+        source: edge.source,
+        target: edge.target,
+        sourceHandle: `source-${handleToward(from, to)}`,
+        targetHandle: `target-${handleToward(to, from)}`,
         type: "default",
-        label: link.label,
+        label: edge.label,
         markerEnd: { type: MarkerType.ArrowClosed },
+        animated: linked,
       };
     });
-    return { center, nodes: [centerNode, ...neighbors], edges };
-  }, [load, focus]);
+    return { nodes, edges };
+  }, [load, selected]);
 
   if (load.status === "loading") return <p>{t("graph.loading")}</p>;
   if (load.status === "error") return <p role="alert">{t("graph.error")}</p>;
@@ -206,28 +231,6 @@ export default function HomeGraph() {
     );
   }
 
-  // Un clic sur un voisin le place au centre et ouvre sa fiche ; un clic sur l'élément au centre
-  // rouvre sa fiche ; « Retour » revient à l'élément précédent.
-  const explore = (id: string) => {
-    const node = graph.nodes.find((n) => n.id === id);
-    if (!node) return;
-    if (id === focus) {
-      setSelected(node);
-      return;
-    }
-    if (focus) setPrevious((path) => [...path, focus]);
-    setFocus(id);
-    setSelected(node);
-  };
-
-  const back = () => {
-    const last = previous[previous.length - 1];
-    if (!last) return;
-    setPrevious((path) => path.slice(0, -1));
-    setFocus(last);
-    setSelected(graph.nodes.find((node) => node.id === last) ?? null);
-  };
-
   return (
     <div className="graph-view">
       <p className="graph-hint">{t("graph.hint")}</p>
@@ -240,21 +243,13 @@ export default function HomeGraph() {
             nodesDraggable={false}
             nodesConnectable={false}
             fitView
-            fitViewOptions={{ padding: 0.2, maxZoom: 1 }}
+            fitViewOptions={{ padding: 0.15, maxZoom: 1 }}
             minZoom={0.1}
-            onNodeClick={(_, node) => explore(node.id)}
+            onNodeClick={(_, node) => setSelected(graph.nodes.find((n) => n.id === node.id) ?? null)}
             onPaneClick={() => setSelected(null)}
           >
-            <Fitter focus={focus} />
             <Background gap={28} />
             <Controls showInteractive={false} />
-            {previous.length > 0 && (
-              <Panel position="top-left" className="graph-panel graph-panel-back">
-                <button type="button" className="graph-back" onClick={back}>
-                  ← {t("graph.back")}
-                </button>
-              </Panel>
-            )}
             {selected && (
               <Panel position="top-right" className="graph-panel">
                 <NodeDetails node={selected}>
