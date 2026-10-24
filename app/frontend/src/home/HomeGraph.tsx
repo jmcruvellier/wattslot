@@ -27,6 +27,7 @@ import { getJson, postJson } from "../api";
 import { useI18n } from "../i18n/I18nProvider";
 import type { Configuration, ConfigurationIssue } from "./configuration";
 import { buildGraph, type Graph, type GraphNode, type NodeKind } from "./graph";
+import { layout, layoutInside } from "./layout";
 import type { DeviceTypes, HomeModel } from "./types";
 
 const NARROW = "(max-width: 700px)";
@@ -70,79 +71,6 @@ function HomeNode({ data }: NodeProps<FlowNode>) {
 }
 
 const NODE_TYPES = { home: HomeNode };
-
-// Profondeur de chaque nature d'objet, du centre du dessin vers l'extérieur.
-const LEVELS: Record<NodeKind, number> = { library: 0, type: 1, device: 2, sensor: 3 };
-const LEVEL_RADIUS = 420; // rayon du premier anneau, puis un pas par niveau
-const RADIUS_STEP = 380;
-
-// Branche d'un type de bibliothèque : ses types propres et équipements, puis leurs capteurs.
-type Branch = { id: string; kind: NodeKind; children: Branch[]; leaves: number };
-
-function branchTree(graph: Graph): Branch[] {
-  const kinds = graph.edges.filter((edge) => edge.target.startsWith("kind:")).map((edge) => edge.target);
-  const childrenOf = (id: string) => graph.edges.filter((edge) => edge.target === id).map((edge) => edge.source);
-  const build = (id: string): Branch => {
-    const node = graph.nodes.find((n) => n.id === id);
-    const children = childrenOf(id).map(build);
-    const leaves = children.length === 0 ? 1 : children.reduce((sum, child) => sum + child.leaves, 0);
-    return { id, kind: node?.kind ?? "library", children, leaves };
-  };
-  return [...new Set(kinds)].map(build);
-}
-
-// Place une branche dans son secteur d'angle : la racine au milieu du secteur, ses enfants côte à
-// côte, chacun avec une part du secteur proportionnelle à ses feuilles.
-function placeBranch(
-  branch: Branch,
-  angleStart: number,
-  angleEnd: number,
-  positions: Map<string, { x: number; y: number }>,
-) {
-  const radius = LEVEL_RADIUS + LEVELS[branch.kind] * RADIUS_STEP;
-  const middle = (angleStart + angleEnd) / 2;
-  positions.set(branch.id, { x: Math.round(Math.cos(middle) * radius), y: Math.round(Math.sin(middle) * radius) });
-  let cursor = angleStart;
-  for (const child of branch.children) {
-    const span = (angleEnd - angleStart) * (child.leaves / branch.leaves);
-    placeBranch(child, cursor, cursor + span, positions);
-    cursor += span;
-  }
-}
-
-// Vue globale de l'ontologie : tous les objets du modèle, placés en anneaux autour du centre —
-// un secteur par type de la bibliothèque, proportionnel à sa branche.
-function layout(graph: Graph): Map<string, { x: number; y: number }> {
-  const positions = new Map<string, { x: number; y: number }>();
-  const branches = branchTree(graph);
-  const total = branches.reduce((sum, branch) => sum + branch.leaves, 0);
-  let cursor = -Math.PI / 2;
-  for (const branch of branches) {
-    const span = (2 * Math.PI * branch.leaves) / total;
-    placeBranch(branch, cursor, cursor + span, positions);
-    cursor += span;
-  }
-  // Objets sans branche (hors arbre) : dernier recours, au centre.
-  for (const node of graph.nodes) {
-    if (!positions.has(node.id)) positions.set(node.id, { x: 0, y: 0 });
-  }
-  return positions;
-}
-
-// Vue d'un élément, après un double-clic : il passe au centre et ses voisins l'entourent — les
-// liaisons directes seulement, pour entrer dans le détail de sa branche.
-function layoutInside(graph: Graph, focus: string): { positions: Map<string, { x: number; y: number }>; ids: string[] } {
-  const positions = new Map<string, { x: number; y: number }>([[focus, { x: 0, y: 0 }]]);
-  const links = graph.edges.filter((edge) => edge.source === focus || edge.target === focus);
-  const neighbors = [...new Set(links.flatMap((edge) => [edge.source, edge.target]))].filter((id) => id !== focus);
-  // Rayon du cercle : les voisins assez espacés pour que les étiquettes restent lisibles.
-  const radius = Math.max(360, neighbors.length * 48);
-  neighbors.forEach((id, index) => {
-    const angle = (2 * Math.PI * index) / neighbors.length - Math.PI / 2;
-    positions.set(id, { x: Math.round(Math.cos(angle) * radius), y: Math.round(Math.sin(angle) * radius) });
-  });
-  return { positions, ids: [focus, ...neighbors] };
-}
 
 // Côté du nœud qui fait face à un point : la flèche entre deux objets s'attache au côté le plus
 // direct, quelle que soit la position du voisin.
