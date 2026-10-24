@@ -2403,53 +2403,156 @@ p[role="status"]:not(.state-message) {
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--link) 30%, transparent);
 }
 
-/* Liens : fins et discrets par défaut, en couleur et animés pour l'élément sélectionné, dont
- * l'étiquette (« est un », « capteur »…) devient alors lisible sur le fond du thème. */
+/* Liens d'ontologie : flèches et relations étiquetées, aux couleurs du thème. Les poignées
+ * d'attache sont invisibles (le graphe est en lecture seule) et les pointes de flèche suivent
+ * la couleur des traits ; celles de l'élément sélectionné passent en couleur d'action. */
+.graph-canvas .react-flow__handle {
+  opacity: 0;
+  pointer-events: none;
+  border: none;
+}
+
+.graph-canvas .react-flow__marker polyline {
+  stroke: var(--text-dim) !important;
+  fill: var(--text-dim) !important;
+}
+
+.graph-canvas .react-flow__edge.animated .react-flow__marker polyline {
+  stroke: var(--link) !important;
+  fill: var(--link) !important;
+}
+
 .graph-canvas .react-flow__edge-path {
   stroke: var(--text-dim);
   stroke-width: 1.5px;
 }
 
-.graph-canvas .react-flow__edge.selected .react-flow__edge-path,
 .graph-canvas .react-flow__edge.animated .react-flow__edge-path {
   stroke: var(--link);
-  stroke-width: 2px;
+  stroke-width: 2.5px;
 }
 
 .graph-canvas .react-flow__edge-text {
-  fill: var(--text);
-  font-size: 0.75rem;
+  fill: var(--text-dim);
+  font-size: 0.7rem;
   font-weight: 600;
+}
+
+.graph-canvas .react-flow__edge.animated .react-flow__edge-text {
+  fill: var(--link);
+  font-weight: 700;
 }
 
 .graph-canvas .react-flow__edge-textbg {
   fill: var(--bg);
 }
 
-/* Popup des propriétés de l'élément cliqué : coin haut droit du canevas, par-dessus le dessin,
- * fermée par son bouton, un clic sur le fond ou la touche Échap. */
-.graph-panel {
-  margin: 0.75rem;
-}
-
+/* Fiche d'un élément (popup du graphe et liste du téléphone) : carte du thème avec sa catégorie
+ * en couleur, le nom, puis propriétés et anomalies en lignes réglées. */
 .graph-details {
   position: relative;
-  width: 17.5rem;
-  max-height: calc(100% - 1.5rem);
-  overflow-y: auto;
-  padding: 0.9rem 1.1rem;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 1rem;
-  box-shadow: 0 0.75rem 2rem rgb(0 0 0 / 0.3);
+  border-radius: 1.25rem;
+  padding: 0.85rem 1.1rem 1rem;
+}
+
+.graph-details-kind {
+  margin: 0;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--node-color, var(--text-dim));
+}
+
+.graph-details h4 {
+  margin: 0.15rem 2.5rem 0.4rem 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.graph-details dl {
+  margin: 0.4rem 0 0;
+}
+
+.graph-details dl > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.9rem;
+  padding: 0.35rem 0;
+  border-top: 1px solid var(--border);
+}
+
+.graph-details dt {
+  flex: none;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.graph-details dd {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.graph-details ul {
+  margin: 0.5rem 0 0;
+  padding: 0.45rem 0 0;
+  border-top: 1px solid var(--border);
+  list-style: none;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.graph-details ul li {
+  padding-left: 1.15rem;
+  position: relative;
+  font-size: 0.85rem;
+}
+
+.graph-details ul li::before {
+  content: "⚠";
+  position: absolute;
+  left: 0;
+}
+
+.graph-details-ok {
+  margin: 0.5rem 0 0;
+  padding: 0.45rem 0 0;
+  border-top: 1px solid var(--border);
+  font-size: 0.85rem;
+  color: var(--ok);
+}
+
+/* Popup du graphe : la même fiche par-dessus le dessin, au coin haut droit du canevas, limitée
+ * en hauteur ; fermée par son bouton, un clic sur le fond ou la touche Échap. */
+.graph-panel {
+  margin: 0.75rem;
+  max-height: calc(100% - 1.5rem);
+  z-index: 4;
+}
+
+.graph-panel .graph-details {
+  width: 19.5rem;
+  max-height: inherit;
+  overflow-y: auto;
+  box-shadow: 0 0.75rem 2rem rgb(0 0 0 / 0.35);
 }
 
 .graph-details-close {
   position: absolute;
-  top: 0.4rem;
-  right: 0.4rem;
-  width: 1.75rem;
-  height: 1.75rem;
+  top: 0.55rem;
+  right: 0.55rem;
+  width: 1.9rem;
+  height: 1.9rem;
   border: none;
   border-radius: 999px;
   background: none;
@@ -2464,31 +2567,7 @@ p[role="status"]:not(.state-message) {
   color: var(--text);
 }
 
-.graph-details h4 {
-  margin: 0 1.5rem 0.4rem 0;
-  font-size: 1rem;
-  overflow-wrap: anywhere;
-}
-
-.graph-details dl {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 0.15rem 0.75rem;
-  margin: 0;
-  font-size: 0.85rem;
-}
-
-.graph-details dt {
-  color: var(--text-dim);
-}
-
-.graph-details dd {
-  margin: 0;
-  overflow-wrap: anywhere;
-}
-
-.graph-details ul {
-  margin: 0.5rem 0 0;
-  padding-left: 1.1rem;
-  font-size: 0.85rem;
+.graph-details-close:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
 }
