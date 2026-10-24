@@ -1293,6 +1293,9 @@ a.ui-setting-row {
 }
 
 .run-button .run-when {
+  /* Largeur fixe : le bouton ne change pas de taille entre l'âge, l'attente et « — ». */
+  min-width: 7.5rem;
+  text-align: center;
   color: var(--text-dim);
   font-size: 0.78rem;
   font-weight: 600;
@@ -1307,8 +1310,8 @@ a.ui-setting-row {
   cursor: wait;
 }
 
-/* Calcul en cours : l'icône tourne (comme les messages d'état). */
-.run-button[disabled] .icon {
+/* Seul le bouton lancé tourne : l'autre est désactivé (un calcul à la fois) mais reste tel quel. */
+.run-button-running .icon {
   animation: state-spin 1s linear infinite;
 }
 

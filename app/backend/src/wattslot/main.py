@@ -1139,17 +1139,30 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/api/planning/last-run")
     def planning_last_run(request: Request) -> LastRun:
         """Dernier calcul du plan du jour (heure, à la main ou automatique) et dernier relevé
-        des données réelles, pour les boutons de la barre de titre de l'interface."""
+        des données réelles, pour les boutons de la barre de titre de l'interface. Le calcul
+        vient de la trace gardée dans le plan (``derniere_execution``), comme les vues : le
+        bouton « Rafraîchir » réenregistre le plan sans recalculer, et ne doit pas rajeunir
+        l'heure du dernier calcul."""
         plan = PlanStore(request.app.state.database).load("today")
         if plan is None:
             return LastRun()
-        actual = (plan.content or {}).get("donnees_reelles_cache") or {}
-        stamp = actual.get("heure_maj_iso")
+        execution = (plan.content or {}).get("derniere_execution") or {}
+        stamp = execution.get("heure_iso")
         try:
-            read_at = datetime.fromisoformat(stamp) if isinstance(stamp, str) else None
+            computed = datetime.fromisoformat(stamp) if isinstance(stamp, str) else plan.computed_at
+        except ValueError:
+            computed = plan.computed_at
+        actual = (plan.content or {}).get("donnees_reelles_cache") or {}
+        read = actual.get("heure_maj_iso")
+        try:
+            read_at = datetime.fromisoformat(read) if isinstance(read, str) else None
         except ValueError:
             read_at = None
-        return LastRun(computed_at=plan.computed_at, manual=plan.manual, actual_updated_at=read_at)
+        return LastRun(
+            computed_at=computed,
+            manual=bool(execution.get("manuel")) if "manuel" in execution else plan.manual,
+            actual_updated_at=read_at,
+        )
 
     @app.get("/api/planning/plan")
     def planning_plan(

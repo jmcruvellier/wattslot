@@ -12,7 +12,7 @@ import { since, time } from "./format";
 import { RUN_EVENT } from "./planView";
 import Icon from "../ui/Icon";
 
-type Action = "idle" | "running" | "failed";
+type Running = "compute" | "refresh" | null;
 type LastRun = { computed_at: string | null; manual: boolean; actual_updated_at: string | null };
 
 const LAST_RUN_URL = "api/planning/last-run";
@@ -52,21 +52,23 @@ function useTick(): void {
 
 export default function PlanActions() {
   const { language, t } = useI18n();
-  const [action, setAction] = useState<Action>("idle");
+  // Seul le bouton lancé est animé ; l'autre garde son âge affiché, sans tourner (styles.css).
+  const [running, setRunning] = useState<Running>(null);
+  const [failed, setFailed] = useState(false);
   const last = useLastRun();
   useTick();
 
-  const run = async (url: string) => {
-    setAction("running");
+  const run = async (action: Exclude<Running, null>, url: string) => {
+    setRunning(action);
     try {
       const response = await fetch(url, { method: "POST" });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      setAction("idle");
       // Les vues ouvertes se relisent tout de suite (planView, TodayView).
       window.dispatchEvent(new Event(RUN_EVENT));
     } catch {
-      setAction("failed");
+      setFailed(true);
     }
+    setRunning(null);
     refreshStatus();
   };
 
@@ -80,43 +82,38 @@ export default function PlanActions() {
     : null;
   const computeLabel = `${t("plan.header.compute")} — ${computed}`;
   const refreshLabel = `${t("plan.header.refresh")}${reading ? ` — ${reading}` : ""}`;
-  const running = action === "running";
 
   return (
     <>
       <div className="run-actions">
         <button
           type="button"
-          className="run-button run-button-primary"
-          disabled={running}
-          onClick={() => void run("api/planning/run")}
+          className={running === "compute" ? "run-button run-button-primary run-button-running" : "run-button run-button-primary"}
+          disabled={running !== null}
+          onClick={() => void run("compute", "api/planning/run")}
           title={computeLabel}
           aria-label={computeLabel}
         >
           <Icon name="play" size={18} />
           <span className="run-when" aria-hidden="true">
-            {running ? "…" : last?.computed_at ? since(last.computed_at, language) : "—"}
+            {last?.computed_at ? since(last.computed_at, language) : "—"}
           </span>
         </button>
         <button
           type="button"
-          className="run-button"
-          disabled={running}
-          onClick={() => void run("api/planning/actual")}
+          className={running === "refresh" ? "run-button run-button-running" : "run-button"}
+          disabled={running !== null}
+          onClick={() => void run("refresh", "api/planning/actual")}
           title={refreshLabel}
           aria-label={refreshLabel}
         >
           <Icon name="refresh" size={18} />
           <span className="run-when" aria-hidden="true">
-            {running ? "…" : last?.actual_updated_at ? since(last.actual_updated_at, language) : "—"}
+            {last?.actual_updated_at ? since(last.actual_updated_at, language) : "—"}
           </span>
         </button>
       </div>
-      {action === "failed" && (
-        <p role="alert">
-          {t("plan.header.failed")}
-        </p>
-      )}
+      {failed && <p role="alert">{t("plan.header.failed")}</p>}
     </>
   );
 }
