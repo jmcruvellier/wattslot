@@ -1029,10 +1029,19 @@ pre {
 }
 
 .ui-card-head .trend {
-  font-size: 0.85rem;
-  font-weight: 700;
   letter-spacing: normal;
   text-transform: none;
+}
+
+/* Vue Aujourd'hui : la tendance en pilule, fond teinté et contour de la couleur d'état
+   (currentColor : vert, rouge ou gris selon que l'écart est favorable). */
+.trend-pill {
+  font-size: 1rem;
+  font-weight: 800;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  background: color-mix(in srgb, currentColor 10%, transparent);
 }
 
 .ui-card-title {

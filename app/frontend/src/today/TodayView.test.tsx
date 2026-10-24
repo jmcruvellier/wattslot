@@ -127,9 +127,9 @@ describe("TodayView", () => {
     expect(screen.getByText("Au plus haut vers 16h00 : 98 %.")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "10,0 kWh prévus aujourd'hui" })).toBeInTheDocument();
     expect(screen.getByText("14,0 kWh déjà produits.")).toBeInTheDocument();
-    // Tendances de TODAY : SoC +25 %, production +8 %, en tête de chaque carte.
+    // Tendances de TODAY : SoC +25 %, production +8 %, en pilule en tête de chaque carte.
     expect(screen.getAllByTitle("Écart avec la prévision au relevé")).toHaveLength(2);
-    expect(screen.getByText("▲ +25%")).toBeInTheDocument();
+    expect(screen.getByText("▲ +25%")).toHaveClass("trend-pill");
     expect(screen.getByText("▲ +8%")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Rien à lancer d'ici ce soir" })).toBeInTheDocument();
   });

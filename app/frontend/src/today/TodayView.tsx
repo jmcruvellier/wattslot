@@ -52,12 +52,13 @@ function kw(watts: number): string {
   return value < 1000 ? `${kwh(value, 0)} W` : `${kwh(value / 1000, 1)} kW`;
 }
 
-/** Tendance d'une ligne au relevé (mesuré contre estimé), en tête de carte ; rien sans mesure. */
+/** Tendance d'une ligne au relevé (mesuré contre estimé), en pilule en tête de carte ; rien sans
+ * mesure. Pilule et non marque des cartes de résumé : elle doit se lire d'un coup d'œil. */
 function TrendBadge({ view, line }: { view: DayView; line: LineKey }) {
   const { t } = useI18n();
   const trend = view.cards?.at_reading.find((card) => card.key === line)?.trend;
   if (!trend || trend.direction === "none") return null;
-  return <TrendMark trend={trend} label={t("today.trend")} />;
+  return <TrendMark trend={trend} label={t("today.trend")} className="trend-pill" />;
 }
 
 export default function TodayView({ onNavigate }: { onNavigate?: (target: string) => void }) {
