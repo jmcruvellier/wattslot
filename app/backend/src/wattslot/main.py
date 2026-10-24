@@ -125,6 +125,7 @@ class HomeAssistantHealth(BaseModel):
     state: ConnectionState
     version: str | None = None
     error: str | None = None
+    error_code: str | None = None  # code stable traduit par l'interface
 
 
 class Connections(BaseModel):
@@ -185,6 +186,7 @@ class ConnectionInfo(BaseModel):
     method: str | None = None  # oauth ou token
     state: ConnectionState
     error: str | None = None
+    error_code: str | None = None  # code stable traduit par l'interface
 
 
 class HomeFeatures(BaseModel):
@@ -514,7 +516,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             ha = HomeAssistantHealth(state=ConnectionState.NOT_CONFIGURED)
         else:
             ha = HomeAssistantHealth(
-                state=client.status.state, version=client.status.version, error=client.status.error
+                state=client.status.state,
+                version=client.status.version,
+                error=client.status.error,
+                error_code=client.status.error_code,
             )
         return Health(
             version=__version__, mode=settings.mode, connections=Connections(home_assistant=ha)
@@ -1353,7 +1358,28 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             method=stored.method if stored else None,
             state=client.status.state if client else ConnectionState.NOT_CONFIGURED,
             error=client.status.error if client else None,
+            error_code=client.status.error_code if client else None,
         )
+
+    @app.post("/api/connection/retry")
+    async def retry_connection(request: Request) -> ConnectionInfo:
+        """Reconnecte Home Assistant tout de suite (bouton « Réessayer » de l'interface) :
+        le délai avant la prochaine tentative est interrompu. Attend le résultat de la
+        tentative, quelques secondes au plus."""
+        client: HomeAssistantClient | None = request.app.state.home_assistant
+        if client is not None and client.status.state is ConnectionState.ERROR:
+            # L'état est remplacé (jamais modifié) à chaque tentative : attendre un état
+            # nouveau, c'est attendre la fin de celle demandée ici.
+            before = client.status
+            client.retry_now()
+            with contextlib.suppress(TimeoutError):
+                async with asyncio.timeout(15):
+                    while True:
+                        status = client.status
+                        if status is not before and status.state is not ConnectionState.CONNECTING:
+                            break
+                        await asyncio.sleep(0.1)
+        return get_connection(request)
 
     @app.post("/api/connection/token")
     async def connect_with_token(request: Request, asked: TokenLogin) -> dict[str, bool]:

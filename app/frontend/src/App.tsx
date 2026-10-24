@@ -2,6 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 
 import { reveal } from "./common/reveal";
 import { returnedFromHomeAssistant } from "./connection/address";
+import { connectionError } from "./connection/service";
 import PlanScreen from "./plan/PlanScreen";
 import { SupportLinks } from "./settings/BetaCards";
 import StartScreen from "./start/StartScreen";
@@ -19,6 +20,7 @@ export interface HomeAssistantHealth {
   state: "not_configured" | "connecting" | "connected" | "error";
   version: string | null;
   error: string | null;
+  error_code: string | null;
 }
 
 export interface Health {
@@ -274,8 +276,8 @@ function HomeAssistantStatus({ status }: { status: HomeAssistantHealth }) {
     <>
       <dd>{t(`connection.${status.state}`)}</dd>
       {status.version && <dd>{t("health.home_assistant_version", { version: status.version })}</dd>}
-      {status.state === "error" && status.error && (
-        <dd>{t("health.home_assistant_error", { error: status.error })}</dd>
+      {status.state === "error" && status.error_code && (
+        <dd>{t("health.home_assistant_error", { error: connectionError(t, status.error_code) })}</dd>
       )}
     </>
   );

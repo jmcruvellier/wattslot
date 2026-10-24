@@ -30,7 +30,12 @@ def test_health_without_home_assistant(tmp_path: Path) -> None:
         "version": __version__,
         "mode": "standalone",
         "connections": {
-            "home_assistant": {"state": "not_configured", "version": None, "error": None}
+            "home_assistant": {
+                "state": "not_configured",
+                "version": None,
+                "error": None,
+                "error_code": None,
+            }
         },
     }
 

@@ -40,7 +40,7 @@ class Client:
 
     def __init__(self, dashboard: bool = True, forecast: bool = True) -> None:
         sources = [{"type": "solar", "stat_energy_from": "sensor.pv"}] if dashboard else []
-        self.status = SimpleNamespace(state=ConnectionState.CONNECTED, error=None)
+        self.status = SimpleNamespace(state=ConnectionState.CONNECTED, error=None, error_code=None)
         self.snapshot = SimpleNamespace(energy_preferences={"energy_sources": sources})
         self.forecast = forecast
 

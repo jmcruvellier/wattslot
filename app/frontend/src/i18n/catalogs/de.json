@@ -38,6 +38,12 @@
     "connected": "verbunden",
     "error": "Verbindungsfehler"
   },
+  "connection_error": {
+    "starting": "Home Assistant wurde neu gestartet und ist noch nicht bereit; die Anwendung versucht es von selbst weiter.",
+    "unreachable": "Home Assistant antwortet unter der angegebenen Adresse nicht: Prüfen Sie, ob er läuft und ob die Adresse stimmt.",
+    "token_refused": "Home Assistant lehnt das Zugriffstoken ab: Verbinden Sie die Anwendung erneut (oder prüfen Sie das Token in der .env-Datei, wenn die Verbindung dort festgelegt ist).",
+    "unknown": "Die Verbindung zu Home Assistant ist fehlgeschlagen."
+  },
   "nav": {
     "main": "Hauptnavigation",
     "today": "Heute",
@@ -604,7 +610,9 @@
     "token_help": "Erstellen Sie ein Token in Home Assistant: Ihr Profil › Sicherheit › Langlebige Zugriffstoken.",
     "token": "Token",
     "connect_token": "Mit diesem Token verbinden",
-    "security": "Die Verbindung wird auf dem Gerät gespeichert, auf dem die Anwendung läuft, niemals in einem Export oder Bericht. Machen Sie die Anwendung nur im lokalen Netz erreichbar: Sie hat keine eigene Anmeldung."
+    "security": "Die Verbindung wird auf dem Gerät gespeichert, auf dem die Anwendung läuft, niemals in einem Export oder Bericht. Machen Sie die Anwendung nur im lokalen Netz erreichbar: Sie hat keine eigene Anmeldung.",
+    "retry": "Jetzt erneut versuchen",
+    "checking": "Prüfen…"
   },
   "home": {
     "title": "Mein Zuhause",
@@ -1160,7 +1168,8 @@
       "impossible_data": "Prüfen Sie den Verlauf dieses Sensors in Home Assistant zu dieser Zeit.",
       "impossible_data_unknown": "Vermutlich verfälscht ein Zählersprung den Grundverbrauch: Prüfen Sie den Verlauf Ihrer Energiezähler in Home Assistant."
     },
-    "hour": "{hour}:00 Uhr"
+    "hour": "{hour}:00 Uhr",
+    "checking": "Prüfen…"
   },
   "report": {
     "title": "Bericht für eine Fehlermeldung",

@@ -38,6 +38,12 @@
     "connected": "connecté",
     "error": "erreur de connexion"
   },
+  "connection_error": {
+    "starting": "Home Assistant a redémarré et n'est pas encore prêt ; l'application réessaie d'elle-même.",
+    "unreachable": "Home Assistant ne répond pas à l'adresse indiquée : vérifiez qu'il fonctionne et que l'adresse est correcte.",
+    "token_refused": "Home Assistant refuse le jeton d'accès : reconnectez l'application (ou vérifiez le jeton dans le fichier .env si la connexion y est réglée).",
+    "unknown": "La connexion à Home Assistant a échoué."
+  },
   "nav": {
     "main": "Navigation principale",
     "today": "Aujourd'hui",
@@ -604,7 +610,9 @@
     "token_help": "Créez un jeton dans Home Assistant : votre profil › Sécurité › Jetons d'accès longue durée.",
     "token": "Jeton",
     "connect_token": "Se connecter avec ce jeton",
-    "security": "La connexion est gardée sur l'appareil qui fait tourner l'application, jamais dans un export ni un rapport. N'exposez l'application que sur votre réseau local : elle n'a pas d'identification propre."
+    "security": "La connexion est gardée sur l'appareil qui fait tourner l'application, jamais dans un export ni un rapport. N'exposez l'application que sur votre réseau local : elle n'a pas d'identification propre.",
+    "retry": "Réessayer maintenant",
+    "checking": "Vérification…"
   },
   "home": {
     "title": "Ma maison",
@@ -1160,7 +1168,8 @@
       "impossible_data": "Vérifiez l'historique de ce capteur dans Home Assistant à cette heure-là.",
       "impossible_data_unknown": "Un saut de compteur fausse sans doute la consommation de base : vérifiez l'historique de vos compteurs d'énergie dans Home Assistant."
     },
-    "hour": "{hour} h"
+    "hour": "{hour} h",
+    "checking": "Vérification…"
   },
   "report": {
     "title": "Rapport pour un signalement",

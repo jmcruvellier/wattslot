@@ -1,7 +1,9 @@
 """Faux serveur Home Assistant (API WebSocket) pour les tests.
 
 Répond à l'authentification et aux commandes de ``RESPONSES`` ; une valeur ``None`` dans les
-réponses produit l'erreur ``not_found`` (tableau Énergie non configuré, par exemple).
+réponses produit l'erreur ``not_found`` (tableau Énergie non configuré, par exemple), une
+valeur ``{"error": "code"}`` produit cette erreur (``unknown_command`` au démarrage, par
+exemple).
 """
 
 import asyncio
@@ -93,7 +95,12 @@ def fake_home_assistant(
             answer = answers.get(message["type"])
             if callable(answer):  # réponse qui dépend des paramètres de la commande
                 answer = answer(message)
-            if answer is not None:
+            if isinstance(answer, dict) and "error" in answer:
+                reply |= {
+                    "success": False,
+                    "error": {"code": answer["error"], "message": answer.get("message", "?")},
+                }
+            elif answer is not None:
                 reply |= {"success": True, "result": answer}
             else:
                 reply |= {"success": False, "error": {"code": "not_found", "message": "?"}}

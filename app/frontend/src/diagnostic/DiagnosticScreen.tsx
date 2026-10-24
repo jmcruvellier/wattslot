@@ -1,7 +1,9 @@
 import { useEffect, useState, type ReactNode } from "react";
 
 import { getJson } from "../api";
+import { retryConnection } from "../connection/service";
 import { useI18n } from "../i18n/I18nProvider";
+import { refreshStatus } from "../nav/status";
 import ForecastComparison from "./ForecastComparison";
 import ProblemsSection from "./ProblemsSection";
 import ReportSection from "./ReportSection";
@@ -21,12 +23,24 @@ export default function DiagnosticScreen({ onNavigate, children }: {
 }) {
   const { t } = useI18n();
   const [version, setVersion] = useState(0);
+  const [checking, setChecking] = useState(false);
+
+  // « Vérifier à nouveau » reconnecte Home Assistant s'il était en erreur (le bouton fait
+  // alors vraiment quelque chose), puis relit les problèmes.
+  const checkAgain = async () => {
+    setChecking(true);
+    await retryConnection();
+    setChecking(false);
+    setVersion((count) => count + 1);
+    refreshStatus();
+  };
+
   return (
     <section>
       <h2 className="visually-hidden">{t("diagnostic.title")}</h2>
       <ProblemsSection version={version} onNavigate={onNavigate} />
-      <button type="button" onClick={() => setVersion((count) => count + 1)}>
-        {t("problems.refresh")}
+      <button type="button" disabled={checking} onClick={() => void checkAgain()}>
+        {t(checking ? "problems.checking" : "problems.refresh")}
       </button>
       <ReportSection />
       <details>

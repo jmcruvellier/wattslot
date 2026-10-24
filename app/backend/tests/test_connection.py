@@ -190,3 +190,26 @@ def test_a_connection_set_by_the_environment_cannot_be_changed(tmp_path: Path) -
     with TestClient(create_app(_settings(tmp_path, connection_source="env"))) as api:
         changed = api.post("/api/connection/token", json={"url": HA, "token": "good"})
         assert changed.status_code == 409 and changed.json()["detail"] == "set_by_environment"
+
+
+def test_the_interface_reconnects_home_assistant_at_once(tmp_path: Path) -> None:
+    """L'adresse de HA n'existe pas : l'état passe en erreur, avec un code que l'interface
+    traduit ; « Réessayer maintenant » retente sans attendre le délai automatique."""
+    settings = load_settings(
+        {"WATTSLOT_DATA_DIR": str(tmp_path), "HA_URL": "http://127.0.0.1:9", "HA_TOKEN": "x"}
+    )
+    with TestClient(create_app(settings)) as api:
+        deadline = time.time() + 10
+        while time.time() < deadline:
+            state = api.get("/api/health").json()["connections"]["home_assistant"]["state"]
+            if state == "error":
+                break
+            time.sleep(0.05)
+        else:
+            raise AssertionError("l'état de la connexion n'est jamais passé en erreur")
+
+        retried = api.post("/api/connection/retry")
+
+        assert retried.status_code == 200
+        assert retried.json()["state"] == "error"
+        assert retried.json()["error_code"] == "unreachable"

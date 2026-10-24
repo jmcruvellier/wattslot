@@ -7,16 +7,9 @@ import { useEffect, useState } from "react";
 
 import { ApiError, getJson, postJson } from "../api";
 import { useI18n } from "../i18n/I18nProvider";
+import { refreshStatus } from "../nav/status";
 import { applicationAddress } from "./address";
-
-export interface ConnectionInfo {
-  mode: "addon" | "standalone";
-  source: "supervisor" | "env" | "saved" | null;
-  url: string | null;
-  method: "oauth" | "token" | null;
-  state: "not_configured" | "connecting" | "connected" | "error";
-  error: string | null;
-}
+import { connectionError, retryConnection, type ConnectionInfo } from "./service";
 
 type Load = { status: "loading" } | { status: "error" } | { status: "ready"; info: ConnectionInfo };
 type Action = "idle" | "working" | "restarting" | "timeout";
@@ -31,6 +24,7 @@ export default function ConnectionScreen({ returned }: { returned: string | null
   const [token, setToken] = useState("");
   const [action, setAction] = useState<Action>("idle");
   const [failure, setFailure] = useState<string | null>(null);
+  const [checking, setChecking] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -68,6 +62,15 @@ export default function ConnectionScreen({ returned }: { returned: string | null
 
   const reason = (error: unknown) =>
     error instanceof ApiError && typeof error.detail === "string" ? error.detail : "failed";
+
+  // Reconnexion immédiate demandée à l'application : l'état est relu après la tentative.
+  const retry = async () => {
+    setChecking(true);
+    const info = await retryConnection();
+    if (info) setLoad({ status: "ready", info });
+    setChecking(false);
+    refreshStatus();
+  };
 
   const withHomeAssistant = async () => {
     setAction("working");
@@ -120,8 +123,13 @@ export default function ConnectionScreen({ returned }: { returned: string | null
       {returned && <p role="status">{t(`connection_page.returned.${returned}`)}</p>}
       <p>
         {t("connection_page.state")} <strong>{t(`connection.${info.state}`)}</strong>
-        {info.error && <> — {info.error}</>}
+        {info.state === "error" && <> — {connectionError(t, info.error_code)}</>}
       </p>
+      {info.state === "error" && (
+        <button type="button" disabled={checking} onClick={() => void retry()}>
+          {t(checking ? "connection_page.checking" : "connection_page.retry")}
+        </button>
+      )}
       {action === "restarting" && <p role="status">{t("connection_page.restarting")}</p>}
       {action === "timeout" && <p role="alert">{t("connection_page.timeout")}</p>}
       {failure && <p role="alert">{t(`connection_page.failure.${failure}`)}</p>}

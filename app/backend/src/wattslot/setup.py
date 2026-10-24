@@ -82,9 +82,15 @@ async def setup_status(
     if client is None:
         steps.append(_step("connection", StepState.TODO, True, "ha_not_configured", "connection"))
     elif not connected:
-        error = client.status.error or ""
         steps.append(
-            _step("connection", StepState.TODO, True, "ha_disconnected", "connection", error=error)
+            _step(
+                "connection",
+                StepState.TODO,
+                True,
+                "ha_disconnected",
+                "connection",
+                error_code=client.status.error_code or "unknown",
+            )
         )
     else:
         steps.append(_step("connection", StepState.DONE, True))
