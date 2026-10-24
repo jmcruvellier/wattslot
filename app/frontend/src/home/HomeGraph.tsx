@@ -1,12 +1,24 @@
 // Vue en graphe du modèle de la maison (lot 2t.3), en lecture seule : React Flow, chargé à la
-// demande depuis l'onglet Maison. Un clic sur un nœud ouvre une popup avec ses propriétés et ses
-// anomalies, et met en avant ses liens ; les étiquettes des liens n'apparaissent qu'alors, pour
-// ne pas surcharger le dessin. Sur un écran étroit (téléphone), une liste remplace le graphe.
+// demande depuis l'onglet Maison, dans l'esprit d'un graphe d'ontologie — relations typées,
+// fléchées et étiquetées, de la bibliothèque aux capteurs. Un clic sur un nœud ouvre une popup
+// avec ses propriétés et ses anomalies, et met en avant ses liens. Sur un écran étroit
+// (téléphone), une liste remplace le graphe.
 
 import "@xyflow/react/dist/style.css";
 
-import { Background, Controls, Panel, ReactFlow, type Edge, type Node, type NodeProps } from "@xyflow/react";
-import { useEffect, useMemo, useState } from "react";
+import {
+  Background,
+  Controls,
+  Handle,
+  MarkerType,
+  Panel,
+  Position,
+  ReactFlow,
+  type Edge,
+  type Node,
+  type NodeProps,
+} from "@xyflow/react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 
 import { getJson, postJson } from "../api";
 import { useI18n } from "../i18n/I18nProvider";
@@ -26,12 +38,17 @@ function narrowScreen(): boolean {
 type FlowNodeData = { label: string; kind: NodeKind; issues: number };
 type FlowNode = Node<FlowNodeData, "home">;
 
-// Nœud du dessin : une pastille de catégorie, le nom, et l'avertissement s'il y a des anomalies.
-// L'apparence (thème clair ou sombre) vient des classes graph-node du fichier de styles.
+// Poignées d'attache des liaisons : sans elles, React Flow ne peut pas joindre les objets. Celles
+// de gauche relient un équipement à son type et au type de la bibliothèque (sens inverse), celles
+// de droite relient un équipement à ses capteurs (sens direct).
 function HomeNode({ data }: NodeProps<FlowNode>) {
   const { t } = useI18n();
   return (
     <div className={`graph-node graph-${data.kind}`}>
+      <Handle type="source" position={Position.Left} id="source-left" isConnectable={false} />
+      <Handle type="target" position={Position.Left} id="target-left" isConnectable={false} />
+      <Handle type="source" position={Position.Right} id="source-right" isConnectable={false} />
+      <Handle type="target" position={Position.Right} id="target-right" isConnectable={false} />
       <p className="graph-node-kind">{t(`graph.node_${data.kind}`)}</p>
       <p className="graph-node-label">
         {data.label}
@@ -92,22 +109,33 @@ export default function HomeGraph() {
     );
   }, [load]);
 
-  // Les liens suivent le thème ; leurs étiquettes (« est un », « capteur »…) n'apparaissent que
-  // pour l'élément sélectionné, sinon elles se croisent et rendent le dessin illisible.
+  // Liens d'ontologie : flèches et étiquettes de relation toujours visibles (« est un »,
+  // « capteur »…), en escalier ; celles de l'élément sélectionné sont mises en avant. Les
+  // relations de typage vont de droite à gauche (capteurs à droite, bibliothèque à gauche),
+  // d'où le choix des poignées selon le sens du lien.
+  const columns = useMemo(() => {
+    if (load.status !== "ready") return new Map<string, number>();
+    return new Map(load.graph.nodes.map((node) => [node.id, node.column]));
+  }, [load]);
+
   const edges = useMemo<Edge[]>(() => {
     if (load.status !== "ready") return [];
     return load.graph.edges.map((edge): Edge => {
+      const backward = (columns.get(edge.target) ?? 0) < (columns.get(edge.source) ?? 0);
       const linked = selected !== null && (edge.source === selected.id || edge.target === selected.id);
       return {
         id: edge.id,
         source: edge.source,
         target: edge.target,
+        sourceHandle: backward ? "source-left" : "source-right",
+        targetHandle: backward ? "target-right" : "target-left",
         type: "smoothstep",
-        label: linked ? edge.label : undefined,
+        label: edge.label,
+        markerEnd: { type: MarkerType.ArrowClosed },
         animated: linked,
       };
     });
-  }, [load, selected]);
+  }, [load, columns, selected]);
 
   if (load.status === "loading") return <p>{t("graph.loading")}</p>;
   if (load.status === "error") return <p role="alert">{t("graph.error")}</p>;
@@ -153,12 +181,16 @@ export default function HomeGraph() {
           <Controls showInteractive={false} />
           {selected && (
             <Panel position="top-right" className="graph-panel">
-              <div className="graph-details">
-                <button type="button" className="graph-details-close" aria-label={t("graph.close")} onClick={() => setSelected(null)}>
+              <NodeDetails node={selected}>
+                <button
+                  type="button"
+                  className="graph-details-close"
+                  aria-label={t("graph.close")}
+                  onClick={() => setSelected(null)}
+                >
                   ✕
                 </button>
-                <NodeDetails node={selected} />
-              </div>
+              </NodeDetails>
             </Panel>
           )}
         </ReactFlow>
@@ -167,10 +199,14 @@ export default function HomeGraph() {
   );
 }
 
-function NodeDetails({ node }: { node: GraphNode }) {
+// Fiche d'un élément : sa catégorie, son nom, ses propriétés puis ses anomalies. Rendue dans la
+// popup du graphe (bouton de fermeture en enfant, en haut à droite) et dans la liste du téléphone.
+function NodeDetails({ node, children }: { node: GraphNode; children?: ReactNode }) {
   const { t } = useI18n();
   return (
-    <section aria-label={node.label}>
+    <section className={`graph-details graph-${node.kind}`} aria-label={node.label}>
+      {children}
+      <p className="graph-details-kind">{t(`graph.node_${node.kind}`)}</p>
       <h4>{node.label}</h4>
       <dl>
         {node.details.map(([name, value]) => (
@@ -189,7 +225,7 @@ function NodeDetails({ node }: { node: GraphNode }) {
           ))}
         </ul>
       ) : (
-        node.kind === "device" && <p>{t("graph.no_issue")}</p>
+        node.kind === "device" && <p className="graph-details-ok">{t("graph.no_issue")}</p>
       )}
     </section>
   );
