@@ -106,6 +106,11 @@ describe("HomeGraph", () => {
     expect(screen.getAllByText("Lave-linge").length).toBe(2); // le type et l'équipement
     expect(screen.getByText("sensor.washer_power")).toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "Lave-linge" })).toBeNull();
+    // « Centrer » recadre le dessin (bande de recherche réservée) ; le bouton de recadrage
+    // intégré des commandes est retiré : il l'ignorerait.
+    const center = screen.getByRole("button", { name: "Centrer" });
+    expect(container.querySelector(".react-flow__controls-fitview")).toBeNull();
+    fireEvent.click(center); // sans effet dans jsdom (canevas non mesuré), mais ne casse rien
     const nodes = container.querySelectorAll(".react-flow__node");
     const handles = container.querySelectorAll(".react-flow__handle");
     // Les liaisons ne se dessinent que sur les poignées : huit par nœud, deux par côté.
