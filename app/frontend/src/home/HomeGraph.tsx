@@ -17,10 +17,7 @@ import {
   Panel,
   Position,
   ReactFlow,
-  getNodesBounds,
-  getViewportForBounds,
   useReactFlow,
-  useStoreApi,
   type Edge,
   type Node,
   type NodeProps,
@@ -92,42 +89,38 @@ function handleToward(from: { x: number; y: number }, to: { x: number; y: number
 }
 
 // Hauteur réservée en haut du canevas pour la boîte de recherche (et son message « Aucun
-// résultat ») : le dessin recadré ne passe jamais dessous, ni à l'ouverture ni en recadrage.
-const SEARCH_BAND = "76px";
+// résultat ») : le dessin recadré ne passe jamais dessous. Le déplacement manuel, lui, peut
+// y passer — seule l'ouverture et les recadrages évitent la bande.
+const SEARCH_BAND = "76px" as const;
+
+// Recadrage avec la bande de recherche réservée en haut : à l'ouverture de la vue, par le bouton
+// « centrer » des commandes (sous les boutons de zoom), et à chaque changement de vue ou sur les
+// résultats de la recherche.
+const FIT_MARGIN = 0.2;
+const FIT_OPTIONS = {
+  padding: { top: SEARCH_BAND, right: FIT_MARGIN, bottom: FIT_MARGIN, left: FIT_MARGIN },
+  minZoom: 0.1,
+  maxZoom: 1,
+};
 
 // Recadre le dessin au changement de vue (l'ensemble est plus large que l'intérieur d'un
-// élément), au passage en plein écran, sur les résultats de la recherche et sur demande
-// (« Centrer ») — toujours en réservant la bande de la recherche en haut du canevas.
-function Fitter({
-  zoomed,
-  fullscreen,
-  hits,
-  center,
-}: {
-  zoomed: string | null;
-  fullscreen: boolean;
-  hits: string;
-  center: number;
-}) {
+// élément), au passage en plein écran et sur les résultats de la recherche.
+function Fitter({ zoomed, fullscreen, hits }: { zoomed: string | null; fullscreen: boolean; hits: string }) {
   const instance = useReactFlow();
-  const store = useStoreApi();
   useEffect(() => {
-    const { width, height } = store.getState();
-    if (!width || !height) return;
-    const nodes = instance.getNodes();
     const ids = hits ? hits.split(",") : [];
-    const targets = ids.length > 0 ? nodes.filter((node) => ids.includes(node.id)) : nodes;
-    if (targets.length === 0) return; // recherche sans résultat : la vue ne bouge pas
-    const margin = hits ? 0.3 : fullscreen ? 0.05 : 0.2;
-    const bounds = getNodesBounds(targets);
-    const viewport = getViewportForBounds(bounds, width, height, 0.1, 1, {
-      top: SEARCH_BAND,
-      right: margin,
-      bottom: margin,
-      left: margin,
-    });
-    instance.setViewport(viewport, { duration: 300 });
-  }, [zoomed, fullscreen, hits, center, instance, store]);
+    if (ids.length > 0) {
+      // Résultats de la recherche : cadrés plus près, toujours sous la bande.
+      instance.fitView({
+        ...FIT_OPTIONS,
+        nodes: ids.map((id) => ({ id })),
+        padding: { top: SEARCH_BAND, right: 0.3, bottom: 0.3, left: 0.3 },
+        duration: 300,
+      });
+    } else {
+      instance.fitView({ ...FIT_OPTIONS, duration: 300 });
+    }
+  }, [zoomed, fullscreen, hits, instance]);
   return null;
 }
 
@@ -140,8 +133,6 @@ export default function HomeGraph() {
   // Canevas plein écran (par-dessus toute l'application) et texte de la recherche courante.
   const [fullscreen, setFullscreen] = useState(false);
   const [search, setSearch] = useState("");
-  // Recadrage demandé par le bouton « Centrer » (compteur : chaque clic recadre).
-  const [centerTick, setCenterTick] = useState(0);
   const [narrow] = useState(narrowScreen);
 
   useEffect(() => {
@@ -260,7 +251,7 @@ export default function HomeGraph() {
           nodesDraggable={false}
           nodesConnectable={false}
           fitView
-          fitViewOptions={{ padding: 0.15, maxZoom: 1 }}
+          fitViewOptions={FIT_OPTIONS}
           minZoom={0.1}
           onNodeClick={(_, node) => setSelected(graph.nodes.find((n) => n.id === node.id) ?? null)}
           // Double-clic : entre dans l'élément (lui au centre, ses voisins autour) et ouvre sa
@@ -273,11 +264,11 @@ export default function HomeGraph() {
           }}
           onPaneClick={() => setSelected(null)}
         >
-          <Fitter zoomed={zoomed} fullscreen={fullscreen} hits={view.matched ? [...view.matched].join(",") : ""} center={centerTick} />
+          <Fitter zoomed={zoomed} fullscreen={fullscreen} hits={view.matched ? [...view.matched].join(",") : ""} />
           <Background gap={28} />
-          {/* Le bouton de recadrage des commandes est remplacé par « Centrer » : le sien ignore
-           * la bande réservée à la boîte de recherche en haut du canevas. */}
-          <Controls showInteractive={false} showFitView={false} />
+          {/* Le bouton « centrer » des commandes recadre avec la bande de recherche réservée,
+           * comme tous les recadrages du dessin. */}
+          <Controls showInteractive={false} fitViewOptions={FIT_OPTIONS} />
           <Panel position="top-left" className="graph-panel graph-panel-tools">
             <div className="graph-tools">
               {zoomed && (
@@ -285,15 +276,6 @@ export default function HomeGraph() {
                   ← {t("graph.back")}
                 </button>
               )}
-              <button
-                type="button"
-                className="graph-back"
-                aria-label={t("graph.center")}
-                title={t("graph.center")}
-                onClick={() => setCenterTick((count) => count + 1)}
-              >
-                ◎
-              </button>
               <button
                 type="button"
                 className="graph-back"
