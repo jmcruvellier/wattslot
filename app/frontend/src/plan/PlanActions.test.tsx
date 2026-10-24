@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -86,6 +86,36 @@ describe("PlanActions (barre de titre)", () => {
     await userEvent.click(await screen.findByRole("button", { name: /^Rafraîchir/ }));
 
     expect(fetchMock).toHaveBeenCalledWith("api/planning/actual", { method: "POST" });
+  });
+
+  it("« Rafraîchir » : seul ce bouton s'anime, « Calculer » garde son âge affiché", async () => {
+    let release: ((response: Response) => void) | undefined;
+    const done = new Promise<Response>((resolve) => {
+      release = resolve;
+    });
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url === "api/planning/last-run") return Response.json(lastRun(12, 5));
+      if (init?.method === "POST") return done;
+      return Response.json({ detail: "inattendu" }, { status: 404 });
+    });
+    renderActions();
+    const compute = await screen.findByRole("button", { name: /^Calculer/ });
+
+    await userEvent.click(screen.getByRole("button", { name: /^Rafraîchir/ }));
+
+    // Calculer : désactivé (un calcul à la fois) mais pas animé, son âge n'a pas bougé.
+    expect(compute).toBeDisabled();
+    expect(compute).not.toHaveClass("run-button-running");
+    expect(screen.getByText("il y a 12 minutes")).toBeInTheDocument();
+    const refresh = screen.getByRole("button", { name: /^Rafraîchir/ });
+    expect(refresh).toBeDisabled();
+    expect(refresh).toHaveClass("run-button-running");
+
+    await act(async () => {
+      release!(Response.json({}));
+    });
+    expect(screen.getByRole("button", { name: /^Rafraîchir/ })).toBeEnabled();
   });
 
   it("échec : un message d'alerte, les boutons restent utilisables", async () => {
