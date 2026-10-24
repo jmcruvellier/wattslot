@@ -31,8 +31,10 @@ export interface Graph {
 
 type Translate = (key: string, params?: Record<string, string | number>) => string;
 
-export const COLUMN_WIDTH = 260;
-export const ROW_HEIGHT = 70;
+// Espacement du dessin : assez large pour que les nœuds respirent et que les liens ne se
+// croisent pas trop (la vue ajuste ensuite le zoom à la taille de l'écran).
+export const COLUMN_WIDTH = 300;
+export const ROW_HEIGHT = 90;
 
 export function buildGraph(
   home: HomeModel,

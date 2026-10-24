@@ -686,7 +686,13 @@
     "entity": "Home-Assistant-Sensor",
     "subtype_of": "Untertyp von",
     "is_a": "ist ein",
-    "has_sensor": "Sensor"
+    "has_sensor": "Sensor",
+    "node_library": "Bibliothek",
+    "node_type": "Typ",
+    "node_device": "Gerät",
+    "node_sensor": "Sensor",
+    "has_issue": "Mit Problemen",
+    "close": "Schließen"
   },
   "library": {
     "loading": "Bibliothek wird geladen…",
