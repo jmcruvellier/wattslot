@@ -2406,12 +2406,7 @@ p[role="status"]:not(.state-message) {
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--link) 30%, transparent);
 }
 
-/* Bouton « Retour » à la vue d'ensemble, en haut à gauche du canevas. */
-.graph-panel-back {
-  margin: 0.75rem;
-  z-index: 4;
-}
-
+/* Bouton « Retour » à la vue d'ensemble et plein écran, dans la barre d'outils du graphe. */
 .graph-back {
   padding: 0.35rem 0.85rem;
   background: var(--surface);
@@ -2594,4 +2589,113 @@ p[role="status"]:not(.state-message) {
 .graph-details-close:focus-visible {
   outline: 2px solid var(--link);
   outline-offset: 2px;
+}
+
+/* Plein écran du graphe : le canevas couvre toute la page, par-dessus l'application (portail vers
+ * le corps du document), fermé par le bouton ✕ ou la touche Échap. */
+.graph-canvas.graph-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  width: 100%;
+  height: 100%;
+  border: none;
+  border-radius: 0;
+}
+
+/* Barre d'outils du graphe (retour, plein écran) et recherche, au-dessus du dessin. */
+.graph-panel-tools {
+  margin: 0.75rem;
+  z-index: 4;
+}
+
+.graph-tools {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.graph-panel-search {
+  margin: 0.75rem 0;
+  z-index: 4;
+}
+
+.graph-search {
+  position: relative;
+}
+
+.graph-search-input {
+  width: 15rem;
+  max-width: 40vw;
+  padding: 0.35rem 1.9rem 0.35rem 0.85rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+.graph-search-input::placeholder {
+  color: var(--text-dim);
+}
+
+.graph-search-input:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+}
+
+.graph-search-clear {
+  position: absolute;
+  top: 50%;
+  right: 0.35rem;
+  transform: translateY(-50%);
+  width: 1.5rem;
+  height: 1.5rem;
+  border: none;
+  border-radius: 999px;
+  background: none;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.graph-search-clear:hover {
+  background: var(--surface-alt);
+  color: var(--text);
+}
+
+.graph-search-none {
+  position: absolute;
+  top: calc(100% + 0.3rem);
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 0.2rem 0.7rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+/* Recherche : les éléments trouvés ressortent (liseré de la couleur du soleil), le reste
+ * s'efface — nœuds comme liaisons qui ne relient pas deux éléments trouvés. */
+.react-flow__node,
+.react-flow__edge {
+  transition: opacity 0.2s;
+}
+
+.react-flow__node.graph-hit .graph-node {
+  border-color: var(--sun);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--sun) 35%, transparent);
+}
+
+.react-flow__node.graph-dim {
+  opacity: 0.25;
+}
+
+.react-flow__edge.graph-edge-dim {
+  opacity: 0.2;
 }

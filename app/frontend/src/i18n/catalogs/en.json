@@ -693,7 +693,12 @@
     "node_device": "Device",
     "node_sensor": "Sensor",
     "has_issue": "Has issues",
-    "close": "Close"
+    "close": "Close",
+    "fullscreen": "Full screen",
+    "fullscreen_exit": "Exit full screen",
+    "search": "Search for an element…",
+    "search_clear": "Clear the search",
+    "search_none": "No results."
   },
   "library": {
     "loading": "Loading the library…",
