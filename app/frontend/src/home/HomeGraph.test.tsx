@@ -131,4 +131,65 @@ describe("HomeGraph", () => {
     await screen.findAllByText("Lave-linge");
     expect(container.querySelectorAll(".react-flow__node").length).toBe(3);
   });
+
+  it("recherche les éléments de la vue et recadre le dessin sur eux", async () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({ matches: !query.includes("max-width"), media: query }));
+    mockHomeApi();
+
+    const { container } = render(
+      <I18nProvider>
+        <HomeGraph />
+      </I18nProvider>,
+    );
+    await screen.findByRole("figure", { name: "Ma maison en graphe" });
+
+    // La recherche ne trouve que le type et l'équipement « Lave-linge » ; le capteur s'efface.
+    const input = screen.getByRole("textbox", { name: "Rechercher un élément…" });
+    fireEvent.change(input, { target: { value: "lave" } });
+    expect(container.querySelector('[data-id="device:washer"]')?.className).toContain("graph-hit");
+    expect(container.querySelector('[data-id="kind:WashingMachine"]')?.className).toContain("graph-hit");
+    expect(container.querySelector('[data-id="sensor:washer:sensor.washer_power"]')?.className).toContain("graph-dim");
+    expect(screen.queryByRole("status", { name: "" })).toBeNull();
+
+    // Un texte sans résultat le dit ; effacer la recherche rend tous les objets.
+    fireEvent.change(input, { target: { value: "zzz" } });
+    await screen.findByRole("status");
+    expect(container.querySelectorAll(".graph-dim").length).toBe(3);
+    fireEvent.click(screen.getByRole("button", { name: "Effacer la recherche" }));
+    expect(container.querySelectorAll(".graph-dim").length).toBe(0);
+    expect((screen.getByRole("textbox", { name: "Rechercher un élément…" }) as HTMLInputElement).value).toBe("");
+  });
+
+  it("passe le canevas en plein écran, refermé par Échap ou sa croix", async () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({ matches: !query.includes("max-width"), media: query }));
+    mockHomeApi();
+
+    render(
+      <I18nProvider>
+        <HomeGraph />
+      </I18nProvider>,
+    );
+    await screen.findByRole("figure", { name: "Ma maison en graphe" });
+
+    // Plein écran : le canevas couvre la page entière (portail vers le corps du document).
+    fireEvent.click(screen.getByRole("button", { name: "Plein écran" }));
+    const fullscreen = document.querySelector(".graph-fullscreen");
+    expect(fullscreen).not.toBeNull();
+    expect(document.body.contains(fullscreen!)).toBe(true);
+
+    // Échap referme la fiche d'abord, puis le plein écran (le canevas est dans le corps).
+    fireEvent.click(document.querySelector('[data-id="device:washer"]')!);
+    await screen.findByRole("region", { name: "Lave-linge" });
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("region", { name: "Lave-linge" })).toBeNull();
+    expect(document.querySelector(".graph-fullscreen")).not.toBeNull();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(document.querySelector(".graph-fullscreen")).toBeNull();
+
+    // La croix referme aussi le plein écran.
+    fireEvent.click(screen.getByRole("button", { name: "Plein écran" }));
+    expect(document.querySelector(".graph-fullscreen")).not.toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Quitter le plein écran" }));
+    expect(document.querySelector(".graph-fullscreen")).toBeNull();
+  });
 });

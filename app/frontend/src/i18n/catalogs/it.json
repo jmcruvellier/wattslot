@@ -693,7 +693,12 @@
     "node_device": "Apparecchio",
     "node_sensor": "Sensore",
     "has_issue": "Con problemi",
-    "close": "Chiudi"
+    "close": "Chiudi",
+    "fullscreen": "Schermo intero",
+    "fullscreen_exit": "Esci da schermo intero",
+    "search": "Cerca un elemento…",
+    "search_clear": "Cancella la ricerca",
+    "search_none": "Nessun risultato."
   },
   "library": {
     "loading": "Caricamento della libreria…",

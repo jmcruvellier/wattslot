@@ -693,7 +693,12 @@
     "node_device": "Équipement",
     "node_sensor": "Capteur",
     "has_issue": "Avec anomalies",
-    "close": "Fermer"
+    "close": "Fermer",
+    "fullscreen": "Plein écran",
+    "fullscreen_exit": "Quitter le plein écran",
+    "search": "Rechercher un élément…",
+    "search_clear": "Effacer la recherche",
+    "search_none": "Aucun résultat."
   },
   "library": {
     "loading": "Chargement de la bibliothèque…",

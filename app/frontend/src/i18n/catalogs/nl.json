@@ -693,7 +693,12 @@
     "node_device": "Apparaat",
     "node_sensor": "Sensor",
     "has_issue": "Met problemen",
-    "close": "Sluiten"
+    "close": "Sluiten",
+    "fullscreen": "Volledig scherm",
+    "fullscreen_exit": "Volledig scherm sluiten",
+    "search": "Element zoeken…",
+    "search_clear": "Zoekopdracht wissen",
+    "search_none": "Geen resultaten."
   },
   "library": {
     "loading": "Bibliotheek wordt geladen…",
