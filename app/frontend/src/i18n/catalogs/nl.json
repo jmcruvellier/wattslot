@@ -1417,7 +1417,8 @@
       "title": "{kwh} kWh verwacht vandaag",
       "done": "{kwh} kWh al opgewekt.",
       "none": "Nog geen opwekking gemeten."
-    }
+    },
+    "trend": "Verschil met de voorspelling bij de meting"
   },
   "home_summary": {
     "loading": "Huis wordt gelezen…",

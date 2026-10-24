@@ -1417,7 +1417,8 @@
       "title": "{kwh} kWh expected today",
       "done": "{kwh} kWh already produced.",
       "none": "No production measured yet."
-    }
+    },
+    "trend": "Difference from the forecast at the reading"
   },
   "home_summary": {
     "loading": "Reading the home…",

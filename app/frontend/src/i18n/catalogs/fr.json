@@ -1417,7 +1417,8 @@
       "title": "{kwh} kWh prévus aujourd'hui",
       "done": "{kwh} kWh déjà produits.",
       "none": "Pas encore de production mesurée."
-    }
+    },
+    "trend": "Écart avec la prévision au relevé"
   },
   "home_summary": {
     "loading": "Lecture de la maison…",

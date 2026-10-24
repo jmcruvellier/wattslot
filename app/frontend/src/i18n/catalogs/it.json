@@ -1417,7 +1417,8 @@
       "title": "{kwh} kWh previsti oggi",
       "done": "{kwh} kWh già prodotti.",
       "none": "Ancora nessuna produzione misurata."
-    }
+    },
+    "trend": "Differenza con la previsione alla lettura"
   },
   "home_summary": {
     "loading": "Lettura della casa…",
