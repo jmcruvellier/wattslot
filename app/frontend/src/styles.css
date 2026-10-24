@@ -291,16 +291,8 @@ pre {
   margin-left: auto;
 }
 
-.view-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 0.5rem;
-  margin-left: auto;
-}
-
-/* Échec d'une action : sur sa propre ligne, sous les onglets. */
-.view-toolbar > [role="alert"] {
+/* Échec d'une action : sur sa propre ligne, sous la barre de titre. */
+.top-bar-row > [role="alert"] {
   flex-basis: 100%;
   margin: 0;
 }
@@ -1273,6 +1265,53 @@ a.ui-setting-row {
   gap: 0.25rem;
 }
 
+/* « Calculer » et « Rafraîchir les données réelles » (barre de titre, lot 8) : pilules icône +
+   âge de la dernière exécution, à droite du titre. L'âge se cache sur petit écran (styles de
+   bas de fichier) ; le détail reste dans l'infobulle et le nom du bouton. */
+.run-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: auto;
+}
+
+.run-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.75rem;
+  padding: 0 0.85rem;
+  border-radius: 1.5rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.run-button-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+.run-button .run-when {
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.run-button-primary .run-when {
+  color: var(--accent-text);
+  opacity: 0.8;
+}
+
+.run-button[disabled] {
+  cursor: wait;
+}
+
+/* Calcul en cours : l'icône tourne (comme les messages d'état). */
+.run-button[disabled] .icon {
+  animation: state-spin 1s linear infinite;
+}
+
 /* Pastille d'état (lot 6b.2). */
 .status-pill {
   display: inline-flex;
@@ -2203,4 +2242,18 @@ p[role="status"]:not(.state-message) {
   gap: 0.5rem;
   justify-items: start;
   margin: 0.75rem 0;
+}
+
+/* Petit écran : les boutons d'action gardent leur icône seule, l'âge et le détail restent dans
+   le nom du bouton (lecteurs d'écran) ; la pastille d'état et « Demander un appareil » suivent. */
+@media (max-width: 30rem) {
+  .run-button {
+    width: 2.75rem;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .run-button .run-when {
+    display: none;
+  }
 }

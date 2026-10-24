@@ -1,6 +1,6 @@
 // En-tête d'une vue de jour (lot 5.3) : date, calcul (heure, automatique ou à la main), dernier
 // relevé ; calculs interrompus, avertissements et tâches reportées. « Calculer » et « Rafraîchir
-// les données réelles » sont à droite des onglets (`PlanActions`).
+// les données réelles » sont dans la barre de titre de la section (`PlanActions`).
 
 import { useI18n } from "../i18n/I18nProvider";
 import { longDate, time } from "./format";

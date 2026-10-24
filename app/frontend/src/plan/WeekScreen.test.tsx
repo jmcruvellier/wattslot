@@ -5,7 +5,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { I18nProvider } from "../i18n/I18nProvider";
 import { WEEK, WEEK_WITHOUT_BATTERY } from "./testViews";
 import type { WeekView } from "./types";
-import PlanActions from "./PlanActions";
 import WeekScreen, { WeekDetails } from "./WeekScreen";
 import { DEFAULT_LAYOUT, type ViewLayout } from "./layout";
 
@@ -18,15 +17,14 @@ vi.mock("./Charts", () => ({
   ),
 }));
 
-function renderWeek(view: WeekView, onOpen = vi.fn(), onChanged = vi.fn(), layout: ViewLayout = DEFAULT_LAYOUT.week) {
+function renderWeek(view: WeekView, onOpen = vi.fn(), layout: ViewLayout = DEFAULT_LAYOUT.week) {
   render(
     <I18nProvider>
-      <PlanActions kind="week" onChanged={onChanged} />
       <WeekScreen view={view} onOpen={onOpen} />
       <WeekDetails view={view} onOpen={onOpen} layout={layout} />
     </I18nProvider>,
   );
-  return { onOpen, onChanged };
+  return { onOpen };
 }
 
 describe("vue Semaine", () => {
@@ -107,15 +105,6 @@ describe("vue Semaine", () => {
     expect(within(table).queryByRole("button", { name: /Voir le détail/ })).toBeNull(); // pas de vue du jour
   });
 
-  it("« Calculer » lance un calcul puis recharge la vue", async () => {
-    const user = userEvent.setup();
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(Response.json({}));
-    const { onChanged } = renderWeek(WEEK);
-    await user.click(screen.getByRole("button", { name: "Calculer" }));
-    expect(fetchMock).toHaveBeenCalledWith("api/planning/run", { method: "POST" });
-    expect(onChanged).toHaveBeenCalled();
-  });
-
   it("graphiques de la semaine : production, consommation et SoC", async () => {
     renderWeek(WEEK);
     expect(await screen.findByText("soc 72 heures, relevé 13.5")).toBeInTheDocument();
@@ -144,7 +133,7 @@ describe("vue Semaine", () => {
   });
 
   it("tableau des jours avant les graphiques, production masquée", async () => {
-    renderWeek(WEEK, vi.fn(), vi.fn(), { order: ["days", "soc", "consumption", "production"], hidden: ["production"] });
+    renderWeek(WEEK, vi.fn(), { order: ["days", "soc", "consumption", "production"], hidden: ["production"] });
     expect(await screen.findByText("soc 72 heures, relevé 13.5")).toBeInTheDocument();
     expect(screen.queryByText(/^production 72/)).toBeNull();
     const region = screen.getByRole("region", { name: "Semaine" });

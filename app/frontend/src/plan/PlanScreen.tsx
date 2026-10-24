@@ -11,7 +11,6 @@ import Agenda, { DaySummaryCard } from "./Agenda";
 import Banners from "./Banners";
 import { ExplanationsCard, IndicatorsCard } from "./InsightCards";
 import { availableDayCards } from "./layout";
-import PlanActions from "./PlanActions";
 import ProvisionalNote from "./ProvisionalNote";
 import { LoadMessage, PlanTabs } from "./PlanTabs";
 import { useDashboardLayout, usePlanView } from "./planView";
@@ -32,10 +31,9 @@ export default function PlanScreen() {
       <h2 id="plan-title" className="visually-hidden">
         {t("plan.title")}
       </h2>
-      {/* Onglets à gauche, actions de la vue à droite ; dessous quand la ligne est trop étroite. */}
+      {/* Onglets de la vue ouverte ; les actions sont dans la barre du haut (PlanActions). */}
       <div className="view-toolbar">
         <PlanTabs title={t("plan.title")} tab={tab} onOpen={open} />
-        {(load.status === "day" || load.status === "week") && <PlanActions key={tab} kind={tab} onChanged={reload} />}
       </div>
       <LoadMessage load={load} tab={tab} onRetry={retry} />
 

@@ -15,7 +15,7 @@
 | No solar forecast | Add a forecast to the Energy dashboard (Forecast.Solar, Solcast, Open-Meteo…), or describe your panels in **My home** |
 | A sensor no longer exists / is unavailable / has sent nothing for a day | Replace it in **My home**, or check the device and its integration in Home Assistant |
 | No history in Home Assistant for some sensors | They have no statistics (no `state_class`): the plan starts from their live measurements only |
-| No plan could be computed for more than 2 hours | Look at the other problems, or **Compute** from **Planning** |
+| No plan could be computed for more than 2 hours | Look at the other problems, or **Compute** from the title bar of **Today**, **Planning** or **Curves** |
 
 ## Reporting a bug
 

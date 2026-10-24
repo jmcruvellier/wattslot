@@ -148,6 +148,14 @@ class Health(BaseModel):
     connections: Connections
 
 
+class LastRun(BaseModel):
+    """Dernière exécution du calcul et dernier relevé réel (boutons de la barre de titre)."""
+
+    computed_at: datetime | None = None  # dernier calcul du plan du jour
+    manual: bool = False  # calcul lancé à la main plutôt que par le planificateur
+    actual_updated_at: datetime | None = None  # dernier relevé des données réelles
+
+
 class HealthCheckFilter(logging.Filter):
     """Retire des journaux d'accès d'uvicorn les appels à ``/api/health``.
 
@@ -1127,6 +1135,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if scheduler is None:
             return SchedulerStatus(running=False, enabled=False)
         return scheduler.status()
+
+    @app.get("/api/planning/last-run")
+    def planning_last_run(request: Request) -> LastRun:
+        """Dernier calcul du plan du jour (heure, à la main ou automatique) et dernier relevé
+        des données réelles, pour les boutons de la barre de titre de l'interface."""
+        plan = PlanStore(request.app.state.database).load("today")
+        if plan is None:
+            return LastRun()
+        actual = (plan.content or {}).get("donnees_reelles_cache") or {}
+        stamp = actual.get("heure_maj_iso")
+        try:
+            read_at = datetime.fromisoformat(stamp) if isinstance(stamp, str) else None
+        except ValueError:
+            read_at = None
+        return LastRun(computed_at=plan.computed_at, manual=plan.manual, actual_updated_at=read_at)
 
     @app.get("/api/planning/plan")
     def planning_plan(

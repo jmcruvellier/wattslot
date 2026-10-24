@@ -143,23 +143,4 @@ describe("PlanScreen", () => {
 
     expect(views()).toBe(before + 1);
   });
-
-  it("range « Calculer » et « Rafraîchir les données réelles » sur la ligne des onglets", async () => {
-    const user = userEvent.setup();
-    mockApi(() => ({ yesterday: null, today: 1, tomorrow: null, week: 2 }));
-    renderScreen();
-
-    const compute = await screen.findByRole("button", { name: "Calculer" });
-    const tabs = screen.getByRole("tablist", { name: "Plan du jour" });
-    const toolbar = tabs.parentElement;
-    expect(toolbar).toHaveClass("view-toolbar");
-    expect(toolbar).toContainElement(compute);
-    expect(toolbar).toContainElement(screen.getByRole("button", { name: "Rafraîchir les données réelles" }));
-
-    // Semaine : « Calculer » seul, au même endroit.
-    await user.click(screen.getByRole("tab", { name: "Semaine" }));
-    await screen.findByText("Semaine du samedi 17 octobre au lundi 19 octobre");
-    expect(toolbar).toContainElement(screen.getByRole("button", { name: "Calculer" }));
-    expect(screen.queryByRole("button", { name: "Rafraîchir les données réelles" })).toBeNull();
-  });
 });

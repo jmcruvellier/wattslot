@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { ApiError, getJson, postJson } from "../api";
 import { useI18n } from "../i18n/I18nProvider";
 import { clock, kwh, percent } from "../plan/format";
+import { RUN_EVENT } from "../plan/planView";
 import { IndicatorsCard } from "../plan/InsightCards";
 import { DEFAULT_LAYOUT } from "../plan/layout";
 import TimelineCard from "../plan/TimelineCard";
@@ -65,9 +66,13 @@ export default function TodayView({ onNavigate }: { onNavigate?: (target: string
         });
     void read();
     const timer = window.setInterval(() => void read(), REFRESH_MS);
+    // « Calculer » ou « Rafraîchir » réussi dans la barre de titre : relecture immédiate.
+    const onRun = () => void read();
+    window.addEventListener(RUN_EVENT, onRun);
     return () => {
       controller.abort();
       window.clearInterval(timer);
+      window.removeEventListener(RUN_EVENT, onRun);
     };
   }, [language, attempt]);
 
