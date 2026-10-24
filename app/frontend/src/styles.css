@@ -1020,6 +1020,21 @@ pre {
   color: var(--text-dim);
 }
 
+/* Tête de carte avec un coin droit : l'indicateur de tendance de la vue Aujourd'hui. */
+.ui-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.ui-card-head .trend {
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
 .ui-card-title {
   margin: 0.25rem 0 0.5rem;
   font-size: 1.2rem;

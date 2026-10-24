@@ -21,7 +21,7 @@ const CARDS: { key: string; icon: IconName; lines: LineKey[]; battery: boolean }
 
 const cardClass = (battery: boolean) => (battery ? "card" : "card summary-half");
 
-function TrendMark({ trend }: { trend: Trend }) {
+export function TrendMark({ trend, label }: { trend: Trend; label?: string }) {
   const tone = trend.favorable === null ? "trend-neutral" : trend.favorable ? "trend-good" : "trend-bad";
   const text = {
     none: "—",
@@ -30,7 +30,11 @@ function TrendMark({ trend }: { trend: Trend }) {
     up: `▲ +${trend.percent ?? 0}%`,
     down: `▼ ${trend.percent ?? 0}%`,
   }[trend.direction];
-  return <span className={`trend ${tone}`}>{text}</span>;
+  return (
+    <span className={`trend ${tone}`} title={label}>
+      {text}
+    </span>
+  );
 }
 
 function detail(line: CardLine, column: "estimated" | "measured", capacity: number | null, language: "fr" | "en"): string {

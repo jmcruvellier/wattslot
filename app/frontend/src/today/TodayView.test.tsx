@@ -120,14 +120,26 @@ describe("TodayView", () => {
     expect(screen.queryByRole("button", { name: /rappel/i })).not.toBeInTheDocument();
   });
 
-  it("donne la batterie et le soleil du jour", async () => {
+  it("donne la batterie et le soleil du jour, avec leur tendance au relevé", async () => {
     mockApi({ ...TODAY, now: NOW, next_action: null });
     renderView();
     expect(await screen.findByRole("heading", { name: "64 % en ce moment" })).toBeInTheDocument();
     expect(screen.getByText("Au plus haut vers 16h00 : 98 %.")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "10,0 kWh prévus aujourd'hui" })).toBeInTheDocument();
     expect(screen.getByText("14,0 kWh déjà produits.")).toBeInTheDocument();
+    // Tendances de TODAY : SoC +25 %, production +8 %, en tête de chaque carte.
+    expect(screen.getAllByTitle("Écart avec la prévision au relevé")).toHaveLength(2);
+    expect(screen.getByText("▲ +25%")).toBeInTheDocument();
+    expect(screen.getByText("▲ +8%")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Rien à lancer d'ici ce soir" })).toBeInTheDocument();
+  });
+
+  it("sans mesure au relevé : pas d'indicateur de tendance", async () => {
+    mockApi({ ...TODAY, now: NOW, next_action: null, cards: null });
+    renderView();
+    expect(await screen.findByRole("heading", { name: "64 % en ce moment" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "10,0 kWh prévus aujourd'hui" })).toBeInTheDocument();
+    expect(screen.queryByText(/[▲▼●]/)).not.toBeInTheDocument();
   });
 
   it("sans solaire : pas de carte Soleil", async () => {

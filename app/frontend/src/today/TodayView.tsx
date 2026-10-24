@@ -1,6 +1,7 @@
 // Écran Aujourd'hui (lot 6b.3) : répond à « que se passe-t-il maintenant ? » et « que dois-je
 // faire, et quand ? ». De haut en bas : le moment (phrase et flux du dernier quart d'heure), la
-// prochaine action et ses boutons, la frise du jour, la batterie, le soleil et le bilan. Le
+// prochaine action et ses boutons, la frise du jour, la batterie, le soleil et le bilan. La
+// batterie et le soleil portent leur tendance au relevé (mesuré contre estimé). Le
 // détail (onglets, courbes) reste dans Planning. Vue relue toutes les minutes.
 
 import { useEffect, useState } from "react";
@@ -10,12 +11,13 @@ import { useI18n } from "../i18n/I18nProvider";
 import { clock, kwh, percent } from "../plan/format";
 import { RUN_EVENT } from "../plan/planView";
 import { IndicatorsCard } from "../plan/InsightCards";
+import { TrendMark } from "../plan/SummaryCards";
 import { DEFAULT_LAYOUT } from "../plan/layout";
 import TimelineCard from "../plan/TimelineCard";
 import OtherStarts from "../plan/OtherStarts";
 import ProvisionalNote from "../plan/ProvisionalNote";
 import { useHomeFeatures } from "../home/features";
-import type { DayView, NextAction, Now } from "../plan/types";
+import type { DayView, LineKey, NextAction, Now } from "../plan/types";
 import Button from "../ui/Button";
 import Card from "../ui/Card";
 import StateMessage from "../ui/StateMessage";
@@ -48,6 +50,14 @@ function readingHour(view: DayView): number | null {
 function kw(watts: number): string {
   const value = Math.round(Math.abs(watts));
   return value < 1000 ? `${kwh(value, 0)} W` : `${kwh(value / 1000, 1)} kW`;
+}
+
+/** Tendance d'une ligne au relevé (mesuré contre estimé), en tête de carte ; rien sans mesure. */
+function TrendBadge({ view, line }: { view: DayView; line: LineKey }) {
+  const { t } = useI18n();
+  const trend = view.cards?.at_reading.find((card) => card.key === line)?.trend;
+  if (!trend || trend.direction === "none") return null;
+  return <TrendMark trend={trend} label={t("today.trend")} />;
 }
 
 export default function TodayView({ onNavigate }: { onNavigate?: (target: string) => void }) {
@@ -97,7 +107,7 @@ export default function TodayView({ onNavigate }: { onNavigate?: (target: string
         {view.battery_capacity_kwh !== null && (
           <Card tone="battery" eyebrow={t("today.battery.eyebrow")} title={t("today.battery.title", {
             pct: percent(view.now?.soc_percent ?? null),
-          })}>
+          })} meta={<TrendBadge view={view} line="soc" />}>
             <p>
               {t("today.battery.max", {
                 pct: percent(view.summary.soc_max_percent),
@@ -108,7 +118,7 @@ export default function TodayView({ onNavigate }: { onNavigate?: (target: string
           </Card>
         )}
         {view.solar !== false && (
-          <Card tone="sun" eyebrow={t("today.sun.eyebrow")} title={t("today.sun.title", { kwh: kwh(view.summary.production_kwh, 1) })}>
+          <Card tone="sun" eyebrow={t("today.sun.eyebrow")} title={t("today.sun.title", { kwh: kwh(view.summary.production_kwh, 1) })} meta={<TrendBadge view={view} line="production" />}>
             <p>{measuredHours ? t("today.sun.done", { kwh: kwh(produced, 1) }) : t("today.sun.none")}</p>
           </Card>
         )}

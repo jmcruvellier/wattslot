@@ -1417,7 +1417,8 @@
       "title": "{kwh} kWh heute erwartet",
       "done": "{kwh} kWh bereits erzeugt.",
       "none": "Noch keine Erzeugung gemessen."
-    }
+    },
+    "trend": "Abweichung von der Prognose bei der Messung"
   },
   "home_summary": {
     "loading": "Zuhause wird gelesen…",
