@@ -251,6 +251,39 @@ describe("DiagnosticScreen", () => {
     expect(problem.closest("li")).toHaveTextContent("Check the history of this sensor in Home Assistant");
   });
 
+  it("reconnecte Home Assistant depuis « Vérifier à nouveau »", async () => {
+    const calls: string[] = [];
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const url = String(input);
+      calls.push(`${init?.method ?? "GET"} ${url}`);
+      if (url === "api/connection/retry") return Response.json({});
+      if (url === "api/diagnostic") return Response.json(HEALTHY);
+      if (url === "api/diagnostic/problems")
+        return Response.json([
+          {
+            code: "ha_disconnected",
+            severity: "blocking",
+            params: { error_code: "starting" },
+            target: "connection",
+            doc: "https://www.home-assistant.io/docs/authentication/",
+          },
+        ]);
+      if (url === "api/diagnostic/report") return Response.json({ format: "wattslot/report", problems: [] });
+      return new Response(null, { status: 404 });
+    });
+    renderScreen();
+
+    // Le code d'erreur devient une phrase, pas un message technique.
+    expect(await screen.findByText(/Home Assistant has restarted and is not ready yet/)).toBeInTheDocument();
+    expect(screen.getByText(/Home Assistant does not respond/)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Check again" }));
+    await screen.findByText(/Home Assistant does not respond/);
+
+    expect(calls).toContain("POST api/connection/retry");
+    expect(calls.filter((call) => call === "GET api/diagnostic/problems")).toHaveLength(2);
+  });
+
   it("montre le rapport avant de le télécharger", async () => {
     mockApi(HEALTHY);
     const created = vi.fn(() => "blob:report");

@@ -4,7 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { I18nProvider } from "../i18n/I18nProvider";
 import { applicationAddress, returnedFromHomeAssistant } from "./address";
-import ConnectionScreen, { type ConnectionInfo } from "./ConnectionScreen";
+import ConnectionScreen from "./ConnectionScreen";
+import { type ConnectionInfo } from "./service";
 
 const NONE: ConnectionInfo = {
   mode: "standalone",
@@ -13,6 +14,7 @@ const NONE: ConnectionInfo = {
   method: null,
   state: "not_configured",
   error: null,
+  error_code: null,
 };
 
 type Call = { url: string; method: string; body: unknown };
@@ -106,6 +108,32 @@ describe("ConnectionScreen", () => {
 
     expect(await screen.findByText(/fixée par les variables d'environnement/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Se connecter avec Home Assistant" })).not.toBeInTheDocument();
+  });
+
+  it("explique la panne en clair et reconnecte sur demande, même réglée par l'environnement", async () => {
+    const user = userEvent.setup();
+    const calls = mockApi(
+      { ...NONE, source: "env", state: "error", error: "CommandError: …", error_code: "starting" },
+      {
+        "POST api/connection/retry": Response.json({
+          ...NONE,
+          source: "env",
+          state: "connected",
+          error: null,
+          error_code: null,
+        }),
+      },
+    );
+    renderScreen();
+
+    expect(
+      await screen.findByText(/Home Assistant a redémarré et n'est pas encore prêt/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/CommandError/)).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Réessayer maintenant" }));
+
+    expect(calls.some((call) => call.url === "api/connection/retry" && call.method === "POST")).toBe(true);
+    expect(await screen.findByText(/connecté/)).toBeInTheDocument();
   });
 });
 

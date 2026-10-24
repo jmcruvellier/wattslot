@@ -93,7 +93,8 @@ def test_home_assistant_not_configured_or_disconnected(tmp_path: Path) -> None:
             )
 
     found = asyncio.run(disconnected())
-    assert codes(found)[0] == "ha_disconnected" and "error" in found[0].params
+    # Le code d'erreur remplace le message technique : l'interface le traduit.
+    assert codes(found)[0] == "ha_disconnected" and found[0].params["error_code"] == "token_refused"
 
 
 def test_components_silent_sensors_and_statistics() -> None:

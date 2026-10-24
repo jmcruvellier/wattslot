@@ -21,6 +21,7 @@ from enum import StrEnum
 from typing import Any, Protocol
 
 import websockets
+from websockets.exceptions import ConnectionClosed, WebSocketException
 
 from wattslot import currency
 from wattslot.runtime import HomeAssistantTarget
@@ -63,6 +64,22 @@ class HomeAssistantStatus:
     state: ConnectionState
     version: str | None = None
     error: str | None = None
+    # Code stable de la panne, pour l'interface (traduit) ; ``error`` garde le détail technique.
+    error_code: str | None = None
+
+
+def _code_of(exc: BaseException) -> str:
+    """Code de panne compris de l'interface : détail technique dans le rapport, pas à l'écran."""
+    if isinstance(exc, AuthenticationError):
+        return "token_refused"
+    if isinstance(exc, CommandError):
+        # Commande inconnue : HA répond, mais n'a pas fini de démarrer (redémarrage, mise à jour).
+        return "starting" if exc.code == "unknown_command" else "unknown"
+    if isinstance(exc, ConnectionClosed):
+        return "starting"
+    if isinstance(exc, (OSError, TimeoutError, WebSocketException)):
+        return "unreachable"
+    return "unknown"
 
 
 @dataclass(frozen=True)
@@ -79,6 +96,7 @@ class HomeSnapshot:
 class WebSocket(Protocol):
     async def send(self, message: str) -> None: ...
     async def recv(self) -> str | bytes: ...
+    async def close(self) -> None: ...
     def __aiter__(self) -> Any: ...
 
 
@@ -117,6 +135,7 @@ class HomeAssistantClient:
         self._subscriptions: dict[str, _Subscription] = {}
         self._events: dict[int, EventCallback] = {}
         self._on_connected_callbacks: list[ConnectedCallback] = []
+        self._wake = asyncio.Event()  # ``retry_now`` interrompt le délai de reconnexion
         self.status = HomeAssistantStatus(ConnectionState.CONNECTING)
         self.snapshot = HomeSnapshot()
 
@@ -128,26 +147,39 @@ class HomeAssistantClient:
         """Tient la connexion ouverte jusqu'à l'annulation de la tâche."""
         failures = 0
         while True:
+            self._wake.clear()
+            self.status = HomeAssistantStatus(
+                ConnectionState.CONNECTING, version=self.status.version
+            )
             try:
                 async with self._connect(self._target.websocket_url) as websocket:
                     await self._session(websocket)
                 # Fermeture propre par HA (redémarrage) : on se reconnecte.
-                error = "connexion fermée par Home Assistant"
+                error, code = "connexion fermée par Home Assistant", "starting"
             except asyncio.CancelledError:
                 raise
             except Exception as exc:  # noqa: BLE001 — toute erreur est retentée
-                error = f"{type(exc).__name__}: {exc}"
+                error, code = f"{type(exc).__name__}: {exc}", _code_of(exc)
             finally:
                 self._close_session()
             if self.status.state is ConnectionState.CONNECTED:
                 failures = 0  # Coupure après une connexion réussie : on repart du délai court.
             self.status = HomeAssistantStatus(
-                ConnectionState.ERROR, version=self.status.version, error=error
+                ConnectionState.ERROR,
+                version=self.status.version,
+                error=error,
+                error_code=code,
             )
             delay = self._retry_delays[min(failures, len(self._retry_delays) - 1)]
             failures += 1
             logger.warning("Home Assistant : %s ; nouvel essai dans %s s", error, delay)
-            await asyncio.sleep(delay)
+            with contextlib.suppress(TimeoutError):
+                async with asyncio.timeout(delay):
+                    await self._wake.wait()
+
+    def retry_now(self) -> None:
+        """Reconnexion immédiate, demandée par l'interface : le délai en cours est interrompu."""
+        self._wake.set()
 
     async def command(self, command: str, **params: Any) -> Any:
         """Envoie une commande et attend sa réponse (``result``)."""
@@ -239,17 +271,33 @@ class HomeAssistantClient:
                 self._dispatch(raw)
         finally:
             loading.cancel()
-            await asyncio.gather(loading, return_exceptions=True)
+            results = await asyncio.gather(loading, return_exceptions=True)
+        # L'instantané n'a pas pu être lu (HA démarre, commande refusée…) : la session est
+        # fermée pour que ``run`` en ouvre une autre, au lieu de rester connecté sans état.
+        failure = next(
+            (
+                result
+                for result in results
+                if isinstance(result, BaseException)
+                and not isinstance(result, asyncio.CancelledError)
+            ),
+            None,
+        )
+        if failure is not None:
+            raise failure
 
     async def _on_connected(self) -> None:
         try:
             snapshot = await self.refresh_snapshot()
-        except Exception as exc:  # noqa: BLE001 — l'erreur est rapportée par l'état
-            logger.warning("Home Assistant : lecture de l'instantané impossible (%s)", exc)
-            self.status = HomeAssistantStatus(
-                ConnectionState.ERROR, error=f"{type(exc).__name__}: {exc}"
-            )
-            return
+        except Exception:
+            # Instantané illisible (HA démarre, une commande est refusée…) : la session est
+            # refermée pour que ``run`` en ouvre une autre, au lieu de rester connecté sans
+            # rien savoir de la maison (seul un redémarrage réparait la connexion).
+            websocket = self._websocket
+            if websocket is not None:
+                with contextlib.suppress(Exception):
+                    await websocket.close()
+            raise
         version = snapshot.config.get("version")
         self.status = HomeAssistantStatus(ConnectionState.CONNECTED, version=version)
         for subscription in list(self._subscriptions.values()):

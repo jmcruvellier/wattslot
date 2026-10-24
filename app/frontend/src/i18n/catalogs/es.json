@@ -38,6 +38,12 @@
     "connected": "conectado",
     "error": "error de conexión"
   },
+  "connection_error": {
+    "starting": "Home Assistant se ha reiniciado y aún no está listo; la aplicación sigue intentándolo por su cuenta.",
+    "unreachable": "Home Assistant no responde en la dirección indicada: compruebe que funciona y que la dirección es correcta.",
+    "token_refused": "Home Assistant rechaza el token de acceso: vuelva a conectar la aplicación (o compruebe el token en el archivo .env si allí está definida la conexión).",
+    "unknown": "La conexión a Home Assistant ha fallado."
+  },
   "nav": {
     "main": "Navegación principal",
     "today": "Hoy",
@@ -604,7 +610,9 @@
     "token_help": "Cree un token en Home Assistant: su perfil › Seguridad › Tokens de acceso de larga duración.",
     "token": "Token",
     "connect_token": "Conectar con este token",
-    "security": "La conexión se guarda en el equipo donde funciona la aplicación, nunca en una exportación ni en un informe. Exponga la aplicación solo en su red local: no tiene inicio de sesión propio."
+    "security": "La conexión se guarda en el equipo donde funciona la aplicación, nunca en una exportación ni en un informe. Exponga la aplicación solo en su red local: no tiene inicio de sesión propio.",
+    "retry": "Reintentar ahora",
+    "checking": "Comprobando…"
   },
   "home": {
     "title": "Mi casa",
@@ -1160,7 +1168,8 @@
       "impossible_data": "Revise el historial de este sensor en Home Assistant a esa hora.",
       "impossible_data_unknown": "Probablemente un salto de contador falsea el consumo base: revise el historial de sus contadores de energía en Home Assistant."
     },
-    "hour": "{hour}:00"
+    "hour": "{hour}:00",
+    "checking": "Comprobando…"
   },
   "report": {
     "title": "Informe para un aviso de error",

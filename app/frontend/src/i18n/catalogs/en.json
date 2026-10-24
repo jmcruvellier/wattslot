@@ -38,6 +38,12 @@
     "connected": "connected",
     "error": "connection error"
   },
+  "connection_error": {
+    "starting": "Home Assistant has restarted and is not ready yet; the application keeps trying by itself.",
+    "unreachable": "Home Assistant does not answer at the given address: check that it is running and that the address is correct.",
+    "token_refused": "Home Assistant refuses the access token: connect the application again (or check the token in the .env file if the connection is set there).",
+    "unknown": "The connection to Home Assistant failed."
+  },
   "nav": {
     "main": "Main navigation",
     "today": "Today",
@@ -604,7 +610,9 @@
     "token_help": "Create a token in Home Assistant: your profile › Security › Long-lived access tokens.",
     "token": "Token",
     "connect_token": "Connect with this token",
-    "security": "The connection is kept on the device running the application, never in an export or a report. Only expose the application on your local network: it has no login of its own."
+    "security": "The connection is kept on the device running the application, never in an export or a report. Only expose the application on your local network: it has no login of its own.",
+    "retry": "Try again now",
+    "checking": "Checking…"
   },
   "home": {
     "title": "My home",
@@ -1160,7 +1168,8 @@
       "impossible_data": "Check the history of this sensor in Home Assistant at that time.",
       "impossible_data_unknown": "A meter jump probably distorts the base consumption: check the history of your energy meters in Home Assistant."
     },
-    "hour": "{hour}:00"
+    "hour": "{hour}:00",
+    "checking": "Checking…"
   },
   "report": {
     "title": "Report for a bug report",

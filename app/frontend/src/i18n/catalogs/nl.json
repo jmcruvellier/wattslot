@@ -38,6 +38,12 @@
     "connected": "verbonden",
     "error": "verbindingsfout"
   },
+  "connection_error": {
+    "starting": "Home Assistant is opnieuw gestart en is nog niet klaar; de applicatie blijft het vanzelf opnieuw proberen.",
+    "unreachable": "Home Assistant antwoordt niet op het opgegeven adres: controleer of hij draait en of het adres klopt.",
+    "token_refused": "Home Assistant weigert de toegangstoken: verbind de applicatie opnieuw (of controleer de token in het .env-bestand als de verbinding daar is ingesteld).",
+    "unknown": "De verbinding met Home Assistant is mislukt."
+  },
   "nav": {
     "main": "Hoofdnavigatie",
     "today": "Vandaag",
@@ -604,7 +610,9 @@
     "token_help": "Maak een token aan in Home Assistant: uw profiel › Beveiliging › Langlevende toegangstokens.",
     "token": "Token",
     "connect_token": "Verbinden met dit token",
-    "security": "De verbinding wordt bewaard op het apparaat waarop de toepassing draait, nooit in een export of rapport. Stel de toepassing alleen open op uw lokale netwerk: ze heeft geen eigen aanmelding."
+    "security": "De verbinding wordt bewaard op het apparaat waarop de toepassing draait, nooit in een export of rapport. Stel de toepassing alleen open op uw lokale netwerk: ze heeft geen eigen aanmelding.",
+    "retry": "Nu opnieuw proberen",
+    "checking": "Controleren…"
   },
   "home": {
     "title": "Mijn huis",
@@ -1160,7 +1168,8 @@
       "impossible_data": "Controleer de geschiedenis van deze sensor in Home Assistant op dat tijdstip.",
       "impossible_data_unknown": "Waarschijnlijk vertekent een metersprong het basisverbruik: controleer de geschiedenis van uw energiemeters in Home Assistant."
     },
-    "hour": "{hour}:00 uur"
+    "hour": "{hour}:00 uur",
+    "checking": "Controleren…"
   },
   "report": {
     "title": "Rapport voor een foutmelding",

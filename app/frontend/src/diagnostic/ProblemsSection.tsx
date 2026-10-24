@@ -5,6 +5,7 @@
 import { useEffect, useState } from "react";
 
 import { getJson } from "../api";
+import { connectionErrorParams } from "../connection/service";
 import { useI18n } from "../i18n/I18nProvider";
 import { longDate } from "../plan/format";
 import { formatNumber } from "./format";
@@ -66,7 +67,7 @@ export default function ProblemsSection({ version, onNavigate }: {
       });
     }
     return t(`problems.code.${problem.code}`, {
-      ...params,
+      ...connectionErrorParams(t, params),
       role: params.role ? t(`role.${params.role}`) : "",
       component: params.component ? t(`problems.component.${params.component}`) : "",
     });

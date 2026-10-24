@@ -9,7 +9,9 @@ import { RELEASES_URL } from "./nav/updates";
 const HEALTH: Health = {
   version: "0.7.0",
   mode: "standalone",
-  connections: { home_assistant: { state: "not_configured", version: null, error: null } },
+  connections: {
+    home_assistant: { state: "not_configured", version: null, error: null, error_code: null },
+  },
 };
 
 // Réponses de l'API par adresse : l'état pour api/health, une mise en route vide sinon ; la
@@ -105,11 +107,16 @@ describe("App", () => {
     expect(window.localStorage.getItem("wattslot.language")).toBe("fr");
   });
 
-  it("affiche la version de Home Assistant et la dernière erreur", async () => {
+  it("affiche la version de Home Assistant et la dernière erreur, en clair", async () => {
     const health: Health = {
       ...HEALTH,
       connections: {
-        home_assistant: { state: "error", version: "2026.10.1", error: "AuthenticationError" },
+        home_assistant: {
+          state: "error",
+          version: "2026.10.1",
+          error: "AuthenticationError: jeton refusé",
+          error_code: "token_refused",
+        },
       },
     };
     mockApi(health);
@@ -119,7 +126,11 @@ describe("App", () => {
 
     expect(await screen.findByText("connection error")).toBeInTheDocument();
     expect(screen.getByText("Home Assistant 2026.10.1")).toBeInTheDocument();
-    expect(screen.getByText("Last error: AuthenticationError")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Last error: Home Assistant refuses the access token: connect the application again (or check the token in the .env file if the connection is set there).",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("ouvre le plan du jour dans « Planning »", async () => {
