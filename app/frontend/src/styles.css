@@ -2397,41 +2397,9 @@ p[role="status"]:not(.state-message) {
   --node-color: var(--go);
 }
 
-/* Bouton « Retour » vers l'élément précédent, en haut à gauche du canevas. */
-.graph-panel-back {
-  margin: 0.75rem;
-  z-index: 4;
-}
-
-.graph-back {
-  padding: 0.35rem 0.85rem;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  color: var(--text);
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.graph-back:hover {
-  background: var(--surface-alt);
-}
-
-.graph-back:focus-visible {
-  outline: 2px solid var(--link);
-  outline-offset: 2px;
-}
-
-/* Nœud sélectionné : contour de la couleur des liens, plus épais. */
+/* Élément choisi : contour de la couleur d'action, et ses liaisons passent aussi en couleur
+ * d'action, plus épaisses et étiquetées en gras. */
 .react-flow__node.selected .graph-node {
-  border-color: var(--link);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--link) 30%, transparent);
-}
-
-/* Élément au centre de l'explorateur : contour de la couleur d'action, comme l'élément retenu
- * de l'ontologie de Fabric. */
-.react-flow__node.graph-focus .graph-node {
   border-color: var(--link);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--link) 30%, transparent);
 }
@@ -2455,10 +2423,20 @@ p[role="status"]:not(.state-message) {
   stroke-width: 1.5px;
 }
 
+.graph-canvas .react-flow__edge.animated .react-flow__edge-path {
+  stroke: var(--link);
+  stroke-width: 2.5px;
+}
+
 .graph-canvas .react-flow__edge-text {
   fill: var(--text-dim);
   font-size: 0.7rem;
   font-weight: 600;
+}
+
+.graph-canvas .react-flow__edge.animated .react-flow__edge-text {
+  fill: var(--link);
+  font-weight: 700;
 }
 
 .graph-canvas .react-flow__edge-textbg {
