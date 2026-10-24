@@ -1,8 +1,8 @@
 // Vue en graphe du modèle de la maison (lot 2t.3), en lecture seule : React Flow, chargé à la
-// demande depuis l'onglet Maison, dans l'esprit d'un graphe d'ontologie — relations typées,
-// fléchées et étiquetées, de la bibliothèque aux capteurs. Un clic sur un nœud ouvre une popup
-// avec ses propriétés et ses anomalies, et met en avant ses liens. Sur un écran étroit
-// (téléphone), une liste remplace le graphe.
+// demande depuis l'onglet Maison. À la façon de l'explorateur d'ontologie de Microsoft Fabric :
+// un élément au centre, ses voisins autour en cercle, reliés par des flèches étiquetées ; un clic
+// sur un voisin le place au centre et ouvre sa fiche, et « Retour » revient à l'élément précédent.
+// Sur un écran étroit (téléphone), une liste remplace le graphe.
 
 import "@xyflow/react/dist/style.css";
 
@@ -14,6 +14,7 @@ import {
   Panel,
   Position,
   ReactFlow,
+  useReactFlow,
   type Edge,
   type Node,
   type NodeProps,
@@ -23,7 +24,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { getJson, postJson } from "../api";
 import { useI18n } from "../i18n/I18nProvider";
 import type { Configuration, ConfigurationIssue } from "./configuration";
-import { buildGraph, COLUMN_WIDTH, type Graph, type GraphNode, type NodeKind, ROW_HEIGHT } from "./graph";
+import { buildGraph, type Graph, type GraphNode, type NodeKind } from "./graph";
 import type { DeviceTypes, HomeModel } from "./types";
 
 const NARROW = "(max-width: 700px)";
@@ -34,17 +35,21 @@ function narrowScreen(): boolean {
   return typeof window.matchMedia === "function" && window.matchMedia(NARROW).matches;
 }
 
-// Données portées par un nœud du dessin : le nom affiché, sa colonne et ses anomalies.
+// Données portées par un nœud du dessin : le nom affiché, sa nature et ses anomalies.
 type FlowNodeData = { label: string; kind: NodeKind; issues: number };
 type FlowNode = Node<FlowNodeData, "home">;
 
-// Poignées d'attache des liaisons : sans elles, React Flow ne peut pas joindre les objets. Celles
-// de gauche relient un équipement à son type et au type de la bibliothèque (sens inverse), celles
-// de droite relient un équipement à ses capteurs (sens direct).
+// Poignées d'attache des liaisons, aux quatre côtés du nœud : sans elles, React Flow ne peut pas
+// joindre les objets, et elles permettent de rattacher une flèche au côté qui fait face à son
+// voisin, comme dans l'explorateur d'ontologie de Fabric.
 function HomeNode({ data }: NodeProps<FlowNode>) {
   const { t } = useI18n();
   return (
     <div className={`graph-node graph-${data.kind}`}>
+      <Handle type="source" position={Position.Top} id="source-top" isConnectable={false} />
+      <Handle type="target" position={Position.Top} id="target-top" isConnectable={false} />
+      <Handle type="source" position={Position.Bottom} id="source-bottom" isConnectable={false} />
+      <Handle type="target" position={Position.Bottom} id="target-bottom" isConnectable={false} />
       <Handle type="source" position={Position.Left} id="source-left" isConnectable={false} />
       <Handle type="target" position={Position.Left} id="target-left" isConnectable={false} />
       <Handle type="source" position={Position.Right} id="source-right" isConnectable={false} />
@@ -64,10 +69,36 @@ function HomeNode({ data }: NodeProps<FlowNode>) {
 
 const NODE_TYPES = { home: HomeNode };
 
+// Côté du nœud qui fait face à un point : la flèche entre deux objets s'attache au côté le plus
+// direct, quelle que soit la position du voisin dans le cercle.
+function sideFor(angle: number): "top" | "bottom" | "left" | "right" {
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  if (cos >= Math.abs(sin)) return "right";
+  if (-cos >= Math.abs(sin)) return "left";
+  return sin >= 0 ? "bottom" : "top";
+}
+
+function handleToward(from: { x: number; y: number }, to: { x: number; y: number }): string {
+  return sideFor(Math.atan2(to.y - from.y, to.x - from.x));
+}
+
+// Recadre le dessin quand l'élément au centre change : le cercle des voisins grandit ou rétrécit.
+function Fitter({ focus }: { focus: string | null }) {
+  const { fitView } = useReactFlow();
+  useEffect(() => {
+    fitView({ padding: 0.2, maxZoom: 1 });
+  }, [focus, fitView]);
+  return null;
+}
+
 export default function HomeGraph() {
   const { t } = useI18n();
   const [load, setLoad] = useState<Load>({ status: "loading" });
+  // Élément au centre du dessin, fiche ouverte, et éléments déjà visités pour « Retour ».
+  const [focus, setFocus] = useState<string | null>(null);
   const [selected, setSelected] = useState<GraphNode | null>(null);
+  const [previous, setPrevious] = useState<string[]>([]);
   const [narrow] = useState(narrowScreen);
 
   useEffect(() => {
@@ -79,7 +110,14 @@ export default function HomeGraph() {
     ])
       .then(async ([home, types, configuration]) => {
         const check = await postJson<{ issues: ConfigurationIssue[] }>("api/configuration/validate", configuration);
-        setLoad({ status: "ready", graph: buildGraph(home, types.types, check.issues, t) });
+        const graph = buildGraph(home, types.types, check.issues, t);
+        setLoad({ status: "ready", graph });
+        // À l'ouverture, le premier équipement est au centre et sa fiche est ouverte.
+        const first = graph.nodes.find((node) => node.kind === "device") ?? graph.nodes[0];
+        if (first) {
+          setFocus((current) => current ?? first.id);
+          setSelected((current) => current ?? first);
+        }
       })
       .catch(() => {
         if (!controller.signal.aborted) setLoad({ status: "error" });
@@ -87,7 +125,7 @@ export default function HomeGraph() {
     return () => controller.abort();
   }, [t]);
 
-  // Échap ferme la popup des propriétés, comme le clic sur le fond du dessin.
+  // Échap ferme la fiche, comme le clic sur le fond du dessin.
   useEffect(() => {
     if (!selected) return;
     const onKey = (event: KeyboardEvent) => {
@@ -97,45 +135,52 @@ export default function HomeGraph() {
     return () => document.removeEventListener("keydown", onKey);
   }, [selected]);
 
-  const nodes = useMemo<FlowNode[]>(() => {
-    if (load.status !== "ready") return [];
-    return load.graph.nodes.map(
-      (node): FlowNode => ({
-        id: node.id,
-        type: "home",
-        position: { x: node.column * COLUMN_WIDTH, y: node.row * ROW_HEIGHT },
-        data: { label: node.label, kind: node.kind, issues: node.issues.length },
-      }),
-    );
-  }, [load]);
-
-  // Liens d'ontologie : flèches et étiquettes de relation toujours visibles (« est un »,
-  // « capteur »…), en escalier ; celles de l'élément sélectionné sont mises en avant. Les
-  // relations de typage vont de droite à gauche (capteurs à droite, bibliothèque à gauche),
-  // d'où le choix des poignées selon le sens du lien.
-  const columns = useMemo(() => {
-    if (load.status !== "ready") return new Map<string, number>();
-    return new Map(load.graph.nodes.map((node) => [node.id, node.column]));
-  }, [load]);
-
-  const edges = useMemo<Edge[]>(() => {
-    if (load.status !== "ready") return [];
-    return load.graph.edges.map((edge): Edge => {
-      const backward = (columns.get(edge.target) ?? 0) < (columns.get(edge.source) ?? 0);
-      const linked = selected !== null && (edge.source === selected.id || edge.target === selected.id);
+  // Le dessin : l'élément au centre, ses voisins en cercle autour, et les liaisons qui les relient.
+  const view = useMemo(() => {
+    if (load.status !== "ready" || !focus) return null;
+    const byId = new Map(load.graph.nodes.map((node) => [node.id, node]));
+    const center = byId.get(focus);
+    if (!center) return null;
+    const links = load.graph.edges.filter((edge) => edge.source === focus || edge.target === focus);
+    const neighborIds = [...new Set(links.flatMap((edge) => [edge.source, edge.target]))].filter((id) => id !== focus);
+    // Rayon du cercle : les voisins assez espacés pour que les étiquettes restent lisibles.
+    const radius = Math.max(360, neighborIds.length * 48);
+    const neighbors = neighborIds.map((id, index): FlowNode => {
+      const neighbor = byId.get(id)!;
+      const angle = (2 * Math.PI * index) / neighborIds.length - Math.PI / 2;
       return {
-        id: edge.id,
-        source: edge.source,
-        target: edge.target,
-        sourceHandle: backward ? "source-left" : "source-right",
-        targetHandle: backward ? "target-right" : "target-left",
-        type: "smoothstep",
-        label: edge.label,
-        markerEnd: { type: MarkerType.ArrowClosed },
-        animated: linked,
+        id,
+        type: "home",
+        position: { x: Math.round(Math.cos(angle) * radius), y: Math.round(Math.sin(angle) * radius) },
+        data: { label: neighbor.label, kind: neighbor.kind, issues: neighbor.issues.length },
       };
     });
-  }, [load, columns, selected]);
+    const centerNode: FlowNode = {
+      id: center.id,
+      type: "home",
+      className: "graph-focus",
+      position: { x: 0, y: 0 },
+      data: { label: center.label, kind: center.kind, issues: center.issues.length },
+    };
+    // Flèches étiquetées, du centre vers ses voisins : chaque extrémité s'attache au côté du nœud
+    // qui fait face à l'autre, et la pointe garde le sens de la relation (l'équipement vers son
+    // type, l'équipement vers son capteur).
+    const edges: Edge[] = links.map((link): Edge => {
+      const source = [centerNode, ...neighbors].find((node) => node.id === link.source)!;
+      const target = [centerNode, ...neighbors].find((node) => node.id === link.target)!;
+      return {
+        id: link.id,
+        source: link.source,
+        target: link.target,
+        sourceHandle: `source-${handleToward(source.position, target.position)}`,
+        targetHandle: `target-${handleToward(target.position, source.position)}`,
+        type: "default",
+        label: link.label,
+        markerEnd: { type: MarkerType.ArrowClosed },
+      };
+    });
+    return { center, nodes: [centerNode, ...neighbors], edges };
+  }, [load, focus]);
 
   if (load.status === "loading") return <p>{t("graph.loading")}</p>;
   if (load.status === "error") return <p role="alert">{t("graph.error")}</p>;
@@ -161,39 +206,71 @@ export default function HomeGraph() {
     );
   }
 
+  // Un clic sur un voisin le place au centre et ouvre sa fiche ; un clic sur l'élément au centre
+  // rouvre sa fiche ; « Retour » revient à l'élément précédent.
+  const explore = (id: string) => {
+    const node = graph.nodes.find((n) => n.id === id);
+    if (!node) return;
+    if (id === focus) {
+      setSelected(node);
+      return;
+    }
+    if (focus) setPrevious((path) => [...path, focus]);
+    setFocus(id);
+    setSelected(node);
+  };
+
+  const back = () => {
+    const last = previous[previous.length - 1];
+    if (!last) return;
+    setPrevious((path) => path.slice(0, -1));
+    setFocus(last);
+    setSelected(graph.nodes.find((node) => node.id === last) ?? null);
+  };
+
   return (
     <div className="graph-view">
       <p className="graph-hint">{t("graph.hint")}</p>
       <div className="graph-canvas" role="figure" aria-label={t("graph.title")}>
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          nodeTypes={NODE_TYPES}
-          nodesDraggable={false}
-          nodesConnectable={false}
-          fitView
-          fitViewOptions={{ padding: 0.15, maxZoom: 1 }}
-          minZoom={0.1}
-          onNodeClick={(_, node) => setSelected(graph.nodes.find((n) => n.id === node.id) ?? null)}
-          onPaneClick={() => setSelected(null)}
-        >
-          <Background gap={28} />
-          <Controls showInteractive={false} />
-          {selected && (
-            <Panel position="top-right" className="graph-panel">
-              <NodeDetails node={selected}>
-                <button
-                  type="button"
-                  className="graph-details-close"
-                  aria-label={t("graph.close")}
-                  onClick={() => setSelected(null)}
-                >
-                  ✕
+        {view && (
+          <ReactFlow
+            nodes={view.nodes}
+            edges={view.edges}
+            nodeTypes={NODE_TYPES}
+            nodesDraggable={false}
+            nodesConnectable={false}
+            fitView
+            fitViewOptions={{ padding: 0.2, maxZoom: 1 }}
+            minZoom={0.1}
+            onNodeClick={(_, node) => explore(node.id)}
+            onPaneClick={() => setSelected(null)}
+          >
+            <Fitter focus={focus} />
+            <Background gap={28} />
+            <Controls showInteractive={false} />
+            {previous.length > 0 && (
+              <Panel position="top-left" className="graph-panel graph-panel-back">
+                <button type="button" className="graph-back" onClick={back}>
+                  ← {t("graph.back")}
                 </button>
-              </NodeDetails>
-            </Panel>
-          )}
-        </ReactFlow>
+              </Panel>
+            )}
+            {selected && (
+              <Panel position="top-right" className="graph-panel">
+                <NodeDetails node={selected}>
+                  <button
+                    type="button"
+                    className="graph-details-close"
+                    aria-label={t("graph.close")}
+                    onClick={() => setSelected(null)}
+                  >
+                    ✕
+                  </button>
+                </NodeDetails>
+              </Panel>
+            )}
+          </ReactFlow>
+        )}
       </div>
     </div>
   );
