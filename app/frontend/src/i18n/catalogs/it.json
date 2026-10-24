@@ -1308,6 +1308,7 @@
       "you": "Tu",
       "assistant": "Assistente",
       "thinking": "L'assistente sta pensando…",
+      "duration": "risposta in {time} s",
       "input": "Il tuo messaggio",
       "placeholder": "Quanto hanno prodotto i pannelli ieri?",
       "send": "Invia",

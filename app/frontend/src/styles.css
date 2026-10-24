@@ -1922,6 +1922,14 @@ a.ui-setting-row {
   background: color-mix(in srgb, var(--accent) 14%, var(--surface));
 }
 
+/* Temps mis par une réponse, flotté à droite dans la bulle de l'assistant. */
+.assistant-chat-time {
+  float: right;
+  margin-left: 0.5rem;
+  font-size: 0.85em;
+  white-space: nowrap;
+}
+
 .assistant-chat-assistant {
   align-self: flex-start;
   background: var(--surface-alt);
