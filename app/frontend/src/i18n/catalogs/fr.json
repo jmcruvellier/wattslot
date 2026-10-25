@@ -303,7 +303,12 @@
       "no_surplus": "Pas de surplus solaire prévu (production {production} kWh, consommation {consumption} kWh) : aucun équipement planifié.",
       "nothing": "Aucun équipement planifié ce jour.",
       "choice_title": "Départ de {device}",
-      "choice_slot": "Prévu {start} → {end} : {kwh} kWh"
+      "choice_slot": "Prévu {start} → {end} : {kwh} kWh",
+      "cancel": "Annuler le lancement",
+      "cancel_failed": "L'annulation n'a pas abouti.",
+      "cancelled": "Annulés aujourd'hui :",
+      "restore": "Rétablir {device}",
+      "restore_failed": "Le rétablissement n'a pas abouti."
     },
     "indicators": {
       "title": "Indicateurs du plan",
@@ -1418,7 +1423,9 @@
       "none_help": "Le plan vous préviendra du prochain appareil à lancer.",
       "no_appliance": "Aucun appareil à placer",
       "no_appliance_help": "WattSlot place vos appareils au meilleur moment : lave-linge, lave-vaisselle, chauffe-eau… Ajoutez-en un pour savoir quand le lancer.",
-      "add_appliance": "Ajouter un appareil"
+      "add_appliance": "Ajouter un appareil",
+      "cancel": "Annuler",
+      "cancel_failed": "L'annulation n'a pas abouti."
     },
     "battery": {
       "eyebrow": "Batterie",

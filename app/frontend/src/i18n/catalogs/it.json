@@ -303,7 +303,12 @@
       "no_surplus": "Nessun surplus solare previsto (produzione {production} kWh, consumo {consumption} kWh): nessun apparecchio programmato.",
       "nothing": "Nessun apparecchio programmato in questo giorno.",
       "choice_title": "Avvio di {device}",
-      "choice_slot": "Previsto {start} → {end}: {kwh} kWh"
+      "choice_slot": "Previsto {start} → {end}: {kwh} kWh",
+      "cancel": "Annulla l'avvio",
+      "cancel_failed": "L'annullamento non è riuscito.",
+      "cancelled": "Annullati oggi:",
+      "restore": "Ripristina {device}",
+      "restore_failed": "Il ripristino non è riuscito."
     },
     "indicators": {
       "title": "Indicatori del piano",
@@ -1418,7 +1423,9 @@
       "none_help": "Il piano la avviserà del prossimo apparecchio da avviare.",
       "no_appliance": "Nessun apparecchio da collocare",
       "no_appliance_help": "WattSlot colloca i vostri apparecchi nel momento migliore: lavatrice, lavastoviglie, scaldabagno… Aggiungetene uno per sapere quando avviarlo.",
-      "add_appliance": "Aggiungi un apparecchio"
+      "add_appliance": "Aggiungi un apparecchio",
+      "cancel": "Annulla",
+      "cancel_failed": "L'annullamento non è riuscito."
     },
     "battery": {
       "eyebrow": "Batteria",

@@ -47,6 +47,12 @@ function mockApi(view: DayView | null, features: object | null = null) {
     if (url.startsWith("api/planning/choices/") && init?.method === "DELETE") {
       return new Response(null, { status: 204 });
     }
+    if (url === "api/planning/cancelled" && init?.method === "POST") {
+      return Response.json(JSON.parse(String(init?.body)), { status: 201 });
+    }
+    if (url.startsWith("api/planning/cancelled/") && init?.method === "DELETE") {
+      return new Response(null, { status: 204 });
+    }
     if (url === "api/planning/run" && init?.method === "POST") {
       return Response.json({}, { status: 200 });
     }
@@ -246,5 +252,19 @@ describe("TodayView", () => {
     expect(fetchMock.mock.calls.some((call) => String(call[0]) === "api/planning/run")).toBe(true);
     // La feuille se ferme et la vue se relit (l'API du jour sert la même vue au test).
     expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("annule la planification de la prochaine action, sans quitter l'écran", async () => {
+    vi.setSystemTime(new Date("2026-10-17T12:00:00"));
+    const fetchMock = mockApi({ ...TODAY, now: NOW, next_action: ACTION });
+    const user = userEvent.setup();
+    renderView();
+
+    await user.click(await screen.findByRole("button", { name: "Annuler" }));
+
+    const posts = fetchMock.mock.calls.filter((call) => String(call[0]) === "api/planning/cancelled");
+    expect(posts).toHaveLength(1);
+    expect(JSON.parse(String(posts[0][1]?.body))).toEqual({ device: "Lave-linge" });
+    expect(fetchMock.mock.calls.some((call) => String(call[0]) === "api/planning/run")).toBe(true);
   });
 });

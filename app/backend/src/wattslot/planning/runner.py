@@ -36,7 +36,7 @@ from wattslot.detection import DeviceKind, Role
 from wattslot.home_assistant import HomeAssistantClient
 from wattslot.home_model import HomeModel
 from wattslot.objective_settings import Preset
-from wattslot.planning import capture, choices, open_meteo, past
+from wattslot.planning import cancelled, capture, choices, open_meteo, past
 from wattslot.planning.actual import actual_day
 from wattslot.planning.assemble import build_input, to_v1
 from wattslot.planning.assignment import decide, launched_keys
@@ -468,6 +468,9 @@ async def run(ctx: Context, now: datetime, manual: bool = False) -> RunReport:
     )
     data = with_past(data, old, now, ctx)
     data = replace(data, chosen_starts=choices.load(ctx.database, today))
+    # Planifications annulées pour aujourd'hui (bouton « Annuler ») : ni tâche, ni besoin, ni
+    # durée à placer ; le calcul de demain les reprendra.
+    data = cancelled.without_cancelled(data, cancelled.load(ctx.database, today))
     data, reports = await with_assignments(data, forecasts, ctx, store)
     user_requests.mark_launched(
         ctx.database, cycle_appliances(ctx.model, ctx.configuration), launched_keys(data), today

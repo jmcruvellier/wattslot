@@ -66,6 +66,7 @@ class Timeline(BaseModel):
     statuses: list[DeviceStatus]
     unplanned: list[Unplanned]
     badge: Literal["on_time", "shifted"] | None = None  # au moins un équipement jugé
+    cancelled: list[str] = []  # planifications annulées pour aujourd'hui (Aujourd'hui seule)
 
 
 def _js_round(value: float) -> int:
