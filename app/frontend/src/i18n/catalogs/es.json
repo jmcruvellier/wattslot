@@ -1598,11 +1598,12 @@
     "method": {
       "raw": "Recalculado con las lecturas brutas: {value}.",
       "estimate": "Estimado a partir de las horas vecinas: {value}.",
-      "discard": "Descartado: el cálculo lo ignora."
+      "discard": "Descartado: el cálculo lo ignora y la curva conserva ahí un hueco."
     },
     "was_undone": "Corrección anulada: vuelve el valor original.",
     "actions": "Otra corrección",
     "actions_again": "Corregir de nuevo",
+    "actions_help": "«Estimar» pone la media de las horas vecinas, «Recalcular con lecturas brutas» rehace el cálculo con las lecturas originales (guardadas tres días): ambos rellenan el hueco en las curvas del día. «Descartar» quita la hora: la curva conserva ahí un hueco.",
     "action": {
       "raw": "Recalcular con lecturas brutas",
       "estimate": "Estimar",

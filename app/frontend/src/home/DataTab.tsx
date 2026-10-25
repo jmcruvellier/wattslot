@@ -362,6 +362,7 @@ function CorrectionSheet({
         )}
       </p>
       {error && <p role="alert">{t(`quality.error.${error}`)}</p>}
+      <p className="dim">{t("quality.actions_help")}</p>
     </Sheet>
   );
 }

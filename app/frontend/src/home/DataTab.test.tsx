@@ -154,6 +154,8 @@ describe("onglet Données", () => {
 
     expect(sheet).toHaveTextContent("23148 kWh comptés : plus que la maison ne peut tirer.");
     expect(sheet).toHaveTextContent("Corrigée automatiquement. Recalculée sur le relevé brut : 0,12 kWh.");
+    // L'aide dit ce que fait chaque correction, et son effet sur le trou des courbes.
+    expect(sheet).toHaveTextContent("l'un ou l'autre comble le trou dans les courbes du jour");
     // La méthode en vigueur n'est pas reproposée.
     expect(within(sheet).queryByRole("button", { name: "Recalculer depuis le brut" })).toBeNull();
     await userEvent.click(within(sheet).getByRole("button", { name: "Estimer" }));
@@ -172,7 +174,7 @@ describe("onglet Données", () => {
     renderTab();
     await userEvent.click(await screen.findByRole("button", { name: /écartée/ }));
     const sheet = screen.getByRole("dialog");
-    expect(sheet).toHaveTextContent("Corrigée à la main. Écartée : le calcul l'ignore.");
+    expect(sheet).toHaveTextContent("Corrigée à la main. Écartée : le calcul l'ignore et la courbe garde un trou à cette heure.");
 
     await userEvent.click(within(sheet).getByRole("button", { name: "Annuler la correction" }));
 

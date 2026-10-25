@@ -1598,11 +1598,12 @@
     "method": {
       "raw": "Aus den Rohwerten neu berechnet: {value}.",
       "estimate": "Aus den benachbarten Stunden geschätzt: {value}.",
-      "discard": "Verworfen: Die Berechnung ignoriert ihn."
+      "discard": "Verworfen: Die Berechnung ignoriert ihn und die Kurve behält dort eine Lücke."
     },
     "was_undone": "Korrektur rückgängig gemacht: Der ursprüngliche Wert gilt wieder.",
     "actions": "Andere Korrektur",
     "actions_again": "Erneut korrigieren",
+    "actions_help": "„Schätzen“ setzt den Durchschnitt der Nachbarstunden, „Aus Rohwerten neu berechnen“ rechnet mit den Originalwerten neu (drei Tage aufbewahrt): beides schließt die Lücke in den Tageskurven. „Verwerfen“ entfernt die Stunde: die Kurve behält dort eine Lücke.",
     "action": {
       "raw": "Aus Rohwerten neu berechnen",
       "estimate": "Schätzen",

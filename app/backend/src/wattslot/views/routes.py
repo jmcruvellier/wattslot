@@ -14,6 +14,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
 from wattslot import configuration, home_model, notifications, quality, reminders
+from wattslot.corrections import CorrectionStore
 from wattslot.languages import language_of
 from wattslot.objective_settings import Preset
 from wattslot.planning.engine import Objective
@@ -65,9 +66,15 @@ def objective_of(state: Any, saved: configuration.Configuration) -> Preset:
 
 
 def _plausible(state: Any, content: Mapping[str, Any]) -> tuple[dict[str, Any], list[int]]:
-    """Plan gardé sans ses mesures horaires impossibles (qualité des données)."""
-    limit = quality.house_limit_kwh(home_model.load(state.graph), configuration.load(state.graph))
-    return quality.plausible_actual(content, limit)
+    """Plan gardé avec les corrections en vigueur (Ma maison, onglet Données) appliquées à ses
+    mesures horaires, puis sans ses mesures impossibles (qualité des données) : « Estimer » ou
+    « Recalculer depuis le brut » comble le trou des courbes, « Écarter » le laisse."""
+    home = home_model.load(state.graph)
+    limit = quality.house_limit_kwh(home, configuration.load(state.graph))
+    corrected = quality.corrected_actual(
+        content, CorrectionStore(state.database).list(), home, state.raw.zone
+    )
+    return quality.plausible_actual(corrected, limit)
 
 
 def house_context(state: Any, day: date) -> Context:

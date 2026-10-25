@@ -1598,11 +1598,12 @@
     "method": {
       "raw": "Recomputed from the raw readings: {value}.",
       "estimate": "Estimated from the neighbouring hours: {value}.",
-      "discard": "Set aside: the calculation ignores it."
+      "discard": "Set aside: the calculation ignores it and the curve keeps a gap at that hour."
     },
     "was_undone": "Correction undone: the original value is back.",
     "actions": "Another correction",
     "actions_again": "Correct again",
+    "actions_help": "\"Estimate\" puts the average of the neighbouring hours, \"Recompute from raw readings\" redoes the computation with the original readings (kept three days): either one fills the gap in the day's curves. \"Set aside\" removes the hour: the curve keeps a gap there.",
     "action": {
       "raw": "Recompute from raw readings",
       "estimate": "Estimate",
