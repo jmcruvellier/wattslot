@@ -207,7 +207,7 @@ export default function TimelineCard({
           {(timeline.cancelled ?? []).map((device) => (
             <Button
               key={device}
-              variant="quiet"
+              icon="refresh"
               disabled={restoring !== null}
               aria-label={t("plan.timeline.restore", { device })}
               onClick={() => void restore(device)}
@@ -225,7 +225,9 @@ export default function TimelineCard({
           title={t("plan.timeline.choice_title", { device: picked.device })}
           onClose={() => setPicked(null)}
         >
-          <p className="dim">
+          {/* Comme la ligne du créneau de « Prochaine action » : le texte atténué (dim) devient
+           * illisible sur certains thèmes. */}
+          <p>
             {t("plan.timeline.choice_slot", {
               start: hour(Math.round(picked.bar.start_hour * 60) / 60, lang),
               end: hour(Math.round(picked.bar.end_hour * 60) / 60, lang),
@@ -243,7 +245,6 @@ export default function TimelineCard({
           />
           <p className="other-starts-buttons">
             <Button
-              variant="quiet"
               icon="close"
               disabled={cancelling === "running"}
               onClick={() => void run(() => cancelTask(picked.device))}
