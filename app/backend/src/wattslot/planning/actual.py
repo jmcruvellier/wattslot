@@ -350,6 +350,12 @@ def actual_day(
     imported, exported = hourly(Role.ENERGY_IMPORTED), hourly(Role.ENERGY_EXPORTED)
     charged, discharged = hourly(Role.ENERGY_CHARGED), hourly(Role.ENERGY_DISCHARGED)
     hours = set(production) | set(imported) | set(exported) | set(charged) | set(discharged)
+    # L'onduleur se tait la nuit : les heures mesurées de la maison (réseau, batterie) sans
+    # relevé du compteur de production comptent 0 kWh - la courbe mesurée descend au
+    # coucher du soleil au lieu de s'arrêter à la fin de la production.
+    if iris.get(Role.ENERGY_PRODUCED):
+        for h in hours:
+            production.setdefault(h, 0.0)
     consumption = {
         h: production.get(h, 0.0)
         + imported.get(h, 0.0)

@@ -305,6 +305,30 @@ def test_actual_day_from_raw_readings(tmp_path: Path) -> None:
     assert [s["action"] for s in whole["batterie_reelle_segments"]] == ["charge"]
 
 
+def test_actual_day_production_zero_after_sunset(tmp_path: Path) -> None:
+    """L'onduleur se tait la nuit : les heures couvertes par les autres compteurs sans relevé de
+    production comptent 0 kWh - la courbe mesurée descend au coucher du soleil au lieu de
+    s'arrêter à la fin de la production."""
+    raw = RawStores(tmp_path, "Europe/Paris")
+    raw.write(
+        [
+            reading("solar", "sensor.pv_energy", 100.0, at(-1)),
+            reading("solar", "sensor.pv_energy", 102.0, at(12)),
+            reading("solar", "sensor.pv_energy", 104.0, at(17)),
+            reading("grid", "sensor.import_hp", 50.0, at(-1)),
+            reading("grid", "sensor.import_hp", 50.3, at(18)),
+            reading("grid", "sensor.import_hp", 50.6, at(19.25)),
+        ]
+    )
+
+    found: dict[str, Any] = actual_day(MODEL, raw, DAY, at(19.5))
+
+    production = found["production_reelle_horaire"]
+    assert set(production) == set(range(20))
+    assert sum(production.values()) == pytest.approx(4.0)
+    assert production[18] == 0.0 and production[19] == 0.0
+
+
 def test_actual_day_two_solar_installations(tmp_path: Path) -> None:
     """Deux installations : un compteur total relu un peu plus bas au matin (micro-onduleur qui
     se réveille) et un compteur quotidien remis à zéro. Seule la production du jour compte."""
