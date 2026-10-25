@@ -67,37 +67,18 @@ def test_equal_full_price_is_not_a_false_off_peak() -> None:
 
 @pytest.mark.parametrize(
     ("start", "end", "empty"),
-    [(0, 0, True), (15, 15, True), (15, 38, False), (38, 15, False)],
+    [(0, 0, True), (15, 15, True), (15, 38, False), (38, 15, True)],
 )
 def test_band_empty_compares_minutes(start: int, end: int, empty: bool) -> None:
     tariff = tariff_with(
-        PriceBand(start_hour=0, start_minute=start, end_hour=0, end_minute=end, eur_kwh=0.12)
+        PriceBand(start_hour=1, start_minute=start, end_hour=1, end_minute=end, eur_kwh=0.12)
     )
     assert ("band_empty" in [code for code, _ in problems(tariff)]) is empty
 
 
-def test_band_ending_at_midnight_does_not_include_next_day() -> None:
-    tariff = tariff_with(PriceBand(start_hour=22, start_minute=30, end_hour=0, eur_kwh=0.12))
-    assert tariff.hourly(DAY)[0] == 0.30
-    assert tariff.hourly(DAY)[22] == 0.21
-    assert tariff.hourly(DAY)[23] == 0.12
-    assert problems(tariff) == []
-
-
-def test_month_filter_applies_after_midnight_to_current_month() -> None:
-    tariff = tariff_with(
-        PriceBand(start_hour=22, end_hour=0, end_minute=30, eur_kwh=0.12, months=[10])
-    )
-    assert tariff.hourly(date(2026, 10, 1))[0] == 0.21
-    assert tariff.hourly(date(2026, 11, 1))[0] == 0.30
-
-
-def test_wrapping_within_same_hour_covers_both_sides() -> None:
-    tariff = tariff_with(
-        PriceBand(start_hour=1, start_minute=40, end_hour=1, end_minute=10, eur_kwh=0.12)
-    )
-    assert tariff.hourly(DAY)[0] == tariff.hourly(DAY)[2] == 0.12
-    assert tariff.hourly(DAY)[1] == 0.21
+def test_band_ending_before_it_starts_is_empty() -> None:
+    tariff = tariff_with(PriceBand(start_hour=2, end_hour=1, eur_kwh=0.12))
+    assert [code for code, _ in problems(tariff)] == ["band_empty"]
 
 
 def test_legacy_graph_really_has_no_minute_predicates(tmp_path: Path) -> None:
@@ -124,7 +105,7 @@ def test_legacy_graph_really_has_no_minute_predicates(tmp_path: Path) -> None:
 
 def test_api_round_trip_and_legacy_payload(tmp_path: Path) -> None:
     tariff = tariff_with(
-        PriceBand(start_hour=22, start_minute=30, end_hour=0, end_minute=38, eur_kwh=0.12)
+        PriceBand(start_hour=22, start_minute=30, end_hour=23, end_minute=38, eur_kwh=0.12)
     )
     with TestClient(create_app(_settings(tmp_path))) as api:
         assert api.put("/api/home", json=HOME.model_dump(mode="json")).status_code == 200

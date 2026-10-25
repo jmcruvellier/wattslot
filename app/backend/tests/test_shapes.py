@@ -191,8 +191,8 @@ CASES: dict[str, Callable[[], Configuration]] = {
     [
         (6, 15, 6, 15, True),
         (6, 15, 6, 38, False),
-        (22, 30, 0, 38, False),
-        (0, 0, 0, 0, True),
+        (22, 30, 24, 0, False),
+        (12, 38, 12, 15, True),
         (0, 0, 24, 0, False),
     ],
 )
@@ -225,6 +225,7 @@ def test_price_band_shapes_compare_complete_bounds(
         ("startHour", -1),
         ("startHour", 24),
         ("endHour", -1),
+        ("endHour", 0),
         ("endHour", 25),
         ("startMinute", -1),
         ("startMinute", 60),

@@ -51,7 +51,7 @@ wattslot:Objective a owl:Class ;
 wattslot:PanelArray a owl:Class ;
 	rdfs:label "Champ de panneaux"@fr , "Panel array"@en .
 wattslot:PriceBand a owl:Class ;
-	rdfs:comment "Bornes locales à la minute, début inclus, fin exclue ; une fin avant le début traverse minuit. Les filtres portent sur le jour civil interrogé. Les prix horaires sont pondérés par minutes."@fr , "Local minute bounds, start included and end excluded; an earlier end crosses midnight. Filters apply to the civil day being priced. Hourly prices are minute-weighted."@en ;
+	rdfs:comment "Bornes locales à la minute, début inclus, fin exclue ; la fin suit le début dans la journée. Les filtres portent sur le jour civil interrogé. Les prix horaires sont pondérés par minutes."@fr , "Local minute bounds, start included and end excluded; the end follows the start in the day. Filters apply to the civil day being priced. Hourly prices are minute-weighted."@en ;
 	rdfs:label "Plage horaire de prix"@fr , "Price band"@en .
 wattslot:ProductionBehavior a wattslot:Behavior ;
 	rdfs:label "Production"@en , "Production"@fr .

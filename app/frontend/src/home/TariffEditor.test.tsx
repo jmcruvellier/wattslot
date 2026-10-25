@@ -20,7 +20,7 @@ describe("minutes des plages tarifaires", () => {
   });
   afterEach(() => vi.restoreAllMocks());
 
-  it.each<TariffKind>(["TimeOfUseTariff", "DayColorTariff"])("garde le legacy, ajoute une plage et règle minuit ou 24:00 : %s", async (kind) => {
+  it.each<TariffKind>(["TimeOfUseTariff", "DayColorTariff"])("garde le legacy, règle les minutes et 24:00, ajoute une plage : %s", async (kind) => {
     const legacy = { start_hour: 22, end_hour: 6, eur_kwh: 0.1, weekdays: [1], months: [2] };
     const initial = { ...TARIFF_TEMPLATES[kind], bands: [legacy], colors: [{ color: "Bleu", base_eur_kwh: 0.2, bands: [legacy] }] };
     const changed = vi.fn();
@@ -29,19 +29,21 @@ describe("minutes des plages tarifaires", () => {
     const band = within(screen.getByRole("listitem", { name }));
     expect(band.getByLabelText("Minutes de début")).toHaveValue("0");
     expect(band.getByLabelText("Minutes de fin")).toHaveValue("0");
+    expect(screen.queryByText("Minutes de début")).toBeNull(); // la minute suit l'heure, sans texte visible
     expect(changed).not.toHaveBeenCalled();
-    await userEvent.selectOptions(band.getByLabelText("à"), "0");
+    await userEvent.selectOptions(band.getByLabelText("Minutes de début"), "30");
+    await userEvent.selectOptions(band.getByLabelText("à"), "2");
     await userEvent.selectOptions(band.getByLabelText("Minutes de fin"), "38");
     const latestBand = () => {
       const latest = changed.mock.lastCall![0] as Tariff;
       return kind === "DayColorTariff" ? latest.colors[0].bands[0] : latest.bands[0];
     };
-    expect(latestBand()).toMatchObject({ ...legacy, end_hour: 0, end_minute: 38 });
+    expect(latestBand()).toMatchObject({ ...legacy, start_minute: 30, end_hour: 2, end_minute: 38 });
     await userEvent.selectOptions(band.getByLabelText("à"), "24");
     expect(band.getByLabelText("Minutes de fin")).toBeDisabled();
     expect(band.getByLabelText("Minutes de fin")).toHaveValue("0");
     expect(latestBand()).toMatchObject({ end_hour: 24, end_minute: 0 });
-    await userEvent.selectOptions(band.getByLabelText("à"), "0");
+    await userEvent.selectOptions(band.getByLabelText("à"), "6");
     expect(band.getByLabelText("Minutes de fin")).toBeEnabled();
     expect(band.getByLabelText("Minutes de fin")).toHaveValue("0");
     await userEvent.click(screen.getByRole("button", { name: "Ajouter une plage" }));

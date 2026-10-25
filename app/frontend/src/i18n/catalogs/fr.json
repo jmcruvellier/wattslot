@@ -787,7 +787,7 @@
       "automation_not_available": "{device} : la confirmation et le pilotage automatique viendront dans une version ultérieure.",
       "tariff_without_bands": "Tarif : aucune plage horaire.",
       "bands_not_used": "Tarif : ce type de tarif n'utilise pas de plages.",
-      "band_empty": "Tarif : la plage {band} est vide (début et fin à la même heure et à la même minute).",
+      "band_empty": "Tarif : la plage {band} est vide (fin avant le début).",
       "band_weekday": "Tarif : jour de la semaine impossible dans la plage {band}.",
       "band_month": "Tarif : mois impossible dans la plage {band}.",
       "tariff_without_colors": "Tarif : aucune couleur déclarée.",

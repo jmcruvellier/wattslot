@@ -787,7 +787,7 @@
       "automation_not_available": "{device}: Bestätigung und automatische Steuerung kommen in einer späteren Version.",
       "tariff_without_bands": "Tarif: kein Zeitfenster.",
       "bands_not_used": "Tarif: Diese Tarifart verwendet keine Zeitfenster.",
-      "band_empty": "Tarif: Zeitfenster {band} ist leer (Beginn und Ende haben dieselbe Stunde und Minute).",
+      "band_empty": "Tarif: Zeitfenster {band} ist leer (Ende vor Beginn).",
       "band_weekday": "Tarif: unmöglicher Wochentag in Zeitfenster {band}.",
       "band_month": "Tarif: unmöglicher Monat in Zeitfenster {band}.",
       "tariff_without_colors": "Tarif: keine Farbe angegeben.",

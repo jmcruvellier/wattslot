@@ -50,27 +50,6 @@ WEEKEND = Tariff(
 )
 
 
-def test_midnight_bands_use_civil_day_filters() -> None:
-    band = PriceBand(
-        start_hour=22,
-        start_minute=30,
-        end_hour=0,
-        end_minute=38,
-        eur_kwh=0.12,
-        weekdays=[4],
-        months=[10],
-    )
-    tariff = Tariff(kind=TariffKind.TIME_OF_USE, base_eur_kwh=0.30, bands=[band])
-    assert problems(tariff) == []
-    assert tariff.hourly(FRIDAY)[0] == 0.186
-    assert tariff.hourly(FRIDAY)[22] == 0.21
-    assert tariff.hourly(FRIDAY)[23] == 0.12
-    assert set(tariff.hourly(SATURDAY).values()) == {0.30}
-    assert not band.applies(JULY_DAY, 23)
-    assert band.applies(FRIDAY, 0, 37)
-    assert not band.applies(FRIDAY, 0, 38)
-
-
 def test_hourly_prices() -> None:
     assert DEFAULT.hourly(FRIDAY) == dict.fromkeys(range(24), 0.25)
     friday = WEEKEND.hourly(FRIDAY)
@@ -90,6 +69,7 @@ def test_hourly_prices() -> None:
         {"end_minute": -1},
         {"end_minute": 60},
         {"end_hour": -1},
+        {"end_hour": 0},
         {"end_hour": 25},
         {"end_hour": 24, "end_minute": 1},
     ],

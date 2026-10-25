@@ -787,7 +787,7 @@
       "automation_not_available": "{device}: la conferma e il comando automatico arriveranno in una versione successiva.",
       "tariff_without_bands": "Tariffa: nessuna fascia oraria.",
       "bands_not_used": "Tariffa: questo tipo di tariffa non usa fasce.",
-      "band_empty": "Tariffa: la fascia {band} è vuota (inizio e fine hanno la stessa ora e lo stesso minuto).",
+      "band_empty": "Tariffa: la fascia {band} è vuota (fine prima dell'inizio).",
       "band_weekday": "Tariffa: giorno della settimana impossibile nella fascia {band}.",
       "band_month": "Tariffa: mese impossibile nella fascia {band}.",
       "tariff_without_colors": "Tariffa: nessun colore dichiarato.",

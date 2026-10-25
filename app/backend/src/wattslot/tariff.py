@@ -4,10 +4,10 @@ Un tarif donne le prix du kWh soutiré à chaque heure d'une journée, et celui 
 
 - **prix unique** (``SingleTariff``) : ``base_eur_kwh`` à toute heure ;
 - **plages horaires** (``TimeOfUseTariff``) : des plages ``[début, fin[`` à la minute locale,
-  avec leur prix et leurs filtres de jour civil (semaine, mois), même après minuit pour une
-  plage traversante ; hors plage, le prix de base s'applique. La première plage couvrant
-  chaque minute l'emporte. Le moteur conserve ses heures : moyenne pondérée par minutes,
-  arrondie à six décimales seulement pour les heures mixtes ;
+  avec leur prix et leurs filtres de jour civil (semaine, mois) ; hors plage, le prix de base
+  s'applique. La première plage couvrant chaque minute l'emporte. Le moteur conserve ses
+  heures : moyenne pondérée par minutes, arrondie à six décimales seulement pour les
+  heures mixtes ;
 - **couleur du jour** (``DayColorTariff``, Tempo) : un prix de base et des plages par couleur ; la
   couleur du jour et celle du lendemain sont lues dans des entités HA, la première couleur
   déclarée servant au-delà. Un jour de couleur peut commencer à une autre heure que minuit
@@ -51,7 +51,7 @@ class TariffKind(StrEnum):
 
 class PriceBand(BaseModel):
     start_hour: int = Field(ge=0, le=23)
-    end_hour: int = Field(ge=0, le=24)  # exclue ; une fin avant le début traverse minuit
+    end_hour: int = Field(ge=1, le=24)  # exclue
     start_minute: int = Field(default=0, ge=0, le=59)
     end_minute: int = Field(default=0, ge=0, le=59)
     eur_kwh: float = Field(ge=0)
@@ -66,19 +66,12 @@ class PriceBand(BaseModel):
         return value
 
     def applies(self, day: date, hour: int, minute: int = 0) -> bool:
-        """Bornes locales, fin exclue ; les filtres portent sur le jour civil interrogé,
-        même pour la portion après minuit, comme ``battery_settings.covers``.
-        """
+        """Bornes locales, fin exclue ; les filtres portent sur le jour civil interrogé."""
         start = self.start_hour * 60 + self.start_minute
         end = self.end_hour * 60 + self.end_minute
         current = hour * 60 + minute
-        covered = (
-            start <= current < end
-            if start < end
-            else start > end and (current >= start or current < end)
-        )
         return (
-            covered
+            start <= current < end
             and (not self.weekdays or day.weekday() in self.weekdays)
             and (not self.months or day.month in self.months)
         )
@@ -221,7 +214,7 @@ def _band_problems(bands: list[PriceBand], prefix: str) -> list[tuple[str, dict[
     found: list[tuple[str, dict[str, str]]] = []
     for index, band in enumerate(bands):
         params = {"band": f"{prefix}{index + 1}"}
-        if band.start_hour * 60 + band.start_minute == band.end_hour * 60 + band.end_minute:
+        if band.start_hour * 60 + band.start_minute >= band.end_hour * 60 + band.end_minute:
             found.append(("band_empty", params))
         if any(not 0 <= d <= 6 for d in band.weekdays):
             found.append(("band_weekday", params))

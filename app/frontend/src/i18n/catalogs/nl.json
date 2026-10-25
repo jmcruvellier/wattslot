@@ -787,7 +787,7 @@
       "automation_not_available": "{device}: bevestiging en automatische aansturing komen in een latere versie.",
       "tariff_without_bands": "Tarief: geen tijdvak.",
       "bands_not_used": "Tarief: dit soort tarief gebruikt geen tijdvakken.",
-      "band_empty": "Tarief: tijdvak {band} is leeg (begin en einde hebben hetzelfde uur en dezelfde minuut).",
+      "band_empty": "Tarief: tijdvak {band} is leeg (einde vóór begin).",
       "band_weekday": "Tarief: onmogelijke weekdag in tijdvak {band}.",
       "band_month": "Tarief: onmogelijke maand in tijdvak {band}.",
       "tariff_without_colors": "Tarief: geen kleur opgegeven.",
