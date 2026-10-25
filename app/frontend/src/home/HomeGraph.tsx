@@ -107,24 +107,30 @@ const FIT_OPTIONS = {
   maxZoom: 1,
 };
 
-// Recadre le dessin au changement de vue (l'ensemble est plus large que l'intérieur d'un
-// élément), au passage en plein écran et sur les résultats de la recherche.
+// Recadre le dessin à l'ouverture et à chaque changement de vue (double-clic, retour, plein
+// écran) : la vue entière, centrée, avec la bande de la recherche réservée — exactement comme
+// le bouton « centrer » des commandes.
+// Les résultats de la recherche, eux, ne recadrent que quand le texte de la recherche change :
+// naviguer dans le graphe avec une recherche en cours ne décale rien.
 function Fitter({ zoomed, fullscreen, hits }: { zoomed: string | null; fullscreen: boolean; hits: string }) {
   const instance = useReactFlow();
   useEffect(() => {
+    instance.fitView({ ...FIT_OPTIONS, duration: 300 });
+  }, [zoomed, fullscreen, instance]);
+  useEffect(() => {
     const ids = hits ? hits.split(",") : [];
-    if (ids.length > 0) {
-      // Résultats de la recherche : cadrés plus près, toujours sous la bande.
-      instance.fitView({
-        ...FIT_OPTIONS,
-        nodes: ids.map((id) => ({ id })),
-        padding: { top: SEARCH_BAND, right: 0.3, bottom: 0.3, left: 0.3 },
-        duration: 300,
-      });
-    } else {
-      instance.fitView({ ...FIT_OPTIONS, duration: 300 });
+    if (ids.length === 0) {
+      instance.fitView({ ...FIT_OPTIONS, duration: 300 }); // recherche vide ou sans résultat
+      return;
     }
-  }, [zoomed, fullscreen, hits, instance]);
+    // Résultats de la recherche : cadrés plus près, toujours sous la bande.
+    instance.fitView({
+      ...FIT_OPTIONS,
+      nodes: ids.map((id) => ({ id })),
+      padding: { top: SEARCH_BAND, right: 0.3, bottom: 0.3, left: 0.3 },
+      duration: 300,
+    });
+  }, [hits, instance]);
   return null;
 }
 
