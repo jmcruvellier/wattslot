@@ -301,7 +301,9 @@
       "tip_planned": "Prévu {start} → {end} : {what}, {kwh} kWh",
       "tip_actual": "Réel {start} → {end} : {what}, {kwh} kWh",
       "no_surplus": "Pas de surplus solaire prévu (production {production} kWh, consommation {consumption} kWh) : aucun équipement planifié.",
-      "nothing": "Aucun équipement planifié ce jour."
+      "nothing": "Aucun équipement planifié ce jour.",
+      "choice_title": "Départ de {device}",
+      "choice_slot": "Prévu {start} → {end} : {kwh} kWh"
     },
     "indicators": {
       "title": "Indicateurs du plan",

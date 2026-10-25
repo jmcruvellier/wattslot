@@ -301,7 +301,9 @@
       "tip_planned": "Gepland {start} → {end}: {what}, {kwh} kWh",
       "tip_actual": "Werkelijk {start} → {end}: {what}, {kwh} kWh",
       "no_surplus": "Geen zonne-overschot verwacht (productie {production} kWh, verbruik {consumption} kWh): geen apparaat gepland.",
-      "nothing": "Geen apparaat gepland op deze dag."
+      "nothing": "Geen apparaat gepland op deze dag.",
+      "choice_title": "Start van {device}",
+      "choice_slot": "Gepland {start} → {end}: {kwh} kWh"
     },
     "indicators": {
       "title": "Kengetallen van het plan",

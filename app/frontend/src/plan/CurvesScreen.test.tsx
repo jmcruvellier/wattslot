@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -180,5 +180,68 @@ describe("CurvesScreen", () => {
     expect(tabs).not.toContainElement(button);
     expect(button).toHaveTextContent(""); // icône seule : le nom reste au lecteur d'écran
     expect(button).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("Aujourd'hui : change le créneau d'un équipement pas encore lancé depuis la frise", async () => {
+    vi.setSystemTime(new Date("2026-10-17T12:00:00"));
+    const day: DayView = {
+      ...TODAY,
+      timeline: {
+        ...TODAY.timeline,
+        rows: [
+          ...TODAY.timeline.rows,
+          {
+            device: "Sèche-linge",
+            kind: "cycle",
+            planned: [{ start_hour: 16, end_hour: 17, energy_kwh: 1, action: null, mode: null }],
+            actual: [],
+          },
+        ],
+      },
+      explanations: [
+        {
+          device: "Sèche-linge",
+          text: "Placé à 16h.",
+          explanation: {
+            alternatives: [{ debut_min: 1140, ecart_cout_eur: -0.099, ecart_soutirage_kwh: -0.732 }],
+            choisi: false,
+          },
+        },
+      ],
+    };
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url === "api/views/versions") return Response.json({ yesterday: 1, today: 1, tomorrow: 1, week: 1 });
+      if (url.startsWith("api/views/today")) return Response.json(day);
+      if (url.startsWith("api/views/tomorrow")) return Response.json({ ...day, kind: "tomorrow", cards: null });
+      if (url === "api/settings/dashboard") return Response.json(DEFAULT_LAYOUT);
+      if (url === "api/planning/choices" && init?.method === "POST") {
+        return Response.json(JSON.parse(String(init.body)), { status: 201 });
+      }
+      if (url.startsWith("api/planning/choices/") && init?.method === "DELETE") {
+        return new Response(null, { status: 204 });
+      }
+      if (url === "api/planning/run" && init?.method === "POST") return Response.json({});
+      return new Response(null, { status: 404 });
+    });
+    const user = userEvent.setup();
+    renderScreen();
+
+    // Aujourd'hui : le bloc prévu pas encore lancé ouvre la feuille des autres départs.
+    await user.click(await screen.findByRole("button", { name: "Prévu 16h → 17h : Sèche-linge, 1,00 kWh" }));
+    const sheet = screen.getByRole("dialog");
+    expect(within(sheet).getByRole("heading", { name: "Départ de Sèche-linge" })).toBeInTheDocument();
+    await user.click(within(sheet).getByRole("button", { name: /Choisir le départ de 19h00/ }));
+
+    const posts = fetchMock.mock.calls.filter((call) => String(call[0]) === "api/planning/choices");
+    expect(posts).toHaveLength(1);
+    expect(JSON.parse(String(posts[0][1]?.body))).toEqual({ device: "Sèche-linge", start_min: 1140 });
+    expect(screen.queryByRole("dialog")).toBeNull();
+
+    // Demain : le choix ne vaut que pour aujourd'hui, le bloc reste une info-bulle.
+    await user.click(screen.getByRole("tab", { name: "Demain" }));
+    await user.click(await screen.findByRole("button", { name: "Prévu 16h → 17h : Sèche-linge, 1,00 kWh" }));
+    expect(screen.getByRole("status")).toHaveTextContent("Prévu 16h → 17h : Sèche-linge, 1,00 kWh");
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 });

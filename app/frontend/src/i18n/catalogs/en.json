@@ -301,7 +301,9 @@
       "tip_planned": "Planned {start} → {end}: {what}, {kwh} kWh",
       "tip_actual": "Actual {start} → {end}: {what}, {kwh} kWh",
       "no_surplus": "No solar surplus expected (production {production} kWh, consumption {consumption} kWh): no device scheduled.",
-      "nothing": "No device scheduled on this day."
+      "nothing": "No device scheduled on this day.",
+      "choice_title": "Start of {device}",
+      "choice_slot": "Planned {start} → {end}: {kwh} kWh"
     },
     "indicators": {
       "title": "Plan indicators",

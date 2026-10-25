@@ -301,7 +301,9 @@
       "tip_planned": "Previsto {start} → {end}: {what}, {kwh} kWh",
       "tip_actual": "Real {start} → {end}: {what}, {kwh} kWh",
       "no_surplus": "No se espera excedente solar (producción {production} kWh, consumo {consumption} kWh): ningún aparato programado.",
-      "nothing": "Ningún aparato programado este día."
+      "nothing": "Ningún aparato programado este día.",
+      "choice_title": "Inicio de {device}",
+      "choice_slot": "Previsto {start} → {end}: {kwh} kWh"
     },
     "indicators": {
       "title": "Indicadores del plan",

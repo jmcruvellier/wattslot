@@ -9,6 +9,7 @@ import { availableDayCards, type DayCardId, type IndicatorLayout, shownCards, ty
 import { EnergyChart, GridChart, SocChart } from "./lazyCharts";
 import SummaryCards from "./SummaryCards";
 import TimelineCard from "./TimelineCard";
+import { startChoices, type StartChoice } from "./startChoices";
 import type { DayView } from "./types";
 import Icon from "../ui/Icon";
 import type { IconName } from "../ui/iconPaths";
@@ -33,11 +34,22 @@ function ChartCard({ label, icon, wide, children }: { label: string; icon: IconN
   );
 }
 
-function useRenderers(indicators: IndicatorLayout): Record<DayCardId, (view: DayView) => ReactNode> {
+function useRenderers(
+  indicators: IndicatorLayout,
+  timelineChoices?: Record<string, StartChoice>,
+  onTimelineChanged?: () => void,
+): Record<DayCardId, (view: DayView) => ReactNode> {
   const { t } = useI18n();
   return {
     summary: (view) => <SummaryCards view={view} />,
-    timeline: (view) => <TimelineCard timeline={view.timeline} readingHour={readingHour(view)} />,
+    timeline: (view) => (
+      <TimelineCard
+        timeline={view.timeline}
+        readingHour={readingHour(view)}
+        choices={timelineChoices}
+        onChanged={onTimelineChanged}
+      />
+    ),
     soc: (view) => (
       <ChartCard label={t("plan.cards.soc")} icon="battery">
         <SocChart hours={view.hours} readingHour={readingHour(view)} floor={view.battery_floor_percent} />
@@ -63,13 +75,21 @@ export default function DayCards({
   layout,
   indicators,
   available = availableDayCards(view),
+  onChanged,
 }: {
   view: DayView;
   layout: ViewLayout;
   indicators: IndicatorLayout;
   available?: DayCardId[]; // par défaut, toutes celles que le plan justifie
+  onChanged?: () => void; // départ changé depuis la frise du jour : la vue se relit
 }) {
-  const render = useRenderers(indicators);
+  const render = useRenderers(
+    indicators,
+    // La frise du jour seule propose les autres départs des blocs pas encore lancés : le choix
+    // enregistré (api/planning/choices) ne vaut que pour aujourd'hui.
+    view.kind === "today" && onChanged !== undefined ? startChoices(view) : undefined,
+    onChanged,
+  );
   // Le résumé est un groupe de cartes à lui seul : les autres cartes se rangent dans des grilles
   // avant ou après lui.
   const segments: DayCardId[][] = [];
