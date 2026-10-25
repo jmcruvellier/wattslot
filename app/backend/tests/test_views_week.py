@@ -108,6 +108,21 @@ def test_the_v2_horizon_starts_after_tomorrow() -> None:
     assert [d.day for d in without_tomorrow.days] == [d["date_cible"] for d in after]
 
 
+def test_discarded_hours_only_of_the_day_opening_the_week() -> None:
+    """Le message « Mesure impossible écartée » de la semaine ne concerne que le jour qui
+    l'ouvre (aujourd'hui) ; une mesure plus ancienne n'y apparaît pas."""
+    horizon, days = horizon_of(2)
+    today = state_of(STATES[0])
+
+    view = week.build_week(horizon, days[0], today, CONTEXT, today_discarded=[9])
+    assert view.discarded_hours == [9]
+    assert week.build_week(horizon, days[0], today, CONTEXT).discarded_hours == []
+    # Plan du jour d'avant : la semaine ne commence pas ce jour-là, rien à signaler.
+    stale = {**today, "date_cible": today["date_cible"] - timedelta(days=1)}
+    without = week.build_week(horizon, days[0], stale, CONTEXT, today_discarded=[9])
+    assert without.discarded_hours == []
+
+
 def test_the_days_the_horizon_did_not_reach_are_listed() -> None:
     """Horizon arrêté (lot 7.3) : le jour sans plan et les suivants, jusqu'au dernier jour prévu
     (J+6), sont listés pour être affichés sans données."""
@@ -145,6 +160,29 @@ def test_route(tmp_path: Path) -> None:
 
     assert [d["day"] for d in found["days"]] == [d["date_cible"].isoformat() for d in days]
     assert len(found["points"]) == 48
+
+
+def test_route_sets_aside_impossible_measurements_of_today(tmp_path: Path) -> None:
+    """Qualité des données : la semaine signale les heures impossibles du jour qui l'ouvre ;
+    un plan du jour plus ancien (la semaine ne commence pas ce jour-là) n'y signale rien."""
+    horizon, days = horizon_of(2)
+    today = state_of(STATES[0])
+    actual = actual_of(today)
+    imported = dict(actual.get("reseau_reel_soutire_horaire") or {})
+    imported["0"] = 64073.34
+    today["donnees_reelles_cache"] = {**actual, "reseau_reel_soutire_horaire": imported}
+    with TestClient(create_app(_settings(tmp_path))) as api:
+        store = PlanStore(open_database(tmp_path / "data"))
+        store.save("horizon", days[0]["date_cible"], horizon, 1.0, False)
+        store.save("today", today["date_cible"], today, 1.0, False)
+        found = api.get("/api/views/week").json()
+        # Plan du jour plus ancien (la semaine ne commence pas ce jour-là) : rien à signaler.
+        stale = {**today, "date_cible": today["date_cible"] - timedelta(days=1)}
+        store.save("today", stale["date_cible"], stale, 1.0, False)
+        older = api.get("/api/views/week").json()
+
+    assert found["discarded_hours"] == [0]
+    assert older["discarded_hours"] == []
 
 
 def test_versions(tmp_path: Path) -> None:

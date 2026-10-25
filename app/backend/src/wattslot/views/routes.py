@@ -122,13 +122,19 @@ async def week_view_of(state: Any, lang: str = "fr") -> WeekView | None:
         return None
     today, tomorrow = store.load("today"), store.load("tomorrow")
     context = house_context(state, today.day if today else datetime.now(UTC).date())
+    # Les heures impossibles du jour sont écartées de la semaine comme de sa vue, et servent
+    # au message « Mesure impossible écartée » de l'onglet Semaine (mesures plus anciennes : rien).
+    today_content, today_discarded = (
+        _plausible(state, today.content) if today is not None else (None, [])
+    )
     return await asyncio.to_thread(
         build_week,
         horizon.content,
         tomorrow.content if tomorrow else None,
-        _plausible(state, today.content)[0] if today else None,
+        today_content,
         context,
         language_of(lang),
+        today_discarded,
     )
 
 

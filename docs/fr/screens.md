@@ -43,7 +43,7 @@ Les chiffres et les graphiques du plan, avec les mêmes onglets que Planning.
 
 - **Un jour** : cartes de synthèse (batterie, réseau, production, estimé et mesuré), le Planning des équipements, la charge de la batterie, les échanges avec le réseau et les courbes de production et de consommation, prévues (en pointillés) et mesurées.
 - **Personnaliser** choisit les cartes affichées et leur ordre.
-- Une mesure impossible pour la maison (un compteur qui compte des milliers de kWh en une heure) est écartée : un trou dans les courbes, rien dans les totaux, et une ligne au-dessus des cartes avec **Voir les données** (**Ma maison › Données**). Les autres mesures restent affichées.
+- Une mesure impossible pour la maison (un compteur qui compte des milliers de kWh en une heure) est écartée : un trou dans les courbes, rien dans les totaux, et une ligne au-dessus des cartes avec **Voir les données** (**Ma maison › Données**). La ligne apparaît dans **Aujourd'hui**, **Planning** et **Courbes**, tant que la plage affichée la couvre : sur **Hier** pour une mesure de la veille, sur **Semaine** seulement tant que c'est celle du jour. Les autres mesures restent affichées.
 - **Semaine** : un tableau d'une ligne par jour (météo, production, batterie, achat dont heures pleines, surplus, appareils) ; touchez un jour pour déplier son détail (appareils et leurs heures, avertissements, **Voir le détail**). Sur téléphone, le tableau garde le jour, la production, la batterie et l'achat, le reste est dans le détail. Puis les courbes de la semaine.
 
 ![La semaine dans Courbes](../images/fr/curves-week-desktop-light.png)

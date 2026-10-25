@@ -11,6 +11,7 @@ import Agenda, { DaySummaryCard } from "./Agenda";
 import Banners from "./Banners";
 import { ExplanationsCard, IndicatorsCard } from "./InsightCards";
 import { availableDayCards } from "./layout";
+import DiscardedNote from "./DiscardedNote";
 import ProvisionalNote from "./ProvisionalNote";
 import { LoadMessage, PlanTabs } from "./PlanTabs";
 import { useDashboardLayout, usePlanView } from "./planView";
@@ -40,6 +41,7 @@ export default function PlanScreen() {
       {load.status === "day" && (
         <>
           <ViewHeader view={load.view} />
+          <DiscardedNote hours={load.view.discarded_hours ?? []} />
           <ProvisionalNote view={load.view} />
           <Banners view={load.view} />
           <div className="plan-agenda">
@@ -56,7 +58,13 @@ export default function PlanScreen() {
         </>
       )}
 
-      {load.status === "week" && <WeekScreen view={load.view} onOpen={open} />}
+      {load.status === "week" && (
+        <>
+          {/* Mesures impossibles : celles du jour qui ouvre la semaine seulement. */}
+          <DiscardedNote hours={load.view.discarded_hours ?? []} />
+          <WeekScreen view={load.view} onOpen={open} />
+        </>
+      )}
 
       <div className="ui-card plan-requests">
         <RequestsSection />
