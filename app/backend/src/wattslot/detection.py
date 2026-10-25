@@ -131,6 +131,13 @@ def _normalize(text: str) -> str:
     return re.sub(r"[_.\-]+", " ", text.lower())
 
 
+def _daily_reset(entity_id: str, attributes: dict[str, Any]) -> bool:
+    """Compteur remis à zéro chaque jour : ``state_class: total`` avec ``last_reset``, ou nom."""
+    return (attributes.get("state_class") == "total" and "last_reset" in attributes) or any(
+        hint in _normalize(entity_id) for hint in DAILY_HINTS
+    )
+
+
 def slug(text: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", _normalize(text)).strip("-") or "x"
 
@@ -212,10 +219,7 @@ class _Detector:
             issues.append(
                 Issue(code="not_percent_unit", params={"entity": entity_id, "unit": unit or ""})
             )
-        resets_daily = role in ENERGY_ROLES and (
-            (attributes.get("state_class") == "total" and "last_reset" in attributes)
-            or any(hint in _normalize(entity_id) for hint in DAILY_HINTS)
-        )
+        resets_daily = role in ENERGY_ROLES and _daily_reset(entity_id, attributes)
         # Un compteur artificiel peut servir à faire apparaître un coût (abonnement) dans le
         # tableau Énergie, avec une unité d'énergie : constaté le 15/10/2026. Proposé exclu.
         excluded = role in ENERGY_ROLES and _has_word(
@@ -299,12 +303,14 @@ class _Detector:
 
 
 class EntityChoice(BaseModel):
-    """Entité de HA qu'on peut lier à un équipement ajouté à la main (lot 2t.2)."""
+    """Entité de HA qu'on peut lier à un équipement, ajouté à la main (lot 2t.2) ou en
+    remplaçant un capteur d'un équipement suivi."""
 
     entity_id: str
     name: str | None = None
     unit: str | None = None
     roles: list[Role]  # rôles possibles d'après l'unité
+    resets_daily: bool = False  # compteur d'énergie remis à zéro chaque jour
 
 
 def sensor_choices(snapshot: HomeSnapshot) -> list[EntityChoice]:
@@ -326,7 +332,11 @@ def sensor_choices(snapshot: HomeSnapshot) -> list[EntityChoice]:
             continue
         found.append(
             EntityChoice(
-                entity_id=entity_id, name=attributes.get("friendly_name"), unit=unit, roles=roles
+                entity_id=entity_id,
+                name=attributes.get("friendly_name"),
+                unit=unit,
+                roles=roles,
+                resets_daily=unit in ENERGY_UNITS and _daily_reset(entity_id, attributes),
             )
         )
     return found

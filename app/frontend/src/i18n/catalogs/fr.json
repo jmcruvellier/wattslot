@@ -643,6 +643,7 @@
     "saved": "Maison enregistrée.",
     "save_failed": "L'enregistrement a échoué.",
     "keep_sensor": "Retenir {entity}",
+    "change_sensor": "Choisir le capteur {role}",
     "capacity_source": "(lue dans Home Assistant : {entity})",
     "custom_kind": "{name} ({parent})",
     "add": {

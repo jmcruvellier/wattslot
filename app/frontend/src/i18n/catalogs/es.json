@@ -643,6 +643,7 @@
     "saved": "Casa guardada.",
     "save_failed": "No se pudo guardar.",
     "keep_sensor": "Conservar {entity}",
+    "change_sensor": "Elegir el sensor de {role}",
     "capacity_source": "(leído en Home Assistant: {entity})",
     "custom_kind": "{name} ({parent})",
     "add": {

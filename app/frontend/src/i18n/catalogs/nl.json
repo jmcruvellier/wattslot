@@ -643,6 +643,7 @@
     "saved": "Huis opgeslagen.",
     "save_failed": "Opslaan mislukt.",
     "keep_sensor": "{entity} behouden",
+    "change_sensor": "Kies de {role}-sensor",
     "capacity_source": "(gelezen in Home Assistant: {entity})",
     "custom_kind": "{name} ({parent})",
     "add": {

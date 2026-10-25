@@ -643,6 +643,7 @@
     "saved": "Zuhause gespeichert.",
     "save_failed": "Speichern fehlgeschlagen.",
     "keep_sensor": "{entity} behalten",
+    "change_sensor": "Sensor für {role} wählen",
     "capacity_source": "(aus Home Assistant gelesen: {entity})",
     "custom_kind": "{name} ({parent})",
     "add": {

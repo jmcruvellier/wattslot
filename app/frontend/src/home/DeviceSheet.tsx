@@ -1,11 +1,12 @@
 // Fiche d'un appareil de « Ma maison » : ses réglages du calcul, puis, repliés, ses capteurs, son
 // nom et son type, et le retrait de la maison. Un appareil proposé par Home Assistant mais pas
-// encore suivi s'y ajoute. Un seul « Enregistrer » : la maison (/api/home) si son nom, son type ou
-// ses capteurs changent, puis ses réglages (/api/configuration).
+// encore suivi s'y ajoute. Chaque capteur se remplace par une liste des entités de HA dont
+// l'unité convient à son rôle. Un seul « Enregistrer » : la maison (/api/home) si son nom, son
+// type ou ses capteurs changent, puis ses réglages (/api/configuration).
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-import { ApiError, putJson } from "../api";
+import { ApiError, getJson, putJson } from "../api";
 import { Hint } from "../common/Advanced";
 import { useI18n } from "../i18n/I18nProvider";
 import Button from "../ui/Button";
@@ -14,7 +15,7 @@ import { automationFor, BEHAVIORS, type Configuration, type ConfigurationIssue, 
 import DeviceSettings from "./DeviceSettings";
 import { kindChoice, toModel, type DraftDevice } from "./draft";
 import { ConfigurationIssues } from "./SettingsSheet";
-import { DEVICE_KINDS, type DeviceKind, type DeviceType, type Issue } from "./types";
+import { DEVICE_KINDS, type DeviceKind, type DeviceType, type EntityChoice, type Issue } from "./types";
 
 type SaveState =
   | { status: "idle" | "saving" | "failed" | "confirm_remove" }
@@ -54,8 +55,20 @@ export default function DeviceSheet({
   const [draft, setDraft] = useState(device);
   const [settings, setSettings] = useState(() => configuration.devices.find((s) => s.key === device.key));
   const [save, setSave] = useState<SaveState>({ status: "idle" });
+  const [choices, setChoices] = useState<EntityChoice[] | null>(null); // null : sans HA connecté
   const included = device.included;
   const sensorIssues = draft.sensors.some((sensor) => sensor.issues.length > 0);
+
+  // Capteurs de HA qu'on peut lier, lus une fois ; sans HA connecté, le capteur actuel reste écrit.
+  useEffect(() => {
+    let cancelled = false;
+    getJson<EntityChoice[]>("api/home/entities")
+      .then((list) => !cancelled && setChoices(list))
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const edit = (change: Partial<DraftDevice>) => {
     setSave({ status: "idle" });
@@ -149,23 +162,62 @@ export default function DeviceSheet({
           </label>
         )}
         <ul>
-          {draft.sensors.map((sensor, index) => (
-            <li key={`${sensor.role}-${sensor.entity_id}`}>
-              <input
-                type="checkbox"
-                aria-label={t("home.keep_sensor", { entity: sensor.entity_id })}
-                checked={sensor.included}
-                onChange={(event) =>
-                  edit({
-                    sensors: draft.sensors.map((s, i) => (i === index ? { ...s, included: event.target.checked } : s)),
-                  })
-                }
-              />{" "}
-              {t(`role.${sensor.role}`)} : <code>{sensor.entity_id}</code>
-              {sensor.unit && ` (${sensor.unit})`}
-              {sensor.resets_daily && ` — ${t("home.resets_daily")}`}
-            </li>
-          ))}
+          {draft.sensors.map((sensor, index) => {
+            const candidates = (choices ?? []).filter((entity) => entity.roles.includes(sensor.role));
+            return (
+              <li key={`${sensor.role}-${sensor.entity_id}`}>
+                <input
+                  type="checkbox"
+                  aria-label={t("home.keep_sensor", { entity: sensor.entity_id })}
+                  checked={sensor.included}
+                  onChange={(event) =>
+                    edit({
+                      sensors: draft.sensors.map((s, i) => (i === index ? { ...s, included: event.target.checked } : s)),
+                    })
+                  }
+                />{" "}
+                {t(`role.${sensor.role}`)} :{" "}
+                {choices ? (
+                  <select
+                    value={sensor.entity_id}
+                    aria-label={t("home.change_sensor", { role: t(`role.${sensor.role}`) })}
+                    onChange={(event) => {
+                      const entity = choices.find((e) => e.entity_id === event.target.value);
+                      if (!entity) return;
+                      edit({
+                        sensors: draft.sensors.map((s, i) =>
+                          i === index
+                            ? {
+                                ...s,
+                                entity_id: entity.entity_id,
+                                name: entity.name,
+                                unit: entity.unit,
+                                resets_daily: entity.resets_daily,
+                                excluded: false,
+                                issues: [],
+                              }
+                            : s,
+                        ),
+                      });
+                    }}
+                  >
+                    {!candidates.some((entity) => entity.entity_id === sensor.entity_id) && (
+                      <option value={sensor.entity_id}>{sensor.entity_id}</option>
+                    )}
+                    {candidates.map((entity) => (
+                      <option key={entity.entity_id} value={entity.entity_id}>
+                        {entity.name ? `${entity.name} (${entity.entity_id})` : entity.entity_id}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <code>{sensor.entity_id}</code>
+                )}
+                {sensor.unit && ` (${sensor.unit})`}
+                {sensor.resets_daily && ` — ${t("home.resets_daily")}`}
+              </li>
+            );
+          })}
         </ul>
         {included && (
           <p>
