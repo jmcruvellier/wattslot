@@ -1899,21 +1899,32 @@ a.ui-setting-row {
   margin-top: 0.5rem;
 }
 
-/* Capteur d'un appareil : la liste des entités de HA a sa ligne pleine largeur — le nom d'un
-   capteur peut être long, il ne doit ni se tasser contre le rôle ni déborder de la feuille.
-   Sans HA connecté, l'identifiant écrit se replie au lieu de déborder. */
-.home-fiche-details li select,
-.home-fiche-details li code {
-  display: block;
+/* Capteur d'un appareil : la liste des entités de HA a sa ligne pleine largeur sous le rôle —
+   le nom d'un capteur peut être long, il ne doit ni se tasser contre le rôle ni déborder de la
+   feuille — et son unité se lit à droite, sur la même ligne. Sans HA connecté, l'identifiant
+   écrit se replie au lieu de déborder. */
+.home-fiche-details .home-fiche-sensor {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   margin-top: 0.25rem;
 }
 
-.home-fiche-details li select {
-  width: 100%;
+.home-fiche-details .home-fiche-sensor > select,
+.home-fiche-details .home-fiche-sensor > code {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+  margin-top: 0;
 }
 
-.home-fiche-details li code {
+.home-fiche-details .home-fiche-sensor > code {
   overflow-wrap: anywhere;
+}
+
+.home-fiche-details .home-fiche-sensor > span {
+  flex: none;
+  white-space: nowrap;
 }
 
 /* Feuille d'un réglage : formulaire plus large sur ordinateur, « Enregistrer » toujours visible. */

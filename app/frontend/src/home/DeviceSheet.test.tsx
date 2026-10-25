@@ -184,6 +184,8 @@ describe("fiche d'un appareil", () => {
     await userEvent.click(within(sheet).getByText("Capteurs, nom et type"));
     const energy = within(details).getByLabelText("Choisir le capteur Énergie consommée") as HTMLSelectElement;
     expect(energy).toHaveValue("sensor.washer_energy");
+    // l'unité se lit à droite de la liste, sur sa ligne, pas dessous
+    expect(energy.parentElement?.textContent).toContain("(kWh)");
     // seuls les capteurs d'énergie sont proposés ; le capteur actuel reste en tête s'il a disparu de HA
     expect(Array.from(energy.options).map((option) => option.value)).toEqual([
       "sensor.washer_energy",
