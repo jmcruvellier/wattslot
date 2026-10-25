@@ -22,7 +22,7 @@ import {
   type Node,
   type NodeProps,
 } from "@xyflow/react";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 import { getJson, postJson } from "../api";
@@ -118,7 +118,15 @@ function Fitter({ zoomed, fullscreen, search }: { zoomed: string | null; fullscr
   useEffect(() => {
     instance.fitView({ ...FIT_OPTIONS, duration: 300 });
   }, [zoomed, fullscreen, instance]);
+  // Le premier rendu n'a rien à recadrer de plus (l'effet au-dessus s'en charge) ; ensuite, seules
+  // les frappes dans la recherche recadrent : sur les correspondances, ou la vue entière si la
+  // recherche est vidée ou sans résultat — sans liste de nœuds vide, qui cadrerait sur rien.
+  const typed = useRef(false);
   useEffect(() => {
+    if (!typed.current) {
+      typed.current = true;
+      return;
+    }
     const query = search.trim().toLowerCase();
     const found = query
       ? instance
@@ -126,11 +134,9 @@ function Fitter({ zoomed, fullscreen, search }: { zoomed: string | null; fullscr
           .filter((node) => String(node.data.label).toLowerCase().includes(query))
           .map((node) => ({ id: node.id }))
       : [];
-    // Recherche vidée ou sans résultat : la vue entière. Résultats : cadrés plus près, sous
-    // la bande de la recherche.
     instance.fitView({
       ...FIT_OPTIONS,
-      nodes: found,
+      nodes: found.length > 0 ? found : undefined,
       padding: found.length > 0 ? { top: SEARCH_BAND, right: 0.3, bottom: 0.3, left: 0.3 } : FIT_OPTIONS.padding,
       duration: 300,
     });
