@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.9.4
+
+WattSlot speaks more precisely, and the graph of your home becomes an explorer.
+
+- **Assistant**: it now answers questions about cost, the next appliance to start, your tariff and your requests. The time it took to answer is shown.
+- **Tariff**: time-of-use price bands can start and end at the exact minute (off-peak from 10:30 pm, for instance); prices are weighed by the minute, a band's end always follows its start in the day, and the minute is shown right next to the hour.
+- **Graph of your home**: a whole new graph to explore your home — a global view of everything at once, double-click to enter an element and **Back** to come out, full screen, and a search to find an element. Many readability fixes: no more overlapping objects, views centered on first display, a lower zoom floor, a clearer properties panel.
+- **Day timeline**: the other possible starts of an appliance appear right on the day's timeline; a planned appliance can be cancelled from the timeline or from **Next action**; an appliance already running no longer opens a choice sheet.
+- **My home**: a device's sensor can be replaced from its sheet; the sensor list fits in the sheet and the unit is shown next to it.
+- **Data quality**: a corrected impossible reading now fills the gap in the charts, the corrected value replaces the wrong one, and the message about a discarded reading follows the range you are viewing.
+- **Today**: the trend is now a pill you can read at a glance, shown at the top of the Battery and Sun cards.
+- **Charts**: legend settings moved under a **Customize** icon in the title bar; **Compute** and **Refresh real data** became icons in the title bar, with the age of the last calculation staying stable.
+- **Fixes**: the measured production is 0 kWh after sunset; the connection to Home Assistant is repaired after its restart; **Other starts** is readable in all themes.
+
 ## 0.9.3
 
 WattSlot now adapts to your home: no talk of the sun without panels, nor of a battery without one.
