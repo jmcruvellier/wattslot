@@ -45,6 +45,18 @@ function color(row: TimelineRow, bar: Bar): string {
   return "var(--cycle)";
 }
 
+/** L'équipement a-t-il déjà tourné aujourd'hui (un cycle réel commencé, en cours ou fini) ?
+ * Lancé, il ne se déplace plus ni ne s'annule plus : son bloc reste une info-bulle. */
+function launched(row: TimelineRow, nowMin: number): boolean {
+  return row.actual.some((done) => done.start_hour * 60 <= nowMin);
+}
+
+// Minutes depuis minuit maintenant, pour dire si un cycle réel a commencé.
+function nowMinute(): number {
+  const now = new Date();
+  return now.getHours() * 60 + now.getMinutes();
+}
+
 export default function TimelineCard({
   timeline,
   readingHour,
@@ -67,6 +79,7 @@ export default function TimelineCard({
   const [cancelling, setCancelling] = useState<"idle" | "running" | "failed">("idle");
   const [restoring, setRestoring] = useState<string | null>(null);
   const [restoreFailed, setRestoreFailed] = useState(false);
+  const nowMin = nowMinute();
 
   const describe = (row: TimelineRow, bar: Bar, actual: boolean) => {
     const what = bar.action
@@ -88,10 +101,13 @@ export default function TimelineCard({
       const [free_start, free_end] = freeSpan(items, index);
       const wide = ((free_end - free_start) / 24) * trackWidth >= LABEL_MIN_PX;
       const duration = bar.end_hour - bar.start_hour;
-      // Départ d'un appareil de la frise (à venir, en cours ou passé) : la feuille s'ouvre au
-      // clic au lieu de l'info-bulle — changer de créneau, ou annuler la planification ;
-      // sinon le bloc décrit seulement ce que le plan prévoit.
-      const choice = !actual && pickable && row.kind === "cycle" ? choices[row.device] : undefined;
+      // Départ d'un appareil pas encore lancé — même si son créneau est passé, personne ne l'a
+      // démarré : la feuille s'ouvre au clic, changer de créneau ou annuler la planification.
+      // Un équipement lancé ou en cours ne se déplace plus : son bloc reste une info-bulle.
+      const choice =
+        !actual && pickable && row.kind === "cycle" && !launched(row, nowMin)
+          ? choices[row.device]
+          : undefined;
       const opens = choice !== undefined;
       return (
         <button

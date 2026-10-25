@@ -156,6 +156,11 @@ describe("frise des équipements", () => {
     planned: [{ start_hour: 16, end_hour: 17, energy_kwh: 1, action: null, mode: null }],
     actual: [],
   } as unknown as Timeline["rows"][number];
+  // Sèche-linge prévu à 10h mais jamais lancé : le créneau est passé, pas l'équipement.
+  const MISSED = {
+    ...FUTURE,
+    planned: [{ start_hour: 10, end_hour: 11, energy_kwh: 1, action: null, mode: null }],
+  };
   const CHOICES: Record<string, StartChoice> = {
     "Sèche-linge": {
       alternatives: [
@@ -175,21 +180,34 @@ describe("frise des équipements", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
-  it("ouvre la feuille aussi sur une prévision en cours ou passée, avec le bouton Annuler", async () => {
-    vi.setSystemTime(new Date("2026-10-17T12:00:00")); // le Lave-linge prévu à 10h est lancé
+  it("pas de feuille pour un équipement lancé ou en cours : son bloc reste une info-bulle", async () => {
+    vi.setSystemTime(new Date("2026-10-17T12:00:00")); // le Lave-linge réel a commencé à 10h05
     const user = userEvent.setup();
     renderTimeline(TODAY.timeline, 14.5, {
       choices: { "Lave-linge": { alternatives: [], chosen: false } },
       onChanged: () => undefined,
     });
 
-    const planned = screen.getByRole("button", { name: "Prévu 10h → 11h30 : Lave-linge, 1,00 kWh" });
+    await user.click(screen.getByRole("button", { name: "Prévu 10h → 11h30 : Lave-linge, 1,00 kWh" }));
+    expect(screen.getByRole("status")).toHaveTextContent("Prévu 10h → 11h30 : Lave-linge, 1,00 kWh");
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("ouvre la feuille sur un créneau passé jamais lancé, avec le bouton Annuler", async () => {
+    vi.setSystemTime(new Date("2026-10-17T12:00:00"));
+    const user = userEvent.setup();
+    renderTimeline({ ...TODAY.timeline, rows: [MISSED] }, 14.5, {
+      choices: { "Sèche-linge": { alternatives: [], chosen: false } },
+      onChanged: () => undefined,
+    });
+
+    const planned = screen.getByRole("button", { name: "Prévu 10h → 11h : Sèche-linge, 1,00 kWh" });
     expect(planned).toHaveClass("tl-pickable");
     await user.click(planned);
 
     const sheet = screen.getByRole("dialog");
-    expect(within(sheet).getByRole("heading", { name: "Départ de Lave-linge" })).toBeInTheDocument();
-    expect(within(sheet).getByText("Prévu 10h → 11h30 : 1,00 kWh")).toBeInTheDocument();
+    expect(within(sheet).getByRole("heading", { name: "Départ de Sèche-linge" })).toBeInTheDocument();
+    expect(within(sheet).getByText("Prévu 10h → 11h : 1,00 kWh")).toBeInTheDocument();
     // Sans autre départ proposé, la feuille propose d'annuler la planification.
     expect(within(sheet).queryByText("Autres départs possibles :")).toBeNull();
     expect(within(sheet).getByRole("button", { name: "Annuler le lancement" })).toBeInTheDocument();
