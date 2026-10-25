@@ -149,7 +149,7 @@ describe("frise des équipements", () => {
     expect(screen.getByText(/Pas de surplus solaire prévu \(production 10,0 kWh, consommation 9,6 kWh\)/)).toBeInTheDocument();
   });
 
-  // Sèche-linge prévu à 16h, pas encore lancé : deux autres départs à 18h et 19h.
+  // Sèche-linge prévu à 16h : deux autres départs à 18h et 19h.
   const FUTURE = {
     device: "Sèche-linge",
     kind: "cycle",
@@ -166,14 +166,33 @@ describe("frise des équipements", () => {
     },
   };
 
-  it("garde l'info-bulle sur un départ déjà lancé ou sans autre départ possible", async () => {
-    vi.setSystemTime(new Date("2026-10-17T12:00:00")); // le Lave-linge prévu à 10h est lancé
+  it("sans choix possibles (autres jours), garde l'info-bulle au clic sur une prévision", async () => {
     const user = userEvent.setup();
-    renderTimeline(TODAY.timeline, 14.5, { choices: CHOICES, onChanged: () => undefined });
+    renderTimeline(TODAY.timeline, 14.5);
 
     await user.click(screen.getByRole("button", { name: "Prévu 10h → 11h30 : Lave-linge, 1,00 kWh" }));
     expect(screen.getByRole("status")).toHaveTextContent("Prévu 10h → 11h30 : Lave-linge, 1,00 kWh");
     expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("ouvre la feuille aussi sur une prévision en cours ou passée, avec le bouton Annuler", async () => {
+    vi.setSystemTime(new Date("2026-10-17T12:00:00")); // le Lave-linge prévu à 10h est lancé
+    const user = userEvent.setup();
+    renderTimeline(TODAY.timeline, 14.5, {
+      choices: { "Lave-linge": { alternatives: [], chosen: false } },
+      onChanged: () => undefined,
+    });
+
+    const planned = screen.getByRole("button", { name: "Prévu 10h → 11h30 : Lave-linge, 1,00 kWh" });
+    expect(planned).toHaveClass("tl-pickable");
+    await user.click(planned);
+
+    const sheet = screen.getByRole("dialog");
+    expect(within(sheet).getByRole("heading", { name: "Départ de Lave-linge" })).toBeInTheDocument();
+    expect(within(sheet).getByText("Prévu 10h → 11h30 : 1,00 kWh")).toBeInTheDocument();
+    // Sans autre départ proposé, la feuille propose d'annuler la planification.
+    expect(within(sheet).queryByText("Autres départs possibles :")).toBeNull();
+    expect(within(sheet).getByRole("button", { name: "Annuler le lancement" })).toBeInTheDocument();
   });
 
   it("ouvre la feuille des autres départs d'un équipement pas encore lancé", async () => {
@@ -235,6 +254,7 @@ describe("frise des équipements", () => {
     vi.setSystemTime(new Date("2026-10-17T12:00:00"));
     const view = {
       ...TODAY,
+      timeline: { ...TODAY.timeline, rows: [FUTURE] },
       explanations: [
         {
           device: "Sèche-linge",
@@ -247,7 +267,8 @@ describe("frise des équipements", () => {
             choisi: true,
           },
         },
-        { device: "Piscine", text: "Toute la journée." }, // sans explication : ignorée
+        // La batterie et la filtration (piscine) ne sont pas des cycles : jamais de feuille.
+        { device: "Piscine", text: "Toute la journée." },
       ],
     } as unknown as DayView;
 
@@ -257,5 +278,42 @@ describe("frise des équipements", () => {
         chosen: true,
       },
     });
+  });
+
+  it("annule la planification depuis la feuille, puis la rétablit depuis la frise", async () => {
+    vi.setSystemTime(new Date("2026-10-17T12:00:00"));
+    const calls = mockChoices();
+    const onChanged = vi.fn();
+    const user = userEvent.setup();
+    renderTimeline({ ...TODAY.timeline, rows: [FUTURE], cancelled: ["Lave-linge"] }, 14.5, {
+      choices: { ...CHOICES, "Lave-linge": { alternatives: [], chosen: false } },
+      onChanged,
+    });
+
+    // « Annuler » dans la feuille du départ.
+    await user.click(screen.getByRole("button", { name: "Prévu 16h → 17h : Sèche-linge, 1,00 kWh" }));
+    await user.click(screen.getByRole("button", { name: "Annuler le lancement" }));
+    expect(calls.map((c) => [c.method, c.url])).toEqual([
+      ["POST", "api/planning/cancelled"],
+      ["POST", "api/planning/run"],
+    ]);
+    expect(calls[0].body).toEqual({ device: "Sèche-linge" });
+    expect(onChanged).toHaveBeenCalled();
+    expect(screen.queryByRole("dialog")).toBeNull();
+
+    // « Rétablir » sous la frise, pour un équipement annulé plus tôt dans la journée.
+    await user.click(screen.getByRole("button", { name: "Rétablir Lave-linge" }));
+    expect(calls.map((c) => [c.method, c.url])).toEqual([
+      ["POST", "api/planning/cancelled"],
+      ["POST", "api/planning/run"],
+      ["DELETE", "api/planning/cancelled/Lave-linge"],
+      ["POST", "api/planning/run"],
+    ]);
+    expect(onChanged).toHaveBeenCalledTimes(2);
+  });
+
+  it("ne rétablit que sur la vue Aujourd'hui (sans choix possibles, rien n'est affiché)", () => {
+    renderTimeline({ ...TODAY.timeline, rows: [FUTURE], cancelled: ["Lave-linge"] }, 14.5);
+    expect(screen.queryByRole("button", { name: /Rétablir/ })).toBeNull();
   });
 });

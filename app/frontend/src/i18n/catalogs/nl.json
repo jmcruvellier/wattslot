@@ -303,7 +303,12 @@
       "no_surplus": "Geen zonne-overschot verwacht (productie {production} kWh, verbruik {consumption} kWh): geen apparaat gepland.",
       "nothing": "Geen apparaat gepland op deze dag.",
       "choice_title": "Start van {device}",
-      "choice_slot": "Gepland {start} → {end}: {kwh} kWh"
+      "choice_slot": "Gepland {start} → {end}: {kwh} kWh",
+      "cancel": "Start annuleren",
+      "cancel_failed": "Het annuleren is mislukt.",
+      "cancelled": "Vandaag geannuleerd:",
+      "restore": "{device} herstellen",
+      "restore_failed": "Het herstellen is mislukt."
     },
     "indicators": {
       "title": "Kengetallen van het plan",
@@ -1418,7 +1423,9 @@
       "none_help": "Het plan meldt het volgende apparaat dat moet starten.",
       "no_appliance": "Geen apparaat om in te plannen",
       "no_appliance_help": "WattSlot plant je apparaten op het beste moment: wasmachine, vaatwasser, boiler… Voeg er een toe om te weten wanneer je hem start.",
-      "add_appliance": "Apparaat toevoegen"
+      "add_appliance": "Apparaat toevoegen",
+      "cancel": "Annuleren",
+      "cancel_failed": "Het annuleren is mislukt."
     },
     "battery": {
       "eyebrow": "Batterij",

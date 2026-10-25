@@ -17,6 +17,7 @@ from wattslot import configuration, home_model, notifications, quality, reminder
 from wattslot.corrections import CorrectionStore
 from wattslot.languages import language_of
 from wattslot.objective_settings import Preset
+from wattslot.planning import cancelled
 from wattslot.planning.engine import Objective
 from wattslot.planning.journal import cycle_appliances
 from wattslot.planning.sources import has_production, load_settings
@@ -186,6 +187,10 @@ async def day_view_of(state: Any, kind: DayKind, lang: str = "fr") -> DayView | 
         update={
             "now": await asyncio.to_thread(measure_now, state, moment, context, language),
             "next_action": action,
+            # Planifications annulées pour aujourd'hui, rétablies depuis la frise.
+            "timeline": view.timeline.model_copy(
+                update={"cancelled": sorted(cancelled.load(state.database, plan.day))}
+            ),
         }
     )
 

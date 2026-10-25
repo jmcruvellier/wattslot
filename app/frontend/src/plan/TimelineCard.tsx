@@ -4,8 +4,9 @@
 // Deux couloirs par piste (lot 7.1) : le prévu en haut, le réel en bas, chaque bloc portant son
 // énergie, centrée sur sa plus grande partie visible, s'il lui reste assez de place libre ; pas de
 // légende, le détail est dans l'info-bulle.
-// Sur la vue Aujourd'hui, un bloc prévu pas encore lancé ouvre la feuille des autres départs
-// (OtherStarts) : changer de créneau ou annuler son choix, sans quitter l'écran.
+// Sur la vue Aujourd'hui, le clic sur un bloc prévu d'un équipement — à venir, en cours ou
+// passé — ouvre la feuille des autres départs (OtherStarts) et du bouton « Annuler » : changer
+// de créneau, annuler la planification du jour ou y revenir, sans quitter l'écran.
 
 import { useCallback, useEffect, useState } from "react";
 
@@ -14,8 +15,10 @@ import { hour, kwh } from "./format";
 import { freeSpan } from "./timelineSpan";
 import type { Bar, TimelineRow, Timeline } from "./types";
 import Icon from "../ui/Icon";
+import Button from "../ui/Button";
 import Sheet from "../ui/Sheet";
 import OtherStarts from "./OtherStarts";
+import { cancelTask, restoreTask } from "./cancelled";
 import type { StartChoice } from "./startChoices";
 
 const AXIS = [0, 4, 8, 12, 16, 20, 24];
@@ -42,12 +45,6 @@ function color(row: TimelineRow, bar: Bar): string {
   return "var(--cycle)";
 }
 
-// Minutes depuis minuit maintenant : un départ déjà entamé ne se change plus.
-function nowMinute(): number {
-  const now = new Date();
-  return now.getHours() * 60 + now.getMinutes();
-}
-
 export default function TimelineCard({
   timeline,
   readingHour,
@@ -66,7 +63,10 @@ export default function TimelineCard({
   // Équipement et bloc prévu dont la feuille des autres départs est ouverte.
   const [picked, setPicked] = useState<{ device: string; bar: Bar } | null>(null);
   const pickable = choices !== undefined && onChanged !== undefined;
-  const nowMin = nowMinute();
+  // Annulation (bouton « Annuler ») et rétablissement, dans et sous la frise.
+  const [cancelling, setCancelling] = useState<"idle" | "running" | "failed">("idle");
+  const [restoring, setRestoring] = useState<string | null>(null);
+  const [restoreFailed, setRestoreFailed] = useState(false);
 
   const describe = (row: TimelineRow, bar: Bar, actual: boolean) => {
     const what = bar.action
@@ -88,13 +88,11 @@ export default function TimelineCard({
       const [free_start, free_end] = freeSpan(items, index);
       const wide = ((free_end - free_start) / 24) * trackWidth >= LABEL_MIN_PX;
       const duration = bar.end_hour - bar.start_hour;
-      // Départ encore à venir d'un appareil avec d'autres départs : la feuille s'ouvre au clic
-      // au lieu de l'info-bulle ; sinon le bloc décrit seulement ce que le plan prévoit.
-      const choice =
-        !actual && pickable && row.kind === "cycle" && bar.start_hour * 60 > nowMin
-          ? choices[row.device]
-          : undefined;
-      const opens = choice !== undefined && (choice.alternatives.length > 0 || choice.chosen);
+      // Départ d'un appareil de la frise (à venir, en cours ou passé) : la feuille s'ouvre au
+      // clic au lieu de l'info-bulle — changer de créneau, ou annuler la planification ;
+      // sinon le bloc décrit seulement ce que le plan prévoit.
+      const choice = !actual && pickable && row.kind === "cycle" ? choices[row.device] : undefined;
+      const opens = choice !== undefined;
       return (
         <button
           key={`${actual ? "a" : "p"}-${index}`}
@@ -121,6 +119,31 @@ export default function TimelineCard({
         </button>
       );
     });
+
+  const run = async (change: () => Promise<unknown>) => {
+    setCancelling("running");
+    try {
+      await change();
+      setCancelling("idle");
+      setPicked(null); // le plan recalcule, la frise va suivre
+      onChanged?.();
+    } catch {
+      setCancelling("failed");
+    }
+  };
+
+  const restore = async (device: string) => {
+    setRestoring(device);
+    setRestoreFailed(false);
+    try {
+      await restoreTask(device);
+      setRestoring(null);
+      onChanged?.();
+    } catch {
+      setRestoring(null);
+      setRestoreFailed(true);
+    }
+  };
 
   return (
     <article className="card card-wide" aria-label={t("plan.timeline.title")}>
@@ -160,6 +183,25 @@ export default function TimelineCard({
           </div>
         </div>
       )}
+      {/* Planifications annulées pour aujourd'hui, rétablies d'un clic ; ailleurs que sur la vue
+       * Aujourd'hui, la liste est vide et rien ne s'affiche. */}
+      {pickable && (timeline.cancelled ?? []).length > 0 && (
+        <p className="tl-cancelled">
+          <span className="dim">{t("plan.timeline.cancelled")}</span>{" "}
+          {(timeline.cancelled ?? []).map((device) => (
+            <Button
+              key={device}
+              variant="quiet"
+              disabled={restoring !== null}
+              aria-label={t("plan.timeline.restore", { device })}
+              onClick={() => void restore(device)}
+            >
+              {t("plan.timeline.restore", { device })}
+            </Button>
+          ))}
+          {restoreFailed && <span role="alert">{t("plan.timeline.restore_failed")}</span>}
+        </p>
+      )}
       {tip && <p role="status">{tip}</p>}
       {picked && (
         <Sheet
@@ -183,6 +225,17 @@ export default function TimelineCard({
               onChanged?.();
             }}
           />
+          <p className="other-starts-buttons">
+            <Button
+              variant="quiet"
+              icon="close"
+              disabled={cancelling === "running"}
+              onClick={() => void run(() => cancelTask(picked.device))}
+            >
+              {t("plan.timeline.cancel")}
+            </Button>
+          </p>
+          {cancelling === "failed" && <p role="alert">{t("plan.timeline.cancel_failed")}</p>}
         </Sheet>
       )}
     </article>

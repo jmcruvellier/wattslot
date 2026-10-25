@@ -165,6 +165,17 @@ MIGRATIONS: tuple[str, ...] = (
         PRIMARY KEY (day, device)
     )
     """,
+    # 18 : planification annulée par l'utilisateur pour le jour (« Annuler » de la frise et de
+    # « Prochaine action ») : l'équipement n'est plus placé par les calculs de ce jour ; un choix
+    # d'un autre jour ne sert plus.
+    """
+    CREATE TABLE cancelled_tasks (
+        day TEXT NOT NULL,
+        device TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        PRIMARY KEY (day, device)
+    )
+    """,
 )
 
 

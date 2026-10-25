@@ -15,6 +15,7 @@ import { TrendMark } from "../plan/SummaryCards";
 import { DEFAULT_LAYOUT } from "../plan/layout";
 import TimelineCard from "../plan/TimelineCard";
 import { startChoices } from "../plan/startChoices";
+import { cancelTask } from "../plan/cancelled";
 import OtherStarts from "../plan/OtherStarts";
 import DiscardedNote from "../plan/DiscardedNote";
 import ProvisionalNote from "../plan/ProvisionalNote";
@@ -196,6 +197,8 @@ function NextActionCard({
   const [launched, setLaunched] = useState(readLaunched);
   const [reminded, setReminded] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelFailed, setCancelFailed] = useState(false);
 
   if (action === null || launched === launchedKey(view, action)) {
     // Aucun appareil placé par le calcul (tableau Énergie sans appareil) : rien ne sera jamais à
@@ -233,6 +236,20 @@ function NextActionCard({
     }
   };
 
+  // « Annuler » : l'équipement n'est plus placé aujourd'hui (feuille de la frise aussi) ; la
+  // tâche reste dans la liste de Home Assistant, le calcul de demain la reprendra.
+  const cancel = async () => {
+    setCancelFailed(false);
+    setCancelling(true);
+    try {
+      await cancelTask(action.device);
+      onChanged();
+    } catch {
+      setCancelling(false);
+      setCancelFailed(true);
+    }
+  };
+
   const reminder = action.reminder || reminded;
   return (
     <section className="next-action" aria-labelledby="next-action-title">
@@ -255,8 +272,13 @@ function NextActionCard({
             {t(reminder ? "today.next.reminder_set" : "today.next.remind")}
           </Button>
         )}
+        {/* Annule la planification de l'équipement pour aujourd'hui, sans quitter l'écran. */}
+        <Button icon="close" disabled={cancelling} onClick={() => void cancel()}>
+          {t("today.next.cancel")}
+        </Button>
       </div>
       {failed && <p role="alert">{t("today.next.remind_failed")}</p>}
+      {cancelFailed && <p role="alert">{t("today.next.cancel_failed")}</p>}
       <OtherStarts
         device={action.device}
         alternatives={action.alternatives ?? []}

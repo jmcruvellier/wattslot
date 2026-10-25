@@ -151,6 +151,7 @@ export interface Timeline {
   statuses: DeviceStatus[];
   unplanned: Unplanned[];
   badge: "on_time" | "shifted" | null;
+  cancelled?: string[]; // planifications annulées pour aujourd'hui (vue Aujourd'hui seule)
 }
 
 export type ObjectivePreset = "cost" | "autonomy" | "self_consumption" | "co2" | "custom";

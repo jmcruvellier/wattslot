@@ -303,7 +303,12 @@
       "no_surplus": "Kein Solarüberschuss erwartet (Erzeugung {production} kWh, Verbrauch {consumption} kWh): kein Gerät eingeplant.",
       "nothing": "An diesem Tag ist kein Gerät eingeplant.",
       "choice_title": "Start von {device}",
-      "choice_slot": "Geplant {start} → {end}: {kwh} kWh"
+      "choice_slot": "Geplant {start} → {end}: {kwh} kWh",
+      "cancel": "Start abbrechen",
+      "cancel_failed": "Der Abbruch ist fehlgeschlagen.",
+      "cancelled": "Heute abgesagt:",
+      "restore": "{device} wiederherstellen",
+      "restore_failed": "Das Wiederherstellen ist fehlgeschlagen."
     },
     "indicators": {
       "title": "Kennzahlen des Plans",
@@ -1418,7 +1423,9 @@
       "none_help": "Der Plan meldet das nächste Gerät, das gestartet werden soll.",
       "no_appliance": "Kein Gerät zu planen",
       "no_appliance_help": "WattSlot legt Ihre Geräte auf den besten Zeitpunkt: Waschmaschine, Geschirrspüler, Warmwasserbereiter… Fügen Sie eines hinzu, um zu wissen, wann Sie es starten.",
-      "add_appliance": "Gerät hinzufügen"
+      "add_appliance": "Gerät hinzufügen",
+      "cancel": "Abbrechen",
+      "cancel_failed": "Der Abbruch ist fehlgeschlagen."
     },
     "battery": {
       "eyebrow": "Batterie",
