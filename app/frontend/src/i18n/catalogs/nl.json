@@ -1598,11 +1598,12 @@
     "method": {
       "raw": "Herberekend uit de ruwe metingen: {value}.",
       "estimate": "Geschat op basis van de naburige uren: {value}.",
-      "discard": "Weggelaten: de berekening negeert hem."
+      "discard": "Weggelaten: de berekening negeert hem en de curve houdt daar een gat."
     },
     "was_undone": "Correctie ongedaan: de oorspronkelijke waarde is terug.",
     "actions": "Andere correctie",
     "actions_again": "Opnieuw corrigeren",
+    "actions_help": "„Schatten” zet het gemiddelde van de naburige uren, „Herberekenen uit ruwe metingen” doet de berekening opnieuw met de oorspronkelijke metingen (drie dagen bewaard): beide vullen het gat in de dagcurves. „Weglaten” haalt het uur weg: de curve houdt daar een gat.",
     "action": {
       "raw": "Herberekenen uit ruwe metingen",
       "estimate": "Schatten",

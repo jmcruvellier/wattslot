@@ -3,7 +3,7 @@
 
 import asyncio
 import threading
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any, ClassVar, cast
 from zoneinfo import ZoneInfo
@@ -24,7 +24,7 @@ from wattslot.aggregation import (
 )
 from wattslot.battery_settings import BatterySettings
 from wattslot.configuration import Behavior, Configuration, DeviceSettings
-from wattslot.corrections import CorrectionStore, Kind, Method, apply
+from wattslot.corrections import Correction, CorrectionStore, Kind, Method, apply
 from wattslot.detection import DeviceKind, Role
 from wattslot.home_model import HomeDevice, HomeModel, HomeSensor
 from wattslot.ingestion import Ingestor, Target
@@ -32,6 +32,7 @@ from wattslot.quality import (
     Anomaly,
     Sensor,
     correct,
+    corrected_actual,
     detect,
     house_limit_kwh,
     plausible_actual,
@@ -416,6 +417,157 @@ def test_impossible_hourly_measurements_are_set_aside() -> None:
     assert cleaned["donnees_reelles_cache"]["soc_pct_reel"] == {"0": 50}  # pas une énergie
     assert content["donnees_reelles_cache"]["reseau_reel_soutire_horaire"]["0"] == 64073.34
     assert plausible_actual({"planning": []}, 20.0) == ({"planning": []}, [])
+
+
+PARIS = ZoneInfo("Europe/Paris")
+DAY = date(2026, 10, 24)
+H9 = datetime(2026, 10, 24, 9, tzinfo=PARIS)
+
+
+def correction_of(
+    entity_id: str,
+    start: datetime,
+    original: float | None,
+    corrected: float | None,
+    method: Method = Method.ESTIMATE,
+    period: str = HOUR,
+) -> Correction:
+    return Correction(
+        id=1,
+        entity_id=entity_id,
+        period=period,
+        start=start,
+        kind=Kind.SPIKE,
+        method=method,
+        original_kwh=original,
+        corrected_kwh=corrected,
+        automatic=False,
+        created_at=start,
+        undone_at=None,
+    )
+
+
+def test_estimated_corrections_fill_the_hole_of_the_day_curves() -> None:
+    """« Estimer » ou « Recalculer depuis le brut » (Ma maison, onglet Données) : la mesure du
+    plan suit la correction - le trou des courbes se comble, la consommation calculée suit et
+    le message « Mesure impossible écartée » disparaît (plus rien d'impossible à écarter)."""
+    content: dict[str, Any] = {
+        "date_cible": "2026-10-24",
+        "donnees_reelles_cache": {
+            "production_reelle_horaire": {8: 0.8, 9: 45.0, 10: 1.2},
+            "consommation_reelle_horaire": {8: 1.0, 9: 45.5, 10: 1.4},
+            "reseau_reel_soutire_horaire": {8: 0.2, 9: 0.5, 10: 0.2},
+        },
+    }
+    fixed = correction_of("sensor.solar_energy", H9, 45.0, 1.1)
+
+    cleaned, discarded = plausible_actual(corrected_actual(content, [fixed], HOME, PARIS), 20.0)
+
+    assert discarded == []
+    cache = cleaned["donnees_reelles_cache"]
+    assert cache["production_reelle_horaire"][9] == 1.1
+    assert cache["consommation_reelle_horaire"][9] == 1.6  # 45,5 - 45 + 1,1
+    assert cache["reseau_reel_soutire_horaire"][9] == 0.5  # pas touchée
+    # Le plan gardé n'est pas modifié : la correction s'applique à la lecture, comme les autres.
+    assert content["donnees_reelles_cache"]["production_reelle_horaire"][9] == 45.0
+
+
+def test_estimated_corrections_fill_hours_the_sensor_never_sent() -> None:
+    """Un capteur muet une heure (« Trou » de Données) : « Estimer » ajoute l'heure à la mesure
+    du plan, la consommation calculée suit."""
+    content: dict[str, Any] = {
+        "date_cible": DAY,
+        "donnees_reelles_cache": {
+            "production_reelle_horaire": {8: 0.8, 10: 1.2},
+            "consommation_reelle_horaire": {9: 0.5},  # calculée sans la production muette
+            "reseau_reel_soutire_horaire": {9: 0.5},
+        },
+    }
+    filled = correction_of("sensor.solar_energy", H9, None, 1.1)
+
+    cache = corrected_actual(content, [filled], HOME, PARIS)["donnees_reelles_cache"]
+
+    assert cache["production_reelle_horaire"][9] == 1.1
+    assert cache["consommation_reelle_horaire"][9] == 1.6  # 0,5 + 1,1
+
+
+def test_discarded_corrections_keep_the_hole() -> None:
+    """« Écarter » : l'heure disparaît de la mesure (un trou, pas un zéro) quand il ne reste
+    rien d'autre, et la consommation suit."""
+    content: dict[str, Any] = {
+        "date_cible": DAY,
+        "donnees_reelles_cache": {
+            "production_reelle_horaire": {9: 45.0},
+            "consommation_reelle_horaire": {9: 45.0},
+        },
+    }
+    aside = correction_of("sensor.solar_energy", H9, 45.0, None, Method.DISCARD)
+
+    cleaned, discarded = plausible_actual(corrected_actual(content, [aside], HOME, PARIS), 20.0)
+
+    assert discarded == []
+    cache = cleaned["donnees_reelles_cache"]
+    assert 9 not in cache["production_reelle_horaire"]
+    assert 9 not in cache["consommation_reelle_horaire"]
+
+
+def test_corrections_outside_the_day_curves_are_ignored() -> None:
+    """Un quart d'heure (les vues du jour sont horaires), un capteur sans série du jour
+    (compteur d'équipement), un autre jour : rien ne bouge. Un compteur de batterie ne touche
+    que la consommation calculée (ici : moins de charge, plus de consommation)."""
+    content: dict[str, Any] = {
+        "date_cible": DAY,
+        "donnees_reelles_cache": {
+            "production_reelle_horaire": {9: 45.0},
+            "consommation_reelle_horaire": {9: 45.2},
+        },
+    }
+    quarters = correction_of("sensor.solar_energy", H9, 45.0, 1.1, period=QUARTER)
+    other_day = correction_of("sensor.solar_energy", H9 + timedelta(days=1), 1.0, 2.0)
+    battery = correction_of("sensor.battery_in", H9, 1.0, 0.5)
+    plug = correction_of(PLUG, H9, 0.2, 0.1)
+
+    cache = corrected_actual(content, [quarters, other_day, battery, plug], HOME, PARIS)[
+        "donnees_reelles_cache"
+    ]
+
+    assert cache["production_reelle_horaire"] == {9: 45.0}
+    assert cache["consommation_reelle_horaire"] == {9: 45.7}  # 45,2 + (1,0 - 0,5)
+
+
+def test_two_meters_of_a_role_are_corrected_each_with_its_own_shift() -> None:
+    """Deux compteurs d'un même rôle (heures creuses et pleines d'un Linky) : la première
+    correction laisse la mesure de l'autre, la deuxième retire l'heure entière."""
+    home = HomeModel(
+        devices=[
+            HomeDevice(
+                key="grid",
+                kind=DeviceKind.GRID,
+                name="Réseau",
+                sensors=[
+                    HomeSensor(entity_id="sensor.linky_hp", role=Role.ENERGY_IMPORTED),
+                    HomeSensor(entity_id="sensor.linky_hc", role=Role.ENERGY_IMPORTED),
+                ],
+            )
+        ]
+    )
+    content: dict[str, Any] = {
+        "date_cible": DAY,
+        "donnees_reelles_cache": {
+            "reseau_reel_soutire_horaire": {9: 40933.63},
+            "consommation_reelle_horaire": {9: 40933.63},
+        },
+    }
+    hp = correction_of("sensor.linky_hp", H9, 40933.23, None, Method.DISCARD)
+    hc = correction_of("sensor.linky_hc", H9, 0.4, None, Method.DISCARD)
+
+    one = corrected_actual(content, [hp], home, PARIS)["donnees_reelles_cache"]
+    both = corrected_actual(content, [hp, hc], home, PARIS)["donnees_reelles_cache"]
+
+    assert one["reseau_reel_soutire_horaire"] == {9: 0.4}
+    assert one["consommation_reelle_horaire"] == {9: 0.4}
+    assert both["reseau_reel_soutire_horaire"] == {}
+    assert both["consommation_reelle_horaire"] == {}
 
 
 def test_rounding_corrections_of_the_old_threshold_are_undone_by_the_migration(

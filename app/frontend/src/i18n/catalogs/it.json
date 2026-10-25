@@ -1598,11 +1598,12 @@
     "method": {
       "raw": "Ricalcolato dalle letture grezze: {value}.",
       "estimate": "Stimato dalle ore vicine: {value}.",
-      "discard": "Scartato: il calcolo lo ignora."
+      "discard": "Scartato: il calcolo lo ignora e la curva conserva lì un buco."
     },
     "was_undone": "Correzione annullata: il valore originale è tornato.",
     "actions": "Altra correzione",
     "actions_again": "Correggi di nuovo",
+    "actions_help": "«Stima» mette la media delle ore vicine, «Ricalcola dalle letture grezze» rifà il calcolo con le letture originali (conservate tre giorni): entrambi colmano il buco nelle curve della giornata. «Scarta» toglie l'ora: la curva conserva lì un buco.",
     "action": {
       "raw": "Ricalcola dalle letture grezze",
       "estimate": "Stima",

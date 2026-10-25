@@ -29,8 +29,9 @@ import asyncio
 import logging
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import Any, Protocol
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, HTTPException, Request, Response
 from pydantic import BaseModel
@@ -185,6 +186,69 @@ def plausible_actual(
                 kept[hour] = value
         cleaned[key] = kept
     return {**content, "donnees_reelles_cache": cleaned}, sorted(discarded)
+
+
+# Séries horaires du jour gardées avec le plan (``planning.actual``) où tombent les corrections
+# d'un compteur, et poids du compteur dans la consommation calculée (production + achat -
+# surplus + décharge - charge). Les compteurs d'équipement et le SoC n'y figurent pas : les
+# courbes du jour ne les affichent pas.
+CORRECTED_SERIES: dict[Role, tuple[str | None, float]] = {
+    Role.ENERGY_PRODUCED: ("production_reelle_horaire", 1.0),
+    Role.ENERGY_IMPORTED: ("reseau_reel_soutire_horaire", 1.0),
+    Role.ENERGY_EXPORTED: ("reseau_reel_injecte_horaire", -1.0),
+    Role.ENERGY_CHARGED: (None, -1.0),
+    Role.ENERGY_DISCHARGED: (None, 1.0),
+}
+CONSUMPTION_SERIES = "consommation_reelle_horaire"
+
+
+def corrected_actual(
+    content: Mapping[str, Any],
+    corrections: Iterable[Correction],
+    home: HomeModel,
+    zone: ZoneInfo,
+) -> dict[str, Any]:
+    """Plan gardé dont les mesures horaires suivent les corrections en vigueur (Ma maison,
+    onglet Données), avant l'écartement des mesures impossibles : « Estimer » ou « Recalculer
+    depuis le brut » remplace la valeur - le trou des courbes se comble, le message « Mesure
+    impossible écartée » disparaît et les totaux suivent -, « Écarter » retire l'heure du
+    compteur (la courbe garde un trou s'il ne reste rien d'autre). La consommation, calculée à
+    partir des compteurs, suit du même écart ; plusieurs compteurs d'un même rôle (heures
+    creuses et pleines) se corrigent chacun de son écart."""
+    actual = content.get("donnees_reelles_cache")
+    day = content.get("date_cible")
+    if not isinstance(actual, Mapping) or not isinstance(day, str | date):
+        return dict(content)
+    day = date.fromisoformat(day) if isinstance(day, str) else day
+    roles = {sensor.entity_id: sensor.role for device in home.devices for sensor in device.sensors}
+    cleaned = dict(actual)
+    for correction in corrections:
+        if correction.period != HOUR:
+            continue  # les vues du jour sont horaires ; les quarts d'heure suivent leur heure
+        role = roles.get(correction.entity_id)
+        target = CORRECTED_SERIES.get(role) if role is not None else None
+        moment = correction.start.astimezone(zone)
+        if target is None or moment.date() != day:
+            continue
+        series, weight = target
+        # Écart demandé par la correction : la valeur corrigée, ou le retrait de la valeur
+        # d'origine (« Écarter »).
+        corrected = correction.corrected_kwh
+        shift = (corrected if corrected is not None else 0.0) - (correction.original_kwh or 0.0)
+        measured = [(series, 1.0)] if series is not None else []
+        for key, factor in [*measured, (CONSUMPTION_SERIES, weight)]:
+            source = cleaned.get(key)
+            values = dict(source) if isinstance(source, Mapping) else {}
+            current = values.get(moment.hour, values.get(str(moment.hour)))
+            kept = (float(current) if isinstance(current, int | float) else 0.0) + shift * factor
+            if corrected is None and kept <= 0:
+                # Écartée sans autre relevé à cette heure : un trou, pas un zéro.
+                values.pop(moment.hour, None)
+                values.pop(str(moment.hour), None)
+            else:
+                values[moment.hour] = round(kept, 3)
+            cleaned[key] = values
+    return {**content, "donnees_reelles_cache": cleaned}
 
 
 def hours(period: str) -> float:

@@ -1598,11 +1598,12 @@
     "method": {
       "raw": "Recalculée sur le relevé brut : {value}.",
       "estimate": "Estimée d'après les heures voisines : {value}.",
-      "discard": "Écartée : le calcul l'ignore."
+      "discard": "Écartée : le calcul l'ignore et la courbe garde un trou à cette heure."
     },
     "was_undone": "Correction annulée : la valeur d'origine est revenue.",
     "actions": "Autre correction",
     "actions_again": "Corriger à nouveau",
+    "actions_help": "« Estimer » met la moyenne des heures voisines, « Recalculer depuis le brut » refait le calcul avec les relevés d'origine (gardés trois jours) : l'un ou l'autre comble le trou dans les courbes du jour. « Écarter » retire l'heure : la courbe y garde un trou.",
     "action": {
       "raw": "Recalculer depuis le brut",
       "estimate": "Estimer",

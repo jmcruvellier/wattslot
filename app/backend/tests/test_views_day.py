@@ -2,7 +2,7 @@
 sur les 13 journées types, avec et sans données réelles."""
 
 from dataclasses import replace
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, time, timedelta
 from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -12,9 +12,15 @@ from fastapi.testclient import TestClient
 
 from tests.test_health import _settings
 from tests.v1_oracle import STATES, load, v1
+from wattslot import home_model
+from wattslot.aggregation import HOUR
 from wattslot.battery_settings import BatterySettings
+from wattslot.corrections import CorrectionStore, Kind, Method
+from wattslot.detection import DeviceKind, Role
+from wattslot.home_model import HomeDevice, HomeModel, HomeSensor
 from wattslot.main import create_app
 from wattslot.planning.store import PlanStore
+from wattslot.quality import Anomaly
 from wattslot.storage.database import open_database
 from wattslot.tariff import PriceBand, Tariff, TariffKind
 from wattslot.views import display
@@ -195,6 +201,63 @@ def test_route_sets_aside_impossible_measurements(tmp_path: Path) -> None:
     assert found["hours"][0]["grid_import_actual_kwh"] is None
     total = sum(h["grid_import_actual_kwh"] or 0 for h in found["hours"])
     assert total < 1000
+
+
+def test_route_applies_the_corrections_of_my_home_data(tmp_path: Path) -> None:
+    """Corrections de Ma maison, onglet Données : « Estimer » comble le trou des courbes du jour
+    et fait disparaître le message « Mesure impossible écartée », « Écarter » retire l'heure
+    (la courbe garde son trou, sans message : c'est le choix de l'utilisateur)."""
+    home = HomeModel(
+        devices=[
+            HomeDevice(
+                key="solar",
+                kind=DeviceKind.SOLAR,
+                name="Panneaux",
+                sensors=[HomeSensor(entity_id="sensor.solar_energy", role=Role.ENERGY_PRODUCED)],
+            )
+        ]
+    )
+    state = state_of(STATES[0])
+    day = state["date_cible"]
+    actual = actual_of(state)
+    produced = dict(actual.get("production_reelle_horaire") or {})
+    consumed = dict(actual.get("consommation_reelle_horaire") or {})
+    produced[9] = 45.0  # capteur coupé : tout son index compté en une heure
+    consumed[9] = 45.0
+    state["donnees_reelles_cache"] = {
+        **actual,
+        "production_reelle_horaire": produced,
+        "consommation_reelle_horaire": consumed,
+    }
+    with TestClient(create_app(_settings(tmp_path))) as api:
+        home_model.save(api.app.state.graph, home)  # type: ignore[attr-defined]
+        spike = Anomaly(
+            entity_id="sensor.solar_energy",
+            device="solar",
+            period=HOUR,
+            start=datetime.combine(day, time(9), api.app.state.raw.zone),  # type: ignore[attr-defined]
+            kind=Kind.SPIKE,
+            energy_kwh=45.0,
+        )
+        store = PlanStore(open_database(tmp_path / "data"))
+        store.save("yesterday", day, state, 1.0, False)
+        aside = api.get("/api/views/yesterday").json()  # sans correction
+
+        corrections = CorrectionStore(open_database(tmp_path / "data"))
+        corrections.add(spike, Method.ESTIMATE, 1.1, automatic=False)
+        estimated = api.get("/api/views/yesterday").json()
+
+        corrections.add(spike.model_copy(), Method.DISCARD, None, automatic=False)
+        discarded = api.get("/api/views/yesterday").json()
+
+    assert aside["discarded_hours"] == [9]
+    assert aside["hours"][9]["production_actual_kwh"] is None
+    assert estimated["discarded_hours"] == []
+    assert estimated["hours"][9]["production_actual_kwh"] == 1.1
+    assert estimated["hours"][9]["consumption_actual_kwh"] == 1.1  # 45 - 45 + 1,1
+    assert discarded["discarded_hours"] == []
+    assert discarded["hours"][9]["production_actual_kwh"] is None
+    assert discarded["hours"][9]["consumption_actual_kwh"] is None
 
 
 def test_indicators_cover_the_whole_day() -> None:
