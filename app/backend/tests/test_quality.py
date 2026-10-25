@@ -461,7 +461,8 @@ def test_estimated_corrections_fill_the_hole_of_the_day_curves() -> None:
     }
     fixed = correction_of("sensor.solar_energy", H9, 45.0, 1.1)
 
-    cleaned, discarded = plausible_actual(corrected_actual(content, [fixed], HOME, PARIS), 20.0)
+    corrected = corrected_actual(content, [fixed], HOME, PARIS, 20.0)
+    cleaned, discarded = plausible_actual(corrected, 20.0)
 
     assert discarded == []
     cache = cleaned["donnees_reelles_cache"]
@@ -485,7 +486,7 @@ def test_estimated_corrections_fill_hours_the_sensor_never_sent() -> None:
     }
     filled = correction_of("sensor.solar_energy", H9, None, 1.1)
 
-    cache = corrected_actual(content, [filled], HOME, PARIS)["donnees_reelles_cache"]
+    cache = corrected_actual(content, [filled], HOME, PARIS, 20.0)["donnees_reelles_cache"]
 
     assert cache["production_reelle_horaire"][9] == 1.1
     assert cache["consommation_reelle_horaire"][9] == 1.6  # 0,5 + 1,1
@@ -503,7 +504,8 @@ def test_discarded_corrections_keep_the_hole() -> None:
     }
     aside = correction_of("sensor.solar_energy", H9, 45.0, None, Method.DISCARD)
 
-    cleaned, discarded = plausible_actual(corrected_actual(content, [aside], HOME, PARIS), 20.0)
+    corrected = corrected_actual(content, [aside], HOME, PARIS, 20.0)
+    cleaned, discarded = plausible_actual(corrected, 20.0)
 
     assert discarded == []
     cache = cleaned["donnees_reelles_cache"]
@@ -527,12 +529,37 @@ def test_corrections_outside_the_day_curves_are_ignored() -> None:
     battery = correction_of("sensor.battery_in", H9, 1.0, 0.5)
     plug = correction_of(PLUG, H9, 0.2, 0.1)
 
-    cache = corrected_actual(content, [quarters, other_day, battery, plug], HOME, PARIS)[
+    cache = corrected_actual(content, [quarters, other_day, battery, plug], HOME, PARIS, 100.0)[
         "donnees_reelles_cache"
     ]
 
     assert cache["production_reelle_horaire"] == {9: 45.0}
     assert cache["consommation_reelle_horaire"] == {9: 45.7}  # 45,2 + (1,0 - 0,5)
+
+
+def test_estimated_corrections_replace_a_worse_captured_measure() -> None:
+    """Le plan capture la mesure à sa façon : la valeur captée peut être pire que la valeur
+    d'origine de la correction (constat du 24/10/2026 : 101 kWh captés à 9 h pour 45 kWh dans
+    l'agrégat corrigé). Le décalage laisserait la mesure impossible : la valeur corrigée
+    remplace la mesure de l'heure, la consommation est refaite à partir des séries corrigées."""
+    content: dict[str, Any] = {
+        "date_cible": DAY,
+        "donnees_reelles_cache": {
+            "production_reelle_horaire": {9: 101.0},
+            "consommation_reelle_horaire": {9: 101.2},
+            "reseau_reel_soutire_horaire": {9: 0.2},
+        },
+    }
+    fixed = correction_of("sensor.solar_energy", H9, 45.0, 0.05)
+
+    corrected = corrected_actual(content, [fixed], HOME, PARIS, 20.0)
+    cleaned, discarded = plausible_actual(corrected, 20.0)
+
+    assert discarded == []
+    cache = cleaned["donnees_reelles_cache"]
+    assert cache["production_reelle_horaire"][9] == 0.05
+    assert cache["consommation_reelle_horaire"][9] == 0.25  # refaite : 0,05 + 0,2
+    assert cache["reseau_reel_soutire_horaire"][9] == 0.2  # pas touchée
 
 
 def test_two_meters_of_a_role_are_corrected_each_with_its_own_shift() -> None:
@@ -561,8 +588,8 @@ def test_two_meters_of_a_role_are_corrected_each_with_its_own_shift() -> None:
     hp = correction_of("sensor.linky_hp", H9, 40933.23, None, Method.DISCARD)
     hc = correction_of("sensor.linky_hc", H9, 0.4, None, Method.DISCARD)
 
-    one = corrected_actual(content, [hp], home, PARIS)["donnees_reelles_cache"]
-    both = corrected_actual(content, [hp, hc], home, PARIS)["donnees_reelles_cache"]
+    one = corrected_actual(content, [hp], home, PARIS, 20.0)["donnees_reelles_cache"]
+    both = corrected_actual(content, [hp, hc], home, PARIS, 20.0)["donnees_reelles_cache"]
 
     assert one["reseau_reel_soutire_horaire"] == {9: 0.4}
     assert one["consommation_reelle_horaire"] == {9: 0.4}

@@ -72,7 +72,7 @@ def _plausible(state: Any, content: Mapping[str, Any]) -> tuple[dict[str, Any], 
     home = home_model.load(state.graph)
     limit = quality.house_limit_kwh(home, configuration.load(state.graph))
     corrected = quality.corrected_actual(
-        content, CorrectionStore(state.database).list(), home, state.raw.zone
+        content, CorrectionStore(state.database).list(), home, state.raw.zone, limit
     )
     return quality.plausible_actual(corrected, limit)
 
