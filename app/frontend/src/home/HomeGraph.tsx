@@ -109,28 +109,32 @@ const FIT_OPTIONS = {
 
 // Recadre le dessin à l'ouverture et à chaque changement de vue (double-clic, retour, plein
 // écran) : la vue entière, centrée, avec la bande de la recherche réservée — exactement comme
-// le bouton « centrer » des commandes.
-// Les résultats de la recherche, eux, ne recadrent que quand le texte de la recherche change :
-// naviguer dans le graphe avec une recherche en cours ne décale rien.
-function Fitter({ zoomed, fullscreen, hits }: { zoomed: string | null; fullscreen: boolean; hits: string }) {
+// le bouton « centrer » des commandes, quel que soit l'élément.
+// Les résultats de la recherche ne recadrent que quand le TEXTE de la recherche change :
+// naviguer dans le graphe avec une recherche en cours ne décale plus rien — c'est ce qui
+// décalait la sous-vue de certains éléments (ceux dont la vue contenait des correspondances).
+function Fitter({ zoomed, fullscreen, search }: { zoomed: string | null; fullscreen: boolean; search: string }) {
   const instance = useReactFlow();
   useEffect(() => {
     instance.fitView({ ...FIT_OPTIONS, duration: 300 });
   }, [zoomed, fullscreen, instance]);
   useEffect(() => {
-    const ids = hits ? hits.split(",") : [];
-    if (ids.length === 0) {
-      instance.fitView({ ...FIT_OPTIONS, duration: 300 }); // recherche vide ou sans résultat
-      return;
-    }
-    // Résultats de la recherche : cadrés plus près, toujours sous la bande.
+    const query = search.trim().toLowerCase();
+    const found = query
+      ? instance
+          .getNodes()
+          .filter((node) => String(node.data.label).toLowerCase().includes(query))
+          .map((node) => ({ id: node.id }))
+      : [];
+    // Recherche vidée ou sans résultat : la vue entière. Résultats : cadrés plus près, sous
+    // la bande de la recherche.
     instance.fitView({
       ...FIT_OPTIONS,
-      nodes: ids.map((id) => ({ id })),
-      padding: { top: SEARCH_BAND, right: 0.3, bottom: 0.3, left: 0.3 },
+      nodes: found,
+      padding: found.length > 0 ? { top: SEARCH_BAND, right: 0.3, bottom: 0.3, left: 0.3 } : FIT_OPTIONS.padding,
       duration: 300,
     });
-  }, [hits, instance]);
+  }, [search, instance]);
   return null;
 }
 
@@ -274,7 +278,7 @@ export default function HomeGraph() {
           }}
           onPaneClick={() => setSelected(null)}
         >
-          <Fitter zoomed={zoomed} fullscreen={fullscreen} hits={view.matched ? [...view.matched].join(",") : ""} />
+          <Fitter zoomed={zoomed} fullscreen={fullscreen} search={search} />
           <Background gap={28} />
           {/* Le bouton « centrer » des commandes recadre avec la bande de recherche réservée,
            * comme tous les recadrages du dessin. */}
