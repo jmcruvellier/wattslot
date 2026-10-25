@@ -207,21 +207,30 @@ def corrected_actual(
     corrections: Iterable[Correction],
     home: HomeModel,
     zone: ZoneInfo,
+    limit_kwh: float,
 ) -> dict[str, Any]:
     """Plan gardé dont les mesures horaires suivent les corrections en vigueur (Ma maison,
     onglet Données), avant l'écartement des mesures impossibles : « Estimer » ou « Recalculer
     depuis le brut » remplace la valeur - le trou des courbes se comble, le message « Mesure
     impossible écartée » disparaît et les totaux suivent -, « Écarter » retire l'heure du
-    compteur (la courbe garde un trou s'il ne reste rien d'autre). La consommation, calculée à
-    partir des compteurs, suit du même écart ; plusieurs compteurs d'un même rôle (heures
-    creuses et pleines) se corrigent chacun de son écart."""
+    compteur (la courbe garde un trou s'il ne reste rien d'autre).
+
+    Chaque correction s'applique par un décalage (valeur corrigée moins valeur d'origine),
+    exact même à plusieurs compteurs d'un rôle (heures creuses et pleines d'un Linky). Mais
+    le plan capture la mesure à sa façon, et la valeur captée peut être pire que la valeur
+    d'origine de la correction (constat du 24/10/2026 : 101 kWh captés à 9 h, 45 kWh dans
+    l'agrégat corrigé) : le décalage laisserait la mesure impossible. La valeur corrigée
+    remplace alors la mesure de l'heure, et la consommation calculée est refaite à partir des
+    séries corrigées."""
     actual = content.get("donnees_reelles_cache")
     day = content.get("date_cible")
     if not isinstance(actual, Mapping) or not isinstance(day, str | date):
         return dict(content)
     day = date.fromisoformat(day) if isinstance(day, str) else day
     roles = {sensor.entity_id: sensor.role for device in home.devices for sensor in device.sensors}
-    cleaned = dict(actual)
+    # Corrections de ce jour, heure par heure : (série du rôle, poids dans la consommation,
+    # valeur corrigée, décalage demandé).
+    by_hour: dict[int, list[tuple[str | None, float, float | None, float]]] = {}
     for correction in corrections:
         if correction.period != HOUR:
             continue  # les vues du jour sont horaires ; les quarts d'heure suivent leur heure
@@ -231,23 +240,62 @@ def corrected_actual(
         if target is None or moment.date() != day:
             continue
         series, weight = target
-        # Écart demandé par la correction : la valeur corrigée, ou le retrait de la valeur
-        # d'origine (« Écarter »).
         corrected = correction.corrected_kwh
         shift = (corrected if corrected is not None else 0.0) - (correction.original_kwh or 0.0)
-        measured = [(series, 1.0)] if series is not None else []
-        for key, factor in [*measured, (CONSUMPTION_SERIES, weight)]:
-            source = cleaned.get(key)
-            values = dict(source) if isinstance(source, Mapping) else {}
-            current = values.get(moment.hour, values.get(str(moment.hour)))
-            kept = (float(current) if isinstance(current, int | float) else 0.0) + shift * factor
-            if corrected is None and kept <= 0:
-                # Écartée sans autre relevé à cette heure : un trou, pas un zéro.
-                values.pop(moment.hour, None)
-                values.pop(str(moment.hour), None)
+        by_hour.setdefault(moment.hour, []).append((series, weight, corrected, shift))
+    cleaned = dict(actual)
+
+    def captured(key: str, hour: int) -> float:
+        series = cleaned.get(key)
+        if not isinstance(series, Mapping):
+            return 0.0
+        found = series.get(hour, series.get(str(hour)))
+        return float(found) if isinstance(found, int | float) else 0.0
+
+    def store(key: str, hour: int, value: float | None) -> None:
+        source = cleaned.get(key)
+        values = dict(source) if isinstance(source, Mapping) else {}
+        if value is None:
+            # Écartée sans autre relevé à cette heure : un trou, pas un zéro.
+            values.pop(hour, None)
+            values.pop(str(hour), None)
+        else:
+            values[hour] = round(value, 3)
+        cleaned[key] = values
+
+    for hour, group in by_hour.items():
+        # Série de rôle : le décalage, ou la valeur corrigée quand la mesure captée est pire
+        # que la valeur d'origine de la correction (le décalage laisserait l'impossible).
+        for series in {member[0] for member in group if member[0] is not None}:
+            members = [member for member in group if member[0] == series]
+            kept = captured(series, hour) + sum(member[3] for member in members)
+            set_aside = all(member[2] is None for member in members)
+            if set_aside and kept <= 0:
+                store(series, hour, None)
+            elif not NEGATIVE_KWH <= kept <= limit_kwh:
+                replacement = sum(m[2] or 0.0 for m in members if m[2] is not None)
+                store(series, hour, replacement if replacement > 0 else None)
             else:
-                values[moment.hour] = round(kept, 3)
-            cleaned[key] = values
+                store(series, hour, kept)
+        # Consommation calculée : le décalage, ou refaite à partir des séries corrigées (la
+        # part de la batterie d'une correction de ce même groupe y est perdue : cas rare).
+        shift = sum(member[1] * member[3] for member in group)
+        kept = captured(CONSUMPTION_SERIES, hour) + shift
+        set_aside = all(member[2] is None for member in group)
+        if set_aside and kept <= 0:
+            store(CONSUMPTION_SERIES, hour, None)
+        elif not NEGATIVE_KWH <= kept <= limit_kwh:
+            rebuilt = (
+                captured("production_reelle_horaire", hour)
+                + captured("reseau_reel_soutire_horaire", hour)
+                - captured("reseau_reel_injecte_horaire", hour)
+            )
+            if NEGATIVE_KWH <= rebuilt <= limit_kwh:
+                store(CONSUMPTION_SERIES, hour, rebuilt)
+            else:
+                store(CONSUMPTION_SERIES, hour, None)
+        else:
+            store(CONSUMPTION_SERIES, hour, kept)
     return {**content, "donnees_reelles_cache": cleaned}
 
 
