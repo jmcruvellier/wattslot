@@ -81,6 +81,15 @@ export interface HomeModel {
   types?: DeviceType[];
 }
 
+// Capteur de HA qu'on peut lier à un appareil (backend : detection.EntityChoice).
+export interface EntityChoice {
+  entity_id: string;
+  name: string | null;
+  unit: string | null;
+  roles: Role[];
+  resets_daily: boolean;
+}
+
 // Type de la bibliothèque (backend : main.LibraryType).
 export interface LibraryType {
   kind: DeviceKind;

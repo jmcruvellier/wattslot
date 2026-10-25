@@ -1895,6 +1895,27 @@ a.ui-setting-row {
   margin-top: 1rem;
 }
 
+.home-fiche-details li {
+  margin-top: 0.5rem;
+}
+
+/* Capteur d'un appareil : la liste des entités de HA a sa ligne pleine largeur — le nom d'un
+   capteur peut être long, il ne doit ni se tasser contre le rôle ni déborder de la feuille.
+   Sans HA connecté, l'identifiant écrit se replie au lieu de déborder. */
+.home-fiche-details li select,
+.home-fiche-details li code {
+  display: block;
+  margin-top: 0.25rem;
+}
+
+.home-fiche-details li select {
+  width: 100%;
+}
+
+.home-fiche-details li code {
+  overflow-wrap: anywhere;
+}
+
 /* Feuille d'un réglage : formulaire plus large sur ordinateur, « Enregistrer » toujours visible. */
 @media (min-width: 768px) {
   .ui-sheet.ui-sheet-wide {

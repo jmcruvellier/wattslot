@@ -8,7 +8,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { I18nProvider } from "../i18n/I18nProvider";
 import type { Configuration } from "./configuration";
 import HomeScreen from "./HomeScreen";
-import type { DeviceProposal, HomeModel } from "./types";
+import type { DeviceProposal, EntityChoice, HomeModel, Role } from "./types";
+
+const ENERGY_ROLES: Role[] = [
+  "EnergyProduced",
+  "EnergyImported",
+  "EnergyExported",
+  "EnergyCharged",
+  "EnergyDischarged",
+  "EnergyConsumed",
+];
+const POWER_ROLES: Role[] = ["PowerProduced", "PowerConsumed"];
 
 const sensor = (entity_id: string, role: "EnergyConsumed" | "PowerConsumed" | "EnergyImported") => ({
   entity_id,
@@ -19,6 +29,23 @@ const sensor = (entity_id: string, role: "EnergyConsumed" | "PowerConsumed" | "E
   excluded: false,
   issues: [],
 });
+
+// Capteurs de HA proposés au choix pour remplacer celui d'un appareil suivi.
+const ENTITY = (entity_id: string, roles: Role[], name: string | null = null, resets_daily = false): EntityChoice => ({
+  entity_id,
+  name,
+  unit: roles === POWER_ROLES ? "W" : "kWh",
+  roles,
+  resets_daily,
+});
+
+const ENTITIES: EntityChoice[] = [
+  ENTITY("sensor.washer_energy", ENERGY_ROLES, "Lave-linge"),
+  ENTITY("sensor.new_plug_energy", ENERGY_ROLES, "Prise du garage"),
+  ENTITY("sensor.new_plug_daily_energy", ENERGY_ROLES, "Prise du garage, du jour", true),
+  ENTITY("sensor.washer_power", POWER_ROLES),
+  ENTITY("sensor.new_plug_power", POWER_ROLES, "Prise du garage"),
+];
 
 const PROPOSALS: DeviceProposal[] = [
   {
@@ -80,7 +107,7 @@ const CONFIGURATION: Configuration = {
 
 type Sent = { url: string; body: unknown };
 
-function mockApi(home: HomeModel = HOME) {
+function mockApi(home: HomeModel = HOME, entities: EntityChoice[] | null = ENTITIES) {
   const sent: Sent[] = [];
   vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
     const url = String(input);
@@ -91,6 +118,9 @@ function mockApi(home: HomeModel = HOME) {
     }
     if (url === "api/home") return Response.json(home);
     if (url === "api/configuration") return Response.json(CONFIGURATION);
+    if (url === "api/home/entities") {
+      return entities ? Response.json(entities) : new Response(null, { status: 503 });
+    }
     if (url.startsWith("api/home/proposals")) return Response.json({ energy_dashboard: true, devices: PROPOSALS });
     if (url === "api/home/types") return Response.json({ parents: [], types: [], library: [] });
     return new Response(null, { status: 404 });
@@ -142,6 +172,52 @@ describe("fiche d'un appareil", () => {
     const washer = (sent[0].body as HomeModel).devices.find((d) => d.key === "washer")!;
     expect(washer.name).toBe("Lave-linge du garage");
     expect(washer.sensors.map((s) => s.entity_id)).toEqual(["sensor.washer_energy"]);
+  });
+
+  it("remplace le capteur d'un appareil par un autre capteur de Home Assistant du même rôle", async () => {
+    const sent = mockApi();
+    renderHome();
+    await openDevices();
+    await userEvent.click(await screen.findByRole("button", { name: /^Lave-linge/ }));
+    const sheet = screen.getByRole("dialog", { name: "Lave-linge" });
+    const details = within(sheet).getByText("Capteurs, nom et type").closest("details")!;
+    await userEvent.click(within(sheet).getByText("Capteurs, nom et type"));
+    const energy = within(details).getByLabelText("Choisir le capteur Énergie consommée") as HTMLSelectElement;
+    expect(energy).toHaveValue("sensor.washer_energy");
+    // seuls les capteurs d'énergie sont proposés ; le capteur actuel reste en tête s'il a disparu de HA
+    expect(Array.from(energy.options).map((option) => option.value)).toEqual([
+      "sensor.washer_energy",
+      "sensor.new_plug_energy",
+      "sensor.new_plug_daily_energy",
+    ]);
+    const power = within(details).getByLabelText("Choisir le capteur Puissance consommée") as HTMLSelectElement;
+    expect(Array.from(power.options).map((option) => option.value)).toEqual([
+      "sensor.washer_power",
+      "sensor.new_plug_power",
+    ]);
+    await userEvent.selectOptions(energy, "sensor.new_plug_daily_energy");
+    await userEvent.click(within(sheet).getByRole("button", { name: "Enregistrer les réglages" }));
+
+    await screen.findByText("Réglages enregistrés.");
+    expect(sent.map((s) => s.url)).toEqual(["api/home"]);
+    const washer = (sent[0].body as HomeModel).devices.find((d) => d.key === "washer")!;
+    expect(washer.sensors).toContainEqual({
+      entity_id: "sensor.new_plug_daily_energy",
+      role: "EnergyConsumed",
+      resets_daily: true, // lu dans HA, le capteur choisi se remet à zéro chaque jour
+    });
+  });
+
+  it("laisse le capteur actuel écrit, sans possibilité de le changer, quand HA n'est pas connecté", async () => {
+    mockApi(HOME, null);
+    renderHome();
+    await openDevices();
+    await userEvent.click(await screen.findByRole("button", { name: /^Lave-linge/ }));
+    const sheet = screen.getByRole("dialog", { name: "Lave-linge" });
+    const details = within(sheet).getByText("Capteurs, nom et type").closest("details")!;
+    await userEvent.click(within(sheet).getByText("Capteurs, nom et type"));
+    expect(within(details).getByText("sensor.washer_energy")).toBeInTheDocument();
+    expect(within(details).queryByLabelText("Choisir le capteur Énergie consommée")).toBeNull();
   });
 
   it("montre les capteurs à vérifier du réseau et laisse en retirer un", async () => {

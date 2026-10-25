@@ -8,14 +8,14 @@ import { useEffect, useState } from "react";
 import { ApiError, getJson } from "../api";
 import { useI18n } from "../i18n/I18nProvider";
 import { MANUAL_PREFIX, slug, type DraftDevice } from "./draft";
-import { DEVICE_KINDS, type DeviceKind, type DeviceType, type LibraryType, type Role } from "./types";
-
-interface EntityChoice {
-  entity_id: string;
-  name: string | null;
-  unit: string | null;
-  roles: Role[];
-}
+import {
+  DEVICE_KINDS,
+  type DeviceKind,
+  type DeviceType,
+  type EntityChoice,
+  type LibraryType,
+  type Role,
+} from "./types";
 
 type Entities = { status: "idle" | "loading" | "not_connected" | "failed" } | { status: "ready"; list: EntityChoice[] };
 
@@ -87,7 +87,7 @@ export default function AddDevice({ library, types, existing, onAdd, opened = fa
             role,
             name: entity?.name ?? null,
             unit: entity?.unit ?? null,
-            resets_daily: false,
+            resets_daily: entity?.resets_daily ?? false,
             excluded: false,
             issues: [],
             included: true,

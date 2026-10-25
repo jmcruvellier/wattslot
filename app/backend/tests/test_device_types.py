@@ -146,13 +146,24 @@ def test_ha_sensors_offered_for_a_device_added_by_hand(tmp_path: Path) -> None:
     from wattslot.detection import Role, sensor_choices
     from wattslot.home_assistant import HomeSnapshot
 
-    def state(unit: str | None, name: str = "x") -> dict[str, object]:
-        return {"attributes": {"unit_of_measurement": unit, "friendly_name": name}}
+    def state(
+        unit: str | None, name: str = "x", state_class: str | None = None, reset: bool = False
+    ) -> dict[str, object]:
+        return {
+            "attributes": {
+                "unit_of_measurement": unit,
+                "friendly_name": name,
+                "state_class": state_class,
+                **({"last_reset": "2026-01-01T00:00:00"} if reset else {}),
+            }
+        }
 
     snapshot = HomeSnapshot(
         states={
             "sensor.pump_energy": state("kWh", "Pompe"),
             "sensor.pump_power": state("W"),
+            "sensor.pump_daily_energy": state("kWh", "Pompe du jour"),
+            "sensor.pump_counter": state("kWh", "Pompe", "total", reset=True),
             "sensor.battery_level": state("%"),
             "sensor.temperature": state("°C"),
             "switch.pump": state(None),
@@ -161,10 +172,22 @@ def test_ha_sensors_offered_for_a_device_added_by_hand(tmp_path: Path) -> None:
 
     found = {c.entity_id: c for c in sensor_choices(snapshot)}
 
-    assert set(found) == {"sensor.pump_energy", "sensor.pump_power", "sensor.battery_level"}
+    assert set(found) == {
+        "sensor.pump_energy",
+        "sensor.pump_power",
+        "sensor.pump_daily_energy",
+        "sensor.pump_counter",
+        "sensor.battery_level",
+    }
     assert Role.ENERGY_CONSUMED in found["sensor.pump_energy"].roles
     assert found["sensor.pump_power"].roles == sorted({Role.POWER_CONSUMED, Role.POWER_PRODUCED})
     assert found["sensor.battery_level"].roles == [Role.STATE_OF_CHARGE]
     assert found["sensor.pump_energy"].name == "Pompe"
+    assert found["sensor.pump_energy"].resets_daily is False
+    # le nom ou le state_class disent la remise à zéro quotidienne, autant pour remplacer le
+    # capteur d'un appareil suivi que pour en ajouter un à la main
+    assert found["sensor.pump_daily_energy"].resets_daily is True
+    assert found["sensor.pump_counter"].resets_daily is True
+    assert found["sensor.battery_level"].resets_daily is False
     with TestClient(create_app(_settings(tmp_path))) as api:
         assert api.get("/api/home/entities").status_code == 503
