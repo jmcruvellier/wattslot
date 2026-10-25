@@ -70,6 +70,9 @@ class WeekView(BaseModel):
     # Jours de l'horizon que le calcul n'a pas atteints : celui où il s'est arrêté et les
     # suivants, jusqu'au dernier jour prévu ; la cause est dans ``notices``.
     missing_days: list[date] = []
+    # Heures du premier jour (aujourd'hui, qui ouvre la semaine) dont une mesure impossible a
+    # été écartée (qualité des données) ; rien si la mesure est plus ancienne que la semaine.
+    discarded_hours: list[int] = []
 
 
 # Avertissements qui arrêtent l'horizon au jour ``jour`` (``planning/horizon.py``).
@@ -235,6 +238,7 @@ def build_week(
     today: Mapping[str, Any] | None,
     context: Context,
     lang: str = "fr",
+    today_discarded: list[int] | None = None,
 ) -> WeekView:
     content = with_tomorrow_up_to_date(horizon, tomorrow)
     horizon_days = [_with_date(d) for d in content.get("jours") or []]
@@ -299,6 +303,9 @@ def build_week(
         floor_percent=context.battery.floor_percent,
         solar=context.solar,
         now_index=reading_index(today_state, context) if with_today and today_state else None,
+        # Les heures écartées ne concernent que le premier jour, et seulement s'il ouvre la
+        # semaine ; la semaine ne dit rien des mesures plus anciennes.
+        discarded_hours=(today_discarded or []) if with_today else [],
         notices=notices({"avertissements": content.get("avertissements", [])}, "week", lang),
         waiting_not_assigned=bool(first.get("taches_en_attente") and not first.get("affectations")),
         missing_days=missing_days(

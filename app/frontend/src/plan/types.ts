@@ -278,6 +278,9 @@ export interface WeekView {
   notices: Notice[];
   waiting_not_assigned: boolean;
   missing_days: string[]; // jours de l'horizon que le calcul n'a pas atteints (cause dans notices)
+  // Heures du premier jour (aujourd'hui) dont une mesure impossible a été écartée ; rien si la
+  // mesure est plus ancienne que la semaine affichée.
+  discarded_hours?: number[];
   solar?: boolean; // faux : maison sans panneaux, ni météo ni production
 }
 

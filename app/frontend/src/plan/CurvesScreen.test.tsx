@@ -7,7 +7,7 @@ import CurvesScreen from "./CurvesScreen";
 import { CurvesCustomizeButton } from "./PlanActions";
 import { DAY_CARDS, type DashboardLayout, DEFAULT_LAYOUT } from "./layout";
 import { TODAY, WEEK, WITHOUT_BATTERY } from "./testViews";
-import type { DayView, HourPoint } from "./types";
+import type { DayView, HourPoint, WeekView } from "./types";
 
 // Recharts mesure son conteneur, ce que jsdom ne sait pas faire : graphique remplacé.
 vi.mock("./Charts", () => {
@@ -25,12 +25,13 @@ function mockApi(
   versions: () => Record<string, number | null>,
   today: DayView = TODAY,
   layout: DashboardLayout = DEFAULT_LAYOUT,
+  week: WeekView = WEEK,
 ) {
   return vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
     const url = String(input);
     if (url === "api/views/versions") return Response.json(versions());
     if (url.startsWith("api/views/today")) return Response.json(today);
-    if (url.startsWith("api/views/week")) return Response.json(WEEK);
+    if (url.startsWith("api/views/week")) return Response.json(week);
     if (url === "api/settings/dashboard") {
       return Response.json(init?.method === "PUT" ? { ...JSON.parse(String(init.body)), default: false } : layout);
     }
@@ -82,6 +83,21 @@ describe("CurvesScreen", () => {
     expect(link).toHaveAttribute("href", "#/home");
     await userEvent.click(link);
     expect(window.localStorage.getItem("home.tab")).toBe("data");
+  });
+
+  it("Semaine : signale les mesures impossibles du jour qui ouvre la semaine", async () => {
+    const user = userEvent.setup();
+    mockApi(
+      () => ({ yesterday: null, today: 1, tomorrow: null, week: 2 }),
+      TODAY,
+      DEFAULT_LAYOUT,
+      { ...WEEK, discarded_hours: [9] },
+    );
+    renderScreen();
+
+    await user.click(await screen.findByRole("tab", { name: "Semaine" }));
+    const note = await screen.findByRole("note");
+    expect(note).toHaveTextContent("Mesure impossible écartée à 9 h : sans doute une coupure d'un capteur.");
   });
 
   it("ne signale rien sans mesure écartée", async () => {

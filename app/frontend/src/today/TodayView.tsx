@@ -15,6 +15,7 @@ import { TrendMark } from "../plan/SummaryCards";
 import { DEFAULT_LAYOUT } from "../plan/layout";
 import TimelineCard from "../plan/TimelineCard";
 import OtherStarts from "../plan/OtherStarts";
+import DiscardedNote from "../plan/DiscardedNote";
 import ProvisionalNote from "../plan/ProvisionalNote";
 import { useHomeFeatures } from "../home/features";
 import type { DayView, LineKey, NextAction, Now } from "../plan/types";
@@ -100,6 +101,8 @@ export default function TodayView({ onNavigate }: { onNavigate?: (target: string
 
   return (
     <div className="today">
+      {/* Mesures impossibles du jour seulement : celles d'hier ne sont plus d'actualité ici. */}
+      <DiscardedNote hours={view.discarded_hours ?? []} />
       <ProvisionalNote view={view} />
       <NowCard now={view.now ?? null} recommendation={view.recommendation} />
       <NextActionCard view={view} onChanged={() => setAttempt((count) => count + 1)} onNavigate={onNavigate} />

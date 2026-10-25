@@ -170,6 +170,17 @@ describe("TodayView", () => {
     expect(screen.getByRole("note")).toHaveTextContent("3 compteur(s) restant(s)");
   });
 
+  it("signale une mesure impossible écartée du jour, avec les données à corriger", async () => {
+    mockApi({ ...TODAY, now: NOW, discarded_hours: [9] });
+    renderView();
+    const note = await screen.findByRole("note");
+    expect(note).toHaveTextContent("Mesure impossible écartée à 9 h : sans doute une coupure d'un capteur.");
+    const link = screen.getByRole("link", { name: "Voir les données" });
+    expect(link).toHaveAttribute("href", "#/home");
+    await userEvent.click(link);
+    expect(window.localStorage.getItem("home.tab")).toBe("data");
+  });
+
   it("dit quand il n'y a pas encore de plan", async () => {
     mockApi(null);
     renderView();
