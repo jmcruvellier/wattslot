@@ -4,6 +4,8 @@
 // Deux couloirs par piste (lot 7.1) : le prévu en haut, le réel en bas, chaque bloc portant son
 // énergie, centrée sur sa plus grande partie visible, s'il lui reste assez de place libre ; pas de
 // légende, le détail est dans l'info-bulle.
+// Sur la vue Aujourd'hui, un bloc prévu pas encore lancé ouvre la feuille des autres départs
+// (OtherStarts) : changer de créneau ou annuler son choix, sans quitter l'écran.
 
 import { useCallback, useEffect, useState } from "react";
 
@@ -12,6 +14,9 @@ import { hour, kwh } from "./format";
 import { freeSpan } from "./timelineSpan";
 import type { Bar, TimelineRow, Timeline } from "./types";
 import Icon from "../ui/Icon";
+import Sheet from "../ui/Sheet";
+import OtherStarts from "./OtherStarts";
+import type { StartChoice } from "./startChoices";
 
 const AXIS = [0, 4, 8, 12, 16, 20, 24];
 // Place libre minimale, en pixels, pour écrire l'énergie d'un bloc (« 12,5 kWh » et ses marges).
@@ -37,11 +42,31 @@ function color(row: TimelineRow, bar: Bar): string {
   return "var(--cycle)";
 }
 
-export default function TimelineCard({ timeline, readingHour }: { timeline: Timeline; readingHour: number | null }) {
+// Minutes depuis minuit maintenant : un départ déjà entamé ne se change plus.
+function nowMinute(): number {
+  const now = new Date();
+  return now.getHours() * 60 + now.getMinutes();
+}
+
+export default function TimelineCard({
+  timeline,
+  readingHour,
+  choices,
+  onChanged,
+}: {
+  timeline: Timeline;
+  readingHour: number | null;
+  choices?: Record<string, StartChoice>;
+  onChanged?: () => void;
+}) {
   const { language, t } = useI18n();
   const [tip, setTip] = useState<string | null>(null);
   const [trackWidth, measureTrack] = useTrackWidth();
   const lang = language === "fr" ? "fr" : "en";
+  // Équipement et bloc prévu dont la feuille des autres départs est ouverte.
+  const [picked, setPicked] = useState<{ device: string; bar: Bar } | null>(null);
+  const pickable = choices !== undefined && onChanged !== undefined;
+  const nowMin = nowMinute();
 
   const describe = (row: TimelineRow, bar: Bar, actual: boolean) => {
     const what = bar.action
@@ -63,11 +88,18 @@ export default function TimelineCard({ timeline, readingHour }: { timeline: Time
       const [free_start, free_end] = freeSpan(items, index);
       const wide = ((free_end - free_start) / 24) * trackWidth >= LABEL_MIN_PX;
       const duration = bar.end_hour - bar.start_hour;
+      // Départ encore à venir d'un appareil avec d'autres départs : la feuille s'ouvre au clic
+      // au lieu de l'info-bulle ; sinon le bloc décrit seulement ce que le plan prévoit.
+      const choice =
+        !actual && pickable && row.kind === "cycle" && bar.start_hour * 60 > nowMin
+          ? choices[row.device]
+          : undefined;
+      const opens = choice !== undefined && (choice.alternatives.length > 0 || choice.chosen);
       return (
         <button
           key={`${actual ? "a" : "p"}-${index}`}
           type="button"
-          className={actual ? "tl-bar tl-actual" : "tl-bar tl-planned"}
+          className={actual ? "tl-bar tl-actual" : opens ? "tl-bar tl-planned tl-pickable" : "tl-bar tl-planned"}
           style={{
             left: `${(bar.start_hour / 24) * 100}%`,
             width: `max(3px, ${((bar.end_hour - bar.start_hour) / 24) * 100}%)`,
@@ -75,7 +107,7 @@ export default function TimelineCard({ timeline, readingHour }: { timeline: Time
           }}
           title={text}
           aria-label={text}
-          onClick={() => setTip(text)}
+          onClick={() => (opens ? setPicked({ device: row.device, bar }) : setTip(text))}
         >
           {wide && (
             <span
@@ -129,6 +161,30 @@ export default function TimelineCard({ timeline, readingHour }: { timeline: Time
         </div>
       )}
       {tip && <p role="status">{tip}</p>}
+      {picked && (
+        <Sheet
+          open
+          title={t("plan.timeline.choice_title", { device: picked.device })}
+          onClose={() => setPicked(null)}
+        >
+          <p className="dim">
+            {t("plan.timeline.choice_slot", {
+              start: hour(Math.round(picked.bar.start_hour * 60) / 60, lang),
+              end: hour(Math.round(picked.bar.end_hour * 60) / 60, lang),
+              kwh: kwh(picked.bar.energy_kwh),
+            })}
+          </p>
+          <OtherStarts
+            device={picked.device}
+            alternatives={choices?.[picked.device]?.alternatives ?? []}
+            chosen={choices?.[picked.device]?.chosen ?? false}
+            onChanged={() => {
+              setPicked(null); // le plan recalcule, la frise va suivre
+              onChanged?.();
+            }}
+          />
+        </Sheet>
+      )}
     </article>
   );
 }

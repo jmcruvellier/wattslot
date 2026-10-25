@@ -27,7 +27,7 @@ function curveCards(view: DayView): DayCardId[] {
 
 export default function CurvesScreen() {
   const { t } = useI18n();
-  const { tab, load, open, retry } = usePlanView();
+  const { tab, load, open, reload, retry } = usePlanView();
   const { layout, saving, failed, change, reset } = useDashboardLayout();
   const { editing } = useCurvesEditing();
 
@@ -72,7 +72,14 @@ export default function CurvesScreen() {
       {load.status === "week" && <DiscardedNote hours={load.view.discarded_hours ?? []} />}
       {load.status === "day" && <ProvisionalNote view={load.view} />}
       {load.status === "day" && (
-        <DayCards view={load.view} layout={layout[load.view.kind]} indicators={layout.indicators} available={curveCards(load.view)} />
+        /* « onChanged » : la frise du jour permet de changer un départ, la vue se relit. */
+        <DayCards
+          view={load.view}
+          layout={layout[load.view.kind]}
+          indicators={layout.indicators}
+          available={curveCards(load.view)}
+          onChanged={reload}
+        />
       )}
       {load.status === "week" && <WeekDetails view={load.view} onOpen={open} layout={layout.week} />}
     </section>

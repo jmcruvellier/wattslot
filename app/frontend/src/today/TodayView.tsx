@@ -14,6 +14,7 @@ import { IndicatorsCard } from "../plan/InsightCards";
 import { TrendMark } from "../plan/SummaryCards";
 import { DEFAULT_LAYOUT } from "../plan/layout";
 import TimelineCard from "../plan/TimelineCard";
+import { startChoices } from "../plan/startChoices";
 import OtherStarts from "../plan/OtherStarts";
 import DiscardedNote from "../plan/DiscardedNote";
 import ProvisionalNote from "../plan/ProvisionalNote";
@@ -106,7 +107,13 @@ export default function TodayView({ onNavigate }: { onNavigate?: (target: string
       <ProvisionalNote view={view} />
       <NowCard now={view.now ?? null} recommendation={view.recommendation} />
       <NextActionCard view={view} onChanged={() => setAttempt((count) => count + 1)} onNavigate={onNavigate} />
-      <TimelineCard timeline={view.timeline} readingHour={readingHour(view)} />
+      {/* La frise reprend les autres départs des blocs pas encore lancés (feuille au clic). */}
+      <TimelineCard
+        timeline={view.timeline}
+        readingHour={readingHour(view)}
+        choices={startChoices(view)}
+        onChanged={() => setAttempt((count) => count + 1)}
+      />
       <div className="today-grid">
         {view.battery_capacity_kwh !== null && (
           <Card tone="battery" eyebrow={t("today.battery.eyebrow")} title={t("today.battery.title", {

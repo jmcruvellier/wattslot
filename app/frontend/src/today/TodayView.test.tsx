@@ -41,6 +41,15 @@ function mockApi(view: DayView | null, features: object | null = null) {
     if (url === "api/reminders" && init?.method === "POST") {
       return Response.json({ device: "Lave-linge", day: "2026-10-17" }, { status: 201 });
     }
+    if (url === "api/planning/choices" && init?.method === "POST") {
+      return Response.json(JSON.parse(String(init?.body)), { status: 201 });
+    }
+    if (url.startsWith("api/planning/choices/") && init?.method === "DELETE") {
+      return new Response(null, { status: 204 });
+    }
+    if (url === "api/planning/run" && init?.method === "POST") {
+      return Response.json({}, { status: 200 });
+    }
     return new Response(null, { status: 404 });
   });
 }
@@ -60,6 +69,7 @@ describe("TodayView", () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
@@ -185,5 +195,56 @@ describe("TodayView", () => {
     mockApi(null);
     renderView();
     expect(await screen.findByText(/Pas encore de plan pour aujourd'hui/)).toBeInTheDocument();
+  });
+
+  it("change le créneau d'un équipement pas encore lancé depuis la frise", async () => {
+    vi.setSystemTime(new Date("2026-10-17T12:00:00"));
+    const fetchMock = mockApi({
+      ...TODAY,
+      now: NOW,
+      next_action: null,
+      timeline: {
+        ...TODAY.timeline,
+        rows: [
+          TODAY.timeline.rows[0],
+          TODAY.timeline.rows[1],
+          TODAY.timeline.rows[2],
+          {
+            device: "Sèche-linge",
+            kind: "cycle",
+            planned: [{ start_hour: 16, end_hour: 17, energy_kwh: 1, action: null, mode: null }],
+            actual: [],
+          },
+        ],
+      },
+      explanations: [
+        ...TODAY.explanations,
+        {
+          device: "Sèche-linge",
+          text: "Placé à 16h.",
+          explanation: {
+            alternatives: [{ debut_min: 1140, ecart_cout_eur: -0.099, ecart_soutirage_kwh: -0.732 }],
+            choisi: false,
+          },
+        },
+      ],
+    });
+    const user = userEvent.setup();
+    renderView();
+
+    await user.click(await screen.findByRole("button", { name: "Prévu 16h → 17h : Sèche-linge, 1,00 kWh" }));
+    const sheet = screen.getByRole("dialog");
+    expect(within(sheet).getByRole("heading", { name: "Départ de Sèche-linge" })).toBeInTheDocument();
+    await user.click(within(sheet).getByRole("button", { name: /Choisir le départ de 19h00/ }));
+
+    const posts = fetchMock.mock.calls.filter((call) => String(call[0]) === "api/planning/choices");
+    expect(posts).toHaveLength(1);
+    expect(JSON.parse(String((posts[0][1] as RequestInit).body))).toEqual({
+      device: "Sèche-linge",
+      start_min: 1140,
+    });
+    expect(fetchMock.mock.calls.some((call) => String(call[0]) === "api/planning/run")).toBe(true);
+    // La feuille se ferme et la vue se relit (l'API du jour sert la même vue au test).
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 });

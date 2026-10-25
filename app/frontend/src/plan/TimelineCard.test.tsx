@@ -5,12 +5,34 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { I18nProvider } from "../i18n/I18nProvider";
 import { TODAY } from "./testViews";
 import TimelineCard from "./TimelineCard";
-import type { Timeline } from "./types";
+import { startChoices, type StartChoice } from "./startChoices";
+import type { DayView, Timeline } from "./types";
 
-function renderTimeline(timeline: Timeline, readingHour: number | null = 14.5) {
+type Call = { url: string; method: string; body: unknown };
+
+/** Renvoie les appels passés, et répond aux changements de départ (choix, annulation, calcul). */
+function mockChoices(): Call[] {
+  const calls: Call[] = [];
+  vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+    calls.push({
+      url: String(input),
+      method: init?.method ?? "GET",
+      body: init?.body ? (JSON.parse(String(init.body)) as unknown) : null,
+    });
+    if (init?.method === "DELETE") return new Response(null, { status: 204 });
+    return Response.json({});
+  });
+  return calls;
+}
+
+function renderTimeline(
+  timeline: Timeline,
+  readingHour: number | null = 14.5,
+  props: { choices?: Record<string, StartChoice>; onChanged?: () => void } = {},
+) {
   render(
     <I18nProvider>
-      <TimelineCard timeline={timeline} readingHour={readingHour} />
+      <TimelineCard timeline={timeline} readingHour={readingHour} {...props} />
     </I18nProvider>,
   );
 }
@@ -37,6 +59,7 @@ describe("frise des équipements", () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });
@@ -124,5 +147,115 @@ describe("frise des équipements", () => {
   it("explique une journée sans équipement planifié", () => {
     renderTimeline({ ...TODAY.timeline, rows: [], empty: "no_surplus" });
     expect(screen.getByText(/Pas de surplus solaire prévu \(production 10,0 kWh, consommation 9,6 kWh\)/)).toBeInTheDocument();
+  });
+
+  // Sèche-linge prévu à 16h, pas encore lancé : deux autres départs à 18h et 19h.
+  const FUTURE = {
+    device: "Sèche-linge",
+    kind: "cycle",
+    planned: [{ start_hour: 16, end_hour: 17, energy_kwh: 1, action: null, mode: null }],
+    actual: [],
+  } as unknown as Timeline["rows"][number];
+  const CHOICES: Record<string, StartChoice> = {
+    "Sèche-linge": {
+      alternatives: [
+        { start_min: 1080, cost_eur_delta: 0.05, import_kwh_delta: 0.2 },
+        { start_min: 1140, cost_eur_delta: -0.099, import_kwh_delta: -0.732 },
+      ],
+      chosen: false,
+    },
+  };
+
+  it("garde l'info-bulle sur un départ déjà lancé ou sans autre départ possible", async () => {
+    vi.setSystemTime(new Date("2026-10-17T12:00:00")); // le Lave-linge prévu à 10h est lancé
+    const user = userEvent.setup();
+    renderTimeline(TODAY.timeline, 14.5, { choices: CHOICES, onChanged: () => undefined });
+
+    await user.click(screen.getByRole("button", { name: "Prévu 10h → 11h30 : Lave-linge, 1,00 kWh" }));
+    expect(screen.getByRole("status")).toHaveTextContent("Prévu 10h → 11h30 : Lave-linge, 1,00 kWh");
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("ouvre la feuille des autres départs d'un équipement pas encore lancé", async () => {
+    vi.setSystemTime(new Date("2026-10-17T12:00:00"));
+    const user = userEvent.setup();
+    renderTimeline({ ...TODAY.timeline, rows: [FUTURE] }, 14.5, { choices: CHOICES, onChanged: () => undefined });
+
+    const planned = screen.getByRole("button", { name: "Prévu 16h → 17h : Sèche-linge, 1,00 kWh" });
+    expect(planned).toHaveClass("tl-pickable");
+    await user.click(planned);
+
+    const sheet = screen.getByRole("dialog");
+    expect(within(sheet).getByRole("heading", { name: "Départ de Sèche-linge" })).toBeInTheDocument();
+    expect(within(sheet).getByText("Prévu 16h → 17h : 1,00 kWh")).toBeInTheDocument();
+    expect(within(sheet).getByText("Autres départs possibles :")).toBeInTheDocument();
+    expect(within(sheet).getAllByRole("button", { name: /Choisir le départ de/ })).toHaveLength(2);
+  });
+
+  it("choisit un autre départ depuis la feuille, puis relance le calcul", async () => {
+    vi.setSystemTime(new Date("2026-10-17T12:00:00"));
+    const calls = mockChoices();
+    const onChanged = vi.fn();
+    const user = userEvent.setup();
+    renderTimeline({ ...TODAY.timeline, rows: [FUTURE] }, 14.5, { choices: CHOICES, onChanged });
+
+    await user.click(screen.getByRole("button", { name: "Prévu 16h → 17h : Sèche-linge, 1,00 kWh" }));
+    await user.click(screen.getByRole("button", { name: /Choisir le départ de 19h00/ }));
+
+    expect(calls.map((c) => [c.method, c.url])).toEqual([
+      ["POST", "api/planning/choices"],
+      ["POST", "api/planning/run"],
+    ]);
+    expect(calls[0].body).toEqual({ device: "Sèche-linge", start_min: 1140 });
+    expect(onChanged).toHaveBeenCalled();
+    expect(screen.queryByRole("dialog")).toBeNull(); // la feuille se ferme, le plan recalcule
+  });
+
+  it("annule le départ choisi depuis la feuille (retour au choix du calcul)", async () => {
+    vi.setSystemTime(new Date("2026-10-17T12:00:00"));
+    const calls = mockChoices();
+    const onChanged = vi.fn();
+    const user = userEvent.setup();
+    renderTimeline({ ...TODAY.timeline, rows: [FUTURE] }, 14.5, {
+      choices: { "Sèche-linge": { alternatives: [], chosen: true } },
+      onChanged,
+    });
+
+    await user.click(screen.getByRole("button", { name: "Prévu 16h → 17h : Sèche-linge, 1,00 kWh" }));
+    await user.click(screen.getByRole("button", { name: "Revenir au choix du calcul" }));
+
+    expect(calls.map((c) => [c.method, c.url])).toEqual([
+      ["DELETE", "api/planning/choices/S%C3%A8che-linge"],
+      ["POST", "api/planning/run"],
+    ]);
+    expect(onChanged).toHaveBeenCalled();
+  });
+
+  it("lit les autres départs dans les explications du plan du jour", () => {
+    vi.setSystemTime(new Date("2026-10-17T12:00:00"));
+    const view = {
+      ...TODAY,
+      explanations: [
+        {
+          device: "Sèche-linge",
+          text: "Placé à 16h.",
+          explanation: {
+            alternatives: [
+              { debut_min: 1140, ecart_cout_eur: -0.099, ecart_soutirage_kwh: -0.732 },
+              { debut_min: 600, ecart_cout_eur: 0.4, ecart_soutirage_kwh: 1 }, // déjà passé : écarté
+            ],
+            choisi: true,
+          },
+        },
+        { device: "Piscine", text: "Toute la journée." }, // sans explication : ignorée
+      ],
+    } as unknown as DayView;
+
+    expect(startChoices(view)).toEqual({
+      "Sèche-linge": {
+        alternatives: [{ start_min: 1140, cost_eur_delta: -0.099, import_kwh_delta: -0.732 }],
+        chosen: true,
+      },
+    });
   });
 });

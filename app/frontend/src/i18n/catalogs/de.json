@@ -301,7 +301,9 @@
       "tip_planned": "Geplant {start} → {end}: {what}, {kwh} kWh",
       "tip_actual": "Tatsächlich {start} → {end}: {what}, {kwh} kWh",
       "no_surplus": "Kein Solarüberschuss erwartet (Erzeugung {production} kWh, Verbrauch {consumption} kWh): kein Gerät eingeplant.",
-      "nothing": "An diesem Tag ist kein Gerät eingeplant."
+      "nothing": "An diesem Tag ist kein Gerät eingeplant.",
+      "choice_title": "Start von {device}",
+      "choice_slot": "Geplant {start} → {end}: {kwh} kWh"
     },
     "indicators": {
       "title": "Kennzahlen des Plans",

@@ -523,6 +523,12 @@ pre {
   border: 2px dashed var(--bar, var(--cycle));
 }
 
+/* Départ pas encore lancé dont on peut changer : le contour se double d'un léger fond, qui
+ * s'affirme au survol ; le bouton reste un contour tant qu'on ne le survole pas. */
+.tl-pickable:hover {
+  background: color-mix(in srgb, var(--bar, var(--cycle)) 12%, var(--surface));
+}
+
 /* Teinte adoucie : le texte garde le contraste du thème. */
 .tl-actual {
   background: color-mix(in srgb, var(--bar, var(--cycle)) 30%, var(--surface));
