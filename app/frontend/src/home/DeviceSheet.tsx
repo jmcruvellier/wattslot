@@ -180,6 +180,7 @@ export default function DeviceSheet({
                 {choices ? (
                   <select
                     value={sensor.entity_id}
+                    title={sensor.entity_id}
                     aria-label={t("home.change_sensor", { role: t(`role.${sensor.role}`) })}
                     onChange={(event) => {
                       const entity = choices.find((e) => e.entity_id === event.target.value);
