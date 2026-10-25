@@ -881,6 +881,8 @@
     "base_unknown": "Price when it is not known",
     "band": "Band {number}",
     "from": "From",
+    "start_minute": "Start minutes",
+    "end_minute": "End minutes",
     "to": "to",
     "price": "price",
     "limited": "limited to some days or months",

@@ -881,6 +881,8 @@
     "base_unknown": "Preis, wenn er nicht bekannt ist",
     "band": "Zeitfenster {number}",
     "from": "Von",
+    "start_minute": "Startminuten",
+    "end_minute": "Endminuten",
     "to": "bis",
     "price": "Preis",
     "limited": "auf bestimmte Tage oder Monate beschränkt",

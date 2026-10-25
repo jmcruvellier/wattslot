@@ -3,10 +3,11 @@
 Un tarif donne le prix du kWh soutiré à chaque heure d'une journée, et celui du kWh injecté :
 
 - **prix unique** (``SingleTariff``) : ``base_eur_kwh`` à toute heure ;
-- **plages horaires** (``TimeOfUseTariff``) : des plages ``[début, fin[`` en heures locales, chacune
-  avec son prix, limitées au besoin à certains jours de la semaine ou à certains mois (heures
-  creuses et pleines, saisons, week-ends) ; une heure hors de toute plage est au prix de base ;
-  si plusieurs plages couvrent une heure, la première l'emporte ;
+- **plages horaires** (``TimeOfUseTariff``) : des plages ``[début, fin[`` à la minute locale,
+  avec leur prix et leurs filtres de jour civil (semaine, mois) ; hors plage, le prix de base
+  s'applique. La première plage couvrant chaque minute l'emporte. Le moteur conserve ses
+  heures : moyenne pondérée par minutes, arrondie à six décimales seulement pour les
+  heures mixtes ;
 - **couleur du jour** (``DayColorTariff``, Tempo) : un prix de base et des plages par couleur ; la
   couleur du jour et celle du lendemain sont lues dans des entités HA, la première couleur
   déclarée servant au-delà. Un jour de couleur peut commencer à une autre heure que minuit
@@ -28,8 +29,11 @@ from calendar import monthrange
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 from enum import StrEnum
+from itertools import pairwise
+from math import fsum
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationInfo, field_validator
+from pydantic_core import PydanticKnownError
 from pyoxigraph import BlankNode, Literal, NamedNode, Triple
 
 from wattslot.home_model import RDF_TYPE, XSD_DOUBLE, vocab
@@ -48,13 +52,26 @@ class TariffKind(StrEnum):
 class PriceBand(BaseModel):
     start_hour: int = Field(ge=0, le=23)
     end_hour: int = Field(ge=1, le=24)  # exclue
+    start_minute: int = Field(default=0, ge=0, le=59)
+    end_minute: int = Field(default=0, ge=0, le=59)
     eur_kwh: float = Field(ge=0)
     weekdays: list[int] = []  # 0 lundi … 6 dimanche ; vide : tous les jours
     months: list[int] = []  # 1 … 12 ; vide : toute l'année
 
-    def applies(self, day: date, hour: int) -> bool:
+    @field_validator("end_minute")
+    @classmethod
+    def validate_end_minute(cls, value: int, info: ValidationInfo) -> int:
+        if info.data.get("end_hour") == 24 and value != 0:
+            raise PydanticKnownError("less_than_equal", {"le": 0})
+        return value
+
+    def applies(self, day: date, hour: int, minute: int = 0) -> bool:
+        """Bornes locales, fin exclue ; les filtres portent sur le jour civil interrogé."""
+        start = self.start_hour * 60 + self.start_minute
+        end = self.end_hour * 60 + self.end_minute
+        current = hour * 60 + minute
         return (
-            self.start_hour <= hour < self.end_hour
+            start <= current < end
             and (not self.weekdays or day.weekday() in self.weekdays)
             and (not self.months or day.month in self.months)
         )
@@ -67,7 +84,19 @@ class ColorPrices(BaseModel):
 
 
 def _price(bands: list[PriceBand], base: float, day: date, hour: int) -> float:
-    return next((band.eur_kwh for band in bands if band.applies(day, hour)), base)
+    # Découpage aux bornes des plages, puis regroupement des minutes par prix.
+    cuts = sorted(
+        {0, 60}
+        | {b.start_minute for b in bands if b.start_hour == hour}
+        | {b.end_minute for b in bands if b.end_hour == hour}
+    )
+    weights: dict[float, int] = {}
+    for start, end in pairwise(cuts):
+        price = next((b.eur_kwh for b in bands if b.applies(day, hour, start)), base)
+        weights[price] = weights.get(price, 0) + end - start
+    if len(weights) == 1:
+        return next(iter(weights))
+    return round(fsum(price * weight for price, weight in weights.items()) / 60, 6)
 
 
 # Couleurs reconnues dans les deux langues (intégrations Tempo de HA).
@@ -185,7 +214,7 @@ def _band_problems(bands: list[PriceBand], prefix: str) -> list[tuple[str, dict[
     found: list[tuple[str, dict[str, str]]] = []
     for index, band in enumerate(bands):
         params = {"band": f"{prefix}{index + 1}"}
-        if band.end_hour <= band.start_hour:
+        if band.start_hour * 60 + band.start_minute >= band.end_hour * 60 + band.end_minute:
             found.append(("band_empty", params))
         if any(not 0 <= d <= 6 for d in band.weekdays):
             found.append(("band_weekday", params))
@@ -238,6 +267,8 @@ def _bands_triples(owner: NamedNode, bands: list[PriceBand], prefix: str) -> lis
             Triple(node, vocab("order"), _integer(index)),
             Triple(node, vocab("startHour"), _integer(band.start_hour)),
             Triple(node, vocab("endHour"), _integer(band.end_hour)),
+            Triple(node, vocab("startMinute"), _integer(band.start_minute)),
+            Triple(node, vocab("endMinute"), _integer(band.end_minute)),
             Triple(node, vocab("priceEurKwh"), _number(band.eur_kwh)),
         ]
         triples += [Triple(node, vocab("weekday"), _integer(d)) for d in band.weekdays]
@@ -285,11 +316,13 @@ def _load_bands(graph: GraphStore, graph_iri: str, owner: str, vocab_ns: str) ->
     for row in graph.select(
         f"""
         PREFIX wattslot: <{vocab_ns}>
-        SELECT ?order ?start ?end ?price ?weekday ?month WHERE {{
+        SELECT ?order ?start ?end ?startMinute ?endMinute ?price ?weekday ?month WHERE {{
           GRAPH <{graph_iri}> {{
             <{owner}> wattslot:hasPriceBand ?band .
             ?band wattslot:order ?order ; wattslot:startHour ?start ; wattslot:endHour ?end ;
               wattslot:priceEurKwh ?price .
+            OPTIONAL {{ ?band wattslot:startMinute ?startMinute }}
+            OPTIONAL {{ ?band wattslot:endMinute ?endMinute }}
             OPTIONAL {{ ?band wattslot:weekday ?weekday }}
             OPTIONAL {{ ?band wattslot:month ?month }}
           }}
@@ -301,6 +334,8 @@ def _load_bands(graph: GraphStore, graph_iri: str, owner: str, vocab_ns: str) ->
             PriceBand(
                 start_hour=int(row["start"]),
                 end_hour=int(row["end"]),
+                start_minute=int(row.get("startMinute", 0)),
+                end_minute=int(row.get("endMinute", 0)),
                 eur_kwh=float(row["price"]),
             ),
         )

@@ -186,6 +186,89 @@ CASES: dict[str, Callable[[], Configuration]] = {
 }
 
 
+@pytest.mark.parametrize(
+    ("start_hour", "start_minute", "end_hour", "end_minute", "empty"),
+    [
+        (6, 15, 6, 15, True),
+        (6, 15, 6, 38, False),
+        (22, 30, 24, 0, False),
+        (12, 38, 12, 15, True),
+        (0, 0, 24, 0, False),
+    ],
+)
+def test_price_band_shapes_compare_complete_bounds(
+    start_hour: int, start_minute: int, end_hour: int, end_minute: int, empty: bool
+) -> None:
+    settings = setting(
+        tariff=Tariff(
+            kind=TariffKind.TIME_OF_USE,
+            base_eur_kwh=0.30,
+            bands=[
+                PriceBand(
+                    start_hour=start_hour,
+                    start_minute=start_minute,
+                    end_hour=end_hour,
+                    end_minute=end_minute,
+                    eur_kwh=0.12,
+                )
+            ],
+        )
+    )
+    expected = {("band_empty", None)} if empty else set()
+    assert python_issues(EV.home, settings) == expected
+    assert shacl_issues(EV.home, settings) == expected
+
+
+@pytest.mark.parametrize(
+    ("predicate", "value"),
+    [
+        ("startHour", -1),
+        ("startHour", 24),
+        ("endHour", -1),
+        ("endHour", 0),
+        ("endHour", 25),
+        ("startMinute", -1),
+        ("startMinute", 60),
+        ("endMinute", -1),
+        ("endMinute", 60),
+        ("endMinute", 1),
+    ],
+)
+def test_price_band_shapes_reject_invalid_bounds(predicate: str, value: int) -> None:
+    from wattslot import tariff
+
+    data = rdflib.Graph()
+    settings = Tariff(
+        kind=TariffKind.TIME_OF_USE,
+        base_eur_kwh=0.30,
+        bands=[PriceBand(start_hour=1, end_hour=24, eur_kwh=0.12)],
+    )
+    triples = tariff.to_triples(home_model.vocab("configuration"), settings)
+    data.parse(data="\n".join(f"{t} ." for t in triples), format="nt")
+    band = next(data.subjects(rdflib.RDF.type, rdflib.URIRef(f"{VOCAB}PriceBand")))
+    data.set((band, rdflib.URIRef(f"{VOCAB}{predicate}"), rdflib.Literal(value)))
+    conforms, _, _ = validate(data, shacl_graph=SHAPES, ont_graph=ONTOLOGY, inference="rdfs")
+    assert not conforms
+
+
+@pytest.mark.parametrize("empty", [False, True])
+def test_price_band_shapes_accept_legacy_missing_minutes(empty: bool) -> None:
+    from wattslot import tariff
+
+    data = rdflib.Graph()
+    settings = Tariff(
+        kind=TariffKind.TIME_OF_USE,
+        base_eur_kwh=0.30,
+        bands=[PriceBand(start_hour=1, end_hour=1 if empty else 6, eur_kwh=0.12)],
+    )
+    triples = tariff.to_triples(home_model.vocab("configuration"), settings)
+    data.parse(data="\n".join(f"{t} ." for t in triples), format="nt")
+    for predicate in ("startMinute", "endMinute"):
+        data.remove((None, rdflib.URIRef(f"{VOCAB}{predicate}"), None))
+    conforms, _, _ = validate(data, shacl_graph=SHAPES, ont_graph=ONTOLOGY, inference="rdfs")
+    assert conforms is not empty
+
+
 @pytest.mark.parametrize("name", profiles.names())
 def test_every_profile_conforms(name: str) -> None:
     profile = profiles.load(name)

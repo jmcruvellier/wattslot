@@ -881,6 +881,8 @@
     "base_unknown": "Prezzo quando non è noto",
     "band": "Fascia {number}",
     "from": "Dalle",
+    "start_minute": "Minuti di inizio",
+    "end_minute": "Minuti di fine",
     "to": "alle",
     "price": "prezzo",
     "limited": "limitata ad alcuni giorni o mesi",

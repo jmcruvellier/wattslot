@@ -82,7 +82,9 @@
 <#TimeOfUseTariff> a owl:Class ; rdfs:subClassOf <#Tariff> ;
     rdfs:label "Prix par plages horaires"@fr, "Time-of-use prices"@en .
 <#PriceBand> a owl:Class ;
-    rdfs:label "Plage horaire de prix"@fr, "Price band"@en .
+    rdfs:label "Plage horaire de prix"@fr, "Price band"@en ;
+    rdfs:comment "Bornes locales à la minute, début inclus, fin exclue ; la fin suit le début dans la journée. Les filtres portent sur le jour civil interrogé. Les prix horaires sont pondérés par minutes."@fr,
+        "Local minute bounds, start included and end excluded; the end follows the start in the day. Filters apply to the civil day being priced. Hourly prices are minute-weighted."@en .
 
 <#hasTariff> a owl:ObjectProperty ; rdfs:domain <#Configuration> ; rdfs:range <#Tariff> ;
     rdfs:label "a pour tarif"@fr, "has tariff"@en .
@@ -98,6 +100,14 @@
     rdfs:label "heure de début"@fr, "start hour"@en .
 <#endHour> a owl:DatatypeProperty ; rdfs:domain <#PriceBand> ; rdfs:range xsd:integer ;
     rdfs:label "heure de fin (exclue)"@fr, "end hour (excluded)"@en .
+<#startMinute> a owl:DatatypeProperty ; rdfs:domain <#PriceBand> ; rdfs:range xsd:integer ;
+    rdfs:label "minute de début"@fr, "start minute"@en ;
+    rdfs:comment "De 0 à 59 ; absente dans les graphes anciens, elle vaut 0."@fr,
+        "From 0 to 59; defaults to 0 in legacy graphs."@en .
+<#endMinute> a owl:DatatypeProperty ; rdfs:domain <#PriceBand> ; rdfs:range xsd:integer ;
+    rdfs:label "minute de fin (exclue)"@fr, "end minute (excluded)"@en ;
+    rdfs:comment "De 0 à 59 (0 seulement pour 24 h) ; absente, elle vaut 0."@fr,
+        "From 0 to 59 (only 0 at hour 24); defaults to 0 when absent."@en .
 <#priceEurKwh> a owl:DatatypeProperty ; rdfs:domain <#PriceBand> ; rdfs:range xsd:double ;
     rdfs:label "prix (€/kWh)"@fr, "price (€/kWh)"@en .
 <#weekday> a owl:DatatypeProperty ; rdfs:domain <#PriceBand> ; rdfs:range xsd:integer ;

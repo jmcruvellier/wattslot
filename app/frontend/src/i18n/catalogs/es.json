@@ -881,6 +881,8 @@
     "base_unknown": "Precio cuando no se conoce",
     "band": "Franja {number}",
     "from": "De",
+    "start_minute": "Minutos de inicio",
+    "end_minute": "Minutos de fin",
     "to": "a",
     "price": "precio",
     "limited": "limitada a ciertos días o meses",

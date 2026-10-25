@@ -881,6 +881,8 @@
     "base_unknown": "Prix quand il n'est pas connu",
     "band": "Plage {number}",
     "from": "De",
+    "start_minute": "Minutes de début",
+    "end_minute": "Minutes de fin",
     "to": "à",
     "price": "prix",
     "limited": "limitée à certains jours ou mois",

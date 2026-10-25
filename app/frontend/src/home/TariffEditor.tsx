@@ -102,6 +102,21 @@ function Hour({ label, value, from, to, onChange }: {
   );
 }
 
+function Minute({ label, value, disabled = false, onChange }: {
+  label: string; // libellé accessible, invisible : la minute suit l'heure, « 10 h 30 »
+  value: number;
+  disabled?: boolean;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <select aria-label={label} disabled={disabled} value={value} onChange={(event) => onChange(Number(event.target.value))}>
+      {Array.from({ length: 60 }, (_, minute) => (
+        <option key={minute} value={minute}>{String(minute).padStart(2, "0")}</option>
+      ))}
+    </select>
+  );
+}
+
 function Entity({ label, value, onChange }: {
   label: string;
   value: string | null;
@@ -133,7 +148,9 @@ function BandsEditor({ bands, fallback, label, onChange }: {
       {bands.map((band, index) => (
         <li key={index} aria-label={`${label}${t("tariff.band", { number: index + 1 })}`}>
           <Hour label={t("tariff.from")} value={band.start_hour} from={0} to={23} onChange={(start_hour) => setBand(index, { start_hour })} />{" "}
-          <Hour label={t("tariff.to")} value={band.end_hour} from={1} to={24} onChange={(end_hour) => setBand(index, { end_hour })} />{" "}
+          <Minute label={t("tariff.start_minute")} value={band.start_minute ?? 0} onChange={(start_minute) => setBand(index, { start_minute })} />{" "}
+          <Hour label={t("tariff.to")} value={band.end_hour} from={1} to={24} onChange={(end_hour) => setBand(index, { end_hour, end_minute: end_hour === 24 ? 0 : (band.end_minute ?? 0) })} />{" "}
+          <Minute label={t("tariff.end_minute")} value={band.end_hour === 24 ? 0 : (band.end_minute ?? 0)} disabled={band.end_hour === 24} onChange={(end_minute) => setBand(index, { end_minute })} />{" "}
           <Price label={t("tariff.price")} value={band.eur_kwh} onChange={(eur_kwh) => setBand(index, { eur_kwh })} />{" "}
           {(band.weekdays.length > 0 || band.months.length > 0) && <em>{t("tariff.limited")}</em>}{" "}
           <button type="button" onClick={() => onChange(bands.filter((_, i) => i !== index))}>
@@ -144,7 +161,7 @@ function BandsEditor({ bands, fallback, label, onChange }: {
       <li>
         <button
           type="button"
-          onClick={() => onChange([...bands, { start_hour: 0, end_hour: 6, eur_kwh: fallback, weekdays: [], months: [] }])}
+          onClick={() => onChange([...bands, { start_hour: 0, start_minute: 0, end_hour: 6, end_minute: 0, eur_kwh: fallback, weekdays: [], months: [] }])}
         >
           {t("tariff.add_band")}
         </button>

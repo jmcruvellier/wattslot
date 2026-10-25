@@ -881,6 +881,8 @@
     "base_unknown": "Prijs als die niet bekend is",
     "band": "Tijdvak {number}",
     "from": "Van",
+    "start_minute": "Beginminuten",
+    "end_minute": "Eindminuten",
     "to": "tot",
     "price": "prijs",
     "limited": "beperkt tot bepaalde dagen of maanden",

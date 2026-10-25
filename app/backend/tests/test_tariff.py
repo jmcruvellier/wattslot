@@ -4,6 +4,7 @@ from dataclasses import replace
 from datetime import date
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 
 from tests.test_configuration import HOME
@@ -19,6 +20,24 @@ from wattslot.storage.graph import GraphStore
 from wattslot.tariff import DEFAULT, V1, PriceBand, Tariff, TariffKind, problems
 
 FRIDAY, SATURDAY, JULY_DAY = date(2026, 10, 16), date(2026, 10, 17), date(2026, 7, 15)
+
+
+def test_minute_bands_are_weighted_without_rounding() -> None:
+    tariff = Tariff(
+        kind=TariffKind.TIME_OF_USE,
+        base_eur_kwh=0.30,
+        bands=[PriceBand(start_hour=1, start_minute=30, end_hour=5, end_minute=38, eur_kwh=0.12)],
+    )
+
+    prices = tariff.hourly(FRIDAY)
+
+    assert prices[0] == 0.30
+    assert prices[1] == pytest.approx((30 * 0.30 + 30 * 0.12) / 60)
+    assert [prices[h] for h in (2, 3, 4)] == [0.12] * 3
+    assert prices[5] == pytest.approx((38 * 0.12 + 22 * 0.30) / 60, abs=1e-15)
+    assert prices[6] == 0.30
+
+
 WEEKEND = Tariff(
     kind=TariffKind.TIME_OF_USE,
     base_eur_kwh=0.30,
@@ -42,6 +61,26 @@ def test_hourly_prices() -> None:
     assert [h for h in range(24) if v1[h] == 0.21] == [0, 1, 2, 3, 4, 5, 22, 23]
 
 
+@pytest.mark.parametrize(
+    "update",
+    [
+        {"start_minute": -1},
+        {"start_minute": 60},
+        {"end_minute": -1},
+        {"end_minute": 60},
+        {"end_hour": -1},
+        {"end_hour": 0},
+        {"end_hour": 25},
+        {"end_hour": 24, "end_minute": 1},
+    ],
+)
+def test_price_band_rejects_invalid_bounds(update: dict[str, int]) -> None:
+    from pydantic import ValidationError
+
+    with pytest.raises(ValidationError):
+        PriceBand.model_validate({"start_hour": 1, "end_hour": 2, "eur_kwh": 0.12, **update})
+
+
 def test_problems() -> None:
     assert problems(V1) == [] and problems(WEEKEND) == []
     assert problems(Tariff(kind=TariffKind.TIME_OF_USE, base_eur_kwh=0.2)) == [
@@ -58,6 +97,28 @@ def test_problems() -> None:
         "band_weekday",
         "band_month",
     ]
+
+
+def test_minute_bands_round_trip_in_graph(tmp_path: Path) -> None:
+    from wattslot.tariff import ColorPrices
+
+    bands = [PriceBand(start_hour=1, start_minute=30, end_hour=5, end_minute=38, eur_kwh=0.12)]
+    graph = GraphStore(tmp_path)
+    tariffs = [
+        Tariff(kind=TariffKind.TIME_OF_USE, base_eur_kwh=0.30, bands=bands),
+        Tariff(
+            kind=TariffKind.DAY_COLOR,
+            base_eur_kwh=0.30,
+            color_entity="sensor.color",
+            colors=[ColorPrices(color="Bleu", base_eur_kwh=0.30, bands=bands)],
+        ),
+    ]
+    for tariff in tariffs:
+        configuration.save(graph, Configuration(tariff=tariff))
+        restored = configuration.load(graph).tariff
+        assert restored == tariff
+        assert restored is not None
+        assert restored.hourly(FRIDAY) == tariff.hourly(FRIDAY)
 
 
 def test_saved_and_read_back_with_the_configuration(tmp_path: Path) -> None:
