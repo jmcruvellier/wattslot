@@ -177,44 +177,46 @@ export default function DeviceSheet({
                   }
                 />{" "}
                 {t(`role.${sensor.role}`)} :{" "}
-                {choices ? (
-                  <select
-                    value={sensor.entity_id}
-                    title={sensor.entity_id}
-                    aria-label={t("home.change_sensor", { role: t(`role.${sensor.role}`) })}
-                    onChange={(event) => {
-                      const entity = choices.find((e) => e.entity_id === event.target.value);
-                      if (!entity) return;
-                      edit({
-                        sensors: draft.sensors.map((s, i) =>
-                          i === index
-                            ? {
-                                ...s,
-                                entity_id: entity.entity_id,
-                                name: entity.name,
-                                unit: entity.unit,
-                                resets_daily: entity.resets_daily,
-                                excluded: false,
-                                issues: [],
-                              }
-                            : s,
-                        ),
-                      });
-                    }}
-                  >
-                    {!candidates.some((entity) => entity.entity_id === sensor.entity_id) && (
-                      <option value={sensor.entity_id}>{sensor.entity_id}</option>
-                    )}
-                    {candidates.map((entity) => (
-                      <option key={entity.entity_id} value={entity.entity_id}>
-                        {entity.name ? `${entity.name} (${entity.entity_id})` : entity.entity_id}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <code>{sensor.entity_id}</code>
-                )}
-                {sensor.unit && ` (${sensor.unit})`}
+                <span className="home-fiche-sensor">
+                  {choices ? (
+                    <select
+                      value={sensor.entity_id}
+                      title={sensor.entity_id}
+                      aria-label={t("home.change_sensor", { role: t(`role.${sensor.role}`) })}
+                      onChange={(event) => {
+                        const entity = choices.find((e) => e.entity_id === event.target.value);
+                        if (!entity) return;
+                        edit({
+                          sensors: draft.sensors.map((s, i) =>
+                            i === index
+                              ? {
+                                  ...s,
+                                  entity_id: entity.entity_id,
+                                  name: entity.name,
+                                  unit: entity.unit,
+                                  resets_daily: entity.resets_daily,
+                                  excluded: false,
+                                  issues: [],
+                                }
+                              : s,
+                          ),
+                        });
+                      }}
+                    >
+                      {!candidates.some((entity) => entity.entity_id === sensor.entity_id) && (
+                        <option value={sensor.entity_id}>{sensor.entity_id}</option>
+                      )}
+                      {candidates.map((entity) => (
+                        <option key={entity.entity_id} value={entity.entity_id}>
+                          {entity.name ? `${entity.name} (${entity.entity_id})` : entity.entity_id}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <code>{sensor.entity_id}</code>
+                  )}
+                  {sensor.unit && <span className="dim">({sensor.unit})</span>}
+                </span>
                 {sensor.resets_daily && ` — ${t("home.resets_daily")}`}
               </li>
             );
