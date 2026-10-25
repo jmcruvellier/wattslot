@@ -47,7 +47,9 @@ export default function OtherStarts({
 
   return (
     <div className="other-starts">
-      {alternatives.length > 0 && <p className="dim">{t("plan.choice.others")}</p>}
+      {/* Style de la ligne du créneau (« Entre … ») : le texte atténué (dim) devient illisible
+       * sur certains thèmes. */}
+      {alternatives.length > 0 && <p>{t("plan.choice.others")}</p>}
       <p className="other-starts-buttons">
         {alternatives.map((other) => {
           const time = clock(other.start_min, language);
@@ -67,8 +69,10 @@ export default function OtherStarts({
           );
         })}
         {chosen && (
+          /* Comme les autres boutons de la ligne : contour et icône, le texte seul du bouton
+           * discret se perd sur certains thèmes. */
           <Button
-            variant="quiet"
+            icon="refresh"
             disabled={state === "running"}
             onClick={() => void run(() => deleteRequest(`api/planning/choices/${encodeURIComponent(device)}`))}
           >
