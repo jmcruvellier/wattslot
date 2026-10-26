@@ -104,24 +104,39 @@ function axes() {
   ];
 }
 
+interface EnergyPoint {
+  x: number;
+  production: number | null;
+  consumption: number | null;
+  productionActual: number | null;
+  consumptionActual: number | null;
+}
+
 export function EnergyChart({ hours, readingHour }: ChartProps) {
   const { language, t } = useI18n();
   const [legends] = useChartLegends();
   const lang = language === "fr" ? "fr" : "en";
-  // L'énergie de l'heure h est posée sur sa graduation (h) : un point par heure de 0 h à
-  // 23 h, sans trou ; celui de la tranche en cours suit le relevé et porte l'équivalent
-  // horaire de la mesure partielle. Info-bulle : l'heure réelle du point.
-  const data = hours.map((h) => {
-    const enCours = readingHour !== null && h.hour === Math.floor(readingHour);
-    const minutes = enCours ? Math.round((readingHour - h.hour) * 60) : null;
-    return {
-      x: enCours ? readingHour : h.hour,
-      production: h.production_kwh,
-      consumption: h.consumption_kwh,
-      productionActual: equivalentHoraire(h.production_actual_kwh, minutes),
-      consumptionActual: equivalentHoraire(h.consumption_actual_kwh, minutes),
-    };
-  });
+  // L'énergie de l'heure h est posée à sa fin (h + 1), comme le SoC : un point par heure de
+  // 1 h à 24 h. La tranche en cours a deux points — le prévu à sa fin, le relevé au milieu
+  // (l'équivalent horaire de la mesure partielle) — pour ne pas déplacer le point prévu.
+  const data: EnergyPoint[] = [];
+  for (const h of hours) {
+    const enCours = readingHour !== null && Math.floor(readingHour) === h.hour;
+    const plan = { x: h.hour + 1, production: h.production_kwh, consumption: h.consumption_kwh, productionActual: null, consumptionActual: null };
+    if (enCours) {
+      const minutes = Math.round((readingHour - h.hour) * 60);
+      data.push(plan);
+      data.push({
+        x: readingHour,
+        production: null,
+        consumption: null,
+        productionActual: equivalentHoraire(h.production_actual_kwh, minutes),
+        consumptionActual: equivalentHoraire(h.consumption_actual_kwh, minutes),
+      });
+    } else {
+      data.push({ ...plan, productionActual: h.production_actual_kwh, consumptionActual: h.consumption_actual_kwh });
+    }
+  }
   return (
     <div className="chart">
       <ResponsiveContainer width="100%" height="100%">
@@ -130,9 +145,9 @@ export function EnergyChart({ hours, readingHour }: ChartProps) {
           <YAxis tick={TICK} stroke="var(--text-dim)" tickFormatter={axisTick("kWh")} width="auto" />
           <Tooltip contentStyle={TOOLTIP} labelFormatter={(x) => instantLabel(Number(x), lang)} formatter={(v) => `${kwh(Number(v))} kWh`} />
           {legends && <Legend wrapperStyle={LEGEND} />}
-          <Line type="monotone" dataKey="production" name={t("plan.series.production")} stroke="var(--production)" strokeDasharray="5 4" dot={false} />
+          <Line connectNulls type="monotone" dataKey="production" name={t("plan.series.production")} stroke="var(--production)" strokeDasharray="5 4" dot={false} />
           <Line type="monotone" dataKey="productionActual" name={t("plan.series.production_actual")} stroke="var(--production)" dot={false} />
-          <Line type="monotone" dataKey="consumption" name={t("plan.series.consumption")} stroke="var(--consumption)" strokeDasharray="5 4" dot={false} />
+          <Line connectNulls type="monotone" dataKey="consumption" name={t("plan.series.consumption")} stroke="var(--consumption)" strokeDasharray="5 4" dot={false} />
           <Line type="monotone" dataKey="consumptionActual" name={t("plan.series.consumption_actual")} stroke="var(--consumption)" dot={false} />
           {readingHour !== null && <ReferenceLine x={readingHour} stroke="var(--text-dim)" />}
         </LineChart>
@@ -146,14 +161,16 @@ export function SocChart({ hours, readingHour, floor, midnight }: ChartProps & {
   const [legends] = useChartLegends();
   const lang = language === "fr" ? "fr" : "en";
   // Le SoC d'une heure est celui de fin d'heure (modèle du backend) : posé à l'instant
-  // réel h + 1 — le point « 23 h » est donc le SoC atteint à minuit. Celui de l'heure du
-  // relevé est la dernière mesure, prise « maintenant » : posé sur le relevé lui-même.
-  // Le départ à minuit (départ de la vue) complète la courbe à 0 h : de 0 h à 24 h.
-  const data = hours.map((h) => ({
-    x: readingHour !== null && Math.floor(readingHour) === h.hour ? readingHour : h.hour + 1,
-    soc: h.soc_percent,
-    socActual: h.soc_actual_percent,
-  }));
+  // réel h + 1 — le point « 23 h » est donc le SoC atteint à minuit. La tranche en cours a
+  // deux points — le prévu à sa fin, la dernière mesure (« maintenant ») sur le relevé —
+  // pour ne pas déplacer le point prévu. Le départ à minuit (départ de la vue) complète
+  // la courbe à 0 h : de 0 h à 24 h.
+  const data: { x: number; soc: number | null; socActual: number | null }[] = [];
+  for (const h of hours) {
+    const enCours = readingHour !== null && Math.floor(readingHour) === h.hour;
+    data.push({ x: h.hour + 1, soc: h.soc_percent, socActual: enCours ? null : h.soc_actual_percent });
+    if (enCours) data.push({ x: readingHour, soc: null, socActual: h.soc_actual_percent });
+  }
   if (midnight !== null) {
     const plan = hours.some((h) => h.soc_percent !== null);
     const actual = hours.some((h) => h.soc_actual_percent !== null);
@@ -170,7 +187,7 @@ export function SocChart({ hours, readingHour, floor, midnight }: ChartProps & {
           <YAxis tick={TICK} stroke="var(--text-dim)" tickFormatter={axisTick("%")} domain={[0, 100]} width="auto" />
           <Tooltip contentStyle={TOOLTIP} labelFormatter={(x) => instantLabel(Number(x), lang)} formatter={(v) => `${percent(Number(v))} %`} />
           {legends && <Legend wrapperStyle={LEGEND} />}
-          <Line type="monotone" dataKey="soc" name={t("plan.series.soc")} stroke="var(--battery)" strokeDasharray="5 4" dot={false} />
+          <Line connectNulls type="monotone" dataKey="soc" name={t("plan.series.soc")} stroke="var(--battery)" strokeDasharray="5 4" dot={false} />
           <Line type="monotone" dataKey="socActual" name={t("plan.series.soc_actual")} stroke="var(--battery)" dot={false} />
           {floor !== null && (
             <ReferenceLine y={floor} stroke="var(--discharge)" strokeDasharray="3 3" label={{ ...FLOOR_LABEL, value: t("plan.series.floor", { pct: floor }) }} />
