@@ -62,19 +62,10 @@ function offPeakRanges(hours: HourPoint[]): [number, number][] {
 // de sa bande et laissait la fin de journée vide.
 const DAY_TICKS = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24];
 
-/** Abscisse d'une heure sur les graphes du jour — convention du dashboard de la v1
- * (``xPourTranche``) : la première épinglée à 0 h, les suivantes à la fin de leur tranche
- * (h + 1). La courbe va ainsi de 0 h à 24 h et ses points tombent sur les graduations. */
-function trancheX(h: number): number {
-  return h === 0 ? 0 : h + 1;
-}
-
-/** Titre d'info-bulle des graphes en courbe : la tranche que le point achève (« 15 h – 16 h ») ;
- * la tranche en cours, jusqu'au relevé (« 21 h – 21 h 22 »). */
-function trancheLabel(x: number, lang: "fr" | "en"): string {
-  if (x % 1 !== 0) return `${hour(Math.floor(x), lang)}–${hour(x, lang)}`;
-  const start = x === 0 ? 0 : x - 1;
-  return `${hour(start, lang)}–${hour(start + 1, lang)}`;
+/** Heure d'un point dans une info-bulle : l'instant réel qu'il décrit — « 21 h » pour une
+ * heure pleine, « 21 h 22 » pour le relevé au milieu de sa tranche. */
+function instantLabel(x: number, lang: "fr" | "en"): string {
+  return x % 1 === 0 ? `${x}h` : hour(x, lang);
 }
 
 /** Titre d'info-bulle du Réseau : la tranche de la barre (points au milieu, h + 0,5). */
@@ -117,13 +108,14 @@ export function EnergyChart({ hours, readingHour }: ChartProps) {
   const { language, t } = useI18n();
   const [legends] = useChartLegends();
   const lang = language === "fr" ? "fr" : "en";
-  // Prévu (toute la journée) et réel aux abscisses de la v1 ; le point de la tranche en
-  // cours suit le relevé et porte l'équivalent horaire de la mesure partielle.
+  // L'énergie de l'heure h est posée sur sa graduation (h) : un point par heure de 0 h à
+  // 23 h, sans trou ; celui de la tranche en cours suit le relevé et porte l'équivalent
+  // horaire de la mesure partielle. Info-bulle : l'heure réelle du point.
   const data = hours.map((h) => {
     const enCours = readingHour !== null && h.hour === Math.floor(readingHour);
     const minutes = enCours ? Math.round((readingHour - h.hour) * 60) : null;
     return {
-      x: enCours ? readingHour : trancheX(h.hour),
+      x: enCours ? readingHour : h.hour,
       production: h.production_kwh,
       consumption: h.consumption_kwh,
       productionActual: equivalentHoraire(h.production_actual_kwh, minutes),
@@ -136,7 +128,7 @@ export function EnergyChart({ hours, readingHour }: ChartProps) {
         <LineChart data={data} margin={MARGIN}>
           {axes()}
           <YAxis tick={TICK} stroke="var(--text-dim)" tickFormatter={axisTick("kWh")} width="auto" />
-          <Tooltip contentStyle={TOOLTIP} labelFormatter={(x) => trancheLabel(Number(x), lang)} formatter={(v) => `${kwh(Number(v))} kWh`} />
+          <Tooltip contentStyle={TOOLTIP} labelFormatter={(x) => instantLabel(Number(x), lang)} formatter={(v) => `${kwh(Number(v))} kWh`} />
           {legends && <Legend wrapperStyle={LEGEND} />}
           <Line type="monotone" dataKey="production" name={t("plan.series.production")} stroke="var(--production)" strokeDasharray="5 4" dot={false} />
           <Line type="monotone" dataKey="productionActual" name={t("plan.series.production_actual")} stroke="var(--production)" dot={false} />
@@ -153,18 +145,12 @@ export function SocChart({ hours, readingHour, floor, midnight }: ChartProps & {
   const { language, t } = useI18n();
   const [legends] = useChartLegends();
   const lang = language === "fr" ? "fr" : "en";
-  // Le SoC d'une heure est celui de fin d'heure (modèle du backend) : posé à l'instant h + 1,
-  // le point « 23 h » est donc le SoC atteint à minuit. Celui de l'heure du relevé est la
-  // dernière mesure, prise « maintenant » : posé sur le relevé lui-même (convention v1).
-  // Le départ à minuit (départ de la vue) complète la courbe à 0 h ; sans lui, la première
-  // heure est épinglée à 0 h comme en v1 (xPourTranche).
+  // Le SoC d'une heure est celui de fin d'heure (modèle du backend) : posé à l'instant
+  // réel h + 1 — le point « 23 h » est donc le SoC atteint à minuit. Celui de l'heure du
+  // relevé est la dernière mesure, prise « maintenant » : posé sur le relevé lui-même.
+  // Le départ à minuit (départ de la vue) complète la courbe à 0 h : de 0 h à 24 h.
   const data = hours.map((h) => ({
-    x:
-      readingHour !== null && Math.floor(readingHour) === h.hour
-        ? readingHour
-        : h.hour === 0 && midnight === null
-          ? 0
-          : h.hour + 1,
+    x: readingHour !== null && Math.floor(readingHour) === h.hour ? readingHour : h.hour + 1,
     soc: h.soc_percent,
     socActual: h.soc_actual_percent,
   }));
@@ -182,7 +168,7 @@ export function SocChart({ hours, readingHour, floor, midnight }: ChartProps & {
           ))}
           {axes()}
           <YAxis tick={TICK} stroke="var(--text-dim)" tickFormatter={axisTick("%")} domain={[0, 100]} width="auto" />
-          <Tooltip contentStyle={TOOLTIP} labelFormatter={(x) => trancheLabel(Number(x), lang)} formatter={(v) => `${percent(Number(v))} %`} />
+          <Tooltip contentStyle={TOOLTIP} labelFormatter={(x) => instantLabel(Number(x), lang)} formatter={(v) => `${percent(Number(v))} %`} />
           {legends && <Legend wrapperStyle={LEGEND} />}
           <Line type="monotone" dataKey="soc" name={t("plan.series.soc")} stroke="var(--battery)" strokeDasharray="5 4" dot={false} />
           <Line type="monotone" dataKey="socActual" name={t("plan.series.soc_actual")} stroke="var(--battery)" dot={false} />
@@ -201,8 +187,8 @@ export function GridChart({ hours, readingHour }: ChartProps) {
   const [legends] = useChartLegends();
   const lang = language === "fr" ? "fr" : "en";
   // Achat au-dessus de zéro, surplus en dessous ; prévu en ligne (achat moins surplus).
-  // Barres et ligne au milieu de chaque tranche (h + 0,5) — elles se superposent —, la ligne
-  // rejoint le bord droit par un dernier point à 24 h.
+  // Barres et ligne au milieu de chaque tranche (h + 0,5) — elles se superposent —, la
+  // ligne s'arrête sur sa dernière heure (23 h – 24 h), sans point artificiel à 24 h.
   const data = hours.map((h) => ({
     x: h.hour + 0.5,
     net: Math.round((h.grid_import_kwh - h.grid_export_kwh) * 1000) / 1000,
@@ -210,16 +196,6 @@ export function GridChart({ hours, readingHour }: ChartProps) {
     exportActual: h.grid_export_actual_kwh === null ? null : -h.grid_export_actual_kwh,
     offPeak: h.off_peak,
   }));
-  const last = hours[hours.length - 1];
-  if (last) {
-    data.push({
-      x: 24,
-      net: Math.round((last.grid_import_kwh - last.grid_export_kwh) * 1000) / 1000,
-      importActual: null,
-      exportActual: null,
-      offPeak: false,
-    });
-  }
   return (
     <div className="chart">
       <ResponsiveContainer width="100%" height="100%">
