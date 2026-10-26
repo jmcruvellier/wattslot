@@ -82,14 +82,17 @@ function axes() {
 export function EnergyChart({ hours, readingHour }: ChartProps) {
   const { t } = useI18n();
   const [legends] = useChartLegends();
-  // Chaque point est l'énergie d'une heure : posée au milieu de la tranche (h + 0,5).
+  // Chaque point est l'énergie d'une heure, tenue de h à h + 1 : un escalier qui part de 0 h
+  // pile (le point est sur la graduation) et dont la dernière marche rejoint 24 h.
   const data = hours.map((h) => ({
-    x: h.hour + 0.5,
+    x: h.hour,
     production: h.production_kwh,
     consumption: h.consumption_kwh,
     productionActual: h.production_actual_kwh,
     consumptionActual: h.consumption_actual_kwh,
   }));
+  const last = hours[hours.length - 1];
+  if (last) data.push({ x: 24, production: last.production_kwh, consumption: last.consumption_kwh, productionActual: null, consumptionActual: null });
   return (
     <div className="chart">
       <ResponsiveContainer width="100%" height="100%">
@@ -98,10 +101,10 @@ export function EnergyChart({ hours, readingHour }: ChartProps) {
           <YAxis tick={TICK} stroke="var(--text-dim)" tickFormatter={axisTick("kWh")} width="auto" />
           <Tooltip contentStyle={TOOLTIP} labelFormatter={(x) => `${Math.floor(Number(x))}h`} formatter={(v) => `${kwh(Number(v))} kWh`} />
           {legends && <Legend wrapperStyle={LEGEND} />}
-          <Line type="monotone" dataKey="production" name={t("plan.series.production")} stroke="var(--production)" strokeDasharray="5 4" dot={false} />
-          <Line type="monotone" dataKey="productionActual" name={t("plan.series.production_actual")} stroke="var(--production)" dot={false} />
-          <Line type="monotone" dataKey="consumption" name={t("plan.series.consumption")} stroke="var(--consumption)" strokeDasharray="5 4" dot={false} />
-          <Line type="monotone" dataKey="consumptionActual" name={t("plan.series.consumption_actual")} stroke="var(--consumption)" dot={false} />
+          <Line type="stepAfter" dataKey="production" name={t("plan.series.production")} stroke="var(--production)" strokeDasharray="5 4" dot={false} />
+          <Line type="stepAfter" dataKey="productionActual" name={t("plan.series.production_actual")} stroke="var(--production)" dot={false} />
+          <Line type="stepAfter" dataKey="consumption" name={t("plan.series.consumption")} stroke="var(--consumption)" strokeDasharray="5 4" dot={false} />
+          <Line type="stepAfter" dataKey="consumptionActual" name={t("plan.series.consumption_actual")} stroke="var(--consumption)" dot={false} />
           {readingHour !== null && <ReferenceLine x={readingHour} stroke="var(--text-dim)" />}
         </LineChart>
       </ResponsiveContainer>
@@ -109,12 +112,24 @@ export function EnergyChart({ hours, readingHour }: ChartProps) {
   );
 }
 
-export function SocChart({ hours, readingHour, floor }: ChartProps & { floor: number | null }) {
-  const { t } = useI18n();
+export function SocChart({ hours, readingHour, floor, midnight }: ChartProps & { floor: number | null; midnight: number | null }) {
+  const { language, t } = useI18n();
   const [legends] = useChartLegends();
+  const lang = language === "fr" ? "fr" : "en";
   // Le SoC d'une heure est celui de fin d'heure (modèle du backend) : posé à l'instant h + 1,
-  // le point « 23 h » est donc le SoC atteint à minuit.
-  const data = hours.map((h) => ({ x: h.hour + 1, soc: h.soc_percent, socActual: h.soc_actual_percent }));
+  // le point « 23 h » est donc le SoC atteint à minuit. Celui de l'heure du relevé est la
+  // dernière mesure, prise « maintenant » : posé sur le relevé lui-même. Le départ à minuit
+  // (départ de la vue) complète la courbe à 0 h.
+  const data = hours.map((h) => ({
+    x: readingHour !== null && Math.floor(readingHour) === h.hour ? readingHour : h.hour + 1,
+    soc: h.soc_percent,
+    socActual: h.soc_actual_percent,
+  }));
+  if (midnight !== null) {
+    const plan = hours.some((h) => h.soc_percent !== null);
+    const actual = hours.some((h) => h.soc_actual_percent !== null);
+    data.unshift({ x: 0, soc: plan ? midnight : null, socActual: actual ? midnight : null });
+  }
   return (
     <div className="chart">
       <ResponsiveContainer width="100%" height="100%">
@@ -124,7 +139,11 @@ export function SocChart({ hours, readingHour, floor }: ChartProps & { floor: nu
           ))}
           {axes()}
           <YAxis tick={TICK} stroke="var(--text-dim)" tickFormatter={axisTick("%")} domain={[0, 100]} width="auto" />
-          <Tooltip contentStyle={TOOLTIP} labelFormatter={(x) => `${Number(x)}h`} formatter={(v) => `${percent(Number(v))} %`} />
+          <Tooltip
+            contentStyle={TOOLTIP}
+            labelFormatter={(x) => (Number(x) % 1 === 0 ? `${Number(x)}h` : hour(Number(x), lang))}
+            formatter={(v) => `${percent(Number(v))} %`}
+          />
           {legends && <Legend wrapperStyle={LEGEND} />}
           <Line type="monotone" dataKey="soc" name={t("plan.series.soc")} stroke="var(--battery)" strokeDasharray="5 4" dot={false} />
           <Line type="monotone" dataKey="socActual" name={t("plan.series.soc_actual")} stroke="var(--battery)" dot={false} />
@@ -142,7 +161,8 @@ export function GridChart({ hours, readingHour }: ChartProps) {
   const { t } = useI18n();
   const [legends] = useChartLegends();
   // Achat au-dessus de zéro, surplus en dessous ; prévu en ligne (achat moins surplus).
-  // Comme le graphe de production, chaque heure est posée au milieu de sa tranche.
+  // Barres et ligne au milieu de chaque tranche (h + 0,5) — elles se superposent —, la ligne
+  // rejoint le bord droit par un dernier point à 24 h.
   const data = hours.map((h) => ({
     x: h.hour + 0.5,
     net: Math.round((h.grid_import_kwh - h.grid_export_kwh) * 1000) / 1000,
@@ -150,6 +170,16 @@ export function GridChart({ hours, readingHour }: ChartProps) {
     exportActual: h.grid_export_actual_kwh === null ? null : -h.grid_export_actual_kwh,
     offPeak: h.off_peak,
   }));
+  const last = hours[hours.length - 1];
+  if (last) {
+    data.push({
+      x: 24,
+      net: Math.round((last.grid_import_kwh - last.grid_export_kwh) * 1000) / 1000,
+      importActual: null,
+      exportActual: null,
+      offPeak: false,
+    });
+  }
   return (
     <div className="chart">
       <ResponsiveContainer width="100%" height="100%">
