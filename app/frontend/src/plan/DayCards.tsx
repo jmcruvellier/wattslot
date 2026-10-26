@@ -52,7 +52,7 @@ function useRenderers(
     ),
     soc: (view) => (
       <ChartCard label={t("plan.cards.soc")} icon="battery">
-        <SocChart hours={view.hours} readingHour={readingHour(view)} floor={view.battery_floor_percent} />
+        <SocChart hours={view.hours} readingHour={readingHour(view)} floor={view.battery_floor_percent} midnight={view.departure?.soc_percent ?? null} />
       </ChartCard>
     ),
     grid: (view) => (

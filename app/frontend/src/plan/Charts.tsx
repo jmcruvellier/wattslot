@@ -62,6 +62,40 @@ function offPeakRanges(hours: HourPoint[]): [number, number][] {
 // de sa bande et laissait la fin de journée vide.
 const DAY_TICKS = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24];
 
+/** Abscisse d'une heure sur les graphes du jour — convention du dashboard de la v1
+ * (``xPourTranche``) : la première épinglée à 0 h, les suivantes à la fin de leur tranche
+ * (h + 1). La courbe va ainsi de 0 h à 24 h et ses points tombent sur les graduations. */
+function trancheX(h: number): number {
+  return h === 0 ? 0 : h + 1;
+}
+
+/** Titre d'info-bulle des graphes en courbe : la tranche que le point achève (« 15 h – 16 h ») ;
+ * la tranche en cours, jusqu'au relevé (« 21 h – 21 h 22 »). */
+function trancheLabel(x: number, lang: "fr" | "en"): string {
+  if (x % 1 !== 0) return `${hour(Math.floor(x), lang)}–${hour(x, lang)}`;
+  const start = x === 0 ? 0 : x - 1;
+  return `${hour(start, lang)}–${hour(start + 1, lang)}`;
+}
+
+/** Titre d'info-bulle du Réseau : la tranche de la barre (points au milieu, h + 0,5). */
+function trancheBarre(x: number, lang: "fr" | "en"): string {
+  const start = Math.min(Math.floor(x), 23);
+  return `${hour(start, lang)}–${hour(start + 1, lang)}`;
+}
+
+// La tranche en cours ne compte que ses minutes écoulées : en dessous, pas de point (v1 :
+// dix minutes minimum, l'équivalent horaire multiplierait trop quelques centièmes de kWh).
+const MINUTES_TRANCHE_EN_COURS = 10;
+
+/** Énergie réelle d'une heure ; celle de la tranche en cours est extrapolée en équivalent
+ * horaire (mesure × 60 / minutes écoulées, convention v1 : sans cela, la courbe réelle
+ * plonge sur son dernier point, qui ne compte que le début de l'heure). */
+function equivalentHoraire(value: number | null, minutes: number | null): number | null {
+  if (minutes === null) return value;
+  if (value === null || minutes < MINUTES_TRANCHE_EN_COURS) return null;
+  return Math.round(((value * 60) / minutes) * 1000) / 1000;
+}
+
 function axes() {
   return [
     <CartesianGrid key="grid" stroke="var(--border)" strokeDasharray="2 4" />,
@@ -80,23 +114,29 @@ function axes() {
 }
 
 export function EnergyChart({ hours, readingHour }: ChartProps) {
-  const { t } = useI18n();
+  const { language, t } = useI18n();
   const [legends] = useChartLegends();
-  // Chaque point est l'énergie d'une heure : posée au milieu de la tranche (h + 0,5).
-  const data = hours.map((h) => ({
-    x: h.hour + 0.5,
-    production: h.production_kwh,
-    consumption: h.consumption_kwh,
-    productionActual: h.production_actual_kwh,
-    consumptionActual: h.consumption_actual_kwh,
-  }));
+  const lang = language === "fr" ? "fr" : "en";
+  // Prévu (toute la journée) et réel aux abscisses de la v1 ; le point de la tranche en
+  // cours suit le relevé et porte l'équivalent horaire de la mesure partielle.
+  const data = hours.map((h) => {
+    const enCours = readingHour !== null && h.hour === Math.floor(readingHour);
+    const minutes = enCours ? Math.round((readingHour - h.hour) * 60) : null;
+    return {
+      x: enCours ? readingHour : trancheX(h.hour),
+      production: h.production_kwh,
+      consumption: h.consumption_kwh,
+      productionActual: equivalentHoraire(h.production_actual_kwh, minutes),
+      consumptionActual: equivalentHoraire(h.consumption_actual_kwh, minutes),
+    };
+  });
   return (
     <div className="chart">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data} margin={MARGIN}>
           {axes()}
           <YAxis tick={TICK} stroke="var(--text-dim)" tickFormatter={axisTick("kWh")} width="auto" />
-          <Tooltip contentStyle={TOOLTIP} labelFormatter={(x) => `${Math.floor(Number(x))}h`} formatter={(v) => `${kwh(Number(v))} kWh`} />
+          <Tooltip contentStyle={TOOLTIP} labelFormatter={(x) => trancheLabel(Number(x), lang)} formatter={(v) => `${kwh(Number(v))} kWh`} />
           {legends && <Legend wrapperStyle={LEGEND} />}
           <Line type="monotone" dataKey="production" name={t("plan.series.production")} stroke="var(--production)" strokeDasharray="5 4" dot={false} />
           <Line type="monotone" dataKey="productionActual" name={t("plan.series.production_actual")} stroke="var(--production)" dot={false} />
@@ -109,12 +149,30 @@ export function EnergyChart({ hours, readingHour }: ChartProps) {
   );
 }
 
-export function SocChart({ hours, readingHour, floor }: ChartProps & { floor: number | null }) {
-  const { t } = useI18n();
+export function SocChart({ hours, readingHour, floor, midnight }: ChartProps & { floor: number | null; midnight: number | null }) {
+  const { language, t } = useI18n();
   const [legends] = useChartLegends();
+  const lang = language === "fr" ? "fr" : "en";
   // Le SoC d'une heure est celui de fin d'heure (modèle du backend) : posé à l'instant h + 1,
-  // le point « 23 h » est donc le SoC atteint à minuit.
-  const data = hours.map((h) => ({ x: h.hour + 1, soc: h.soc_percent, socActual: h.soc_actual_percent }));
+  // le point « 23 h » est donc le SoC atteint à minuit. Celui de l'heure du relevé est la
+  // dernière mesure, prise « maintenant » : posé sur le relevé lui-même (convention v1).
+  // Le départ à minuit (départ de la vue) complète la courbe à 0 h ; sans lui, la première
+  // heure est épinglée à 0 h comme en v1 (xPourTranche).
+  const data = hours.map((h) => ({
+    x:
+      readingHour !== null && Math.floor(readingHour) === h.hour
+        ? readingHour
+        : h.hour === 0 && midnight === null
+          ? 0
+          : h.hour + 1,
+    soc: h.soc_percent,
+    socActual: h.soc_actual_percent,
+  }));
+  if (midnight !== null) {
+    const plan = hours.some((h) => h.soc_percent !== null);
+    const actual = hours.some((h) => h.soc_actual_percent !== null);
+    data.unshift({ x: 0, soc: plan ? midnight : null, socActual: actual ? midnight : null });
+  }
   return (
     <div className="chart">
       <ResponsiveContainer width="100%" height="100%">
@@ -124,7 +182,7 @@ export function SocChart({ hours, readingHour, floor }: ChartProps & { floor: nu
           ))}
           {axes()}
           <YAxis tick={TICK} stroke="var(--text-dim)" tickFormatter={axisTick("%")} domain={[0, 100]} width="auto" />
-          <Tooltip contentStyle={TOOLTIP} labelFormatter={(x) => `${Number(x)}h`} formatter={(v) => `${percent(Number(v))} %`} />
+          <Tooltip contentStyle={TOOLTIP} labelFormatter={(x) => trancheLabel(Number(x), lang)} formatter={(v) => `${percent(Number(v))} %`} />
           {legends && <Legend wrapperStyle={LEGEND} />}
           <Line type="monotone" dataKey="soc" name={t("plan.series.soc")} stroke="var(--battery)" strokeDasharray="5 4" dot={false} />
           <Line type="monotone" dataKey="socActual" name={t("plan.series.soc_actual")} stroke="var(--battery)" dot={false} />
@@ -139,10 +197,12 @@ export function SocChart({ hours, readingHour, floor }: ChartProps & { floor: nu
 }
 
 export function GridChart({ hours, readingHour }: ChartProps) {
-  const { t } = useI18n();
+  const { language, t } = useI18n();
   const [legends] = useChartLegends();
+  const lang = language === "fr" ? "fr" : "en";
   // Achat au-dessus de zéro, surplus en dessous ; prévu en ligne (achat moins surplus).
-  // Comme le graphe de production, chaque heure est posée au milieu de sa tranche.
+  // Barres et ligne au milieu de chaque tranche (h + 0,5) — elles se superposent —, la ligne
+  // rejoint le bord droit par un dernier point à 24 h.
   const data = hours.map((h) => ({
     x: h.hour + 0.5,
     net: Math.round((h.grid_import_kwh - h.grid_export_kwh) * 1000) / 1000,
@@ -150,13 +210,23 @@ export function GridChart({ hours, readingHour }: ChartProps) {
     exportActual: h.grid_export_actual_kwh === null ? null : -h.grid_export_actual_kwh,
     offPeak: h.off_peak,
   }));
+  const last = hours[hours.length - 1];
+  if (last) {
+    data.push({
+      x: 24,
+      net: Math.round((last.grid_import_kwh - last.grid_export_kwh) * 1000) / 1000,
+      importActual: null,
+      exportActual: null,
+      offPeak: false,
+    });
+  }
   return (
     <div className="chart">
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart data={data} margin={MARGIN} stackOffset="sign">
           {axes()}
           <YAxis tick={TICK} stroke="var(--text-dim)" tickFormatter={axisTick("kWh")} width="auto" />
-          <Tooltip contentStyle={TOOLTIP} labelFormatter={(x) => `${Math.floor(Number(x))}h`} formatter={(v) => `${kwh(Math.abs(Number(v)))} kWh`} />
+          <Tooltip contentStyle={TOOLTIP} labelFormatter={(x) => trancheBarre(Number(x), lang)} formatter={(v) => `${kwh(Math.abs(Number(v)))} kWh`} />
           {legends && <Legend wrapperStyle={LEGEND} />}
           <Bar dataKey="importActual" name={t("plan.series.import_actual")} stackId="actual" fill="var(--grid-import)">
             {data.map((point) => (
