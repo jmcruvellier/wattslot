@@ -45,7 +45,7 @@ const MARGIN = { top: 8, right: 8, bottom: 0, left: 0 };
 // Libellé du plancher de la batterie au bord droit, au-dessus de la ligne, hors de la courbe.
 const FLOOR_LABEL = { position: "insideTopRight", fill: "var(--discharge)", fontSize: 12 } as const;
 
-/** Plages d'heures creuses [début, fin[, en bandes de fond. */
+/** Plages d'heures creuses [début, fin], en bandes de fond. */
 function offPeakRanges(hours: HourPoint[]): [number, number][] {
   const ranges: [number, number][] = [];
   for (const point of hours) {
@@ -57,18 +57,24 @@ function offPeakRanges(hours: HourPoint[]): [number, number][] {
   return ranges;
 }
 
+// Axe des abscisses de minuit à minuit (numérique) : la 24e heure (23 h–24 h) est visible,
+// contrairement à l'axe par catégories de Recharts qui plaçait le point « 23 h » au milieu
+// de sa bande et laissait la fin de journée vide.
+const DAY_TICKS = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24];
+
 function axes() {
   return [
     <CartesianGrid key="grid" stroke="var(--border)" strokeDasharray="2 4" />,
-    // Graduations régulières (lot 7.1) : toutes les heures si la place le permet, sinon une sur deux
-    // (0h, 2h, 4h…) ; le réglage par défaut de Recharts en retirait au hasard (19h, 22h…).
+    // Graduations régulières (lot 7.1) : une sur deux, de 0 h à 24 h.
     <XAxis
       key="x"
       tick={TICK}
-      dataKey="hour"
-      tickFormatter={(h: number) => `${h}h`}
+      dataKey="x"
+      type="number"
+      domain={[0, 24]}
+      ticks={DAY_TICKS}
+      tickFormatter={(x: number) => `${x}h`}
       stroke="var(--text-dim)"
-      interval="equidistantPreserveStart"
     />,
   ];
 }
@@ -76,8 +82,9 @@ function axes() {
 export function EnergyChart({ hours, readingHour }: ChartProps) {
   const { t } = useI18n();
   const [legends] = useChartLegends();
+  // Chaque point est l'énergie d'une heure : posée au milieu de la tranche (h + 0,5).
   const data = hours.map((h) => ({
-    hour: h.hour,
+    x: h.hour + 0.5,
     production: h.production_kwh,
     consumption: h.consumption_kwh,
     productionActual: h.production_actual_kwh,
@@ -89,13 +96,13 @@ export function EnergyChart({ hours, readingHour }: ChartProps) {
         <LineChart data={data} margin={MARGIN}>
           {axes()}
           <YAxis tick={TICK} stroke="var(--text-dim)" tickFormatter={axisTick("kWh")} width="auto" />
-          <Tooltip contentStyle={TOOLTIP} labelFormatter={(h) => `${h}h`} formatter={(v) => `${kwh(Number(v))} kWh`} />
+          <Tooltip contentStyle={TOOLTIP} labelFormatter={(x) => `${Math.floor(Number(x))}h`} formatter={(v) => `${kwh(Number(v))} kWh`} />
           {legends && <Legend wrapperStyle={LEGEND} />}
           <Line type="monotone" dataKey="production" name={t("plan.series.production")} stroke="var(--production)" strokeDasharray="5 4" dot={false} />
           <Line type="monotone" dataKey="productionActual" name={t("plan.series.production_actual")} stroke="var(--production)" dot={false} />
           <Line type="monotone" dataKey="consumption" name={t("plan.series.consumption")} stroke="var(--consumption)" strokeDasharray="5 4" dot={false} />
           <Line type="monotone" dataKey="consumptionActual" name={t("plan.series.consumption_actual")} stroke="var(--consumption)" dot={false} />
-          {readingHour !== null && <ReferenceLine x={Math.floor(readingHour)} stroke="var(--text-dim)" />}
+          {readingHour !== null && <ReferenceLine x={readingHour} stroke="var(--text-dim)" />}
         </LineChart>
       </ResponsiveContainer>
     </div>
@@ -105,24 +112,26 @@ export function EnergyChart({ hours, readingHour }: ChartProps) {
 export function SocChart({ hours, readingHour, floor }: ChartProps & { floor: number | null }) {
   const { t } = useI18n();
   const [legends] = useChartLegends();
-  const data = hours.map((h) => ({ hour: h.hour, soc: h.soc_percent, socActual: h.soc_actual_percent }));
+  // Le SoC d'une heure est celui de fin d'heure (modèle du backend) : posé à l'instant h + 1,
+  // le point « 23 h » est donc le SoC atteint à minuit.
+  const data = hours.map((h) => ({ x: h.hour + 1, soc: h.soc_percent, socActual: h.soc_actual_percent }));
   return (
     <div className="chart">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data} margin={MARGIN}>
           {offPeakRanges(hours).map(([start, end]) => (
-            <ReferenceArea key={start} x1={start} x2={end - 1} fill="var(--grid-import)" fillOpacity={0.08} />
+            <ReferenceArea key={start} x1={start} x2={end} fill="var(--grid-import)" fillOpacity={0.08} />
           ))}
           {axes()}
           <YAxis tick={TICK} stroke="var(--text-dim)" tickFormatter={axisTick("%")} domain={[0, 100]} width="auto" />
-          <Tooltip contentStyle={TOOLTIP} labelFormatter={(h) => `${h}h`} formatter={(v) => `${percent(Number(v))} %`} />
+          <Tooltip contentStyle={TOOLTIP} labelFormatter={(x) => `${Number(x)}h`} formatter={(v) => `${percent(Number(v))} %`} />
           {legends && <Legend wrapperStyle={LEGEND} />}
           <Line type="monotone" dataKey="soc" name={t("plan.series.soc")} stroke="var(--battery)" strokeDasharray="5 4" dot={false} />
           <Line type="monotone" dataKey="socActual" name={t("plan.series.soc_actual")} stroke="var(--battery)" dot={false} />
           {floor !== null && (
             <ReferenceLine y={floor} stroke="var(--discharge)" strokeDasharray="3 3" label={{ ...FLOOR_LABEL, value: t("plan.series.floor", { pct: floor }) }} />
           )}
-          {readingHour !== null && <ReferenceLine x={Math.floor(readingHour)} stroke="var(--text-dim)" />}
+          {readingHour !== null && <ReferenceLine x={readingHour} stroke="var(--text-dim)" />}
         </LineChart>
       </ResponsiveContainer>
     </div>
@@ -133,8 +142,9 @@ export function GridChart({ hours, readingHour }: ChartProps) {
   const { t } = useI18n();
   const [legends] = useChartLegends();
   // Achat au-dessus de zéro, surplus en dessous ; prévu en ligne (achat moins surplus).
+  // Comme le graphe de production, chaque heure est posée au milieu de sa tranche.
   const data = hours.map((h) => ({
-    hour: h.hour,
+    x: h.hour + 0.5,
     net: Math.round((h.grid_import_kwh - h.grid_export_kwh) * 1000) / 1000,
     importActual: h.grid_import_actual_kwh,
     exportActual: h.grid_export_actual_kwh === null ? null : -h.grid_export_actual_kwh,
@@ -143,20 +153,20 @@ export function GridChart({ hours, readingHour }: ChartProps) {
   return (
     <div className="chart">
       <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={data} stackOffset="sign" margin={MARGIN}>
+        <ComposedChart data={data} margin={MARGIN} stackOffset="sign">
           {axes()}
           <YAxis tick={TICK} stroke="var(--text-dim)" tickFormatter={axisTick("kWh")} width="auto" />
-          <Tooltip contentStyle={TOOLTIP} labelFormatter={(h) => `${h}h`} formatter={(v) => `${kwh(Math.abs(Number(v)))} kWh`} />
+          <Tooltip contentStyle={TOOLTIP} labelFormatter={(x) => `${Math.floor(Number(x))}h`} formatter={(v) => `${kwh(Math.abs(Number(v)))} kWh`} />
           {legends && <Legend wrapperStyle={LEGEND} />}
           <Bar dataKey="importActual" name={t("plan.series.import_actual")} stackId="actual" fill="var(--grid-import)">
             {data.map((point) => (
-              <Cell key={point.hour} fill={point.offPeak ? "var(--grid-import)" : "var(--grid-import-peak)"} />
+              <Cell key={point.x} fill={point.offPeak ? "var(--grid-import)" : "var(--grid-import-peak)"} />
             ))}
           </Bar>
           <Bar dataKey="exportActual" name={t("plan.series.export_actual")} stackId="actual" fill="var(--grid-export)" />
           <Line type="monotone" dataKey="net" name={t("plan.series.grid")} stroke="var(--text-dim)" strokeDasharray="5 4" dot={false} />
           <ReferenceLine y={0} stroke="var(--border)" />
-          {readingHour !== null && <ReferenceLine x={Math.floor(readingHour)} stroke="var(--text-dim)" />}
+          {readingHour !== null && <ReferenceLine x={readingHour} stroke="var(--text-dim)" />}
         </ComposedChart>
       </ResponsiveContainer>
     </div>
