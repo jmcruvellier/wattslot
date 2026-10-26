@@ -23,6 +23,7 @@ import {
 
 import { useI18n } from "../i18n/I18nProvider";
 import { axisTick, hour, kwh, percent } from "./format";
+import { energyPoints, instantLabel, socPoints } from "./dayPoints";
 import { useChartLegends } from "./legends";
 import type { HourPoint, WeekPoint } from "./types";
 
@@ -62,29 +63,10 @@ function offPeakRanges(hours: HourPoint[]): [number, number][] {
 // de sa bande et laissait la fin de journée vide.
 const DAY_TICKS = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24];
 
-/** Heure d'un point dans une info-bulle : l'instant réel qu'il décrit — « 21 h » pour une
- * heure pleine, « 21 h 22 » pour le relevé au milieu de sa tranche. */
-function instantLabel(x: number, lang: "fr" | "en"): string {
-  return x % 1 === 0 ? `${x}h` : hour(x, lang);
-}
-
 /** Titre d'info-bulle du Réseau : la tranche de la barre (points au milieu, h + 0,5). */
 function trancheBarre(x: number, lang: "fr" | "en"): string {
   const start = Math.min(Math.floor(x), 23);
   return `${hour(start, lang)}–${hour(start + 1, lang)}`;
-}
-
-// La tranche en cours ne compte que ses minutes écoulées : en dessous, pas de point (v1 :
-// dix minutes minimum, l'équivalent horaire multiplierait trop quelques centièmes de kWh).
-const MINUTES_TRANCHE_EN_COURS = 10;
-
-/** Énergie réelle d'une heure ; celle de la tranche en cours est extrapolée en équivalent
- * horaire (mesure × 60 / minutes écoulées, convention v1 : sans cela, la courbe réelle
- * plonge sur son dernier point, qui ne compte que le début de l'heure). */
-function equivalentHoraire(value: number | null, minutes: number | null): number | null {
-  if (minutes === null) return value;
-  if (value === null || minutes < MINUTES_TRANCHE_EN_COURS) return null;
-  return Math.round(((value * 60) / minutes) * 1000) / 1000;
 }
 
 function axes() {
@@ -104,39 +86,11 @@ function axes() {
   ];
 }
 
-interface EnergyPoint {
-  x: number;
-  production: number | null;
-  consumption: number | null;
-  productionActual: number | null;
-  consumptionActual: number | null;
-}
-
 export function EnergyChart({ hours, readingHour }: ChartProps) {
   const { language, t } = useI18n();
   const [legends] = useChartLegends();
   const lang = language === "fr" ? "fr" : "en";
-  // L'énergie de l'heure h est posée à sa fin (h + 1), comme le SoC : un point par heure de
-  // 1 h à 24 h. La tranche en cours a deux points — le prévu à sa fin, le relevé au milieu
-  // (l'équivalent horaire de la mesure partielle) — pour ne pas déplacer le point prévu.
-  const data: EnergyPoint[] = [];
-  for (const h of hours) {
-    const enCours = readingHour !== null && Math.floor(readingHour) === h.hour;
-    const plan = { x: h.hour + 1, production: h.production_kwh, consumption: h.consumption_kwh, productionActual: null, consumptionActual: null };
-    if (enCours) {
-      const minutes = Math.round((readingHour - h.hour) * 60);
-      data.push(plan);
-      data.push({
-        x: readingHour,
-        production: null,
-        consumption: null,
-        productionActual: equivalentHoraire(h.production_actual_kwh, minutes),
-        consumptionActual: equivalentHoraire(h.consumption_actual_kwh, minutes),
-      });
-    } else {
-      data.push({ ...plan, productionActual: h.production_actual_kwh, consumptionActual: h.consumption_actual_kwh });
-    }
-  }
+  const data = energyPoints(hours, readingHour);
   return (
     <div className="chart">
       <ResponsiveContainer width="100%" height="100%">
@@ -160,22 +114,7 @@ export function SocChart({ hours, readingHour, floor, midnight }: ChartProps & {
   const { language, t } = useI18n();
   const [legends] = useChartLegends();
   const lang = language === "fr" ? "fr" : "en";
-  // Le SoC d'une heure est celui de fin d'heure (modèle du backend) : posé à l'instant
-  // réel h + 1 — le point « 23 h » est donc le SoC atteint à minuit. La tranche en cours a
-  // deux points — le prévu à sa fin, la dernière mesure (« maintenant ») sur le relevé —
-  // pour ne pas déplacer le point prévu. Le départ à minuit (départ de la vue) complète
-  // la courbe à 0 h : de 0 h à 24 h.
-  const data: { x: number; soc: number | null; socActual: number | null }[] = [];
-  for (const h of hours) {
-    const enCours = readingHour !== null && Math.floor(readingHour) === h.hour;
-    data.push({ x: h.hour + 1, soc: h.soc_percent, socActual: enCours ? null : h.soc_actual_percent });
-    if (enCours) data.push({ x: readingHour, soc: null, socActual: h.soc_actual_percent });
-  }
-  if (midnight !== null) {
-    const plan = hours.some((h) => h.soc_percent !== null);
-    const actual = hours.some((h) => h.soc_actual_percent !== null);
-    data.unshift({ x: 0, soc: plan ? midnight : null, socActual: actual ? midnight : null });
-  }
+  const data = socPoints(hours, readingHour, midnight);
   return (
     <div className="chart">
       <ResponsiveContainer width="100%" height="100%">
