@@ -13,7 +13,7 @@ import signal
 import sqlite3
 import threading
 import time
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
@@ -249,6 +249,16 @@ class InterfaceFiles(StaticFiles):
         return response
 
 
+async def _cancelled(task: asyncio.Task[None]) -> None:
+    task.cancel()
+    with contextlib.suppress(asyncio.CancelledError):
+        await task
+
+
+async def _called(step: Callable[[], object]) -> None:
+    step()
+
+
 async def _notify(
     client: HomeAssistantClient,
     database: sqlite3.Connection,
@@ -470,24 +480,26 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             cleanup_stop.set()
             with contextlib.suppress(Exception):
                 await cleanup
-            if reminder_loop:
-                await reminder_loop.stop()
-            if scheduler:
-                await scheduler.stop()
-            if maintenance:
-                await maintenance.stop()
-            if quality_monitor:
-                await quality_monitor.stop()
-            if aggregator:
-                await aggregator.stop()
-            if ingestor:
-                await ingestor.stop()
-            if task:
-                task.cancel()
-                with contextlib.suppress(asyncio.CancelledError):
-                    await task
-            graph.flush()
-            database.close()
+            # Chaque étape à part : une erreur dans l'une (connexion à HA à demi ouverte…) ne
+            # saute pas les suivantes, qui vident relevés, agrégats et base sur disque.
+            steps: list[tuple[str, Callable[[], Awaitable[object]] | None]] = [
+                ("rappels", reminder_loop.stop if reminder_loop else None),
+                ("planification", scheduler.stop if scheduler else None),
+                ("maintenance", maintenance.stop if maintenance else None),
+                ("qualité", quality_monitor.stop if quality_monitor else None),
+                ("agrégation", aggregator.stop if aggregator else None),
+                ("ingestion", ingestor.stop if ingestor else None),
+                ("connexion à HA", (lambda: _cancelled(task)) if task else None),
+                ("graphe", lambda: _called(graph.flush)),
+                ("base", lambda: _called(database.close)),
+            ]
+            for name, stop in steps:
+                if stop is None:
+                    continue
+                try:
+                    await stop()
+                except Exception:
+                    logger.exception("Arrêt : %s impossible", name)
             logger.info("Arrêt : écritures vidées en %.1f s", time.monotonic() - began)
 
     app = FastAPI(title="WattSlot", version=__version__, lifespan=lifespan)

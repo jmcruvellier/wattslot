@@ -30,6 +30,9 @@ logger = logging.getLogger(__name__)
 
 RETRY_DELAYS_S: tuple[float, ...] = (1, 2, 5, 10, 30)
 COMMAND_TIMEOUT_S = 60.0
+# Désabonnement (arrêt, rechargement) : au mieux, sans attendre une connexion à demi ouverte ;
+# le Supervisor laisse 30 s pour vider les écritures avant de tuer l'extension.
+UNSUBSCRIBE_TIMEOUT_S = 5.0
 # Relecture de l'instantané peu après une connexion : pendant le démarrage de HA (redémarrage),
 # ``get_states`` ne renvoie que les entités déjà chargées, sans erreur — l'instantané serait
 # incomplet sinon, et ne serait plus jamais relu (alertes « capteur inexistant » figées).
@@ -261,9 +264,11 @@ class HomeAssistantClient:
             return
         self._events.pop(subscription.message_id, None)
         if self._websocket is not None:
-            # Abonnement déjà perdu avec la connexion : rien à défaire.
-            with contextlib.suppress(CommandError, NotConnectedError):
-                await self.command("unsubscribe_events", subscription=subscription.message_id)
+            # Abonnement déjà perdu avec la connexion, ou connexion qui ne répond plus : rien à
+            # défaire, HA l'oublie avec la session.
+            with contextlib.suppress(CommandError, NotConnectedError, TimeoutError):
+                async with asyncio.timeout(UNSUBSCRIBE_TIMEOUT_S):
+                    await self.command("unsubscribe_events", subscription=subscription.message_id)
 
     async def _activate(self, subscription: _Subscription) -> None:
         message_id = self._next_id  # identifiant que command() va utiliser

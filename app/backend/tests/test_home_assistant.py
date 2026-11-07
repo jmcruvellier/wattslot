@@ -1,7 +1,7 @@
 """Client WebSocket de Home Assistant, contre un faux serveur HA local."""
 
 import asyncio
-from typing import Any
+from typing import Any, cast
 
 import pytest
 from websockets.asyncio.server import ServerConnection, serve
@@ -15,6 +15,7 @@ from tests.fake_home_assistant import (
     fake_home_assistant,
     running_client,
 )
+from wattslot import home_assistant
 from wattslot.home_assistant import CommandError, ConnectionState, HomeAssistantClient
 from wattslot.runtime import HomeAssistantTarget
 
@@ -203,3 +204,33 @@ def test_refused_command_raises_its_error_code() -> None:
     with pytest.raises(CommandError) as error:
         asyncio.run(scenario())
     assert error.value.code == "not_found"
+
+
+class _SilentWebSocket:
+    """Connexion à demi ouverte : les messages partent, aucune réponse ne revient."""
+
+    async def send(self, message: str) -> None:
+        return None
+
+
+def test_unsubscribing_does_not_wait_for_a_silent_connection(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """À l'arrêt, le désabonnement abandonne vite au lieu d'attendre 60 s : le Supervisor tue
+    l'extension au bout de 30 s, avant qu'elle ait vidé ses écritures."""
+    monkeypatch.setattr(home_assistant, "UNSUBSCRIBE_TIMEOUT_S", 0.05)
+    client = HomeAssistantClient(
+        HomeAssistantTarget(websocket_url="ws://192.0.2.10/api/websocket", token="test")
+    )
+
+    async def scenario() -> None:
+        def ignore(event: dict[str, Any]) -> None:
+            return None
+
+        await client.subscribe("states", "subscribe_entities", ignore)
+        client._subscriptions["states"].message_id = 1
+        client._websocket = cast(Any, _SilentWebSocket())
+        async with asyncio.timeout(2):
+            await client.unsubscribe("states")
+
+    asyncio.run(scenario())

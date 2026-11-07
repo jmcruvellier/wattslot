@@ -3,6 +3,7 @@
 import asyncio
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
+from typing import cast
 
 import pytest
 
@@ -13,6 +14,7 @@ from tests.fake_home_assistant import (
     running_client,
 )
 from wattslot.detection import DeviceKind, Role
+from wattslot.home_assistant import HomeAssistantClient
 from wattslot.home_model import HomeDevice, HomeModel, HomeSensor
 from wattslot.ingestion import Ingestor, ReadingFilter, normalize, targets
 from wattslot.storage.database import open_database
@@ -349,6 +351,27 @@ def test_only_a_suspicious_frozen_value_is_silent() -> None:
 
     assert found == ["stuck_power", "stuck_energy", "never", "soc"]
     assert silent_entities(None, {}, now) == []
+
+
+class _BrokenClient:
+    """Connexion fermée en route : le désabonnement échoue."""
+
+    async def unsubscribe(self, name: str) -> None:
+        raise ConnectionError("fermée")
+
+
+def test_stopping_writes_the_queue_even_if_unsubscribing_fails(tmp_path: Path) -> None:
+    database = open_database(tmp_path)
+    stores = RawStores(tmp_path)
+    ingestor = Ingestor(cast(HomeAssistantClient, _BrokenClient()), stores, database)
+    moment = datetime.now(UTC).replace(microsecond=0)
+    ingestor._queue = [Reading("sensor.pv_power", "urn:sensor:pv", 800.0, moment)]
+
+    asyncio.run(ingestor.stop())
+
+    assert sum(stores.count(day) for day in stores.days()) == 1
+    rows = dict(database.execute("SELECT entity_id, last_value FROM ingestion_state"))
+    assert rows == {"sensor.pv_power": 800.0}
 
 
 def test_ready_only_once_the_gap_of_the_current_session_is_filled(tmp_path: Path) -> None:
