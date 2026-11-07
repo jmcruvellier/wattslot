@@ -2,6 +2,7 @@
 // 2 décimales pour les kWh, 0 pour les pourcentages ; séparateur décimal de la langue (lot 5.7).
 
 import { formatNumber, type Language } from "../i18n/translate";
+import { zoned } from "../i18n/homeTime";
 
 // Langue des nombres (virgule décimale en français…), tenue par le fournisseur de la langue.
 let numberLanguage: Language = "en";
@@ -47,7 +48,7 @@ export function duration(minutes: number, language: Language): string {
 }
 
 export function time(iso: string, language: Language): string {
-  return new Date(iso).toLocaleTimeString(language, { hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleTimeString(language, zoned({ hour: "2-digit", minute: "2-digit" }));
 }
 
 /** Âge d'un instant : « il y a 12 min », « il y a 3 h », « hier » ; pluriels de la langue. */

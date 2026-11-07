@@ -3,6 +3,7 @@
 // (comme « Prochaine action » et « Pourquoi ce plan », OtherStarts) et le bouton « Annuler ».
 // Le choix et l'annulation enregistrés ne valent que pour le jour.
 
+import { minuteOfDay } from "../i18n/homeTime";
 import type { OtherStart } from "./OtherStarts";
 import type { DayView } from "./types";
 
@@ -16,8 +17,7 @@ export interface StartChoice {
 /** Minutes depuis minuit maintenant, comme l'agenda : les autres départs ne se proposent
  * qu'avant le départ prévu. */
 function nowMinute(): number {
-  const now = new Date();
-  return now.getHours() * 60 + now.getMinutes();
+  return minuteOfDay();
 }
 
 /** Équipements d'un cycle de la frise du jour (appareils à lancer), avec leurs autres départs

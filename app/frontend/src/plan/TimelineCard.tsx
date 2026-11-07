@@ -11,6 +11,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { useI18n } from "../i18n/I18nProvider";
+import { minuteOfDay } from "../i18n/homeTime";
 import { hour, kwh } from "./format";
 import { freeSpan } from "./timelineSpan";
 import type { Bar, TimelineRow, Timeline } from "./types";
@@ -53,8 +54,7 @@ function launched(row: TimelineRow, nowMin: number): boolean {
 
 // Minutes depuis minuit maintenant, pour dire si un cycle réel a commencé.
 function nowMinute(): number {
-  const now = new Date();
-  return now.getHours() * 60 + now.getMinutes();
+  return minuteOfDay();
 }
 
 export default function TimelineCard({

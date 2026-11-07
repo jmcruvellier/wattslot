@@ -5,14 +5,14 @@
 import type { ReactNode } from "react";
 
 import { useI18n } from "../i18n/I18nProvider";
+import { minuteOfDay } from "../i18n/homeTime";
 import { agenda, type AgendaEntry, firstUpcoming, sunWindow } from "./agendaEntries";
 import { clock, duration, kwh, percent } from "./format";
 import type { DayView } from "./types";
 import Card from "../ui/Card";
 
 function nowMinute(): number {
-  const now = new Date();
-  return now.getHours() * 60 + now.getMinutes();
+  return minuteOfDay(); // heure de la maison, celle des heures du plan
 }
 
 export function DaySummaryCard({ view }: { view: DayView }) {

@@ -4,6 +4,7 @@
 import { Fragment, type ReactNode, Suspense } from "react";
 
 import { useI18n } from "../i18n/I18nProvider";
+import { hourOfDay } from "../i18n/homeTime";
 import { ExplanationsCard, IndicatorsCard } from "./InsightCards";
 import { availableDayCards, type DayCardId, type IndicatorLayout, shownCards, type ViewLayout } from "./layout";
 import { EnergyChart, GridChart, SocChart } from "./lazyCharts";
@@ -18,8 +19,7 @@ import type { IconName } from "../ui/iconPaths";
 
 function readingHour(view: DayView): number | null {
   if (!view.actual_updated_at || view.kind !== "today") return null;
-  const moment = new Date(view.actual_updated_at);
-  return moment.getHours() + moment.getMinutes() / 60;
+  return hourOfDay(new Date(view.actual_updated_at));
 }
 
 function ChartCard({ label, icon, wide, children }: { label: string; icon: IconName; wide?: boolean; children: ReactNode }) {

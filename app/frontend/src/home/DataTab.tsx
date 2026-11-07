@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 
 import { ApiError, deleteRequest, getJson, postJson } from "../api";
 import { useI18n } from "../i18n/I18nProvider";
+import { homeDay, homeMidnight, nextDay, zoned } from "../i18n/homeTime";
 import { formatNumber, type Language } from "../i18n/translate";
 import Button from "../ui/Button";
 import Icon from "../ui/Icon";
@@ -63,12 +64,12 @@ function kwh(language: Language, value: number): string {
   return `${formatNumber(language, value, Math.abs(value) < 10 ? 2 : 0)} kWh`;
 }
 
-// « 20/10, 0:00 – 1:00 » dans l'heure du navigateur (celle de la maison).
+// « 20/10, 0:00 – 1:00 » à l'heure de la maison.
 function periodText(language: Language, period: string, start: string): string {
   const from = new Date(start);
   const to = new Date(from.getTime() + (period === HOUR ? 60 : 15) * 60_000);
-  const day = from.toLocaleDateString(language, { day: "2-digit", month: "2-digit" });
-  const time = (d: Date) => d.toLocaleTimeString(language, { hour: "2-digit", minute: "2-digit" });
+  const day = from.toLocaleDateString(language, zoned({ day: "2-digit", month: "2-digit" }));
+  const time = (d: Date) => d.toLocaleTimeString(language, zoned({ hour: "2-digit", minute: "2-digit" }));
   return `${day}, ${time(from)} – ${time(to)}`;
 }
 
@@ -170,7 +171,7 @@ export default function DataTab({ data }: { data: HomeData }) {
       since: known && known.since < gap.start ? known.since : gap.start,
     });
   }
-  const day = (start: string) => new Date(start).toLocaleDateString(language, { day: "2-digit", month: "2-digit" });
+  const day = (start: string) => new Date(start).toLocaleDateString(language, zoned({ day: "2-digit", month: "2-digit" }));
   const valueText = (c: Correction) =>
     `${c.original_kwh === null ? "—" : kwh(language, c.original_kwh)} → ${
       c.corrected_kwh === null ? t("quality.discarded") : kwh(language, c.corrected_kwh)
@@ -191,7 +192,7 @@ export default function DataTab({ data }: { data: HomeData }) {
           <span className="ui-row-help">
             {checked
               ? t("quality.summary.checked", {
-                  time: new Date(checked).toLocaleTimeString(language, { hour: "2-digit", minute: "2-digit" }),
+                  time: new Date(checked).toLocaleTimeString(language, zoned({ hour: "2-digit", minute: "2-digit" })),
                 })
               : t("quality.summary.not_checked")}
           </span>
@@ -417,8 +418,9 @@ function ScanSheet({
   onScanned: () => void;
 }) {
   const { t } = useI18n();
+  // Jours à l'heure de la maison : le contrôle couvre ses journées, pas celles du navigateur.
   const today = new Date();
-  const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const iso = (d: Date) => homeDay(d);
   const counters = data.devices.flatMap((d) => d.sensors.filter((s) => s.role.startsWith("Energy")).map((s) => s.entity_id));
   const [entity, setEntity] = useState("");
   const [from, setFrom] = useState(iso(new Date(today.getTime() - 7 * 86_400_000)));
@@ -427,8 +429,8 @@ function ScanSheet({
 
   const onRun = async () => {
     setResult("running");
-    const start = new Date(`${from}T00:00:00`);
-    const end = new Date(new Date(`${to}T00:00:00`).getTime() + 86_400_000);
+    const start = homeMidnight(from);
+    const end = homeMidnight(nextDay(to)); // 23 ou 25 h un jour de changement d'heure
     try {
       const found = await postJson<{ anomalies: Anomaly[] }>("api/quality/scan", {
         start: start.toISOString(),

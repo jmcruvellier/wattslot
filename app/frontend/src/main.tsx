@@ -7,6 +7,7 @@ import "./styles.css";
 
 import App from "./App";
 import { CurrencyProvider } from "./i18n/currency";
+import { loadHomeTimeZone } from "./i18n/homeTime";
 import { I18nProvider } from "./i18n/I18nProvider";
 import { detectLanguage, FALLBACK_LANGUAGE, loadCatalog, readStoredLanguage } from "./i18n/translate";
 
@@ -14,10 +15,14 @@ const root = document.getElementById("root");
 if (root === null) throw new Error("Élément #root introuvable");
 
 // Textes de la langue de l'interface lus avant le premier affichage ; l'anglais, langue de
-// secours, à côté. Un échec n'empêche pas d'afficher (l'anglais, sinon les clés).
+// secours, à côté. Un échec n'empêche pas d'afficher (l'anglais, sinon les clés). Le fuseau de
+// la maison en même temps : les heures du plan sont les siennes, pas celles du navigateur.
 const language = detectLanguage(window.location.search, readStoredLanguage(), navigator.languages ?? []);
 void loadCatalog(FALLBACK_LANGUAGE).catch(() => undefined);
-await loadCatalog(language).catch(() => loadCatalog(FALLBACK_LANGUAGE).catch(() => undefined));
+await Promise.all([
+  loadCatalog(language).catch(() => loadCatalog(FALLBACK_LANGUAGE).catch(() => undefined)),
+  loadHomeTimeZone(),
+]);
 
 createRoot(root).render(
   <StrictMode>
