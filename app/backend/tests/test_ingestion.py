@@ -372,7 +372,7 @@ def test_stopping_writes_the_queue_even_if_unsubscribing_fails(tmp_path: Path) -
     assert sum(stores.count(day) for day in stores.days()) == 1
     rows = dict(database.execute("SELECT entity_id, last_value FROM ingestion_state"))
     assert rows == {"sensor.pv_power": 800.0}
-    
+
 
 def test_ready_only_once_the_gap_of_the_current_session_is_filled(tmp_path: Path) -> None:
     """L'agrégation attend ``ready`` : pas avant la connexion à HA et la reprise du trou, ni
