@@ -1,5 +1,6 @@
 """Relevés bruts : ``flush`` espacés (volume ou temps écoulé), relevés lisibles avant."""
 
+import threading
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -78,3 +79,48 @@ def test_a_store_in_use_is_not_closed_by_another_thread(tmp_path: Path) -> None:
     # Rendu : la limite est de nouveau tenue, et la journée se relit (rouverte sans verrou).
     assert len(stores._open) <= raw_module.OPEN_STORES
     assert stores.count(first) == 1
+
+
+def test_removal_waits_for_a_reader(tmp_path: Path) -> None:
+    """La conservation supprime une journée qu'un autre fil lit encore : elle attend qu'il l'ait
+    rendue, au lieu d'effacer le dossier d'un magasin ouvert."""
+    stores = RawStores(tmp_path)
+    stores.write(readings(3))
+    day = stores.day_of(START)
+
+    with stores._using(day):
+        remover = threading.Thread(target=stores.remove_day, args=(day,))
+        remover.start()
+        remover.join(0.3)
+        assert remover.is_alive()  # attend le lecteur
+        assert stores.days() == [day]
+    remover.join(5)
+
+    assert not remover.is_alive()
+    assert stores.days() == [] and day not in stores._open
+
+
+def test_a_read_during_removal_waits_and_does_not_recreate_the_day(tmp_path: Path) -> None:
+    """Une lecture demandée pendant la suppression attend qu'elle soit finie, puis ne trouve
+    rien : elle ne recrée pas un dossier vide pour la journée supprimée."""
+    stores = RawStores(tmp_path)
+    stores.write(readings(3))
+    day = stores.day_of(START)
+    found: list[object] = []
+
+    with stores._using(day):
+        remover = threading.Thread(target=stores.remove_day, args=(day,))
+        remover.start()
+        remover.join(0.3)  # la suppression a commencé : elle attend le premier lecteur
+        reader = threading.Thread(
+            target=lambda: found.append(stores.readings(START, START + timedelta(hours=1)))
+        )
+        reader.start()
+        reader.join(0.3)
+        assert reader.is_alive()  # attend la fin de la suppression
+    remover.join(5)
+    reader.join(5)
+
+    assert found == [[]]
+    assert stores.days() == [] and stores.count(day) == 0 and stores.days() == []
+    assert not stores._users
