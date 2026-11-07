@@ -27,8 +27,8 @@ export function TrendMark({ trend, label, className }: { trend: Trend; label?: s
     none: "—",
     stable: "● 0%",
     infinite: "▲", // estimé nul : pas de pourcentage
-    up: `▲ +${trend.percent ?? 0}%`,
-    down: `▼ ${trend.percent ?? 0}%`,
+    up: `▲ +${percent(trend.percent ?? 0)}%`,
+    down: `▼ ${percent(trend.percent ?? 0)}%`,
   }[trend.direction];
   return (
     <span className={["trend", tone, className].filter(Boolean).join(" ")} title={label}>

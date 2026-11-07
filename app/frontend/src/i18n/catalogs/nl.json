@@ -1426,6 +1426,7 @@
     "loading": "Dagplan wordt gelezen…",
     "no_plan": "Nog geen plan voor vandaag: het komt met de volgende berekening.",
     "error": "Het dagplan kan niet worden gelezen.",
+    "stale": "Vernieuwen mislukt: de laatst gelezen gegevens worden getoond. Nieuwe poging over een minuut.",
     "now": {
       "eyebrow": "Op dit moment",
       "no_flows": "Het dagplan",

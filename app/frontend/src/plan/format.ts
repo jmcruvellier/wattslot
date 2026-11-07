@@ -26,8 +26,10 @@ export function axisTick(unit: string): (value: number) => string {
 
 /** Minutes depuis minuit : « 10h05 » / « 10:05 ». */
 export function clock(minutes: number, language: Language): string {
-  const h = Math.floor(minutes / 60) % 24;
-  const m = Math.round(minutes % 60);
+  // Arrondi à la minute d'abord : 14,999 h donne « 15h00 », pas « 14h60 ».
+  const total = Math.round(minutes);
+  const h = Math.floor(total / 60) % 24;
+  const m = total % 60;
   const mm = String(m).padStart(2, "0");
   return language === "fr" ? `${h}h${mm}` : `${h}:${mm}`;
 }

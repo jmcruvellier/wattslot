@@ -1426,6 +1426,7 @@
     "loading": "Leyendo el plan del día…",
     "no_plan": "Aún no hay plan para hoy: llega con el próximo cálculo.",
     "error": "No se puede leer el plan del día.",
+    "stale": "No se pudo actualizar: se muestran los últimos datos leídos. Nuevo intento en un minuto.",
     "now": {
       "eyebrow": "Ahora mismo",
       "no_flows": "El plan del día",
