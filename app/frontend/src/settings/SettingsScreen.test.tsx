@@ -2,6 +2,7 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { setHomeTimeZone } from "../i18n/homeTime";
 import { I18nProvider } from "../i18n/I18nProvider";
 import type { NotificationSettings } from "./NotificationSettings";
 import SettingsScreen, { type PlanningSettings, type SettingsChoices, type SettingsPage } from "./SettingsScreen";
@@ -37,7 +38,7 @@ const CHOICES: SettingsChoices = {
 
 type Calls = { url: string; method: string; body: unknown }[];
 
-function mockApi(notify: Response | null = null): Calls {
+function mockApi(notify: Response | null = null, nextRunAt: string | null = null): Calls {
   const calls: Calls = [];
   vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
     const url = String(input);
@@ -46,7 +47,7 @@ function mockApi(notify: Response | null = null): Calls {
     if (url === "api/settings/planning" && method === "PUT") return Response.json(JSON.parse(String(init?.body)));
     if (url === "api/settings/planning") return Response.json(SETTINGS);
     if (url === "api/settings/choices") return Response.json(CHOICES);
-    if (url === "api/planning/status") return Response.json({ enabled: true, next_run_at: null });
+    if (url === "api/planning/status") return Response.json({ enabled: true, next_run_at: nextRunAt });
     if (url === "api/settings/notifications" && method === "PUT") return Response.json(JSON.parse(String(init?.body)));
     if (url === "api/settings/notifications") return Response.json(NOTIFICATIONS);
     if (url.startsWith("api/notifications/")) return notify ?? Response.json({ detail: "no_plan" }, { status: 409 });
@@ -72,6 +73,15 @@ describe("SettingsScreen", () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    setHomeTimeZone(undefined);
+  });
+
+  it("prochain calcul à l'heure de la maison, pas du navigateur", async () => {
+    setHomeTimeZone("Pacific/Auckland"); // UTC+13 en octobre
+    mockApi(null, "2026-10-20T00:00:00Z");
+    renderScreen("calculation");
+
+    expect(await screen.findByText(/Prochain calcul : 20\/10\/2026 13:00:00/)).toBeTruthy();
   });
 
   it("calcul automatique : propose les choix de HA et n'enregistre que ses réglages", async () => {
