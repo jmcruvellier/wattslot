@@ -1,6 +1,8 @@
 # Mises à jour des dépendances : une PR groupée par écosystème et par semaine, pour garder la
-# revue légère. Les actions des workflows sont épinglées par commit (version en commentaire) :
-# Dependabot met à jour le commit et le commentaire ensemble.
+# revue légère. Les versions majeures de Python et de l'interface restent hors du groupe : chacune
+# a sa propre PR, pour qu'une seule incompatible ne bloque pas toutes les autres.
+# Les actions des workflows sont épinglées par commit (version en commentaire) : Dependabot met
+# à jour le commit et le commentaire ensemble.
 #
 # Les PRs de Dependabot n'ont pas les secrets du dépôt : le contrôle des données personnelles y
 # tourne avec les règles génériques seulement, comme pour une PR d'un fork (v2.yml).
@@ -27,6 +29,7 @@ updates:
     groups:
       python:
         patterns: ["*"]
+        update-types: ["minor", "patch"]
 
   - package-ecosystem: npm
     directory: /app/frontend
@@ -35,9 +38,15 @@ updates:
       day: monday
     commit-message:
       prefix: "Interface"
+    # TypeScript 7 : typescript-eslint 8 n'accepte que TypeScript < 6.1 (dépendance pair), npm ci
+    # échoue. À retirer quand typescript-eslint le prendra en charge.
+    ignore:
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
     groups:
       npm:
         patterns: ["*"]
+        update-types: ["minor", "patch"]
 
   - package-ecosystem: docker
     directory: /app
