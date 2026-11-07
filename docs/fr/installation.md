@@ -88,6 +88,14 @@ cosign verify ghcr.io/jmcruvellier/wattslot:X.Y.Z \
 
 Home Assistant ne vérifie pas encore les signatures ; c'est pour qui veut vérifier à la main.
 
+**Lancer sans root** (facultatif) : par défaut, le conteneur tourne en root, comme la plupart des applications de Home Assistant. En mode autonome, vous pouvez choisir un autre utilisateur, par défense en profondeur. Le dossier `/data` doit alors lui appartenir, y compris pour un nouveau volume, que Docker crée au nom de root. Arrêtez d'abord le conteneur, puis donnez-lui le volume une fois (ici à l'utilisateur et au groupe `1000`) :
+
+```bash
+docker run --rm -v wattslot-data:/data --entrypoint chown   ghcr.io/jmcruvellier/wattslot:latest -R 1000:1000 /data
+```
+
+Lancez ensuite WattSlot avec `--user 1000:1000`, ou avec `user: "1000:1000"` sous le service dans Docker Compose. Avec un dossier de l'hôte au lieu d'un volume nommé, donnez-le à cet utilisateur avec `sudo chown -R 1000:1000 <dossier>`. Revenir à root ne demande rien : root lit et écrit toujours les fichiers. Ceci ne concerne pas l'application de Home Assistant, qui reste en root sous son profil AppArmor.
+
 | Variable | Rôle |
 |---|---|
 | `HA_URL` | L'adresse de votre Home Assistant, telle que vous l'ouvrez dans un navigateur |
