@@ -10,6 +10,7 @@
     "heures_insuffisantes_attente": "{equipement} is pending but there is not enough time left for a full cycle ({duree_min} from {debut_min}): not scheduled.",
     "contrainte_impossible": "{equipement}: no time slot meets its time constraints ({contraintes}): not scheduled or minimum runtime not met.",
     "contrainte_non_respectee": "{equipement}: soft constraint not met ({contraintes}) to keep the rest of the plan.",
+    "duree_minimale_non_tenue": "{equipement}: only {heures} h of the {minimum} h minimum runtime still fit today.",
     "prevision_open_meteo": "Solar forecast computed by Open-Meteo from your panels: less accurate than a forecast integration in the Home Assistant Energy dashboard.",
     "prevision_horaire_indisponible": "Hourly solar forecast unavailable or incomplete: falling back on the average shape of the last {jours} days, less faithful to today's weather.",
     "panneau_sans_historique": "Panel {panneau}: not enough history ({jours} days), falling back on the average terrace shape.",

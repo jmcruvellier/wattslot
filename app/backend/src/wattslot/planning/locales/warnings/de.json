@@ -10,6 +10,7 @@
     "heures_insuffisantes_attente": "{equipement} wartet, aber die verbleibende Zeit reicht nicht für einen vollen Zyklus ({duree_min} ab {debut_min}): nicht eingeplant.",
     "contrainte_impossible": "{equipement}: kein Zeitfenster erfüllt seine Zeitvorgaben ({contraintes}): nicht eingeplant oder Mindestlaufzeit nicht erreicht.",
     "contrainte_non_respectee": "{equipement}: weiche Vorgabe nicht eingehalten ({contraintes}), um den restlichen Plan zu halten.",
+    "duree_minimale_non_tenue": "{equipement}: Von der Mindestlaufzeit von {minimum} h passen heute nur noch {heures} h.",
     "prevision_open_meteo": "Von Open-Meteo aus Ihren Modulen berechnete Solarprognose: weniger genau als eine Prognoseintegration im Energie-Dashboard von Home Assistant.",
     "prevision_horaire_indisponible": "Stündliche Solarprognose nicht verfügbar oder unvollständig: Rückgriff auf den mittleren Verlauf der letzten {jours} Tage, weniger nah am heutigen Wetter.",
     "panneau_sans_historique": "Modul {panneau}: zu wenig Verlauf ({jours} Tage), Rückgriff auf den mittleren Verlauf der Terrasse.",

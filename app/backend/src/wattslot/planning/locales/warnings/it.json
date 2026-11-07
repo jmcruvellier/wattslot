@@ -10,6 +10,7 @@
     "heures_insuffisantes_attente": "{equipement} è in attesa, ma non resta abbastanza tempo per un ciclo completo ({duree_min} dalle {debut_min}): non collocato.",
     "contrainte_impossible": "{equipement}: nessuna fascia rispetta i suoi vincoli orari ({contraintes}): non collocato o durata minima non rispettata.",
     "contrainte_non_respectee": "{equipement}: vincolo flessibile non rispettato ({contraintes}) per mantenere il resto del piano.",
+    "duree_minimale_non_tenue": "{equipement}: della durata minima di {minimum} h, oggi ci stanno ancora solo {heures} h.",
     "prevision_open_meteo": "Previsione solare calcolata da Open-Meteo in base ai suoi pannelli: meno precisa di un'integrazione di previsione nella dashboard energia di Home Assistant.",
     "prevision_horaire_indisponible": "Previsione solare oraria non disponibile o incompleta: si usa l'andamento medio degli ultimi {jours} giorni, meno fedele al meteo di oggi.",
     "panneau_sans_historique": "Pannello {panneau}: storico insufficiente ({jours} giorni), si usa l'andamento medio della terrazza.",

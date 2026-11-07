@@ -10,6 +10,7 @@
     "heures_insuffisantes_attente": "{equipement} wacht, maar er blijft niet genoeg tijd over voor een volledige cyclus ({duree_min} vanaf {debut_min}): niet ingepland.",
     "contrainte_impossible": "{equipement}: geen tijdvak voldoet aan de tijdsbeperkingen ({contraintes}): niet ingepland of minimale looptijd niet gehaald.",
     "contrainte_non_respectee": "{equipement}: zachte beperking niet nageleefd ({contraintes}) om de rest van het plan te halen.",
+    "duree_minimale_non_tenue": "{equipement}: van de minimale looptijd van {minimum} u passen vandaag nog maar {heures} u.",
     "prevision_open_meteo": "Zonneprognose berekend door Open-Meteo op basis van uw panelen: minder nauwkeurig dan een prognose-integratie in het energiedashboard van Home Assistant.",
     "prevision_horaire_indisponible": "Zonneprognose per uur niet beschikbaar of onvolledig: terugval op het gemiddelde verloop van de laatste {jours} dagen, minder getrouw aan het weer van vandaag.",
     "panneau_sans_historique": "Paneel {panneau}: te weinig geschiedenis ({jours} dagen), terugval op het gemiddelde verloop van het terras.",

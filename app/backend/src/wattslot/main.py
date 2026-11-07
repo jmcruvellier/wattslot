@@ -458,7 +458,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             asyncio.to_thread(ontology_migration.drop_legacy_aggregates, graph, cleanup_stop)
         )
         # Rappels « Me le rappeler » (lot 6b.3), envoyés à l'heure par une boucle d'une minute.
-        reminder_loop = ReminderLoop(client, database, raw.zone) if client is not None else None
+        reminder_loop = (
+            ReminderLoop(client, database, lambda: raw.zone) if client is not None else None
+        )
         if reminder_loop:
             reminder_loop.start()
         try:
