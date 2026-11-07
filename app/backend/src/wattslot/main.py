@@ -147,6 +147,9 @@ class Health(BaseModel):
     version: str
     mode: RunMode
     connections: Connections
+    # Fuseau de la maison (celui de HA), pour que l'interface affiche les heures du plan dans
+    # ce fuseau et non dans celui du navigateur ; ``None`` tant que HA n'a pas été lu.
+    time_zone: str | None = None
 
 
 class LastRun(BaseModel):
@@ -548,8 +551,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 error=client.status.error,
                 error_code=client.status.error_code,
             )
+        time_zone = client.snapshot.config.get("time_zone") if client is not None else None
         return Health(
-            version=__version__, mode=settings.mode, connections=Connections(home_assistant=ha)
+            version=__version__,
+            mode=settings.mode,
+            connections=Connections(home_assistant=ha),
+            time_zone=time_zone or None,
         )
 
     @app.get("/api/energy/sources")

@@ -3,6 +3,7 @@
 // rédigés par le serveur dans la langue demandée.
 
 import { useCurrency } from "../i18n/currency";
+import { minuteOfDay } from "../i18n/homeTime";
 import { useI18n } from "../i18n/I18nProvider";
 import { kwh, percent } from "./format";
 import { availableIndicators, type IndicatorLayout } from "./layout";
@@ -73,8 +74,7 @@ export function IndicatorsCard({ view, layout }: { view: DayView; layout: Indica
  * chaque cycle se choisissent ici. */
 export function ExplanationsCard({ view, onChanged }: { view: DayView; onChanged?: () => void }) {
   const { t } = useI18n();
-  const now = new Date();
-  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const nowMin = minuteOfDay();
   const choosable = view.kind === "today" && onChanged !== undefined;
   return (
     <article className="card" aria-label={t("plan.explanations.title")}>

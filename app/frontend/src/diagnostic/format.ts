@@ -2,6 +2,7 @@
 
 import type { Role } from "../home/types";
 import type { Language } from "../i18n/translate";
+import { zoned } from "../i18n/homeTime";
 
 export function unitOf(role: Role): string {
   if (role === "StateOfCharge") return "%";
@@ -13,7 +14,7 @@ export function formatNumber(language: Language, value: number, digits = 2): str
 }
 
 export function formatDate(language: Language, time: string | null): string {
-  return time ? new Date(time).toLocaleString(language) : "—";
+  return time ? new Date(time).toLocaleString(language, zoned()) : "—";
 }
 
 /** Durée écoulée entre `time` et `reference`, en langage courant (« il y a 5 minutes »). */

@@ -1,8 +1,10 @@
 from pathlib import Path
+from types import SimpleNamespace
 
 from fastapi.testclient import TestClient
 
 from wattslot import __version__
+from wattslot.home_assistant import ConnectionState, HomeAssistantStatus, HomeSnapshot
 from wattslot.ingress import SUPERVISOR_INGRESS_ADDRESS
 from wattslot.main import create_app
 from wattslot.runtime import RunMode, Settings
@@ -37,6 +39,7 @@ def test_health_without_home_assistant(tmp_path: Path) -> None:
                 "error_code": None,
             }
         },
+        "time_zone": None,
     }
 
 
@@ -74,3 +77,16 @@ def test_version_is_the_one_of_pyproject() -> None:
 
     pyproject = Path(__file__).resolve().parents[1] / "pyproject.toml"
     assert __version__ == tomllib.loads(pyproject.read_text(encoding="utf-8"))["project"]["version"]
+
+
+def test_health_gives_the_home_time_zone(tmp_path: Path) -> None:
+    """Fuseau de HA, pour que l'interface affiche les heures du plan à l'heure de la maison."""
+    app = create_app(_settings(tmp_path))
+    with TestClient(app) as client:
+        app.state.home_assistant = SimpleNamespace(
+            status=HomeAssistantStatus(ConnectionState.CONNECTED, version="2026.9.4"),
+            snapshot=HomeSnapshot(config={"time_zone": "Pacific/Auckland"}),
+        )
+        found = client.get("/api/health").json()
+
+    assert found["time_zone"] == "Pacific/Auckland"

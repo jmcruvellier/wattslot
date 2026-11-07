@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 
 import { ApiError, getJson, postJson } from "../api";
 import { useI18n } from "../i18n/I18nProvider";
+import { hourOfDay, zoned } from "../i18n/homeTime";
 import { clock, kwh, percent } from "../plan/format";
 import { RUN_EVENT } from "../plan/planView";
 import { IndicatorsCard } from "../plan/InsightCards";
@@ -50,8 +51,7 @@ function readLaunched(): string | null {
 
 function readingHour(view: DayView): number | null {
   if (!view.actual_updated_at) return null;
-  const at = new Date(view.actual_updated_at);
-  return at.getHours() + at.getMinutes() / 60;
+  return hourOfDay(new Date(view.actual_updated_at));
 }
 
 /** Watts → « 48 W » sous 1 kW (« 0,0 kW » ferait croire à une puissance nulle), « 1,8 kW » au-delà. */
@@ -188,8 +188,8 @@ function NowCard({ now, recommendation }: { now: Now | null; recommendation: str
       {flows && now?.since && now.until && (
         <p className="dim">
           {t("today.now.measured", {
-            start: new Date(now.since).toLocaleTimeString(language, { hour: "2-digit", minute: "2-digit" }),
-            end: new Date(now.until).toLocaleTimeString(language, { hour: "2-digit", minute: "2-digit" }),
+            start: new Date(now.since).toLocaleTimeString(language, zoned({ hour: "2-digit", minute: "2-digit" })),
+            end: new Date(now.until).toLocaleTimeString(language, zoned({ hour: "2-digit", minute: "2-digit" })),
           })}
         </p>
       )}
