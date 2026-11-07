@@ -41,6 +41,13 @@ updates:
 
   - package-ecosystem: docker
     directory: /app
+    # Changer de version de Python ou de Node dans l'image mérite sa propre PR (dépendances à
+    # revérifier) : ici, seulement Python 3.12.x et Node 22.x.
+    ignore:
+      - dependency-name: python
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: node
+        update-types: ["version-update:semver-major"]
     schedule:
       interval: weekly
       day: monday
