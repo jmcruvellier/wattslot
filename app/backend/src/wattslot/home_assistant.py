@@ -33,6 +33,9 @@ COMMAND_TIMEOUT_S = 60.0
 # Désabonnement (arrêt, rechargement) : au mieux, sans attendre une connexion à demi ouverte ;
 # le Supervisor laisse 30 s pour vider les écritures avant de tuer l'extension.
 UNSUBSCRIBE_TIMEOUT_S = 5.0
+# Message lu dans un fil au-delà de cette taille (historique de la reprise : plusieurs Mo) :
+# décodé dans la boucle, il la bloquerait plusieurs secondes sur un Raspberry Pi.
+LARGE_MESSAGE_BYTES = 1_000_000
 # Relecture de l'instantané peu après une connexion : pendant le démarrage de HA (redémarrage),
 # ``get_states`` ne renvoie que les entités déjà chargées, sans erreur — l'instantané serait
 # incomplet sinon, et ne serait plus jamais relu (alertes « capteur inexistant » figées).
@@ -314,7 +317,10 @@ class HomeAssistantClient:
         loading = asyncio.create_task(self._on_connected())
         try:
             async for raw in websocket:
-                self._dispatch(raw)
+                if len(raw) > LARGE_MESSAGE_BYTES:
+                    self._handle(await asyncio.to_thread(json.loads, raw))
+                else:
+                    self._dispatch(raw)
         finally:
             loading.cancel()
             results = await asyncio.gather(loading, return_exceptions=True)
@@ -346,7 +352,11 @@ class HomeAssistantClient:
             raise
         version = snapshot.config.get("version")
         self.status = HomeAssistantStatus(ConnectionState.CONNECTED, version=version)
-        for subscription in list(self._subscriptions.values()):
+        for name, subscription in list(self._subscriptions.items()):
+            # Remplacé ou retiré pendant la boucle (« subscribe » d'un enregistrement de la
+            # maison) : le nouveau est déjà actif, l'ancien ne doit pas l'être aussi.
+            if self._subscriptions.get(name) is not subscription:
+                continue
             try:
                 await self._activate(subscription)
             except Exception as exc:  # noqa: BLE001 — rapporté, les autres continuent
@@ -362,7 +372,9 @@ class HomeAssistantClient:
         logger.info("Connecté à Home Assistant %s (%s entités)", version, len(snapshot.states))
 
     def _dispatch(self, raw: str | bytes) -> None:
-        message = json.loads(raw)
+        self._handle(json.loads(raw))
+
+    def _handle(self, message: Any) -> None:
         if not isinstance(message, dict):
             return
         message_id = message.get("id", -1)

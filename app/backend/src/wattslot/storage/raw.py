@@ -25,7 +25,8 @@ import shutil
 import threading
 import time
 from collections import OrderedDict
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
@@ -38,8 +39,9 @@ from wattslot.ontology import HOME
 
 RAW_DIRNAME = "raw"
 # Journées conservées (3) et aujourd'hui : l'agrégation relit les jours précédents pendant que
-# l'ingestion écrit aujourd'hui ; un magasin fermé puis rouvert pendant qu'un autre fil s'en
-# sert serait verrouillé par RocksDB.
+# l'ingestion écrit aujourd'hui. Au-delà (conservation jusqu'à 30 jours, journal des cycles),
+# les plus anciens sont fermés, sauf ceux qu'un autre fil utilise encore : rouvert pendant
+# qu'il s'en sert, un magasin serait refusé par le verrou de RocksDB.
 OPEN_STORES = 5
 FLUSH_TRIPLES = 200_000  # triplets écrits dans un magasin avant son flush
 FLUSH_INTERVAL = timedelta(minutes=60)
@@ -85,6 +87,7 @@ class RawStores:
         self.root.mkdir(parents=True, exist_ok=True)
         self.zone = ZoneInfo(time_zone)
         self._open: OrderedDict[date, pyoxigraph.Store] = OrderedDict()
+        self._users: dict[date, int] = {}  # fils qui utilisent le magasin : jamais fermé
         self._lock = threading.Lock()  # écriture (ingestion) et lecture (agrégation)
         self._unflushed: dict[date, int] = {}  # triplets écrits depuis le dernier flush
         self._clock = clock
@@ -100,17 +103,49 @@ class RawStores:
         return sorted(date.fromisoformat(p.name) for p in self.root.iterdir() if p.is_dir())
 
     def store(self, day: date) -> pyoxigraph.Store:
+        """Magasin d'une journée, sans le réserver : pour un seul fil (migration au démarrage).
+        Les lectures et écritures de l'application passent par ``_using``."""
         with self._lock:
-            if day in self._open:
-                self._open.move_to_end(day)
-                return self._open[day]
-            store = pyoxigraph.Store(str(self.root / day.isoformat()))
-            self._open[day] = store
-            while len(self._open) > OPEN_STORES:
-                day_out, oldest = self._open.popitem(last=False)
-                oldest.flush()
-                self._unflushed.pop(day_out, None)
+            store = self._opened(day)
+            self._evict()
             return store
+
+    def _opened(self, day: date) -> pyoxigraph.Store:
+        """Magasin ouvert de ``day`` (le plus récemment servi) ; sous ``_lock``."""
+        if day in self._open:
+            self._open.move_to_end(day)
+            return self._open[day]
+        store = pyoxigraph.Store(str(self.root / day.isoformat()))
+        self._open[day] = store
+        return store
+
+    def _evict(self) -> None:
+        """Ferme les magasins les plus anciens au-delà de ``OPEN_STORES``, sauf ceux en cours
+        d'utilisation : la limite peut être dépassée le temps qu'ils soient rendus ; sous
+        ``_lock``."""
+        for day_out in list(self._open):
+            if len(self._open) <= OPEN_STORES:
+                return
+            if self._users.get(day_out):
+                continue
+            self._open.pop(day_out).flush()
+            self._unflushed.pop(day_out, None)
+
+    @contextmanager
+    def _using(self, day: date) -> Iterator[pyoxigraph.Store]:
+        """Magasin réservé le temps du bloc : pas fermé par un autre fil qui en ouvre d'autres."""
+        with self._lock:
+            store = self._opened(day)
+            self._users[day] = self._users.get(day, 0) + 1
+            self._evict()
+        try:
+            yield store
+        finally:
+            with self._lock:
+                self._users[day] -= 1
+                if not self._users[day]:
+                    del self._users[day]
+                self._evict()
 
     def write(self, readings: Iterable[Reading]) -> int:
         """Écrit un lot (une transaction par jour), ``flush`` selon le volume et le temps écoulé ;
@@ -120,12 +155,13 @@ class RawStores:
             by_day.setdefault(self.day_of(reading.time), []).append(reading_nquads(reading))
         written = 0
         for day, lines in sorted(by_day.items()):
-            store = self.store(day)
-            store.load("".join(lines).encode(), format=pyoxigraph.RdfFormat.N_QUADS)
-            self._unflushed[day] = self._unflushed.get(day, 0) + TRIPLES_PER_READING * len(lines)
-            if self._unflushed[day] >= FLUSH_TRIPLES:
-                store.flush()
-                self._unflushed[day] = 0
+            with self._using(day) as store:
+                store.load("".join(lines).encode(), format=pyoxigraph.RdfFormat.N_QUADS)
+                unflushed = self._unflushed.get(day, 0) + TRIPLES_PER_READING * len(lines)
+                self._unflushed[day] = unflushed
+                if unflushed >= FLUSH_TRIPLES:
+                    store.flush()
+                    self._unflushed[day] = 0
             written += len(lines)
         if self._clock() - self._flushed_at >= FLUSH_INTERVAL.total_seconds():
             self.flush()
@@ -133,12 +169,13 @@ class RawStores:
 
     def count(self, day: date) -> int:
         """Nombre d'observations d'une journée."""
-        solutions = self.store(day).query(
-            f"SELECT (COUNT(?o) AS ?n) WHERE {{ ?o a <{SOSA}Observation> }}"
-        )
-        assert isinstance(solutions, pyoxigraph.QuerySolutions)
-        for solution in solutions:
-            return int(solution["n"].value)
+        with self._using(day) as store:
+            solutions = store.query(
+                f"SELECT (COUNT(?o) AS ?n) WHERE {{ ?o a <{SOSA}Observation> }}"
+            )
+            assert isinstance(solutions, pyoxigraph.QuerySolutions)
+            for solution in solutions:
+                return int(solution["n"].value)
         return 0
 
     def readings(self, start: datetime, end: datetime) -> list[tuple[str, datetime, float]]:
@@ -152,25 +189,27 @@ class RawStores:
         for day in self.days():
             if not first <= day <= last:
                 continue
-            solutions = self.store(day).query(
-                f"SELECT ?s ?t ?v WHERE {{ ?o <{SOSA}madeBySensor> ?s ; "
-                f"<{SOSA}resultTime> ?t ; <{SOSA}hasSimpleResult> ?v . {bounds} }}"
-            )
-            assert isinstance(solutions, pyoxigraph.QuerySolutions)
-            for solution in solutions:
-                time = datetime.fromisoformat(solution["t"].value).astimezone(UTC)
-                found.append((solution["s"].value, time, float(solution["v"].value)))
+            with self._using(day) as store:
+                solutions = store.query(
+                    f"SELECT ?s ?t ?v WHERE {{ ?o <{SOSA}madeBySensor> ?s ; "
+                    f"<{SOSA}resultTime> ?t ; <{SOSA}hasSimpleResult> ?v . {bounds} }}"
+                )
+                assert isinstance(solutions, pyoxigraph.QuerySolutions)
+                for solution in solutions:
+                    time = datetime.fromisoformat(solution["t"].value).astimezone(UTC)
+                    found.append((solution["s"].value, time, float(solution["v"].value)))
         return found
 
     def counts_by_sensor(self, day: date) -> dict[str, int]:
         """Observations d'une journée par capteur (sans créer le magasin s'il n'existe pas)."""
         if day not in self.days():
             return {}
-        solutions = self.store(day).query(
-            f"SELECT ?s (COUNT(?o) AS ?n) WHERE {{ ?o <{SOSA}madeBySensor> ?s }} GROUP BY ?s"
-        )
-        assert isinstance(solutions, pyoxigraph.QuerySolutions)
-        return {solution["s"].value: int(solution["n"].value) for solution in solutions}
+        with self._using(day) as store:
+            solutions = store.query(
+                f"SELECT ?s (COUNT(?o) AS ?n) WHERE {{ ?o <{SOSA}madeBySensor> ?s }} GROUP BY ?s"
+            )
+            assert isinstance(solutions, pyoxigraph.QuerySolutions)
+            return {solution["s"].value: int(solution["n"].value) for solution in solutions}
 
     def remove_day(self, day: date) -> None:
         """Supprime une journée : un dossier (utilisé par la conservation, lot 1.4)."""

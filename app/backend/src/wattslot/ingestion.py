@@ -18,6 +18,7 @@ import asyncio
 import logging
 import math
 import sqlite3
+import threading
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -39,6 +40,9 @@ SUBSCRIPTION = "ingestion"
 BATCH_INTERVAL_S = 30.0
 STATE_INTERVAL = timedelta(minutes=5)
 BATCH_MAX = 2000
+# File d'attente des relevés quand l'écriture échoue (disque plein…) : au-delà, les plus anciens
+# sont abandonnés plutôt que de remplir la mémoire (environ 3 h de relevés d'une maison).
+QUEUE_MAX = 200_000
 MIN_INTERVAL_S = 60.0  # au moins un relevé par minute, au plus un par minute (compteurs)
 POWER_DEADBAND_W = 10.0
 POWER_DEADBAND_RATIO = 0.05
@@ -101,6 +105,30 @@ class ReadingFilter:
 
     def __init__(self) -> None:
         self._last: dict[str, _Last] = {}
+        # Dernier relevé d'énergie écarté (moins d'une minute après le précédent) : écrit plus
+        # tard par ``due``. Sans lui, le dernier incrément avant qu'un compteur s'arrête (fin
+        # d'un cycle) n'était compté qu'au prochain changement, parfois des heures après.
+        self._pending: dict[str, _Last] = {}
+
+    def due(self, now: datetime) -> list[tuple[str, float, datetime]]:
+        """Relevés d'énergie écartés dont la minute est passée : (entité, valeur, heure)."""
+        found = [
+            (entity_id, pending.value, pending.time)
+            for entity_id, pending in self._pending.items()
+            if (now - self._last[entity_id].time).total_seconds() >= MIN_INTERVAL_S
+        ]
+        for entity_id, value, time in found:
+            del self._pending[entity_id]
+            self._last[entity_id] = _Last(value, time)
+        return found
+
+    def pending(self) -> list[tuple[str, float, datetime]]:
+        """Tous les relevés écartés en attente (arrêt, fin d'une reprise), retirés."""
+        found = [(e, p.value, p.time) for e, p in self._pending.items()]
+        for entity_id, value, time in found:
+            self._last[entity_id] = _Last(value, time)
+        self._pending.clear()
+        return found
 
     def keep(self, role: Role, entity_id: str, value: float, time: datetime) -> bool:
         last = self._last.get(entity_id)
@@ -114,10 +142,13 @@ class ReadingFilter:
             elif role in ENERGY_ROLES:
                 reset = value < last.value
                 keep = reset or (value != last.value and elapsed >= MIN_INTERVAL_S)
+                if not keep and value != last.value:
+                    self._pending[entity_id] = _Last(value, time)
             else:
                 keep = value != last.value or elapsed >= MIN_INTERVAL_S
         if keep:
             self._last[entity_id] = _Last(value, time)
+            self._pending.pop(entity_id, None)  # dépassé par un relevé retenu
         return keep
 
 
@@ -236,6 +267,9 @@ class Ingestor:
         self._counters = _Counters()
         self._writer: asyncio.Task[None] | None = None
         self._backfill_task: asyncio.Task[None] | None = None
+        # Écriture du brut et de l'état de reprise : file d'écriture et reprise, chacune dans
+        # un fil, se partagent ``_state``.
+        self._write_lock = threading.RLock()
         # Session de HA dont le trou de coupure est comblé (``None`` : aucune encore).
         self._synced_session: int | None = None
         self._state: dict[str, Reading] = {}  # dernier relevé écrit, pas encore en base
@@ -258,7 +292,10 @@ class Ingestor:
             except (ZoneInfoNotFoundError, ValueError) as exc:  # fuseau inconnu : pas de blocage
                 logger.warning("Fuseau de Home Assistant ignoré (%s) : %s", time_zone, exc)
         if self._database is not None and self._targets:
-            self._backfill_task = asyncio.create_task(self._backfill(session))
+            # Reconnexion pendant une reprise : la nouvelle attend la précédente, au lieu de
+            # tourner en même temps qu'elle (``stop`` n'attendait que la dernière).
+            previous = self._backfill_task
+            self._backfill_task = asyncio.create_task(self._backfill(session, previous))
         else:
             self._synced_session = session
 
@@ -270,9 +307,11 @@ class Ingestor:
             found[entity_id] = max(found.get(entity_id, reading.time), reading.time)
         return found
 
-    async def _backfill(self, session: int) -> None:
+    async def _backfill(self, session: int, previous: asyncio.Task[None] | None = None) -> None:
         """Comble, depuis l'historique de HA, le trou laissé par une coupure. Réussie ou non
         (historique illisible : trou perdu), la session est ensuite tenue pour à jour."""
+        if previous is not None:
+            await asyncio.gather(previous, return_exceptions=True)
         try:
             await self._fill_gap()
         finally:
@@ -317,6 +356,8 @@ class Ingestor:
                     continue
                 if gap_filter.keep(target.role, entity_id, value, time):
                     readings.append(Reading(entity_id, target.sensor_iri, value, time))
+            for _, value, time in gap_filter.pending():  # fin du trou : dernier incrément
+                readings.append(Reading(entity_id, target.sensor_iri, value, time))
         for start in range(0, len(readings), BATCH_MAX):
             await asyncio.to_thread(self.write_batch, readings[start : start + BATCH_MAX])
         self._counters.backfilled += len(readings)
@@ -334,6 +375,7 @@ class Ingestor:
         if self._writer is not None:
             self._writer.cancel()
             await asyncio.gather(self._writer, return_exceptions=True)
+        self._queue_held(self._filter.pending())  # derniers incréments écartés
         await self._flush_queue()
         await asyncio.to_thread(self.close)
 
@@ -387,9 +429,17 @@ class Ingestor:
             self._queue.append(Reading(entity_id, target.sensor_iri, value, time))
             status.kept += 1
 
+    def _queue_held(self, held: list[tuple[str, float, datetime]]) -> None:
+        """Met en file les relevés écartés que le filtre rend (``due``, ``pending``)."""
+        for entity_id, value, time in held:
+            target = self._targets.get(entity_id)
+            if target is not None:
+                self._queue.append(Reading(entity_id, target.sensor_iri, value, time))
+
     async def _write_loop(self) -> None:
         while True:
             await asyncio.sleep(BATCH_INTERVAL_S)
+            self._queue_held(self._filter.due(datetime.now(UTC)))
             await self._flush_queue()
 
     async def _flush_queue(self) -> None:
@@ -399,6 +449,10 @@ class Ingestor:
                 written = await asyncio.to_thread(self.write_batch, batch)
             except Exception as exc:  # noqa: BLE001 — le lot est remis en file
                 self._queue = batch + self._queue
+                if len(self._queue) > QUEUE_MAX:
+                    dropped = len(self._queue) - QUEUE_MAX
+                    self._queue = self._queue[dropped:]
+                    logger.warning("File des relevés pleine : %s plus anciens abandonnés", dropped)
                 self._counters.last_error = f"{type(exc).__name__}: {exc}"
                 logger.warning("Écriture des relevés impossible : %s", exc)
                 return
@@ -408,18 +462,23 @@ class Ingestor:
     def write_batch(self, batch: list[Reading], now: datetime | None = None) -> int:
         """Écrit un lot et retient, par entité, le dernier relevé écrit (reprise) : en base au
         plus toutes les ``STATE_INTERVAL``, et à l'arrêt."""
-        written = self._stores.write(batch)
-        for reading in batch:
-            known = self._state.get(reading.entity_id)
-            if known is None or reading.time > known.time:
-                self._state[reading.entity_id] = reading
-        now = now or datetime.now(UTC)
-        if self._state_saved_at is None or now - self._state_saved_at >= STATE_INTERVAL:
-            self.save_state(now)
-        return written
+        with self._write_lock:
+            written = self._stores.write(batch)
+            for reading in batch:
+                known = self._state.get(reading.entity_id)
+                if known is None or reading.time > known.time:
+                    self._state[reading.entity_id] = reading
+            now = now or datetime.now(UTC)
+            if self._state_saved_at is None or now - self._state_saved_at >= STATE_INTERVAL:
+                self.save_state(now)
+            return written
 
     def save_state(self, now: datetime | None = None) -> None:
         """Derniers relevés écrits, par entité, en base (point de départ de la reprise)."""
+        with self._write_lock:
+            self._save_state(now)
+
+    def _save_state(self, now: datetime | None) -> None:
         self._state_saved_at = now or datetime.now(UTC)
         if self._database is None or not self._state:
             self._state = {}

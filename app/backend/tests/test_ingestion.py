@@ -72,6 +72,26 @@ def test_counters_at_most_once_a_minute_except_on_reset() -> None:
     assert keep == [True, False, True, False, True]
 
 
+def test_the_last_increment_of_a_counter_is_written_once_its_minute_has_passed() -> None:
+    """Fin d'un cycle : le compteur change 40 s après le dernier relevé retenu, puis ne bouge
+    plus. Ce dernier incrément était perdu jusqu'au prochain changement, parfois des heures
+    après ; il est rendu dès que sa minute est passée (ou à l'arrêt)."""
+    f = ReadingFilter()
+    f.keep(Role.ENERGY_CONSUMED, "e", 1.00, T0)
+    assert not f.keep(Role.ENERGY_CONSUMED, "e", 1.02, T0 + timedelta(seconds=40))
+
+    assert f.due(T0 + timedelta(seconds=50)) == []  # minute pas encore passée
+    assert f.due(T0 + timedelta(seconds=70)) == [("e", 1.02, T0 + timedelta(seconds=40))]
+    assert f.due(T0 + timedelta(seconds=200)) == []  # rendu une seule fois
+
+    # Un relevé retenu ensuite remplace l'attente ; à l'arrêt, ce qui reste est rendu.
+    assert not f.keep(Role.ENERGY_CONSUMED, "e", 1.03, T0 + timedelta(seconds=80))
+    assert f.keep(Role.ENERGY_CONSUMED, "e", 1.05, T0 + timedelta(seconds=110))
+    assert f.pending() == []
+    assert not f.keep(Role.ENERGY_CONSUMED, "e", 1.06, T0 + timedelta(seconds=120))
+    assert f.pending() == [("e", 1.06, T0 + timedelta(seconds=120))]
+
+
 @pytest.mark.parametrize(
     ("role", "raw", "unit", "expected"),
     [
@@ -404,3 +424,54 @@ def test_ready_only_once_the_gap_of_the_current_session_is_filled(tmp_path: Path
         return seen
 
     assert asyncio.run(scenario()) == [False, True, False]
+
+
+def test_a_new_backfill_waits_for_the_previous_one(tmp_path: Path) -> None:
+    """Reconnexion pendant une reprise : la nouvelle attend la précédente au lieu de tourner en
+    même temps qu'elle (deux fils qui écrivent le brut et l'état de reprise)."""
+    ingestor = Ingestor(cast(HomeAssistantClient, _BrokenClient()), RawStores(tmp_path))
+    order: list[str] = []
+
+    async def scenario() -> None:
+        release = asyncio.Event()
+
+        async def first() -> None:
+            await release.wait()
+            order.append("première")
+
+        async def fill() -> None:
+            order.append("seconde")
+
+        ingestor._fill_gap = fill  # type: ignore[method-assign]
+        previous = asyncio.create_task(first())
+        second = asyncio.create_task(ingestor._backfill(1, previous))
+        await asyncio.sleep(0.01)
+        assert order == []  # la seconde attend
+        release.set()
+        await second
+
+    asyncio.run(scenario())
+
+    assert order == ["première", "seconde"]
+
+
+def test_the_queue_does_not_grow_without_limit(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Écriture impossible (disque plein…) : les lots remis en file sont bornés, les plus
+    anciens abandonnés plutôt que de remplir la mémoire."""
+    monkeypatch.setattr("wattslot.ingestion.QUEUE_MAX", 5)
+    ingestor = Ingestor(cast(HomeAssistantClient, _BrokenClient()), RawStores(tmp_path))
+    moment = datetime.now(UTC).replace(microsecond=0)
+    ingestor._queue = [
+        Reading("sensor.p", "urn:sensor:p", float(i), moment + timedelta(seconds=i))
+        for i in range(8)
+    ]
+
+    def fail(batch: list[Reading], now: datetime | None = None) -> int:
+        raise OSError("disque plein")
+
+    ingestor.write_batch = fail  # type: ignore[method-assign]
+    asyncio.run(ingestor._flush_queue())
+
+    assert [r.value for r in ingestor._queue] == [3.0, 4.0, 5.0, 6.0, 7.0]

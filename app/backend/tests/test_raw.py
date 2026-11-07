@@ -57,3 +57,24 @@ def test_explicit_flush_and_removal(tmp_path: Path) -> None:
     stores.write(readings(3, offset=10))
     stores.remove_day(day)
     assert day not in stores._unflushed and stores.days() == []
+
+
+def test_a_store_in_use_is_not_closed_by_another_thread(tmp_path: Path) -> None:
+    """Conservation de 30 jours : un fil ouvre plus de journées que ``OPEN_STORES`` pendant
+    qu'un autre se sert encore d'un magasin. Fermé puis rouvert, ce magasin était refusé par le
+    verrou de RocksDB ; il reste ouvert jusqu'à ce qu'il soit rendu."""
+    stores = RawStores(tmp_path)
+    days = [START + timedelta(days=d) for d in range(raw_module.OPEN_STORES + 3)]
+    for moment in days:
+        stores.write([Reading("sensor.p", "http://example.org/p", 1.0, moment)])
+    first = stores.day_of(days[0])
+
+    with stores._using(first) as held:
+        for moment in days[1:]:
+            assert stores.count(stores.day_of(moment)) == 1  # ouvre les autres journées
+        assert first in stores._open  # pas fermé : un fil s'en sert
+        held.flush()
+
+    # Rendu : la limite est de nouveau tenue, et la journée se relit (rouverte sans verrou).
+    assert len(stores._open) <= raw_module.OPEN_STORES
+    assert stores.count(first) == 1

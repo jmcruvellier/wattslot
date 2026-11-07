@@ -186,6 +186,8 @@ def schema_version(connection: sqlite3.Connection) -> int:
 
 def migrate(connection: sqlite3.Connection) -> int:
     """Applique les migrations manquantes ; renvoie la version du schéma obtenue."""
+    if connection.in_transaction:  # écritures de l'appelant validées avant les migrations
+        connection.commit()
     connection.execute(
         "CREATE TABLE IF NOT EXISTS schema_migrations ("
         " version INTEGER PRIMARY KEY,"
@@ -195,7 +197,12 @@ def migrate(connection: sqlite3.Connection) -> int:
     for version, statement in enumerate(MIGRATIONS, start=1):
         if version <= current:
             continue
+        # Une transaction pour la migration et sa version : le module sqlite3 n'en ouvre pas
+        # avant un CREATE ou un ALTER. Sans elle, une coupure entre les deux laissait la
+        # migration faite mais non notée, rejouée au démarrage suivant (« duplicate column ») :
+        # l'application ne démarrait plus.
         with connection:
+            connection.execute("BEGIN")
             connection.execute(statement)
             connection.execute("INSERT INTO schema_migrations (version) VALUES (?)", (version,))
     return schema_version(connection)

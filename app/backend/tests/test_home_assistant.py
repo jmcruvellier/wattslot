@@ -16,7 +16,12 @@ from tests.fake_home_assistant import (
     running_client,
 )
 from wattslot import home_assistant
-from wattslot.home_assistant import CommandError, ConnectionState, HomeAssistantClient
+from wattslot.home_assistant import (
+    CommandError,
+    ConnectionState,
+    HomeAssistantClient,
+    HomeSnapshot,
+)
 from wattslot.runtime import HomeAssistantTarget
 
 
@@ -234,3 +239,46 @@ def test_unsubscribing_does_not_wait_for_a_silent_connection(
             await client.unsubscribe("states")
 
     asyncio.run(scenario())
+
+
+def test_a_subscription_replaced_during_reconnection_is_activated_once() -> None:
+    """Reconnexion : la boucle rétablit une copie des abonnements. Un abonnement remplacé
+    pendant ce temps (enregistrement de la maison) n'est plus activé en double."""
+    client = HomeAssistantClient(
+        HomeAssistantTarget(websocket_url="ws://192.0.2.10/api/websocket", token="test")
+    )
+    activated: list[str] = []
+
+    async def scenario() -> None:
+        def ignore(event: dict[str, Any]) -> None:
+            return None
+
+        async def command(kind: str, **params: Any) -> Any:
+            activated.append(params.get("tag", kind))
+            if params.get("tag") == "a":  # pendant la reconnexion, « b » est remplacé
+                await client.subscribe("b", "subscribe_events", ignore, tag="b-new")
+            return None
+
+        async def snapshot() -> HomeSnapshot:
+            return HomeSnapshot()
+
+        await client.subscribe("a", "subscribe_events", ignore, tag="a")
+        await client.subscribe("b", "subscribe_events", ignore, tag="b-old")
+        client._websocket = cast(Any, _SilentWebSocket())
+        client.command = command  # type: ignore[method-assign,assignment]
+        client.refresh_snapshot = snapshot  # type: ignore[method-assign]
+        await client._on_connected()
+
+    asyncio.run(scenario())
+
+    assert activated.count("b-new") == 1
+    assert "b-old" not in activated
+
+
+def test_large_messages_are_decoded_outside_the_event_loop(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Historique de la reprise (plusieurs Mo) : décodé dans un fil, les réponses arrivent."""
+    monkeypatch.setattr(home_assistant, "LARGE_MESSAGE_BYTES", 0)  # tous les messages
+    client = asyncio.run(_connected())
+
+    assert client.status.state is ConnectionState.CONNECTED
+    assert client.snapshot.config["time_zone"] == "Europe/Paris"
