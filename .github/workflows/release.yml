@@ -22,9 +22,10 @@ on:
         description: "Étiquette déjà publiée (vX.Y.Z) à mettre sur la branche addon"
         required: true
 
+# Lecture seule par défaut ; chaque job demande seulement ce qu'il écrit. Le job « image » exécute
+# du code du dépôt (version.py) : il n'a pas le droit d'écrire dans le dépôt.
 permissions:
-  contents: write # branche addon, release GitHub
-  packages: write # étiquettes de l'image
+  contents: read
 
 env:
   IMAGE: ghcr.io/${{ github.repository_owner }}/wattslot
@@ -35,8 +36,11 @@ jobs:
     name: Image ${{ github.ref_name }}
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write # étiquettes X.Y.Z et latest sur l'image du commit
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
 
@@ -64,7 +68,7 @@ jobs:
               sys.exit(f"Section « {version} » absente ou à écrire dans CHANGELOG.md")
           PY
 
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -103,13 +107,13 @@ jobs:
       packages: write # signature déposée à côté de l'image
       id-token: write # identité OIDC du workflow, pour le certificat
     steps:
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: sigstore/cosign-installer@v4.1.2
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
         with:
           cosign-release: v3.1.4
 
@@ -131,6 +135,9 @@ jobs:
     needs: image
     if: ${{ !cancelled() && (github.event_name == 'workflow_dispatch' || needs.image.result == 'success') }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # branche addon
+      packages: read # image de la version, vérifiée avant publication
     steps:
       - name: Étiquette valide
         run: |
@@ -138,12 +145,12 @@ jobs:
             || { echo "::error::Étiquette invalide : $TAG (attendu vX.Y.Z)."; exit 1; }
           echo "VERSION=${TAG#v}" >> "$GITHUB_ENV"
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: ${{ env.TAG }}
           fetch-depth: 0
 
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -189,9 +196,10 @@ jobs:
     needs: addon
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # release GitHub
     steps:
-      - uses: actions/checkout@v4
-
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - name: Notes de version (CHANGELOG de l'extension)
         run: |
           python3 - "${GITHUB_REF_NAME#v}" > notes.md <<'PY'
