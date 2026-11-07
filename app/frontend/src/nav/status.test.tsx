@@ -1,13 +1,13 @@
 // Pastille d'état et feuille « Demander un appareil » (lot 6b.2).
 
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, renderHook, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import App from "../App";
 import type { Problem } from "../diagnostic/ProblemsSection";
 import { I18nProvider } from "../i18n/I18nProvider";
-import { statusLevel } from "./status";
+import { statusLevel, useStatusLevel } from "./status";
 
 function problem(severity: Problem["severity"]): Problem {
   return { code: "x", severity, params: {}, target: null, doc: null };
@@ -113,5 +113,28 @@ describe("barre de l'application", () => {
     renderApp();
     await userEvent.click(screen.getAllByRole("button", { name: "Demander un appareil" })[0]);
     expect(await screen.findByText(/Aucun appareil de votre maison/)).toBeInTheDocument();
+  });
+});
+
+describe("pastille en navigation rapide", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("une réponse ancienne arrivée après une plus récente ne remplace pas la pastille", async () => {
+    const answers: ((problems: Problem[]) => void)[] = [];
+    vi.spyOn(globalThis, "fetch").mockImplementation(
+      () => new Promise((resolve) => answers.push((problems) => resolve(Response.json(problems)))),
+    );
+    const { result } = renderHook(() => useStatusLevel());
+    await waitFor(() => expect(answers).toHaveLength(1));
+    act(() => {
+      window.dispatchEvent(new HashChangeEvent("hashchange")); // changement d'écran
+    });
+    await waitFor(() => expect(answers).toHaveLength(2));
+
+    await act(async () => answers[1]([])); // la plus récente : tout va bien
+    await waitFor(() => expect(result.current).toBe("ok"));
+    await act(async () => answers[0]([problem("blocking")])); // l'ancienne, en retard
+
+    expect(result.current).toBe("ok");
   });
 });

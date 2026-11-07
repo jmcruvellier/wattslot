@@ -89,6 +89,9 @@ export default function ChatCard({
   const [conversation, setConversation] = useState<string | null>(saved.conversation);
   const [waiting, setWaiting] = useState(false);
   const log = useRef<HTMLDivElement>(null);
+  // Conversation en cours : « Recommencer » en ouvre une autre ; une réponse de l'ancienne
+  // arrivée ensuite est ignorée (elle remettait son identifiant et s'ajoutait au fil vidé).
+  const generation = useRef(0);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -133,6 +136,7 @@ export default function ChatCard({
     setLines((current) => [...current, { from: "me", text }]);
     setWaiting(true);
     const started = performance.now();
+    const mine = generation.current;
     try {
       const reply = await postJson<ChatReply>("api/assistant/chat", {
         text,
@@ -141,6 +145,7 @@ export default function ChatCard({
         language,
         history: chosen.startsWith(OPEN_WEBUI) ? history.slice(-60) : [],
       });
+      if (mine !== generation.current) return;
       setConversation(reply.conversation_id);
       setLines((current) => [
         ...current,
@@ -152,6 +157,7 @@ export default function ChatCard({
         },
       ]);
     } catch (error) {
+      if (mine !== generation.current) return;
       const lost = error instanceof ApiError && error.status === 503 && !chosen.startsWith(OPEN_WEBUI);
       const key = lost ? "assistant.chat.not_connected" : "assistant.chat.failed";
       setLines((current) => [
@@ -159,13 +165,15 @@ export default function ChatCard({
         { from: "assistant", text: t(key), error: true, duration: (performance.now() - started) / 1000 },
       ]);
     } finally {
-      setWaiting(false);
+      if (mine === generation.current) setWaiting(false);
     }
   };
 
   const restart = () => {
+    generation.current += 1;
     setLines([]);
     setConversation(null);
+    setWaiting(false);
   };
 
   return (

@@ -4,7 +4,7 @@
 // si les variables d'environnement fixent la connexion, elle ne se change pas ici. Présentation
 // des sous-pages des Réglages : l'état en carte, puis des listes.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { ApiError, getJson, postJson } from "../api";
 import { useI18n } from "../i18n/I18nProvider";
@@ -43,15 +43,25 @@ export default function ConnectionScreen({ returned }: { returned: string | null
     return () => controller.abort();
   }, []);
 
+  // Écran quitté : l'attente du redémarrage s'arrête (elle rechargeait sinon l'application
+  // depuis un autre écran, jusqu'à RESTART_WAIT_MS plus tard).
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+
   // Redémarrage : l'application cesse de répondre puis revient ; on recharge alors la page.
   const waitForRestart = async () => {
     setAction("restarting");
     const started = Date.now();
     await new Promise((resolve) => window.setTimeout(resolve, 2 * POLL_MS));
-    while (Date.now() - started < RESTART_WAIT_MS) {
+    while (mounted.current && Date.now() - started < RESTART_WAIT_MS) {
       try {
         const response = await fetch("api/health");
-        if (response.ok) {
+        if (response.ok && mounted.current) {
           window.location.assign(applicationAddress());
           return;
         }
@@ -60,7 +70,7 @@ export default function ConnectionScreen({ returned }: { returned: string | null
       }
       await new Promise((resolve) => window.setTimeout(resolve, POLL_MS));
     }
-    setAction("timeout");
+    if (mounted.current) setAction("timeout");
   };
 
   const reason = (error: unknown) =>
