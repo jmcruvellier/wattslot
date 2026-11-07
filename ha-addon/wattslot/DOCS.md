@@ -16,6 +16,8 @@ The add-on keeps a detailed history of your energy data, written continuously. P
 
 A mini PC or a virtual machine with an SSD has no particular constraint.
 
+One exception: in a **virtual machine** (Proxmox…), give it a processor of type **host** (or **x86-64-v2-AES**): the default types `kvm64` and `qemu64` hide instructions the planning engine needs, and the app stops at start-up. See [Troubleshooting](https://github.com/jmcruvellier/wattslot/blob/main/docs/troubleshooting.md).
+
 ## Installation
 
 1. Install the add-on and start it.

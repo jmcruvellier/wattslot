@@ -1,5 +1,85 @@
 # Changelog
 
+## 0.9.7
+
+### English
+
+This release fixes a security issue in the standalone Docker mode, reported privately by a contributor, and makes WattSlot sturdier: the plan is always calculated, no more gaps in the data after a restart, and no more occasional errors on busy installations. **As a Home Assistant app, there is nothing to do.** In standalone mode, read the first section before updating.
+
+- **Security (standalone Docker mode)**
+  - WattSlot now only answers when opened by an IP address, a name without a dot (`http://nas:8100`) or a local name (`.local`, `.lan`, `.home.arpa`, `.internal`). **Behind a reverse proxy or with your own domain name, add it to the new `WATTSLOT_ALLOWED_HOSTS` variable**, otherwise WattSlot refuses the request; the log says which name to add.
+  - Changes sent by another web page are refused.
+  - Chatting with Home Assistant's conversation agents from the Assistant screen is now off by default, because Assist can control your devices and standalone mode has no login. Set `WATTSLOT_HOME_ASSISTANT_CHAT=true` to turn it back on. Open WebUI models stay available.
+  - WattSlot now runs as its own user (`wattslot`, 1000) instead of root. At the first start after the update, it hands its data volume over to that user, once (a few seconds). With a host folder instead of a named volume, its owner becomes 1000: set `WATTSLOT_UID` and `WATTSLOT_GID` to keep your own user. A token file (`HA_TOKEN_FILE`) must be readable by that user. `WATTSLOT_RUN_AS_ROOT=true` keeps the old behaviour.
+  - The saved Open WebUI key is no longer sent when the address is changed to another server: you type it again (this also applies to the app).
+
+- **A plan that is always calculated**
+  - A battery floor that rises during the day (for example 50 % in the evening) no longer prevents the plan from being calculated.
+  - A minimum duration that no longer fits in the day (a first calculation late in the evening) gives a warning instead of no plan.
+  - Negative electricity prices, or a resale price above the purchase price, no longer break the plan.
+  - When the calculation runs out of time without a solution, the previous plan stays in place instead of a meaningless one.
+
+- **Reliable data**
+  - No more hours at 0 kWh followed by a spike after a restart or a Home Assistant outage: WattSlot waits for the history to be filled before adding things up.
+  - The last increment of a meter, at the end of an appliance's cycle, is counted within a minute instead of possibly hours later.
+  - Occasional errors on busy installations ("not enough values to unpack" in the log, a missed hourly calculation) are gone: each part of the app now has its own connection to the database.
+  - Data is written to disk on shutdown even when Home Assistant does not answer, and a database update interrupted by a power cut no longer prevents the next start.
+  - With a long retention of raw readings (up to 30 days), reading and cleaning old days no longer conflict.
+
+- **Times at the home's time**
+  - "Remind me" reminders now arrive at the home's time, not two hours late in summer.
+  - The interface shows every time at the home's time, even when you open it from abroad.
+
+- **Interface**
+  - An error message in the title bar disappears after the next success, and a missed refresh of Today keeps the view on screen with a short notice.
+  - "14h60" is gone, and numbers follow the language of the interface.
+  - Starting a new conversation in the Assistant while an answer is on its way no longer brings that answer back.
+
+- **Installation**
+  - On a virtual machine whose processor type hides some instructions (Proxmox with the `kvm64` type), the log now explains what to change instead of showing a Python error. See the new troubleshooting section.
+
+- **Under the hood**
+  - Dependencies updated (Python 3.12.15, Node 22.23.3, React, FastAPI…), and the build workflows hardened.
+
+### Français
+
+Cette version corrige un problème de sécurité du mode Docker autonome, signalé en privé par un contributeur, et rend WattSlot plus solide : le plan est toujours calculé, plus de trou dans les données après un redémarrage, et plus d'erreur occasionnelle sur les installations chargées. **Comme application de Home Assistant, il n'y a rien à faire.** En mode autonome, lisez la première rubrique avant de mettre à jour.
+
+- **Sécurité (mode Docker autonome)**
+  - WattSlot ne répond plus qu'ouvert par une adresse IP, un nom sans point (`http://nas:8100`) ou un nom local (`.local`, `.lan`, `.home.arpa`, `.internal`). **Derrière un proxy inverse ou avec votre propre nom de domaine, ajoutez-le à la nouvelle variable `WATTSLOT_ALLOWED_HOSTS`**, sinon WattSlot refuse la requête ; le journal indique le nom à ajouter.
+  - Les modifications envoyées par une autre page web sont refusées.
+  - La discussion avec les agents de conversation de Home Assistant depuis l'écran Assistant est désormais désactivée par défaut : Assist peut commander vos appareils, et le mode autonome n'a pas de connexion. Définissez `WATTSLOT_HOME_ASSISTANT_CHAT=true` pour la réactiver. Les modèles d'Open WebUI restent disponibles.
+  - WattSlot tourne maintenant sous son propre utilisateur (`wattslot`, 1000) plutôt qu'en root. Au premier démarrage après la mise à jour, il lui donne son volume de données, une fois (quelques secondes). Avec un dossier de l'hôte au lieu d'un volume nommé, son propriétaire devient 1000 : définissez `WATTSLOT_UID` et `WATTSLOT_GID` pour garder votre propre utilisateur. Un fichier de jeton (`HA_TOKEN_FILE`) doit être lisible par cet utilisateur. `WATTSLOT_RUN_AS_ROOT=true` garde l'ancien fonctionnement.
+  - La clé d'Open WebUI enregistrée n'est plus envoyée quand l'adresse change vers un autre serveur : il faut la ressaisir (vaut aussi pour l'application).
+
+- **Un plan toujours calculé**
+  - Un plancher de batterie qui monte dans la journée (50 % le soir, par exemple) n'empêche plus le calcul du plan.
+  - Une durée minimale qui ne tient plus dans la journée (premier calcul tard le soir) donne un avertissement au lieu d'aucun plan.
+  - Des prix de l'électricité négatifs, ou une revente plus chère que l'achat, ne cassent plus le plan.
+  - Quand le calcul manque de temps sans trouver de solution, le plan précédent reste en place au lieu d'un plan sans valeur.
+
+- **Des données fiables**
+  - Plus d'heures à 0 kWh suivies d'un pic après un redémarrage ou une coupure de Home Assistant : WattSlot attend que l'historique soit comblé avant de faire les totaux.
+  - Le dernier incrément d'un compteur, à la fin du cycle d'un appareil, est compté dans la minute, et non parfois des heures plus tard.
+  - Les erreurs occasionnelles sur les installations chargées (« not enough values to unpack » dans le journal, un calcul horaire manqué) ont disparu : chaque partie de l'application a maintenant sa propre connexion à la base.
+  - Les données sont écrites sur le disque à l'arrêt même quand Home Assistant ne répond pas, et une mise à jour de la base interrompue par une coupure de courant n'empêche plus le démarrage suivant.
+  - Avec une longue conservation des relevés bruts (jusqu'à 30 jours), la lecture et le nettoyage des anciens jours ne se gênent plus.
+
+- **Les heures à l'heure de la maison**
+  - Les rappels « Me le rappeler » arrivent à l'heure de la maison, et non avec deux heures de retard en été.
+  - L'interface affiche toutes les heures à l'heure de la maison, même ouverte depuis l'étranger.
+
+- **Interface**
+  - Un message d'erreur dans la barre de titre disparaît au succès suivant, et un rafraîchissement manqué d'Aujourd'hui garde la vue à l'écran avec un petit mot.
+  - Fini les « 14h60 », et les nombres suivent la langue de l'interface.
+  - Lancer une nouvelle conversation dans l'Assistant pendant qu'une réponse arrive ne fait plus revenir cette réponse.
+
+- **Installation**
+  - Sur une machine virtuelle dont le type de processeur cache certaines instructions (Proxmox avec le type `kvm64`), le journal explique désormais quoi changer au lieu d'afficher une erreur Python. Voir la nouvelle rubrique de dépannage.
+
+- **Sous le capot**
+  - Dépendances à jour (Python 3.12.15, Node 22.23.3, React, FastAPI…), et chaîne de publication renforcée.
+
 ## 0.9.6
 
 ### English
