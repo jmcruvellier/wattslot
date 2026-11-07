@@ -48,10 +48,25 @@ USER_AGENT = "wattslot-download-stats"
 # Pages de versions lues au plus (50 versions par page) : les releases sont en tête.
 MAX_VERSION_PAGES = 10
 
-_TOTAL = re.compile(r"Total downloads</span>\s*<h3[^>]*>\s*([\d,]+)\s*</h3>")
+# Au-delà de 1 000, GitHub abrège le compteur (« 1.04K ») et met la valeur exacte dans ``title``.
+_TOTAL = re.compile(
+    r'Total downloads</span>\s*<h3(?:[^>]*\btitle="([\d,]+)")?[^>]*>\s*([\d.,]+[KkMm]?)\s*</h3>'
+)
 _VERSION_ROW = '<li data-view-component="true" class="Box-row">'
 _TAG = re.compile(r'\?tag=([^"&]+)"')
-_VERSION_DOWNLOADS = re.compile(r'([\d,]+)\s*<span class="sr-only">Version downloads</span>')
+_VERSION_DOWNLOADS = re.compile(
+    r'([\d.,]+[KkMm]?)\s*<span class="sr-only">Version downloads</span>'
+)
+_SUFFIX = {"k": 1_000, "m": 1_000_000}
+
+
+def parse_count(text: str) -> int:
+    """Compteur affiché par GitHub : ``1,234`` exact, ``1.04K`` ou ``2.1M`` arrondis."""
+    text = text.replace(",", "")
+    factor = _SUFFIX.get(text[-1:].lower())
+    if factor:
+        return round(float(text[:-1]) * factor)
+    return int(text)
 
 
 def api_get(path: str, token: str | None) -> object:
@@ -90,7 +105,7 @@ def package_total(html: str) -> int:
     match = _TOTAL.search(html)
     if not match:
         raise ValueError("compteur « Total downloads » introuvable")
-    return int(match.group(1).replace(",", ""))
+    return parse_count(match.group(1) or match.group(2))
 
 
 def package_versions(html: str) -> list[dict]:
@@ -102,7 +117,7 @@ def package_versions(html: str) -> list[dict]:
             out.append(
                 {
                     "tags": _TAG.findall(row),
-                    "downloads": int(downloads.group(1).replace(",", "")),
+                    "downloads": parse_count(downloads.group(1)),
                 }
             )
     return out
