@@ -19,6 +19,7 @@ import urllib.error
 import urllib.request
 from collections.abc import Awaitable, Callable
 from typing import Any, Literal
+from urllib.parse import urlsplit
 
 from pydantic import BaseModel, Field
 
@@ -82,10 +83,36 @@ def state(setting: OpenWebUISetting) -> OpenWebUIState:
     return OpenWebUIState(url=setting.url, has_key=bool(setting.api_key))
 
 
+def origin(url: str | None) -> tuple[str, str, int] | None:
+    """Schéma, hôte et port de ``url`` (port par défaut du schéma) ; ``None`` si illisible."""
+    if not url:
+        return None
+    parts = urlsplit(url)
+    try:
+        port = parts.port
+    except ValueError:
+        return None
+    if parts.scheme not in ("http", "https") or not parts.hostname:
+        return None
+    return parts.scheme, parts.hostname, port or (443 if parts.scheme == "https" else 80)
+
+
 def merged(saved: OpenWebUISetting, change: OpenWebUIChange) -> OpenWebUISetting:
-    """Réglage après la modification : la clé saisie, sinon l'actuelle, sauf si effacée."""
-    key = None if change.clear_key else (change.api_key or saved.api_key)
+    """Réglage après la modification : la clé saisie, sinon l'actuelle, sauf si effacée.
+
+    La clé actuelle ne suit pas l'adresse vers un autre serveur : elle n'est gardée que si le
+    schéma, l'hôte et le port ne changent pas. Sinon, changer seulement l'adresse (formulaire,
+    bouton « Tester ») envoyait la clé enregistrée au nouveau serveur, quel qu'il soit.
+    """
     url = change.url.rstrip("/") if change.url else None
+    if change.clear_key:
+        key = None
+    elif change.api_key:
+        key = change.api_key
+    elif origin(url) is not None and origin(url) == origin(saved.url):
+        key = saved.api_key
+    else:
+        key = None
     return OpenWebUISetting(url=url, api_key=key)
 
 

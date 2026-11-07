@@ -32,6 +32,7 @@ class FakeOpenWebUI:
 
     def __init__(self) -> None:
         self.received: list[dict[str, Any]] = []
+        self.authorizations: list[str] = []  # en-tête Authorization de chaque requête
         # Outil que le modèle appelle d'abord quand des outils lui sont proposés.
         self.tool_call: dict[str, Any] | None = None
         self.endless = False  # appelle l'outil à chaque tour où des outils sont proposés
@@ -47,6 +48,7 @@ class FakeOpenWebUI:
                 self.wfile.write(data)
 
             def _authorized(self) -> bool:
+                fake.authorizations.append(self.headers.get("Authorization", ""))
                 if self.headers.get("Authorization") == f"Bearer {KEY}":
                     return True
                 self._reply(401, {"detail": "Not authenticated"})
@@ -190,6 +192,51 @@ def test_the_key_is_kept_replaced_or_cleared() -> None:
     assert kept == OpenWebUISetting(url="http://192.0.2.10:3000", api_key="ancienne")
     assert replaced.api_key == "nouvelle"
     assert cleared.api_key is None
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "http://192.0.2.66:3000",  # autre hôte
+        "http://192.0.2.10:3001",  # autre port
+        "https://192.0.2.10:3000",  # autre schéma
+        "http://192.0.2.10:3000@192.0.2.66",  # hôte réel après « @ »
+        None,  # adresse effacée
+    ],
+)
+def test_the_key_does_not_follow_the_address_to_another_server(url: str | None) -> None:
+    """Changer l'adresse sans saisir de clé : la clé enregistrée n'est pas envoyée au nouveau
+    serveur (test) ni gardée pour lui (enregistrement)."""
+    saved = OpenWebUISetting(url="http://192.0.2.10:3000", api_key="ancienne")
+
+    assert merged(saved, OpenWebUIChange(url=url)).api_key is None
+    assert merged(saved, OpenWebUIChange(url=url, api_key="nouvelle")).api_key == "nouvelle"
+
+
+def test_the_key_stays_on_the_same_server() -> None:
+    """Même serveur : chemin, casse de l'hôte ou port par défaut écrit en plus."""
+    saved = OpenWebUISetting(url="http://openwebui.local", api_key="ancienne")
+
+    for url in (
+        "http://openwebui.local/ui",
+        "http://OpenWebUI.local:80",
+        "http://openwebui.local/",
+    ):
+        assert merged(saved, OpenWebUIChange(url=url)).api_key == "ancienne"
+
+
+def test_testing_another_address_does_not_send_the_saved_key(
+    tmp_path: Path, fake: FakeOpenWebUI
+) -> None:
+    with TestClient(create_app(_settings(tmp_path))) as api:
+        api.put("/api/assistant/open-webui", json={"url": "http://192.0.2.10:3000", "api_key": KEY})
+
+        tested = api.post("/api/assistant/open-webui/test", json={"url": fake.url})
+        moved = api.put("/api/assistant/open-webui", json={"url": fake.url})
+
+    assert tested.status_code == 502  # sans clé : rien n'est envoyé
+    assert fake.authorizations == []  # le nouveau serveur ne reçoit rien
+    assert moved.json() == {"url": fake.url, "has_key": False}
 
 
 def test_the_api_never_returns_the_key(tmp_path: Path, fake: FakeOpenWebUI) -> None:

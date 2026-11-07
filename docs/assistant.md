@@ -29,6 +29,8 @@ When WattSlot is updated with new tools, copy the prompt again and replace the o
 
 ## Example questions
 
+In standalone mode, chatting with Home Assistant's agents is off by default (`WATTSLOT_HOME_ASSISTANT_CHAT`, see [Installation](installation.md)); Open WebUI models stay available.
+
 The conversation card of the **Assistant** screen suggests questions, by theme, as long as the conversation is empty; a click puts one in the input box, where you can change it (another appliance, another day) before sending it.
 
 | Theme | Questions | What answers |

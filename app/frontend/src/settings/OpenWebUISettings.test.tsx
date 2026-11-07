@@ -84,6 +84,26 @@ describe("bloc « Open WebUI »", () => {
     expect(calls.filter((call) => call.method === "PUT").at(-1)?.body).toMatchObject({ clear_key: true });
   });
 
+  it("une adresse vers un autre serveur redemande la clé, qui ne la suit pas", async () => {
+    const calls = mockApi({ url: "http://192.0.2.10:3000", has_key: true }, () => Response.json([]));
+    renderBlock();
+    const user = userEvent.setup();
+
+    const address = await screen.findByLabelText("Adresse");
+    await user.type(address, "/ui"); // même serveur : la clé reste
+    expect(screen.getByText(/clé enregistrée/)).toBeInTheDocument();
+
+    await user.clear(address);
+    await user.type(address, "http://192.0.2.66:3000");
+    expect(screen.getByLabelText("Clé d'API")).toHaveValue("");
+    expect(screen.getByText(/Nouveau serveur : saisissez sa clé d'API/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Tester" }));
+    expect(calls.find((call) => call.url === "api/assistant/open-webui/test")?.body).toEqual({
+      url: "http://192.0.2.66:3000",
+      api_key: null,
+    });
+  });
+
   it("dit pourquoi Open WebUI ne répond pas", async () => {
     mockApi({ url: "http://192.0.2.10:3000", has_key: true }, () => Response.json({ detail: "HTTP 401" }, { status: 502 }));
     renderBlock();

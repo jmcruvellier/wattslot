@@ -74,7 +74,11 @@ Ouvrez ensuite `http://<hôte>:8100` :
 - **Réglages › Connexion à Home Assistant** (conseillé) : saisissez l'adresse de votre Home Assistant, cliquez sur **Se connecter avec Home Assistant**, confirmez sur la page de votre Home Assistant ; vous revenez connecté.
 - Ou créez un **jeton d'accès longue durée** dans Home Assistant (Profil › Sécurité) et passez-le dans `HA_TOKEN`.
 
-**Sécurité** : en mode autonome, WattSlot n'a pas de connexion propre. Gardez le port 8100 sur votre réseau local ; ne l'ouvrez jamais sur Internet.
+**Sécurité** : en mode autonome, WattSlot n'a pas de connexion propre. Gardez le port 8100 sur votre réseau local ; ne l'ouvrez jamais sur Internet. Pour le protéger des pages web ouvertes dans la maison :
+
+- WattSlot ne répond qu'ouvert par une adresse IP, un nom sans point (`http://nas:8100`) ou un nom local (`.local`, `.lan`, `.home.arpa`, `.internal`). Derrière un proxy inverse ou avec un autre nom de domaine, ajoutez-le à `WATTSLOT_ALLOWED_HOSTS`.
+- Une modification envoyée par un autre site est refusée.
+- La discussion avec les agents de Home Assistant depuis l'écran **Assistant** est désactivée : Assist peut commander vos appareils, n'importe qui sur votre réseau pourrait donc s'en servir. Définissez `WATTSLOT_HOME_ASSISTANT_CHAT=true` pour l'activer. Les modèles d'Open WebUI restent disponibles : ils n'utilisent que les outils de WattSlot.
 
 **Mettre à jour** : `docker compose pull && docker compose up -d` (ou téléchargez l'image et recréez le conteneur). Fixez une version (`ghcr.io/jmcruvellier/wattslot:0.9.0`) si vous préférez mettre à jour à la main.
 
@@ -110,3 +114,5 @@ L'application de Home Assistant reste en root, sous son profil AppArmor.
 | `HA_TOKEN_FILE` | Ou le chemin d'un fichier qui contient le jeton (secret Docker) |
 | `WATTSLOT_DATA_DIR` | Dossier des données, `/data` dans l'image |
 | `TZ` | Fuseau des journaux ; le plan suit celui de Home Assistant |
+| `WATTSLOT_ALLOWED_HOSTS` | Noms d'hôte admis en plus des adresses locales, séparés par des virgules (proxy inverse, nom de domaine local comme `wattslot.example.net`) ; voir *Sécurité* plus haut |
+| `WATTSLOT_HOME_ASSISTANT_CHAT` | `true` pour discuter avec les agents de Home Assistant depuis l'écran **Assistant** ; désactivé par défaut en mode autonome |

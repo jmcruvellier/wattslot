@@ -1,7 +1,8 @@
 // Bloc « Open WebUI » de la sous-page « Assistant vocal » : adresse et clé d'API pour discuter
 // avec un modèle d'Open WebUI depuis la page Assistant (/api/assistant/open-webui), en liste de
 // réglages. La clé ne revient jamais du serveur : la page sait seulement qu'il y en a une
-// (« Clé enregistrée »). `OpenWebUITools` : la ligne dépliable, rangée sous « Pour aller plus
+// (« Clé enregistrée »). Elle ne vaut que pour son serveur : une adresse vers un autre serveur
+// redemande la clé, que le serveur ne garde pas (open_webui.merged). `OpenWebUITools` : la ligne dépliable, rangée sous « Pour aller plus
 // loin », qui explique comment donner les outils de WattSlot à Open WebUI lui-même.
 
 import { useEffect, useState } from "react";
@@ -18,6 +19,17 @@ interface OpenWebUIState {
 
 type Test = { status: "idle" | "testing" } | { status: "ok"; count: number } | { status: "failed"; detail: string };
 type Save = "idle" | "saving" | "saved" | "invalid" | "failed";
+
+/** Schéma, hôte et port de l'adresse (`URL.host` omet le port par défaut) ; null si illisible. */
+function serverOf(url: string | null): string | null {
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "http:" || parsed.protocol === "https:" ? `${parsed.protocol}//${parsed.host}` : null;
+  } catch {
+    return null;
+  }
+}
 
 function detailOf(error: unknown): string {
   if (error instanceof ApiError) return typeof error.detail === "string" ? error.detail : error.message;
@@ -76,7 +88,9 @@ export default function OpenWebUISettings() {
     }
   };
 
-  const keyInput = !saved.has_key || replacing;
+  // Clé enregistrée pour un autre serveur que celui de l'adresse saisie : elle ne la suivra pas.
+  const otherServer = saved.has_key && serverOf(url.trim()) !== serverOf(saved.url);
+  const keyInput = !saved.has_key || replacing || otherServer;
 
   return (
     <>
@@ -104,9 +118,14 @@ export default function OpenWebUISettings() {
         </div>
         {keyInput ? (
           <div className="ui-setting-row">
-            <label className="ui-row-label" htmlFor="open-webui-key">
-              {t("settings.open_webui.key")}
-            </label>
+            <span>
+              <label className="ui-row-label" htmlFor="open-webui-key">
+                {t("settings.open_webui.key")}
+              </label>
+              {otherServer && !replacing && (
+                <span className="ui-row-help">{t("settings.open_webui.key_other_server")}</span>
+              )}
+            </span>
             <input
               id="open-webui-key"
               type="password"

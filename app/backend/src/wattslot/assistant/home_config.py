@@ -52,6 +52,8 @@ class AssistantHomeConfig(BaseModel):
     pipelines: list[Pipeline] = []
     preferred_pipeline: str | None = None
     agents: list[Agent] = []
+    # Discussion avec ces agents depuis la page Assistant (désactivée par défaut en autonome).
+    chat: bool = True
 
 
 class AssistantChange(BaseModel):

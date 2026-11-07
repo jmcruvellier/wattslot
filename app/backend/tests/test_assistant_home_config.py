@@ -143,5 +143,6 @@ def test_without_home_assistant(tmp_path: Path) -> None:
         "pipelines": [],
         "preferred_pipeline": None,
         "agents": [],
+        "chat": True,
     }
     assert refused.status_code == 503

@@ -74,7 +74,11 @@ Then open `http://<host>:8100`:
 - **Settings › Home Assistant connection** (recommended): enter your Home Assistant address, click **Log in with Home Assistant**, confirm on your Home Assistant's own page; you come back connected.
 - Or create a **long-lived access token** in Home Assistant (Profile › Security) and pass it in `HA_TOKEN`.
 
-**Security**: in standalone mode WattSlot has no login of its own. Keep port 8100 on your local network; never expose it to the Internet.
+**Security**: in standalone mode WattSlot has no login of its own. Keep port 8100 on your local network; never expose it to the Internet. To protect it from web pages opened in the home:
+
+- WattSlot only answers when opened by an IP address, a name without a dot (`http://nas:8100`) or a local name (`.local`, `.lan`, `.home.arpa`, `.internal`). Behind a reverse proxy or with another domain name, add it to `WATTSLOT_ALLOWED_HOSTS`.
+- A change sent by another site is refused.
+- Chatting with Home Assistant's agents from the **Assistant** screen is off: Assist can control your devices, so anyone on your network could use it. Set `WATTSLOT_HOME_ASSISTANT_CHAT=true` to turn it on. Open WebUI models stay available: they only use WattSlot's tools.
 
 **Updating**: `docker compose pull && docker compose up -d` (or pull the image and recreate the container). Pin a version (`ghcr.io/jmcruvellier/wattslot:0.9.0`) if you prefer to update by hand.
 
@@ -110,3 +114,5 @@ The Home Assistant app keeps running as root, under its AppArmor profile.
 | `HA_TOKEN_FILE` | Or the path of a file containing the token (Docker secret) |
 | `WATTSLOT_DATA_DIR` | Data folder, `/data` in the image |
 | `TZ` | Time zone of the logs; the plan follows Home Assistant's |
+| `WATTSLOT_ALLOWED_HOSTS` | Host names allowed besides local addresses, separated by commas (a reverse proxy, a local domain name such as `wattslot.example.net`); see *Security* above |
+| `WATTSLOT_HOME_ASSISTANT_CHAT` | `true` to chat with Home Assistant's agents from the **Assistant** screen; off by default in standalone mode |

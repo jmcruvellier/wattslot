@@ -66,6 +66,7 @@ from wattslot.home_assistant import (
 )
 from wattslot.ingestion import IngestionStatus, Ingestor
 from wattslot.ingress import IngressOnlyMiddleware
+from wattslot.local_access import LocalAccessMiddleware
 from wattslot.maintenance import (
     Maintenance,
     MaintenanceRun,
@@ -538,6 +539,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     if settings.mode is RunMode.ADDON:
         app.add_middleware(IngressOnlyMiddleware)
+    else:
+        app.add_middleware(LocalAccessMiddleware, allowed_hosts=settings.allowed_hosts)
 
     @app.get("/api/health")
     def health(request: Request) -> Health:
@@ -574,7 +577,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def get_assistant_home(request: Request) -> assistant_home_config.AssistantHomeConfig:
         """Configuration de l'assistant vocal dans HA : intégration MCP, assistants, agents de
         conversation ; vide sans HA connecté."""
-        return await assistant_home_config.home_config(request.app.state.home_assistant)
+        found = await assistant_home_config.home_config(request.app.state.home_assistant)
+        return found.model_copy(update={"chat": settings.home_assistant_chat})
 
     @app.put("/api/assistant/home")
     async def put_assistant_home(
@@ -589,7 +593,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(status_code=422, detail="Assistant ou agent inconnu") from error
         except (CommandError, NotConnectedError, TimeoutError) as error:
             raise HTTPException(status_code=502, detail=str(error)) from error
-        return await assistant_home_config.home_config(client)
+        found = await assistant_home_config.home_config(client)
+        return found.model_copy(update={"chat": settings.home_assistant_chat})
 
     @app.get("/api/assistant/open-webui")
     def get_open_webui(request: Request) -> open_webui.OpenWebUIState:
@@ -660,6 +665,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             except open_webui.OpenWebUIError as error:
                 raise HTTPException(status_code=502, detail=str(error)) from error
             return assistant_chat.ChatReply(text=text)
+        if not settings.home_assistant_chat:
+            raise HTTPException(status_code=403, detail="home_assistant_chat_disabled")
         client = connected_client(request)
         try:
             return await assistant_chat.send(client, message)

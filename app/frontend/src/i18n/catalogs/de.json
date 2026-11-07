@@ -584,6 +584,7 @@
       "url": "Adresse",
       "key": "API-Schlüssel",
       "key_saved": "Schlüssel gespeichert",
+      "key_other_server": "Neuer Server: Geben Sie dessen API-Schlüssel ein. Der gespeicherte Schlüssel wird nur an den Server gesendet, für den er eingegeben wurde.",
       "replace": "Ersetzen",
       "clear": "Löschen",
       "test": "Testen",
@@ -1387,6 +1388,7 @@
       "help": "Eingabe zum Senden, Umschalt+Eingabe für eine neue Zeile. Das Gespräch bleibt erhalten, solange der Browser-Tab geöffnet ist.",
       "empty": "Der Assistent hat nichts geantwortet.",
       "failed": "Der Assistent hat nicht geantwortet, versuchen Sie es erneut.",
+      "disabled": "Der Chat mit den Agenten von Home Assistant ist im eigenständigen Modus ausgeschaltet: Assist kann Ihre Geräte steuern, und WattSlot hat keine Anmeldung. Zum Einschalten die Variable WATTSLOT_HOME_ASSISTANT_CHAT=true setzen.",
       "not_connected": "Home Assistant ist nicht verbunden: Der Chat ist nicht verfügbar.",
       "log_empty": "Ihre Fragen und die Antworten des Assistenten erscheinen hier."
     },

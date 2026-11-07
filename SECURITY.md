@@ -13,7 +13,7 @@ Only the **latest version** receives security fixes. Home Assistant offers the u
 ## Scope
 
 - **As a Home Assistant app**, WattSlot is only reachable through Home Assistant's ingress (the Supervisor's proxy) and from Home Assistant Core for its MCP server. It holds no password and uses the Supervisor's own token.
-- **In standalone mode**, WattSlot has no login of its own: keep port 8100 on your local network, never expose it to the Internet. The Home Assistant token or OAuth credentials are stored in the data volume.
-- WattSlot only reads Home Assistant and sends notifications; it does not control your devices.
+- **In standalone mode**, WattSlot has no login of its own: keep port 8100 on your local network, never expose it to the Internet. It only answers to local host names (and those of `WATTSLOT_ALLOWED_HOSTS`) and refuses changes sent by another site, against DNS rebinding and cross-site requests; a device on your local network keeps full access. The Home Assistant token or OAuth credentials are stored in the data volume.
+- WattSlot reads Home Assistant and sends notifications; it does not control your devices by itself. The **Assistant** screen can pass your messages to Home Assistant's conversation agents, and Assist can control devices: as an app, only Home Assistant users reach it; in standalone mode this chat is off unless `WATTSLOT_HOME_ASSISTANT_CHAT=true`.
 
 Issues in Home Assistant itself belong to the [Home Assistant project](https://www.home-assistant.io/security/).

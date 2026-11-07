@@ -22,6 +22,8 @@ interface AssistantHome {
   pipelines: (Named & { conversation_engine: string | null })[];
   preferred_pipeline: string | null;
   agents: Named[];
+  // Discussion avec les agents de HA : désactivée par défaut en mode autonome (serveur).
+  chat?: boolean;
 }
 
 interface ChatReply {
@@ -100,7 +102,7 @@ export default function ChatCard({
         setHome(found);
         const preferred = found.pipelines.find((p) => p.id === found.preferred_pipeline);
         // L'agent d'une conversation reprise est gardé ; sinon, celui de l'assistant préféré.
-        setAgent((current) => current || (preferred?.conversation_engine ?? ""));
+        if (found.chat !== false) setAgent((current) => current || (preferred?.conversation_engine ?? ""));
       })
       .catch(() => undefined);
     getJson<Named[]>("api/assistant/open-webui/models", controller.signal)
@@ -120,14 +122,17 @@ export default function ChatCard({
     if (element) element.scrollTop = element.scrollHeight;
   }, [lines, waiting]);
 
-  // Sans agent de HA (HA déconnecté), le premier modèle d'Open WebUI.
-  const fallback = home && home.agents.length === 0 && models.length > 0 ? `${OPEN_WEBUI}${models[0].id}` : "";
-  const chosen = agent || fallback;
+  // Agents de HA proposés : aucun si la discussion avec eux est désactivée (mode autonome).
+  const chatOff = home?.chat === false;
+  const agents = home && !chatOff ? home.agents : [];
+  // Sans agent de HA (HA déconnecté, discussion désactivée), le premier modèle d'Open WebUI.
+  const fallback = home && agents.length === 0 && models.length > 0 ? `${OPEN_WEBUI}${models[0].id}` : "";
+  const chosen = (chatOff && !agent.startsWith(OPEN_WEBUI) ? "" : agent) || fallback;
   const preferredAgent = home?.pipelines.find((p) => p.id === home.preferred_pipeline)?.conversation_engine;
 
   const send = async () => {
     const text = draft.trim();
-    if (!text || waiting) return;
+    if (!text || waiting || (chatOff && !chosen)) return;
     onDraft("");
     // Fil de la conversation pour Open WebUI, sans les messages d'erreur.
     const history = lines
@@ -189,8 +194,9 @@ export default function ChatCard({
         )}
       </div>
 
+      {chatOff && <p role="status">{t("assistant.chat.disabled")}</p>}
       {home?.connected === false && models.length === 0 && <p role="status">{t("assistant.chat.not_connected")}</p>}
-      {((home && home.agents.length > 0) || models.length > 0) && (
+      {(agents.length > 0 || models.length > 0) && (
         <p>
           <label htmlFor="assistant-chat-agent">{t("assistant.chat.agent")}</label>{" "}
           <select
@@ -202,10 +208,10 @@ export default function ChatCard({
               setAgent(event.target.value);
             }}
           >
-            {home && home.agents.length > 0 && (
+            {agents.length > 0 && (
               <optgroup label="Home Assistant">
                 {!preferredAgent && <option value="">{t("assistant.chat.default_agent")}</option>}
-                {home.agents.map((a) => (
+                {agents.map((a) => (
                   <option key={a.id} value={a.id}>
                     {a.id === preferredAgent ? t("assistant.chat.preferred", { name: a.name }) : a.name}
                   </option>
@@ -300,7 +306,7 @@ export default function ChatCard({
             }
           }}
         />
-        <button type="submit" disabled={waiting || !draft.trim()}>
+        <button type="submit" disabled={waiting || !draft.trim() || (chatOff && !chosen)}>
           {t("assistant.chat.send")}
         </button>
       </form>
