@@ -21,6 +21,7 @@ import sqlite3
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import Any
+from zoneinfo import ZoneInfoNotFoundError
 
 from pydantic import BaseModel
 
@@ -235,6 +236,8 @@ class Ingestor:
         self._counters = _Counters()
         self._writer: asyncio.Task[None] | None = None
         self._backfill_task: asyncio.Task[None] | None = None
+        # Session de HA dont le trou de coupure est comblé (``None`` : aucune encore).
+        self._synced_session: int | None = None
         self._state: dict[str, Reading] = {}  # dernier relevé écrit, pas encore en base
         self._state_saved_at: datetime | None = None
 
@@ -247,11 +250,17 @@ class Ingestor:
 
     async def _on_connected(self) -> None:
         # Journées découpées en heure locale de la maison (fuseau de HA).
+        session = self._client.sessions
         time_zone = self._client.snapshot.config.get("time_zone")
         if time_zone:
-            self._stores.set_time_zone(time_zone)
+            try:
+                self._stores.set_time_zone(time_zone)
+            except (ZoneInfoNotFoundError, ValueError) as exc:  # fuseau inconnu : pas de blocage
+                logger.warning("Fuseau de Home Assistant ignoré (%s) : %s", time_zone, exc)
         if self._database is not None and self._targets:
-            self._backfill_task = asyncio.create_task(self._backfill())
+            self._backfill_task = asyncio.create_task(self._backfill(session))
+        else:
+            self._synced_session = session
 
     def _last_written(self) -> dict[str, datetime]:
         assert self._database is not None
@@ -261,8 +270,15 @@ class Ingestor:
             found[entity_id] = max(found.get(entity_id, reading.time), reading.time)
         return found
 
-    async def _backfill(self) -> None:
-        """Comble, depuis l'historique de HA, le trou laissé par une coupure."""
+    async def _backfill(self, session: int) -> None:
+        """Comble, depuis l'historique de HA, le trou laissé par une coupure. Réussie ou non
+        (historique illisible : trou perdu), la session est ensuite tenue pour à jour."""
+        try:
+            await self._fill_gap()
+        finally:
+            self._synced_session = session
+
+    async def _fill_gap(self) -> None:
         now = datetime.now(UTC)
         last = {
             entity_id: max(time, now - BACKFILL_MAX)
@@ -424,9 +440,15 @@ class Ingestor:
         return dict(self._targets)
 
     @property
-    def backfilling(self) -> bool:
-        """Reprise après coupure en cours : l'agrégation attend qu'elle ait comblé le trou."""
-        return self._backfill_task is not None and not self._backfill_task.done()
+    def ready(self) -> bool:
+        """Brut complet jusqu'à maintenant : HA connecté et trou de la dernière coupure comblé.
+        L'agrégation attend sinon : au démarrage avant la connexion, pendant une coupure, puis
+        pendant la reprise, elle clorait les périodes du trou à vide (0 kWh), et les relevés
+        repris ensuite, plus anciens que ses curseurs, ne seraient jamais agrégés."""
+        return (
+            self._client.status.state is ConnectionState.CONNECTED
+            and self._synced_session == self._client.sessions
+        )
 
     def _last_seen(self, status: EntityStatus) -> datetime | None:
         state = self._client.snapshot.states.get(status.entity_id) or {}

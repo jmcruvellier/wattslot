@@ -261,7 +261,7 @@ def test_a_correction_needs_a_counter_a_value_and_neighbours(tmp_path: Path) -> 
 
 
 class StubIngestor:
-    backfilling = False
+    ready = True
     targets: ClassVar[dict[str, Target]] = {
         LINKY: Target(LINKY, "urn:sensor:linky", Role.ENERGY_IMPORTED),
     }

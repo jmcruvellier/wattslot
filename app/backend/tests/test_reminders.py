@@ -1,8 +1,10 @@
 """Rappels « Me le rappeler » (lot 6b.3)."""
 
 import asyncio
+import contextlib
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any, cast
 from zoneinfo import ZoneInfo
 
@@ -12,7 +14,7 @@ from tests.test_health import _settings
 from tests.test_views_day import actual_of, state_of
 from tests.v1_oracle import state_named
 from wattslot import notifications, reminders
-from wattslot.home_assistant import HomeAssistantClient
+from wattslot.home_assistant import ConnectionState, HomeAssistantClient
 from wattslot.main import create_app
 from wattslot.notifications import NotificationSettings
 from wattslot.planning.store import PlanStore
@@ -126,3 +128,35 @@ def test_routes_ask_and_cancel_a_reminder(tmp_path: Path) -> None:
 def test_reminder_window_is_the_plan_day_only(tmp_path: Path) -> None:
     client, (sent, _) = _scenario(tmp_path, "notify.phone", [at(11) + timedelta(days=1)])
     assert sent == [[]] and client.calls == []
+
+
+def test_the_loop_follows_the_home_time_zone_known_after_its_start(
+    tmp_path: Path, monkeypatch: Any
+) -> None:
+    """La boucle démarre avant la connexion à HA (fuseau encore UTC) : elle relit le fuseau de
+    la maison à chaque tour au lieu de garder celui du démarrage."""
+    current = {"zone": ZoneInfo("UTC")}
+    seen: list[ZoneInfo] = []
+
+    async def record(client: Any, database: Any, now: datetime, zone: ZoneInfo) -> list[str]:
+        seen.append(zone)
+        if len(seen) == 2:
+            raise asyncio.CancelledError  # fin de la boucle
+        current["zone"] = PARIS  # connexion à HA : fuseau de la maison
+        return []
+
+    monkeypatch.setattr(reminders, "send_due", record)
+    monkeypatch.setattr(reminders, "INTERVAL_S", 0)
+    client = SimpleNamespace(status=SimpleNamespace(state=ConnectionState.CONNECTED))
+
+    async def run() -> None:
+        loop = reminders.ReminderLoop(
+            cast(HomeAssistantClient, client), open_database(tmp_path), lambda: current["zone"]
+        )
+        loop.start()
+        with contextlib.suppress(asyncio.CancelledError):
+            await cast(asyncio.Task[None], loop._task)
+
+    asyncio.run(run())
+
+    assert seen == [ZoneInfo("UTC"), PARIS]
