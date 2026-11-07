@@ -1,6 +1,10 @@
 import sqlite3
 from pathlib import Path
+from typing import Any
 
+import pytest
+
+from wattslot.storage import database
 from wattslot.storage.database import (
     DATABASE_FILENAME,
     LEGACY_DATABASE_FILENAME,
@@ -67,3 +71,38 @@ def test_an_existing_wattslot_database_is_kept(tmp_path: Path) -> None:
 
     assert schema_version(database) == len(MIGRATIONS)
     assert (tmp_path / LEGACY_DATABASE_FILENAME).read_bytes() == b"ancienne"
+
+
+class _CutAfterTheMigration(sqlite3.Connection):
+    """Coupure juste après une migration, avant que sa version soit notée."""
+
+    cut = False
+
+    def execute(self, sql: str, *args: Any) -> sqlite3.Cursor:
+        if self.cut and sql.startswith("INSERT INTO schema_migrations"):
+            raise sqlite3.OperationalError("coupure de courant")
+        return super().execute(sql, *args)
+
+
+def test_a_migration_cut_before_its_version_is_replayed_cleanly(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """La migration et sa version vont ensemble : coupée entre les deux, elle est annulée et
+    rejouée au démarrage suivant, au lieu d'échouer (« duplicate column ») à chaque démarrage."""
+    connection = sqlite3.connect(tmp_path / "base.db", factory=_CutAfterTheMigration)
+    migrate(connection)
+    applied = schema_version(connection)
+    monkeypatch.setattr(
+        database,
+        "MIGRATIONS",
+        (*database.MIGRATIONS, "ALTER TABLE app_settings ADD COLUMN essai TEXT"),
+    )
+
+    connection.cut = True
+    with pytest.raises(sqlite3.OperationalError, match="coupure"):
+        migrate(connection)
+    connection.cut = False
+
+    assert migrate(connection) == applied + 1
+    columns = [row[1] for row in connection.execute("PRAGMA table_info(app_settings)")]
+    assert columns.count("essai") == 1
