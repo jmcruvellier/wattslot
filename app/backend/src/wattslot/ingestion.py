@@ -309,7 +309,10 @@ class Ingestor:
             logger.info("Reprise après coupure : %s relevés repris de HA", len(readings))
 
     async def stop(self) -> None:
-        await self._client.unsubscribe(SUBSCRIPTION)
+        try:
+            await self._client.unsubscribe(SUBSCRIPTION)
+        except Exception:  # connexion fermée en route… : la file est vidée quand même
+            logger.exception("Désabonnement impossible à l'arrêt")
         if self._backfill_task is not None:
             await asyncio.gather(self._backfill_task, return_exceptions=True)
         if self._writer is not None:
