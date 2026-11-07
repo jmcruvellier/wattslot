@@ -88,13 +88,20 @@ cosign verify ghcr.io/jmcruvellier/wattslot:X.Y.Z \
 
 Home Assistant does not check signatures yet; this is for those who want to verify by hand.
 
-**Running as a non-root user** (optional): by default the container runs as root, like most Home Assistant apps. In standalone mode you can choose a user instead, for defence in depth. The folder `/data` must then belong to that user, including for a new volume, which Docker creates owned by root. Stop the container first, then hand the volume over once (here to user and group `1000`):
+**User of the app**: in standalone mode, WattSlot runs as the user `wattslot` (user and group `1000`), not as root, for defence in depth. At its first start after the update, it hands `/data` over to that user, once (a few seconds); with a named volume, there is nothing to do.
 
-```bash
-docker run --rm -v wattslot-data:/data --entrypoint chown   ghcr.io/jmcruvellier/wattslot:latest -R 1000:1000 /data
-```
+- With a host folder instead of a named volume, its owner on the host becomes `1000`. Set `WATTSLOT_UID` and `WATTSLOT_GID` to use your own user instead.
+- A file mounted from the host, such as the one of `HA_TOKEN_FILE`, must be readable by that user.
+- `--user` (or `user:` under the service in Docker Compose) still works: WattSlot then runs as that user and leaves `/data` alone, so it must already belong to it:
 
-Then start WattSlot with `--user 1000:1000`, or with `user: "1000:1000"` under the service in Docker Compose. With a host folder instead of a named volume, give it to that user with `sudo chown -R 1000:1000 <folder>`. Going back to root needs nothing: root can still read and write the files. This does not apply to the Home Assistant app, which keeps running as root under its AppArmor profile.
+  ```bash
+  docker run --rm -v wattslot-data:/data --entrypoint chown \
+    ghcr.io/jmcruvellier/wattslot:latest -R <user>:<group> /data
+  ```
+
+- `WATTSLOT_RUN_AS_ROOT=true` keeps it running as root.
+
+The Home Assistant app keeps running as root, under its AppArmor profile.
 
 | Variable | Meaning |
 |---|---|

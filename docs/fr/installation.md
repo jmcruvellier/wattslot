@@ -88,13 +88,20 @@ cosign verify ghcr.io/jmcruvellier/wattslot:X.Y.Z \
 
 Home Assistant ne vérifie pas encore les signatures ; c'est pour qui veut vérifier à la main.
 
-**Lancer sans root** (facultatif) : par défaut, le conteneur tourne en root, comme la plupart des applications de Home Assistant. En mode autonome, vous pouvez choisir un autre utilisateur, par défense en profondeur. Le dossier `/data` doit alors lui appartenir, y compris pour un nouveau volume, que Docker crée au nom de root. Arrêtez d'abord le conteneur, puis donnez-lui le volume une fois (ici à l'utilisateur et au groupe `1000`) :
+**Utilisateur de l'application** : en mode autonome, WattSlot tourne sous l'utilisateur `wattslot` (utilisateur et groupe `1000`), pas en root, par défense en profondeur. À son premier démarrage après la mise à jour, il lui donne `/data`, une fois (quelques secondes) ; avec un volume nommé, il n'y a rien à faire.
 
-```bash
-docker run --rm -v wattslot-data:/data --entrypoint chown   ghcr.io/jmcruvellier/wattslot:latest -R 1000:1000 /data
-```
+- Avec un dossier de l'hôte au lieu d'un volume nommé, son propriétaire sur l'hôte devient `1000`. Définissez `WATTSLOT_UID` et `WATTSLOT_GID` pour utiliser plutôt votre propre utilisateur.
+- Un fichier monté depuis l'hôte, comme celui de `HA_TOKEN_FILE`, doit être lisible par cet utilisateur.
+- `--user` (ou `user:` sous le service dans Docker Compose) fonctionne toujours : WattSlot tourne alors sous cet utilisateur et ne touche pas à `/data`, qui doit donc déjà lui appartenir :
 
-Lancez ensuite WattSlot avec `--user 1000:1000`, ou avec `user: "1000:1000"` sous le service dans Docker Compose. Avec un dossier de l'hôte au lieu d'un volume nommé, donnez-le à cet utilisateur avec `sudo chown -R 1000:1000 <dossier>`. Revenir à root ne demande rien : root lit et écrit toujours les fichiers. Ceci ne concerne pas l'application de Home Assistant, qui reste en root sous son profil AppArmor.
+  ```bash
+  docker run --rm -v wattslot-data:/data --entrypoint chown \
+    ghcr.io/jmcruvellier/wattslot:latest -R <utilisateur>:<groupe> /data
+  ```
+
+- `WATTSLOT_RUN_AS_ROOT=true` le garde en root.
+
+L'application de Home Assistant reste en root, sous son profil AppArmor.
 
 | Variable | Rôle |
 |---|---|

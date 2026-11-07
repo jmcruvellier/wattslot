@@ -214,6 +214,25 @@ jobs:
           PY
           curl -fsS http://127.0.0.1:8100/ | grep -q '<div id="root">'
           docker exec wattslot test -f /data/wattslot.db
+      - name: Utilisateur de l'application (app/entrypoint.sh)
+        env:
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          set -eu
+          run() { docker run --rm --platform "$PLATFORM" "$@"; }
+          # Autonome : uvicorn (processus 1) sous wattslot, /data à son nom.
+          test "$(docker exec wattslot awk '/^Uid:/ {print $2}' /proc/1/status)" = 1000
+          test "$(docker exec wattslot stat -c %u:%g /data/wattslot.db)" = 1000:1000
+          # Volume écrit par une version qui tournait en root : rendu à wattslot au démarrage.
+          run -v ancien:/data --entrypoint sh wattslot:test -c 'touch /data/ancien.db'
+          test "$(run -v ancien:/data wattslot:test stat -c %u:%g /data/ancien.db | tail -n 1)" = 1000:1000
+          # Extension (jeton du Supervisor) et échappatoire : en root, sans toucher à /data.
+          test "$(run -e SUPERVISOR_TOKEN=test wattslot:test id -u)" = 0
+          test "$(run -e WATTSLOT_RUN_AS_ROOT=true wattslot:test id -u)" = 0
+          # Utilisateur choisi par --user : respecté.
+          test "$(run --user 1234:1234 wattslot:test id -u)" = 1234
+          # Autre identifiant : WATTSLOT_UID / WATTSLOT_GID.
+          test "$(run -e WATTSLOT_UID=1001 -e WATTSLOT_GID=1001 wattslot:test id -u | tail -n 1)" = 1001
       - name: Journal du conteneur
         if: always()
         run: docker logs wattslot || true
