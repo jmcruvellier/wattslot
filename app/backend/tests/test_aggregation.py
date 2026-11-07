@@ -178,7 +178,7 @@ ENERGY = Target("sensor.e", "urn:sensor:e", Role.ENERGY_CONSUMED)
 
 
 class StubIngestor:
-    backfilling = False
+    ready = True
     targets: ClassVar[dict[str, Target]] = {POWER.entity_id: POWER, ENERGY.entity_id: ENERGY}
 
 
@@ -234,7 +234,7 @@ SOC = Target("sensor.soc", "urn:sensor:soc", Role.STATE_OF_CHARGE)  # sans stati
 
 
 class StubIngestorWithSoc:
-    backfilling = False
+    ready = True
     targets: ClassVar[dict[str, Target]] = {
         POWER.entity_id: POWER,
         ENERGY.entity_id: ENERGY,
@@ -415,3 +415,27 @@ def test_imports_history_before_the_first_period_closes(tmp_path: Path) -> None:
     assert aggregator.status().history.pending == []
     hours = aggregator.read(POWER.entity_id, HOUR, at(-180), midnight)
     assert [a.start for a in hours] == [at(-120), at(-60), at(0)]
+
+
+def test_nothing_is_closed_until_the_raw_readings_are_complete(tmp_path: Path) -> None:
+    """Avant la connexion à HA et la reprise du trou : aucune période close, sinon celles du
+    trou le seraient à vide et les relevés repris ensuite jamais agrégés."""
+    graph = GraphStore(tmp_path)
+    raw = RawStores(tmp_path, "Europe/Paris")
+    raw.write([Reading(ENERGY.entity_id, ENERGY.sensor_iri, 1.0, at(0))])
+    waiting = StubIngestor()
+    waiting.ready = False
+    aggregator = Aggregator(cast(Ingestor, waiting), raw, graph, open_database(tmp_path))
+
+    async def scenario() -> tuple[int, int]:
+        before = await aggregator.step(at(31.5))
+        raw.write([Reading(ENERGY.entity_id, ENERGY.sensor_iri, 1.5, at(20))])  # trou repris
+        waiting.ready = True
+        return before, await aggregator.step(at(31.5))
+
+    before, after = asyncio.run(scenario())
+
+    assert before == 0
+    assert after > 0
+    energy = aggregator.read(ENERGY.entity_id, QUARTER, T0, at(30))
+    assert [a.energy_kwh for a in energy] == [0.0, 0.5]

@@ -139,6 +139,9 @@ class HomeAssistantClient:
         self._subscriptions: dict[str, _Subscription] = {}
         self._events: dict[int, EventCallback] = {}
         self._on_connected_callbacks: list[ConnectedCallback] = []
+        # Sessions ouvertes depuis le démarrage : distingue une reconnexion dont les rappels de
+        # connexion n'ont pas encore tourné (ingestion : trou pas encore comblé).
+        self.sessions = 0
         self._wake = asyncio.Event()  # ``retry_now`` interrompt le délai de reconnexion
         self._startup_refresh: asyncio.Task[None] | None = None  # relectures post-connexion
         self.status = HomeAssistantStatus(ConnectionState.CONNECTING)
@@ -302,6 +305,7 @@ class HomeAssistantClient:
     async def _session(self, websocket: WebSocket) -> None:
         await self._authenticate(websocket)
         self._websocket = websocket
+        self.sessions += 1
         loading = asyncio.create_task(self._on_connected())
         try:
             async for raw in websocket:

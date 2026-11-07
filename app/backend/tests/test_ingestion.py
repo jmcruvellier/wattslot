@@ -349,3 +349,35 @@ def test_only_a_suspicious_frozen_value_is_silent() -> None:
 
     assert found == ["stuck_power", "stuck_energy", "never", "soc"]
     assert silent_entities(None, {}, now) == []
+
+
+def test_ready_only_once_the_gap_of_the_current_session_is_filled(tmp_path: Path) -> None:
+    """L'agrégation attend ``ready`` : pas avant la connexion à HA et la reprise du trou, ni
+    après une reconnexion dont la reprise n'a pas encore tourné."""
+    last = datetime.now(UTC).replace(microsecond=0) - timedelta(hours=2)
+    database = open_database(tmp_path)
+    with database:
+        database.execute(
+            "INSERT INTO ingestion_state VALUES (?, ?, ?)",
+            ("sensor.pv_power", last.isoformat(), 800.0),
+        )
+
+    async def scenario() -> list[bool]:
+        seen: list[bool] = []
+        handler = fake_home_assistant(_backfill_responses(last))
+        async with running_client(handler) as client:
+            ingestor = Ingestor(client, RawStores(tmp_path), database)
+            seen.append(ingestor.ready)  # pas encore démarrée
+            await ingestor.start(MODEL)
+            async with asyncio.timeout(5):
+                while ingestor.status().last_backfill_at is None:
+                    await asyncio.sleep(0.01)
+                while not ingestor.ready:
+                    await asyncio.sleep(0.01)
+            seen.append(ingestor.ready)  # trou comblé
+            client.sessions += 1  # reconnexion : rappels de connexion pas encore passés
+            seen.append(ingestor.ready)
+            await ingestor.stop()
+        return seen
+
+    assert asyncio.run(scenario()) == [False, True, False]
