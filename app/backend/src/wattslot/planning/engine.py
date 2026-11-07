@@ -355,6 +355,14 @@ def solve(problem: Problem, objective: Goal = Objective.COST, time_limit_s: floa
             full_hours.append(full)
             soc_previous = soc
             balance = balance - charge + discharge
+        else:
+            # Soutirer et injecter la même heure : exclu (les heures de batterie l'excluent déjà
+            # par ``charging``). Sinon, un prix de soutirage négatif ou une revente plus chère que
+            # l'achat rendent ce va-et-vient rentable sans fin : problème non borné, ou objectif
+            # faussé jusqu'à la puissance souscrite.
+            exporting = var(0, 1, True)
+            h.addConstr(exports[hour] <= BIG_KWH * exporting)
+            h.addConstr(imports[hour] <= BIG_KWH * (1 - exporting))
         h.addConstr(balance == exports[hour] - imports[hour])
     full_day = var(0, 1, True)
     h.addConstr(full_day <= (sum(full_hours) if full_hours else 0))
@@ -386,6 +394,10 @@ def solve(problem: Problem, objective: Goal = Objective.COST, time_limit_s: floa
         h.run()
         status = h.getModelStatus()
     if status not in (highspy.HighsModelStatus.kOptimal, highspy.HighsModelStatus.kTimeLimit):
+        raise NoPlanError(h.modelStatusToString(status), problem, objective)
+    if h.getInfo().primal_solution_status != highspy.SolutionStatus.kSolutionStatusFeasible:
+        # Limite de temps atteinte avant toute solution : les valeurs lues seraient des zéros,
+        # pris pour un plan (tâches au premier départ). Le plan précédent reste en place.
         raise NoPlanError(h.modelStatusToString(status), problem, objective)
     return Plan(
         starts={
