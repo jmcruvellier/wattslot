@@ -94,7 +94,12 @@ describe("thèmes", () => {
   });
 
   it("reprend une fois les réglages gardés sous l'ancien nom energy-optimizer (lot 7.1)", () => {
-    const script = /<script>([\s\S]*?)<\/script>/.exec(indexHtml)?.[1] ?? "";
+    // Le script en ligne d'index.html, lu par le parseur HTML (une regex sur <script> est signalée
+    // par CodeQL, js/bad-tag-filter).
+    const script =
+      new DOMParser().parseFromString(indexHtml, "text/html").querySelector("script:not([src])")
+        ?.textContent ?? "";
+    expect(script).toContain("energy-optimizer");
     window.localStorage.clear();
     window.localStorage.setItem("energy-optimizer.theme", "ocean");
     window.localStorage.setItem("energy-optimizer.language", "de");
