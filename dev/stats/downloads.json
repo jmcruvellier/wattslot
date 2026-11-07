@@ -1,9 +1,9 @@
 {
   "repo": "jmcruvellier/wattslot",
-  "total_downloads": 921,
+  "total_downloads": 925,
   "image": {
     "package": "ghcr.io/jmcruvellier/wattslot",
-    "total": 921
+    "total": 925
   },
   "asset_downloads": 0,
   "releases": [
@@ -11,8 +11,8 @@
       "tag": "v0.9.6",
       "name": "0.9.6",
       "published_at": "2026-11-06T21:36:37Z",
-      "downloads": 84,
-      "image_downloads": 84,
+      "downloads": 86,
+      "image_downloads": 86,
       "asset_downloads": 0,
       "assets": []
     },
@@ -72,14 +72,9 @@
     }
   ],
   "clones_14j": {
-    "count": 1808,
-    "uniques": 320,
+    "count": 2504,
+    "uniques": 348,
     "days": [
-      {
-        "day": "2026-10-23T00:00:00Z",
-        "count": 29,
-        "uniques": 20
-      },
       {
         "day": "2026-10-24T00:00:00Z",
         "count": 554,
@@ -144,6 +139,11 @@
         "day": "2026-11-05T00:00:00Z",
         "count": 114,
         "uniques": 40
+      },
+      {
+        "day": "2026-11-06T00:00:00Z",
+        "count": 725,
+        "uniques": 102
       }
     ]
   }
