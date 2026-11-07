@@ -17,6 +17,23 @@
 | Pas d'historique dans Home Assistant pour certains capteurs | Ils n'ont pas de statistiques (pas de `state_class`) : le plan part de leurs seules mesures en direct |
 | Aucun plan n'a pu être calculé depuis plus de 2 heures | Regardez les autres problèmes, ou **Calculer** depuis la barre de titre d'**Aujourd'hui**, **Planning** ou **Courbes** |
 
+## L'application ne démarre pas : « NumPy was built with baseline optimizations (X86_V2) »
+
+Le journal se termine par `RuntimeError: NumPy was built with baseline optimizations: (X86_V2) but your machine doesn't support: (X86_V2)`, ou par un message de WattSlot sur les instructions **x86-64-v2**.
+
+Le processeur que voit Home Assistant ne déclare pas les instructions dont le moteur du calcul de WattSlot a besoin. Presque tous les PC des quinze dernières années les ont, mais une **machine virtuelle** peut les cacher : sous Proxmox, c'est le cas des types de CPU `kvm64` et `qemu64`.
+
+Sous Proxmox :
+
+1. Sélectionnez la machine virtuelle de Home Assistant.
+2. Ouvrez **Matériel**, puis double-cliquez sur **Processeurs**.
+3. Mettez **Type** sur **host** (ou **x86-64-v2-AES** si vous déplacez la machine virtuelle entre des serveurs différents).
+4. Cliquez sur **OK**.
+5. **Arrêtez** complètement la machine virtuelle (un redémarrage depuis Home Assistant ne suffit pas), puis relancez-la.
+6. Relancez l'application WattSlot.
+
+Les autres hyperviseurs ont le même réglage (par exemple *host-passthrough* avec libvirt / virt-manager). Il profite aussi à Home Assistant et aux autres applications.
+
 ## Signaler un problème
 
 1. **Réglages › État de l'application › Préparer un rapport** : un fichier qui décrit l'état de l'application, **sans nom d'équipement, ni identifiant de capteur, ni position**. L'aperçu montre tout ce qu'il contient.

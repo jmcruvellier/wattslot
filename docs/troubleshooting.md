@@ -17,6 +17,23 @@
 | No history in Home Assistant for some sensors | They have no statistics (no `state_class`): the plan starts from their live measurements only |
 | No plan could be computed for more than 2 hours | Look at the other problems, or **Compute** from the title bar of **Today**, **Planning** or **Curves** |
 
+## The app does not start: "NumPy was built with baseline optimizations (X86_V2)"
+
+The log ends with `RuntimeError: NumPy was built with baseline optimizations: (X86_V2) but your machine doesn't support: (X86_V2)`, or with a message from WattSlot about **x86-64-v2** instructions.
+
+The processor seen by Home Assistant does not report the instructions that WattSlot's planning engine needs. On almost every PC from the last fifteen years, the processor has them, but a **virtual machine** can hide them: on Proxmox, the CPU types `kvm64` and `qemu64` do.
+
+On Proxmox:
+
+1. Select the Home Assistant virtual machine.
+2. Open **Hardware**, then double-click **Processors**.
+3. Set **Type** to **host** (or **x86-64-v2-AES** if you move the virtual machine between different servers).
+4. Click **OK**.
+5. **Stop** the virtual machine completely (a restart from Home Assistant is not enough), then start it.
+6. Start the WattSlot app again.
+
+Other hypervisors have the same setting (for example *host-passthrough* with libvirt / virt-manager). It also benefits Home Assistant and the other apps.
+
 ## Reporting a bug
 
 1. **Settings › App status › Prepare a report**: a file describing the state of the app, **without device names, sensor identifiers or location**. The preview shows everything it contains.
