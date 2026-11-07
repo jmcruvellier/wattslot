@@ -2,12 +2,26 @@
 
 Chaque migration est appliquée une seule fois, dans l'ordre, et son numéro est noté dans
 ``schema_migrations``. Une migration publiée ne se modifie plus : on en ajoute une nouvelle.
+
+La base est lue et écrite depuis la boucle et depuis de nombreux fils (``asyncio.to_thread`` :
+ingestion, agrégation, vues, calcul, maintenance…). Chaque fil a sa propre connexion
+(``ThreadConnections``), donc sa propre transaction : partagée, une connexion mélangeait les
+transactions des fils et échouait sous Linux (« bad parameter or other API misuse », lignes
+vides ; #37, #151). En mode WAL, les lecteurs ne bloquent pas l'écrivain et SQLite fait attendre
+les écrivains entre eux (``BUSY_TIMEOUT_S``).
 """
 
 import sqlite3
+import threading
+from collections.abc import Callable
 from pathlib import Path
+from types import TracebackType
+from typing import Any, cast
 
 DATABASE_FILENAME = "wattslot.db"
+# Attente d'une écriture d'un autre fil avant « database is locked » : l'import de l'historique
+# écrit par lots de quelques secondes au plus.
+BUSY_TIMEOUT_S = 30.0
 # Nom d'avant le renommage en WattSlot (lot 7.1) : la base est renommée à l'ouverture.
 LEGACY_DATABASE_FILENAME = "energy_optimizer.db"
 
@@ -221,10 +235,65 @@ def _rename_legacy_database(data_dir: Path) -> None:
             legacy.rename(data_dir / f"{DATABASE_FILENAME}{suffix}")
 
 
-def open_database(data_dir: Path) -> sqlite3.Connection:
-    _rename_legacy_database(data_dir)
-    connection = sqlite3.connect(data_dir / DATABASE_FILENAME, check_same_thread=False)
+def _connect(path: Path) -> sqlite3.Connection:
+    # check_same_thread=False : la connexion ne sert qu'à son fil, mais ``close`` les ferme
+    # toutes depuis celui de l'arrêt.
+    connection = sqlite3.connect(path, timeout=BUSY_TIMEOUT_S, check_same_thread=False)
     connection.execute("PRAGMA journal_mode=WAL")
     connection.execute("PRAGMA foreign_keys=ON")
-    migrate(connection)
     return connection
+
+
+class ThreadConnections:
+    """Une connexion SQLite par fil, derrière l'interface d'une connexion : ``execute``,
+    ``with database:`` (transaction du fil appelant), ``commit``, ``backup``… sont ceux de la
+    connexion du fil qui appelle. Ouverte à la première utilisation dans un fil."""
+
+    def __init__(self, path: Path, connect: Callable[[Path], sqlite3.Connection] = _connect):
+        self._path = path
+        self._connect = connect
+        self._local = threading.local()
+        self._opened: list[sqlite3.Connection] = []
+        self._lock = threading.Lock()
+
+    def connection(self) -> sqlite3.Connection:
+        """Connexion du fil appelant."""
+        found: sqlite3.Connection | None = getattr(self._local, "connection", None)
+        if found is None:
+            found = self._connect(self._path)
+            self._local.connection = found
+            with self._lock:
+                self._opened.append(found)
+        return found
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self.connection(), name)
+
+    def __enter__(self) -> "ThreadConnections":
+        self.connection().__enter__()
+        return self
+
+    def __exit__(
+        self,
+        kind: type[BaseException] | None,
+        error: BaseException | None,
+        trace: TracebackType | None,
+    ) -> bool | None:
+        return self.connection().__exit__(kind, error, trace)
+
+    def close(self) -> None:
+        """Ferme les connexions de tous les fils (arrêt de l'application)."""
+        with self._lock:
+            opened, self._opened = self._opened, []
+            self._local = threading.local()
+        for connection in opened:
+            connection.close()
+
+
+def open_database(data_dir: Path) -> sqlite3.Connection:
+    """Base de l'application, migrée ; une connexion par fil (``ThreadConnections``), vue par
+    le reste du code comme une ``sqlite3.Connection``."""
+    _rename_legacy_database(data_dir)
+    database = ThreadConnections(data_dir / DATABASE_FILENAME)
+    migrate(database.connection())
+    return cast(sqlite3.Connection, database)
