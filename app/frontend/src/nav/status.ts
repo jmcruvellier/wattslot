@@ -30,12 +30,19 @@ export function useStatusLevel(): StatusLevel | null {
   const [level, setLevel] = useState<StatusLevel | null>(null);
   useEffect(() => {
     const controller = new AbortController();
-    const read = () =>
-      getJson<Problem[]>("api/diagnostic/problems", controller.signal)
-        .then((problems) => setLevel(statusLevel(problems)))
+    // Lectures numérotées : en navigation rapide, une réponse ancienne arrivée après une plus
+    // récente ne remplace pas la pastille.
+    let latest = 0;
+    const read = () => {
+      const mine = ++latest;
+      return getJson<Problem[]>("api/diagnostic/problems", controller.signal)
+        .then((problems) => {
+          if (mine === latest) setLevel(statusLevel(problems));
+        })
         .catch(() => {
-          if (!controller.signal.aborted) setLevel(null);
+          if (!controller.signal.aborted && mine === latest) setLevel(null);
         });
+    };
     void read();
     const timer = window.setInterval(() => void read(), STATUS_REFRESH_MS);
     const now = () => void read();

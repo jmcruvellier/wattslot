@@ -1,6 +1,6 @@
 // Discussion avec l'assistant de Home Assistant (page Assistant).
 
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -228,5 +228,33 @@ describe("discussion avec l'assistant", () => {
 
     expect(await screen.findByText(/Home Assistant n'est pas connecté/)).toBeInTheDocument();
     expect(screen.queryByLabelText("Répondre avec")).not.toBeInTheDocument();
+  });
+
+  it("« Nouvelle conversation » pendant une réponse : elle ne revient pas dans la nouvelle", async () => {
+    const chats: Record<string, unknown>[] = [];
+    let answer: ((reply: Response) => void) | undefined;
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url === "api/assistant/home") return Response.json(HOME);
+      if (url === "api/assistant/open-webui/models") return Response.json([]);
+      if (url === "api/assistant/chat") {
+        chats.push(JSON.parse(String(init?.body)) as Record<string, unknown>);
+        if (chats.length === 1) return new Promise<Response>((resolve) => (answer = resolve)); // en retard
+        return Response.json({ text: "Nouvelle réponse", conversation_id: "c2", error: false });
+      }
+      return new Response(null, { status: 404 });
+    });
+    renderCard();
+    const user = userEvent.setup();
+
+    await user.type(await screen.findByLabelText("Votre message"), "Première question{Enter}");
+    await user.click(await screen.findByRole("button", { name: "Nouvelle conversation" }));
+    await act(async () => answer!(Response.json({ text: "Réponse ancienne", conversation_id: "c1", error: false })));
+
+    expect(screen.queryByText("Réponse ancienne")).not.toBeInTheDocument();
+    expect(screen.queryByText("Première question")).not.toBeInTheDocument();
+    await user.type(screen.getByLabelText("Votre message"), "Nouvelle question{Enter}");
+    await screen.findByText("Nouvelle réponse");
+    expect(chats[1].conversation_id).toBeNull();
   });
 });
