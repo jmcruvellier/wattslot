@@ -11,7 +11,7 @@ WattSlot installs in two ways. Both run the same application.
 | Opens from | Home Assistant's sidebar | `http://<host>:8100` |
 | Updates | From Home Assistant, with its automatic backup | `docker compose pull` |
 
-**Hardware**: `amd64` or `aarch64`. WattSlot keeps a detailed history, written continuously: use an **SSD, not an SD card** (USB 3 or NVMe on a Raspberry Pi), 128 GB recommended (64 GB minimum) for Home Assistant OS with WattSlot. On a Raspberry Pi, a **Pi 5 with 8 GB** is recommended: the first history import needs up to about 1 GB of memory for the app. A mini PC or a virtual machine with an SSD has no particular constraint.
+**Hardware**: `amd64` or `aarch64`. WattSlot keeps a detailed history, written continuously: use an **SSD, not an SD card** (USB 3 or NVMe on a Raspberry Pi), 128 GB recommended (64 GB minimum) for Home Assistant OS with WattSlot. On a Raspberry Pi, a **Pi 5 with 8 GB** is recommended: the first history import needs up to about 1 GB of memory for the app. A mini PC or a virtual machine with an SSD has no particular constraint; in a virtual machine, choose the CPU type **host** (or **x86-64-v2-AES** on Proxmox), see [Troubleshooting](troubleshooting.md).
 
 **Before you start**: set up Home Assistant's **Energy dashboard** (Settings › Dashboards › Energy) with at least your grid meter, and your solar production if you have panels. WattSlot starts from it.
 
