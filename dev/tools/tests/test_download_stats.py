@@ -28,6 +28,25 @@ def test_the_package_total_is_read_with_its_thousands_separator() -> None:
     assert ds.package_total(PACKAGE_PAGE) == 1234
 
 
+def test_an_abbreviated_package_total_is_read_from_its_title() -> None:
+    page = PACKAGE_PAGE.replace('<h3 title="1234">1,234</h3>', '<h3 title="1038">1.04K</h3>')
+
+    assert ds.package_total(page) == 1038
+
+
+def test_an_abbreviated_package_total_without_title_is_rounded() -> None:
+    page = PACKAGE_PAGE.replace('<h3 title="1234">1,234</h3>', "<h3>1.04K</h3>")
+
+    assert ds.package_total(page) == 1040
+
+
+@pytest.mark.parametrize(
+    ("text", "count"), [("27", 27), ("1,002", 1002), ("1.2K", 1200), ("2.1m", 2_100_000)]
+)
+def test_displayed_counts_are_parsed(text: str, count: int) -> None:
+    assert ds.parse_count(text) == count
+
+
 def test_a_changed_package_page_is_reported() -> None:
     with pytest.raises(ValueError, match="Total downloads"):
         ds.package_total("<h3>1234</h3>")
