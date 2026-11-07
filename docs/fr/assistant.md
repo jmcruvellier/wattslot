@@ -29,6 +29,8 @@ Quand une mise à jour de WattSlot apporte de nouveaux outils, copiez à nouveau
 
 ## Exemples de questions
 
+En mode autonome, la discussion avec les agents de Home Assistant est désactivée par défaut (`WATTSLOT_HOME_ASSISTANT_CHAT`, voir [Installation](installation.md)) ; les modèles d'Open WebUI restent disponibles.
+
 La carte de discussion de l'écran **Assistant** propose des questions, par thème, tant que la conversation est vide ; un clic en met une dans la zone de saisie, où vous pouvez la modifier (un autre appareil, un autre jour) avant de l'envoyer.
 
 | Thème | Questions | Ce qui répond |

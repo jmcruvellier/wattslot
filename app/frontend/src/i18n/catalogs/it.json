@@ -1387,6 +1387,7 @@
       "help": "Invio per inviare, Maiusc+Invio per andare a capo. La conversazione resta finché la scheda del browser è aperta.",
       "empty": "L'assistente non ha risposto nulla.",
       "failed": "L'assistente non ha risposto, riprova.",
+      "disabled": "La chat con gli agenti di Home Assistant è disattivata in modalità autonoma: Assist può comandare i vostri apparecchi e WattSlot non ha un accesso con password. Per attivarla, impostate la variabile WATTSLOT_HOME_ASSISTANT_CHAT=true.",
       "not_connected": "Home Assistant non è connesso: la chat non è disponibile.",
       "log_empty": "Le tue domande e le risposte dell'assistente appariranno qui."
     },

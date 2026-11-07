@@ -1387,6 +1387,7 @@
       "help": "Enter to send, Shift+Enter for a new line. The conversation is kept while the browser tab stays open.",
       "empty": "The assistant gave no answer.",
       "failed": "The assistant did not answer, try again.",
+      "disabled": "Chatting with Home Assistant's agents is turned off in standalone mode: Assist can control your devices, and WattSlot has no sign-in. To turn it on, set the WATTSLOT_HOME_ASSISTANT_CHAT=true variable.",
       "not_connected": "Home Assistant is not connected: the chat is unavailable.",
       "log_empty": "Your questions and the assistant's answers will appear here."
     },

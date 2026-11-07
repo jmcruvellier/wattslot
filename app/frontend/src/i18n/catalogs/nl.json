@@ -1387,6 +1387,7 @@
       "help": "Enter om te verzenden, Shift+Enter voor een nieuwe regel. Het gesprek blijft bewaard zolang het browsertabblad open is.",
       "empty": "De assistent gaf geen antwoord.",
       "failed": "De assistent antwoordde niet, probeer het opnieuw.",
+      "disabled": "Chatten met de agenten van Home Assistant staat uit in zelfstandige modus: Assist kan uw apparaten bedienen en WattSlot heeft geen aanmelding. Zet de variabele WATTSLOT_HOME_ASSISTANT_CHAT=true om het aan te zetten.",
       "not_connected": "Home Assistant is niet verbonden: de chat is niet beschikbaar.",
       "log_empty": "Uw vragen en de antwoorden van de assistent verschijnen hier."
     },

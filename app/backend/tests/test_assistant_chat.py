@@ -76,3 +76,15 @@ def test_without_home_assistant(tmp_path: Path) -> None:
 
     assert refused.status_code == 503
     assert empty.status_code == 422
+
+
+def test_the_chat_with_home_assistant_can_be_turned_off(tmp_path: Path) -> None:
+    """Autonome sans ``WATTSLOT_HOME_ASSISTANT_CHAT`` : Assist peut commander les appareils, la
+    page Assistant ne le relaie pas ; l'interface le sait par ``chat``."""
+    with TestClient(create_app(_settings(tmp_path, home_assistant_chat=False))) as api:
+        refused = api.post("/api/assistant/chat", json={"text": "Ouvre le portail"})
+        home = api.get("/api/assistant/home").json()
+
+    assert refused.status_code == 403
+    assert refused.json()["detail"] == "home_assistant_chat_disabled"
+    assert home["chat"] is False

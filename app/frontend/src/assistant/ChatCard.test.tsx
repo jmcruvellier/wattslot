@@ -257,4 +257,33 @@ describe("discussion avec l'assistant", () => {
     await screen.findByText("Nouvelle réponse");
     expect(chats[1].conversation_id).toBeNull();
   });
+
+  it("mode autonome sans discussion avec HA : agents de HA cachés, Open WebUI reste possible", async () => {
+    const calls = mockApi(
+      () => Response.json({ text: "Oui", conversation_id: null, error: false }),
+      { ...HOME, chat: false },
+      [{ id: "qwen2.5:14b", name: "Qwen" }],
+    );
+    renderCard();
+    const user = userEvent.setup();
+
+    expect(await screen.findByText(/WATTSLOT_HOME_ASSISTANT_CHAT=true/)).toBeInTheDocument();
+    expect(await screen.findByLabelText("Répondre avec")).toHaveValue("open_webui:qwen2.5:14b");
+    expect(screen.queryByRole("option", { name: /Ollama/ })).not.toBeInTheDocument();
+    await user.type(screen.getByLabelText("Votre message"), "Bonjour{Enter}");
+    await screen.findByText("Oui");
+    expect(calls.find((call) => call.url === "api/assistant/chat")?.body.agent_id).toBe("open_webui:qwen2.5:14b");
+  });
+
+  it("mode autonome sans discussion avec HA ni Open WebUI : rien n'est envoyé", async () => {
+    const calls = mockApi(() => Response.json({}, { status: 403 }), { ...HOME, chat: false });
+    renderCard();
+    const user = userEvent.setup();
+
+    expect(await screen.findByText(/WATTSLOT_HOME_ASSISTANT_CHAT=true/)).toBeInTheDocument();
+    await user.type(screen.getByLabelText("Votre message"), "Bonjour{Enter}");
+
+    expect(screen.getByRole("button", { name: "Envoyer" })).toBeDisabled();
+    expect(calls.some((call) => call.url === "api/assistant/chat")).toBe(false);
+  });
 });
