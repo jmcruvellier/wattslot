@@ -584,6 +584,7 @@
       "url": "Address",
       "key": "API key",
       "key_saved": "key saved",
+      "key_other_server": "New server: enter its API key. The saved key is only sent to the server it was entered for.",
       "replace": "Replace",
       "clear": "Clear",
       "test": "Test",

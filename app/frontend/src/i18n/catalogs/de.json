@@ -584,6 +584,7 @@
       "url": "Adresse",
       "key": "API-Schlüssel",
       "key_saved": "Schlüssel gespeichert",
+      "key_other_server": "Neuer Server: Geben Sie dessen API-Schlüssel ein. Der gespeicherte Schlüssel wird nur an den Server gesendet, für den er eingegeben wurde.",
       "replace": "Ersetzen",
       "clear": "Löschen",
       "test": "Testen",

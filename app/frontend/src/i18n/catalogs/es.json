@@ -584,6 +584,7 @@
       "url": "Dirección",
       "key": "Clave de API",
       "key_saved": "clave guardada",
+      "key_other_server": "Servidor nuevo: introduzca su clave de API. La clave guardada solo se envía al servidor para el que se introdujo.",
       "replace": "Reemplazar",
       "clear": "Borrar",
       "test": "Probar",

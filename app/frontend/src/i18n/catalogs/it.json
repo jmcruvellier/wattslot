@@ -584,6 +584,7 @@
       "url": "Indirizzo",
       "key": "Chiave API",
       "key_saved": "chiave salvata",
+      "key_other_server": "Nuovo server: inserisca la sua chiave API. La chiave salvata viene inviata solo al server per cui è stata inserita.",
       "replace": "Sostituisci",
       "clear": "Cancella",
       "test": "Prova",

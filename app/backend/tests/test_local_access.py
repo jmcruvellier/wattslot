@@ -65,11 +65,22 @@ def test_the_application_refuses_other_hosts_and_cross_site_writes(tmp_path: Pat
         ).status_code
         cross_site = api.post("/api/planning/run", headers={"origin": "https://attacker.example"})
         cross_site_read = api.get("/api/health", headers={"origin": "https://attacker.example"})
+        fetched_cross_site = api.post(
+            "/api/planning/run", headers={"sec-fetch-site": "cross-site"}
+        ).status_code
+        fetched_same_origin = api.post(
+            "/api/planning/run", headers={"sec-fetch-site": "same-origin"}
+        ).status_code
+        without_headers = api.post("/api/planning/run").status_code
 
     assert local.status_code == 200
     assert rebound.status_code == 403
     assert same_site != 403
     assert cross_site.status_code == 403
+    # Écriture sans Origin : le navigateur la marque encore cross-site ; un script n'envoie rien.
+    assert fetched_cross_site == 403
+    assert fetched_same_origin != 403
+    assert without_headers != 403
     assert (
         cross_site_read.status_code == 200
     )  # lecture : la réponse reste illisible pour l'autre site

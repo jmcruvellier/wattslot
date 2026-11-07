@@ -584,6 +584,7 @@
       "url": "Adresse",
       "key": "Clé d'API",
       "key_saved": "clé enregistrée",
+      "key_other_server": "Nouveau serveur : saisissez sa clé d'API. La clé enregistrée n'est envoyée qu'au serveur pour lequel elle a été saisie.",
       "replace": "Remplacer",
       "clear": "Effacer",
       "test": "Tester",

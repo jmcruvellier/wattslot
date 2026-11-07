@@ -584,6 +584,7 @@
       "url": "Adres",
       "key": "API-sleutel",
       "key_saved": "sleutel opgeslagen",
+      "key_other_server": "Nieuwe server: voer de API-sleutel ervan in. De opgeslagen sleutel wordt alleen verzonden naar de server waarvoor hij is ingevoerd.",
       "replace": "Vervangen",
       "clear": "Wissen",
       "test": "Testen",

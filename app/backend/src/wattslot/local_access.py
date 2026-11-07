@@ -9,7 +9,8 @@ de la maison sont écartées ici :
   noms sans point (``nas``), les suffixes réservés aux réseaux locaux, et les noms de
   ``WATTSLOT_ALLOWED_HOSTS`` (proxy inverse, nom de domaine local) ;
 - **requête intersite** : une autre page qui envoie un formulaire ou un ``fetch`` en écriture.
-  Une écriture dont l'en-tête ``Origin`` n'est pas l'adresse de WattSlot est refusée.
+  Une écriture dont l'en-tête ``Origin`` n'est pas l'adresse de WattSlot est refusée, de même
+  qu'une écriture sans ``Origin`` que le navigateur marque ``Sec-Fetch-Site: cross-site``.
 
 Ce n'est pas une authentification : un appareil du réseau local garde l'accès (guide
 d'installation, ``SECURITY.md``).
@@ -89,7 +90,13 @@ class LocalAccessMiddleware:
                 )
             elif scope["type"] == "websocket" or scope.get("method") not in SAFE_METHODS:
                 origin = headers.get("origin")
-                if origin is not None and not same_site(origin, host, self.allowed_hosts):
+                if origin is not None:
+                    foreign = not same_site(origin, host, self.allowed_hosts)
+                else:
+                    # Sans Origin, le navigateur dit encore d'où vient la requête ; curl, Home
+                    # Assistant ou un script n'envoient ni l'un ni l'autre et restent admis.
+                    foreign = headers.get("sec-fetch-site") == "cross-site"
+                if foreign:
                     reason = "origin"
             if reason is not None:
                 if scope["type"] == "websocket":
