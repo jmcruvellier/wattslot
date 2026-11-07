@@ -11,6 +11,7 @@ import { useI18n } from "../i18n/I18nProvider";
 import { buildDraft, toModel, type DraftDevice } from "../home/draft";
 import type { TemplateSummary } from "../home/TemplateSection";
 import type { HomeModel, HomeProposal } from "../home/types";
+import { kwh } from "../plan/format";
 import Button from "../ui/Button";
 import type { Setup } from "./StartScreen";
 
@@ -107,7 +108,7 @@ type HomeLoad =
 /** Ce que le calcul fera de l'appareil, selon son type. */
 function role(device: DraftDevice, t: (key: string, params?: Record<string, string | number>) => string): string {
   if (device.kind === "Battery" && device.capacityKwh) {
-    return t("onboarding.home.kinds.battery_capacity", { kwh: device.capacityKwh.toFixed(1).replace(".", ",") });
+    return t("onboarding.home.kinds.battery_capacity", { kwh: kwh(device.capacityKwh, 1) });
   }
   return t(`onboarding.home.kinds.${device.kind}`);
 }

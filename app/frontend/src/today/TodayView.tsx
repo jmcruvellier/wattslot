@@ -29,7 +29,12 @@ export const REFRESH_MS = 60_000;
 // « C'est lancé » : l'action reste cachée jusqu'au calcul suivant, sur ce navigateur.
 export const LAUNCHED_KEY = "today.launched";
 
-type Load = { status: "loading" } | { status: "missing" } | { status: "error" } | { status: "ready"; view: DayView };
+type Load =
+  | { status: "loading" }
+  | { status: "missing" }
+  | { status: "error" }
+  // ``stale`` : le dernier rafraîchissement a échoué, la vue affichée est la précédente.
+  | { status: "ready"; view: DayView; stale?: boolean };
 
 function launchedKey(view: DayView, action: NextAction): string {
   return `${view.computed_at ?? ""}|${action.device}|${action.start_min}`;
@@ -76,7 +81,13 @@ export default function TodayView({ onNavigate }: { onNavigate?: (target: string
         .then((view) => setLoad({ status: "ready", view }))
         .catch((error: unknown) => {
           if (controller.signal.aborted) return;
-          setLoad({ status: error instanceof ApiError && error.status === 404 ? "missing" : "error" });
+          if (error instanceof ApiError && error.status === 404) {
+            setLoad({ status: "missing" });
+            return;
+          }
+          // Réseau pas encore revenu (téléphone qui se réveille…) : la vue reste, avec un mot ;
+          // l'écran d'erreur seulement si rien n'a encore pu être lu.
+          setLoad((current) => (current.status === "ready" ? { ...current, stale: true } : { status: "error" }));
         });
     void read();
     const timer = window.setInterval(() => void read(), REFRESH_MS);
@@ -103,6 +114,11 @@ export default function TodayView({ onNavigate }: { onNavigate?: (target: string
 
   return (
     <div className="today">
+      {load.stale && (
+        <p className="card discarded-note" role="status">
+          {t("today.stale")}
+        </p>
+      )}
       {/* Mesures impossibles du jour seulement : celles d'hier ne sont plus d'actualité ici. */}
       <DiscardedNote hours={view.discarded_hours ?? []} />
       <ProvisionalNote view={view} />

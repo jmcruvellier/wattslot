@@ -113,7 +113,7 @@ export default function SettingsScreen({ page = "main" }: { page?: SettingsPage 
 }
 
 function SettingsForm({ page }: { page: "notifications" | "calculation" }) {
-  const { t } = useI18n();
+  const { language, t } = useI18n();
   const [load, setLoad] = useState<Load>({ status: "loading" });
   const [save, setSave] = useState<Save>("idle");
   const [attempt, setAttempt] = useState(0); // « Réessayer »
@@ -234,7 +234,7 @@ function SettingsForm({ page }: { page: "notifications" | "calculation" }) {
               label={t("settings.scheduler.enabled")}
               description={
                 settings.scheduler_enabled && scheduler?.enabled && scheduler.next_run_at
-                  ? t("settings.scheduler.next", { time: new Date(scheduler.next_run_at).toLocaleString() })
+                  ? t("settings.scheduler.next", { time: new Date(scheduler.next_run_at).toLocaleString(language) })
                   : undefined
               }
               checked={settings.scheduler_enabled}

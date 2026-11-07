@@ -61,6 +61,7 @@ export default function PlanActions({ leading }: { leading?: ReactNode }) {
 
   const run = async (action: Exclude<Running, null>, url: string) => {
     setRunning(action);
+    setFailed(false); // l'échec d'un essai précédent ne reste pas affiché après un succès
     try {
       const response = await fetch(url, { method: "POST" });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);

@@ -127,4 +127,23 @@ describe("PlanActions (barre de titre)", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("L'opération a échoué : voir le diagnostic.");
     expect(screen.getByRole("button", { name: /^Rafraîchir/ })).toBeEnabled();
   });
+
+  it("échec puis succès : l'alerte disparaît au nouvel essai", async () => {
+    let fail = true;
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      if (String(input) === "api/planning/last-run") return Response.json(lastRun(12, 5));
+      if (init?.method === "POST") {
+        return fail ? Response.json({ detail: "erreur" }, { status: 500 }) : Response.json({});
+      }
+      return Response.json({ detail: "inattendu" }, { status: 404 });
+    });
+    renderActions();
+
+    await userEvent.click(await screen.findByRole("button", { name: /^Calculer/ }));
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    fail = false;
+    await userEvent.click(screen.getByRole("button", { name: /^Calculer/ }));
+
+    await waitFor(() => expect(screen.queryByRole("alert")).not.toBeInTheDocument());
+  });
 });

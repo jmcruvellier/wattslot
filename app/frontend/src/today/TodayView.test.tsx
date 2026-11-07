@@ -1,11 +1,12 @@
 // Écran Aujourd'hui (lot 6b.3) : le moment, la prochaine action et ses boutons, la batterie, le
 // soleil ; sans mesures, la recommandation du jour.
 
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { I18nProvider } from "../i18n/I18nProvider";
+import { RUN_EVENT } from "../plan/planView";
 import { TODAY } from "../plan/testViews";
 import type { DayView, NextAction, Now } from "../plan/types";
 import TodayView, { LAUNCHED_KEY } from "./TodayView";
@@ -266,5 +267,32 @@ describe("TodayView", () => {
     expect(posts).toHaveLength(1);
     expect(JSON.parse(String(posts[0][1]?.body))).toEqual({ device: "Lave-linge" });
     expect(fetchMock.mock.calls.some((call) => String(call[0]) === "api/planning/run")).toBe(true);
+  });
+
+  it("un rafraîchissement manqué garde la vue, avec un mot, jusqu'au suivant", async () => {
+    let online = true;
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      if (String(input).startsWith("api/views/today")) {
+        return online ? Response.json({ ...TODAY, now: NOW }) : Response.json({}, { status: 502 });
+      }
+      return new Response(null, { status: 404 });
+    });
+    renderView();
+    expect(await screen.findByText("Le soleil couvre 82 % de la maison")).toBeInTheDocument();
+
+    online = false;
+    act(() => {
+      window.dispatchEvent(new Event(RUN_EVENT));
+    });
+
+    expect(await screen.findByText(/Rafraîchissement impossible/)).toBeInTheDocument();
+    expect(screen.getByText("Le soleil couvre 82 % de la maison")).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+
+    online = true;
+    act(() => {
+      window.dispatchEvent(new Event(RUN_EVENT));
+    });
+    await waitFor(() => expect(screen.queryByText(/Rafraîchissement impossible/)).not.toBeInTheDocument());
   });
 });
