@@ -10,6 +10,7 @@
 import { useEffect, useState } from "react";
 
 import { ApiError, getJson, putJson } from "../api";
+import { zoned } from "../i18n/homeTime";
 import { useI18n } from "../i18n/I18nProvider";
 import AppearanceSection from "./AppearanceSection";
 import SettingsHome from "./SettingsHome";
@@ -234,7 +235,7 @@ function SettingsForm({ page }: { page: "notifications" | "calculation" }) {
               label={t("settings.scheduler.enabled")}
               description={
                 settings.scheduler_enabled && scheduler?.enabled && scheduler.next_run_at
-                  ? t("settings.scheduler.next", { time: new Date(scheduler.next_run_at).toLocaleString(language) })
+                  ? t("settings.scheduler.next", { time: new Date(scheduler.next_run_at).toLocaleString(language, zoned()) })
                   : undefined
               }
               checked={settings.scheduler_enabled}
