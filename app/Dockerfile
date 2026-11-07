@@ -28,12 +28,21 @@ COPY backend/src backend/src
 RUN pip install ./backend
 COPY --from=frontend /build/dist /app/static
 
+# Utilisateur de l'application en mode autonome (#150) : entrypoint.sh lui donne /data et
+# lance l'application sous son nom ; l'extension HA reste en root.
+RUN groupadd --gid 1000 wattslot \
+    && useradd --uid 1000 --gid wattslot --no-create-home --home-dir /nonexistent \
+        --shell /usr/sbin/nologin wattslot
+COPY entrypoint.sh /usr/local/bin/wattslot-entrypoint
+RUN chmod 755 /usr/local/bin/wattslot-entrypoint
+
 # /data : base SQLite et magasin Oxigraph. En extension, le Supervisor y monte le dossier de
 # l'extension (inclus dans les sauvegardes de HA) ; en autonome, un volume Docker.
 VOLUME /data
 EXPOSE 8100
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8100/api/health', timeout=4)"
+ENTRYPOINT ["wattslot-entrypoint"]
 # Arrêt : 10 s au plus pour fermer les connexions ouvertes (flux MCP…), le reste du délai du
 # Supervisor (30 s, config.yaml de l'extension) pour vider les écritures.
 CMD ["uvicorn", "wattslot.main:app", "--host", "0.0.0.0", "--port", "8100",      "--timeout-graceful-shutdown", "10"]

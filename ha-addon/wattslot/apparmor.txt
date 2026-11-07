@@ -29,7 +29,10 @@ profile wattslot flags=(attach_disconnected,mediate_deleted) {
   signal (send, receive) peer=@{profile_name},
 
   # Programmes : seulement l'interpréteur Python de l'image (uvicorn est un script Python) et
-  # le shell, au cas où une commande du Supervisor passe par lui.
+  # le shell, au cas où une commande du Supervisor passe par lui. Le script de démarrage de
+  # l'image (app/entrypoint.sh) : en extension, il lance uvicorn tel quel, avec les seules
+  # commandes internes du shell.
+  /usr/local/bin/wattslot-entrypoint rix,
   /usr/local/bin/python3* ix,
   /usr/local/bin/python ix,
   /usr/local/bin/uvicorn rix,
