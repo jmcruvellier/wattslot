@@ -276,14 +276,12 @@ def solve(problem: Problem, objective: Goal = Objective.COST, time_limit_s: floa
             if violated:
                 penalties.append(len(violated) * on)
         on_hours = sum(speeds[mode][hour] for mode in speeds for hour in hours)
-        if runtime.name in problem.constraints:
-            # Contraintes : la durée minimale peut ne plus tenir (signalé), sans rendre le
-            # problème impossible.
-            missing = var(0, runtime.min_hours)
-            shortfalls.append(missing)
-            h.addConstr(on_hours + missing >= runtime.min_hours)
-        else:
-            h.addConstr(on_hours >= runtime.min_hours)
+        # La durée minimale peut ne plus tenir (contraintes horaires, ou trop peu d'heures
+        # restantes : premier calcul tard le soir) : l'heure manquante est pénalisée et
+        # signalée, sans rendre le problème impossible.
+        missing = var(0, runtime.min_hours)
+        shortfalls.append(missing)
+        h.addConstr(on_hours + missing >= runtime.min_hours)
         if runtime.minimum_forced:
             h.addConstr(on_hours <= runtime.min_hours)
         h.addConstr(sum(starts) <= runtime.max_starts)
@@ -333,13 +331,23 @@ def solve(problem: Problem, objective: Goal = Objective.COST, time_limit_s: floa
             h.addConstr(discharge <= battery.discharge_max_kw * (1 - charging))
             h.addConstr(imports[hour] <= BIG_KWH * (1 - charging))
             h.addConstr(exports[hour] <= BIG_KWH * charging)
-            soc = var(min(battery.floor_at(hour), battery.stored_kwh), battery.capacity_kwh)
+            soc = var(0, battery.capacity_kwh)
             h.addConstr(
                 soc
                 == soc_previous
                 + battery.charge_efficiency * charge
                 - (1 / battery.discharge_efficiency) * discharge
             )
+            # Plancher : la batterie n'y descend pas. Déjà dessous (départ bas, ou plage plus
+            # haute qui commence), elle cesse de se décharger, comme dans la simulation, au lieu
+            # de rendre le problème impossible. Batterie sous le plancher sans décharger en
+            # heure de déficit : seulement si le contenu était déjà au plancher ou dessous (le
+            # soutirage exige sinon la pleine puissance de décharge, ci-dessous).
+            floor = battery.floor_at(hour)
+            if floor > 0:
+                below = var(0, 1, True)
+                h.addConstr(soc >= floor - floor * below)
+                h.addConstr(discharge <= battery.discharge_max_kw * (1 - below))
             # Injection seulement batterie à pleine puissance ou pleine ; soutirage seulement
             # à pleine puissance de décharge ou au plancher.
             charge_max, at_cap = var(0, 1, True), var(0, 1, True)
@@ -613,8 +621,19 @@ def day_plan(problem: Problem, plan: Plan, run: BatteryRun) -> DayPlan:
         chosen = plan.runtimes.get(runtime.name, {})
         running = [hour for hour, mode in chosen.items() if mode != "off"]
         _check_soft(problem, runtime.name, [(h * 60, h * 60 + 60) for h in running], warnings)
-        if runtime.name in problem.constraints and len(running) < runtime.min_hours:
-            warnings.append(_impossible(problem, runtime.name))
+        if len(running) < runtime.min_hours:
+            warnings.append(
+                _impossible(problem, runtime.name)
+                if runtime.name in problem.constraints
+                else {
+                    "code": "duree_minimale_non_tenue",
+                    "params": {
+                        "equipement": runtime.name,
+                        "heures": len(running),
+                        "minimum": runtime.min_hours,
+                    },
+                }
+            )
         segments: list[RuntimeSegment] = []
         current, since = chosen.get(first, "off"), first
         for hour in range(first + 1, 25):

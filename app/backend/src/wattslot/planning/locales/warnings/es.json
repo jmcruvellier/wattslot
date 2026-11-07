@@ -10,6 +10,7 @@
     "heures_insuffisantes_attente": "{equipement} está pendiente, pero no queda tiempo suficiente para un ciclo completo ({duree_min} a partir de las {debut_min}): no colocado.",
     "contrainte_impossible": "{equipement}: ninguna franja respeta sus restricciones horarias ({contraintes}): no colocado o duración mínima no cumplida.",
     "contrainte_non_respectee": "{equipement}: restricción flexible no respetada ({contraintes}) para mantener el resto del plan.",
+    "duree_minimale_non_tenue": "{equipement}: de la duración mínima de {minimum} h, solo caben hoy {heures} h.",
     "prevision_open_meteo": "Previsión solar calculada por Open-Meteo a partir de sus paneles: menos precisa que una integración de previsión en el panel de energía de Home Assistant.",
     "prevision_horaire_indisponible": "Previsión solar horaria no disponible o incompleta: se usa la forma media de los últimos {jours} días, menos fiel al tiempo de hoy.",
     "panneau_sans_historique": "Panel {panneau}: historial insuficiente ({jours} días), se usa la forma media de la terraza.",

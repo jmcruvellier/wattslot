@@ -12,7 +12,7 @@ import asyncio
 import contextlib
 import logging
 import sqlite3
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from typing import Any
@@ -139,10 +139,16 @@ async def send_due(
 
 
 class ReminderLoop:
-    """Toutes les minutes, les rappels arrivés à leur heure, si HA est connecté."""
+    """Toutes les minutes, les rappels arrivés à leur heure, si HA est connecté.
+
+    ``zone`` est lu à chaque tour : le fuseau de la maison n'est connu qu'à la connexion à HA,
+    après le démarrage de la boucle (UTC jusque-là)."""
 
     def __init__(
-        self, client: HomeAssistantClient, database: sqlite3.Connection, zone: ZoneInfo
+        self,
+        client: HomeAssistantClient,
+        database: sqlite3.Connection,
+        zone: Callable[[], ZoneInfo],
     ) -> None:
         self._client = client
         self._database = database
@@ -162,7 +168,7 @@ class ReminderLoop:
         while True:
             if self._client.status.state is ConnectionState.CONNECTED:
                 try:
-                    await send_due(self._client, self._database, datetime.now(UTC), self._zone)
+                    await send_due(self._client, self._database, datetime.now(UTC), self._zone())
                 except Exception:  # nouvel essai à la minute suivante
                     logger.exception("Rappel impossible")
             await asyncio.sleep(INTERVAL_S)
