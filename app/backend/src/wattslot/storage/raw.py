@@ -89,6 +89,9 @@ class RawStores:
         self._open: OrderedDict[date, pyoxigraph.Store] = OrderedDict()
         self._users: dict[date, int] = {}  # fils qui utilisent le magasin : jamais fermé
         self._lock = threading.Lock()  # écriture (ingestion) et lecture (agrégation)
+        # Signalé quand un magasin est rendu ou une journée supprimée (``remove_day``).
+        self._released = threading.Condition(self._lock)
+        self._removing: set[date] = set()  # journées en cours de suppression : pas rouvertes
         self._unflushed: dict[date, int] = {}  # triplets écrits depuis le dernier flush
         self._clock = clock
         self._flushed_at = clock()
@@ -131,21 +134,48 @@ class RawStores:
             self._open.pop(day_out).flush()
             self._unflushed.pop(day_out, None)
 
-    @contextmanager
-    def _using(self, day: date) -> Iterator[pyoxigraph.Store]:
-        """Magasin réservé le temps du bloc : pas fermé par un autre fil qui en ouvre d'autres."""
+    def _reserve(self, day: date, create: bool) -> pyoxigraph.Store | None:
+        """Réserve le magasin de ``day`` (à rendre par ``_release``), après une suppression en
+        cours de la même journée. Sans ``create``, ``None`` si la journée n'existe pas : une
+        lecture ne recrée pas un dossier vide pour une journée tout juste supprimée."""
         with self._lock:
+            while day in self._removing:
+                self._released.wait()
+            if not create and day not in self._open and not (self.root / day.isoformat()).is_dir():
+                return None
             store = self._opened(day)
             self._users[day] = self._users.get(day, 0) + 1
             self._evict()
+            return store
+
+    def _release(self, day: date) -> None:
+        with self._lock:
+            self._users[day] -= 1
+            if not self._users[day]:
+                del self._users[day]
+                self._released.notify_all()  # ``remove_day`` attend peut-être cette journée
+            self._evict()
+
+    @contextmanager
+    def _using(self, day: date) -> Iterator[pyoxigraph.Store]:
+        """Magasin réservé le temps du bloc (créé au besoin) : pas fermé par un autre fil qui en
+        ouvre d'autres, ni supprimé par la conservation."""
+        store = self._reserve(day, create=True)
+        assert store is not None
         try:
             yield store
         finally:
-            with self._lock:
-                self._users[day] -= 1
-                if not self._users[day]:
-                    del self._users[day]
-                self._evict()
+            self._release(day)
+
+    @contextmanager
+    def _reading(self, day: date) -> Iterator[pyoxigraph.Store | None]:
+        """Comme ``_using`` pour une lecture : ``None`` si la journée n'existe pas."""
+        store = self._reserve(day, create=False)
+        try:
+            yield store
+        finally:
+            if store is not None:
+                self._release(day)
 
     def write(self, readings: Iterable[Reading]) -> int:
         """Écrit un lot (une transaction par jour), ``flush`` selon le volume et le temps écoulé ;
@@ -169,7 +199,9 @@ class RawStores:
 
     def count(self, day: date) -> int:
         """Nombre d'observations d'une journée."""
-        with self._using(day) as store:
+        with self._reading(day) as store:
+            if store is None:
+                return 0
             solutions = store.query(
                 f"SELECT (COUNT(?o) AS ?n) WHERE {{ ?o a <{SOSA}Observation> }}"
             )
@@ -189,7 +221,9 @@ class RawStores:
         for day in self.days():
             if not first <= day <= last:
                 continue
-            with self._using(day) as store:
+            with self._reading(day) as store:
+                if store is None:  # supprimée entre-temps (conservation)
+                    continue
                 solutions = store.query(
                     f"SELECT ?s ?t ?v WHERE {{ ?o <{SOSA}madeBySensor> ?s ; "
                     f"<{SOSA}resultTime> ?t ; <{SOSA}hasSimpleResult> ?v . {bounds} }}"
@@ -204,7 +238,9 @@ class RawStores:
         """Observations d'une journée par capteur (sans créer le magasin s'il n'existe pas)."""
         if day not in self.days():
             return {}
-        with self._using(day) as store:
+        with self._reading(day) as store:
+            if store is None:
+                return {}
             solutions = store.query(
                 f"SELECT ?s (COUNT(?o) AS ?n) WHERE {{ ?o <{SOSA}madeBySensor> ?s }} GROUP BY ?s"
             )
@@ -212,14 +248,25 @@ class RawStores:
             return {solution["s"].value: int(solution["n"].value) for solution in solutions}
 
     def remove_day(self, day: date) -> None:
-        """Supprime une journée : un dossier (utilisé par la conservation, lot 1.4)."""
+        """Supprime une journée : un dossier (utilisé par la conservation, lot 1.4). Attend que
+        les fils qui s'en servent l'aient rendue ; ceux qui la demandent pendant la suppression
+        attendent qu'elle soit finie."""
         with self._lock:
-            store = self._open.pop(day, None)
-            self._unflushed.pop(day, None)
-        if store is not None:
-            store.flush()
-            del store
-        shutil.rmtree(self.root / day.isoformat(), ignore_errors=True)
+            self._removing.add(day)
+        try:
+            with self._lock:
+                while self._users.get(day):
+                    self._released.wait()
+                store = self._open.pop(day, None)
+                self._unflushed.pop(day, None)
+            if store is not None:
+                store.flush()
+                del store
+            shutil.rmtree(self.root / day.isoformat(), ignore_errors=True)
+        finally:
+            with self._lock:
+                self._removing.discard(day)
+                self._released.notify_all()
 
     def flush(self) -> None:
         """Vide sur disque ce qui a été écrit depuis le dernier ``flush`` (arrêt, intervalle)."""
