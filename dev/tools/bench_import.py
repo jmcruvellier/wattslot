@@ -119,7 +119,7 @@ def run(sensors: int, since: datetime, quarter_days: int, legacy: int) -> dict[s
                 "INSERT INTO aggregation_state VALUES (?, ?, ?, NULL, NULL)",
                 [(e, p, NOW.isoformat()) for e in targets for p in PERIODS],
             )
-        ingestor = SimpleNamespace(backfilling=False, targets=targets)
+        ingestor = SimpleNamespace(ready=True, targets=targets)
         client = SimpleNamespace(status=SimpleNamespace(state=ConnectionState.CONNECTED))
         aggregator = Aggregator(
             cast(Ingestor, ingestor),

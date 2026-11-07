@@ -344,7 +344,7 @@ class FakeHomeAssistant:
 class _Targets:
     """Entités suivies, pour l'agrégation (l'ingestion de l'application n'est pas lancée)."""
 
-    backfilling = False
+    ready = True
 
     def __init__(self, targets: dict[str, Any]) -> None:
         self.targets = targets

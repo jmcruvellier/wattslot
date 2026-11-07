@@ -379,7 +379,7 @@ class Aggregator:
 
     async def step(self, now: datetime | None = None) -> int:
         """Calcule les périodes closes ; renvoie le nombre d'agrégats écrits."""
-        if self._ingestor.backfilling:
+        if not self._ingestor.ready:
             return 0
         targets = self._ingestor.targets
         if not targets:
