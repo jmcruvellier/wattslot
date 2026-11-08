@@ -5,6 +5,7 @@ fonctions de la v1, le plan de la v1 et ses indicateurs selon l'évaluateur du p
 dans ``evaluation.py``, qui juge aussi le plan de la v2).
 """
 
+import copy
 from dataclasses import asdict, replace
 from pathlib import Path
 from typing import Any
@@ -431,3 +432,52 @@ def test_frozen_slot_realigned_on_its_real_start() -> None:
     merged = merge_plans(output, old, problem.first_hour)
     (kept,) = [i for i in merged["planning"] if i["equipement"] == "Lave-vaisselle"]
     assert kept["fin_min"] == 15 * 60 + 2
+
+
+def _laundry_state(washer: dict[str, Any]) -> dict[str, Any]:
+    """Journée type 06 (calcul de 13 h 59) : lave-linge gelé 12 h 00 → 12 h 24, sèche-linge
+    gelé 12 h 30 → 14 h 45 derrière lui (``depend_de``), ``washer`` : cycle réel du lave-linge."""
+    state, _ = load(state_named("06_today_h13_dishwasher_running"))
+    state = copy.deepcopy(state)
+    for task in state["taches_placees"]:
+        if task["summary"] in ("Lave-linge", "Sèche-linge"):
+            task["due"] = "2025-10-14"
+    common = {"priorite": 3, "justification": ""}
+    state["equipements_geles"] += [
+        {"equipement": "Lave-linge", "heure_debut": 12, "heure_fin": 13, "debut_min": 720,
+         "fin_min": 744, "energie_kwh": 0.22, "duree_cycle_min": 24, **common},
+        {"equipement": "Sèche-linge", "heure_debut": 12, "heure_fin": 15, "debut_min": 750,
+         "fin_min": 885, "energie_kwh": 1.1, "duree_cycle_min": 135, **common},
+    ]  # fmt: skip
+    state["cycles_reels"]["segments"]["Lave-linge"] = [washer]
+    return state
+
+
+def test_frozen_slot_released_when_its_dependency_overruns() -> None:
+    """Le lave-linge, lancé à 12 h 00, tourne encore à 13 h 59 : le sèche-linge gelé à 12 h 30,
+    pas lancé, est replacé après sa fin, et la fusion garde ce nouveau créneau."""
+    state = _laundry_state(
+        {"debut_iso": "2025-10-14T12:00:00+02:00", "fin_iso": "2025-10-14T13:59:00+02:00",
+         "energie_kwh": 0.3, "en_cours": True}
+    )  # fmt: skip
+    problem = from_input(from_v1(state))
+
+    output = plan_day(problem).output
+    by_name = {i["equipement"]: i for i in output["planning"]}
+
+    assert problem.released == {"Sèche-linge"}
+    assert by_name["Sèche-linge"]["debut_min"] >= by_name["Lave-linge"]["fin_min"] > 13 * 60 + 59
+    old = {**output, "planning": state["equipements_geles"]}
+    merged = merge_plans(output, old, problem.first_hour, chosen=set(problem.released))
+    kept = {i["equipement"]: i for i in merged["planning"]}
+    assert kept["Sèche-linge"]["debut_min"] == by_name["Sèche-linge"]["debut_min"]
+
+
+def test_frozen_slot_kept_when_its_dependency_ended_in_time() -> None:
+    """Lave-linge fini à 12 h 20, avant le départ prévu du sèche-linge : celui-ci reste gelé."""
+    state = _laundry_state(
+        {"debut_iso": "2025-10-14T12:00:00+02:00", "fin_iso": "2025-10-14T12:20:00+02:00",
+         "energie_kwh": 0.22}
+    )  # fmt: skip
+
+    assert from_input(from_v1(state)).released == frozenset()

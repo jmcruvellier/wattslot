@@ -165,6 +165,8 @@ class Problem:
         ]
 
     fixed_ends: dict[str, int] = field(default_factory=dict)  # fin (minute) des tâches fixées
+    # Blocs gelés libérés (``released``) : replacés par ce calcul, la fusion prend le nouveau.
+    released: frozenset[str] = frozenset()
     prices_eur_kwh: dict[int, float] = field(default_factory=dict)  # soutirage, par heure
     export_prices_eur_kwh: dict[int, float] = field(default_factory=dict)  # revente, par heure
     warnings: list[dict[str, Any]] = field(default_factory=list)
@@ -330,6 +332,62 @@ def _needs(data: PlanningInput, warnings: list[dict[str, Any]]) -> list[NeedMode
     return found
 
 
+def _cycle_min(item: FrozenCycle) -> float:
+    return item.cycle_min or (item.end_hour - item.start_hour) * 60
+
+
+def _real_end(
+    name: str,
+    energy_kwh: float,
+    cycle_min: float,
+    segments: Mapping[str, tuple[Segment, ...]],
+    now: datetime | None,
+) -> int | None:
+    """Fin (minute) du cycle réel du jour de ``name`` recalé, None s'il n'a pas démarré."""
+    if now is None:
+        return None
+    result = realign(energy_kwh, cycle_min, segments.get(task_key(name), ()), now)
+    return free_from_minute(result) if result is not None else None
+
+
+def _released(
+    frozen: Mapping[str, FrozenCycle],
+    data: PlanningInput,
+    segments: Mapping[str, tuple[Segment, ...]],
+    now: datetime | None,
+    reference: Reference,
+) -> frozenset[str]:
+    """Blocs gelés à replacer : pas encore lancés, et la tâche à finir avant eux (``depend_de``)
+    finit après leur départ prévu — un sèche-linge prévu à 10 h derrière un lave-linge qui
+    tourne encore à 11 h. Libérés, ils redeviennent des tâches à placer après elle."""
+    requests = [*data.waiting_tasks, *(t for t in data.due_tasks if t.on_demand)]
+    depends = {t.name: task_key(t.depends_on) for t in requests if t.depends_on}
+    names = {task_key(t.name): t.name for t in [*data.due_tasks, *data.waiting_tasks]}
+    frozen_by_key = {task_key(name): item for name, item in frozen.items()}
+    found = set()
+    for name, item in frozen.items():
+        key = depends.get(name)
+        if (
+            key is None
+            or _real_end(name, item.energy_kwh, _cycle_min(item), segments, now) is not None
+        ):
+            continue
+        end: int | None = None
+        if key in frozen_by_key:
+            dependency = frozen_by_key[key]
+            end = _real_end(
+                dependency.name, dependency.energy_kwh, _cycle_min(dependency), segments, now
+            )
+            end = _frozen_cycle(dependency).end_min if end is None else end
+        elif key in names:
+            characteristic = characteristics(names[key], data, reference)
+            if characteristic is not None:
+                end = _real_end(names[key], *characteristic, segments, now)
+        if end is not None and end > _frozen_cycle(item).start_min:
+            found.add(name)
+    return frozenset(found)
+
+
 def from_input(data: PlanningInput, reference: Reference = REFERENCE) -> Problem:
     day, first_hour = data.day, data.first_hour
     warnings: list[dict[str, Any]] = list(data.forecast_warnings)
@@ -349,6 +407,10 @@ def from_input(data: PlanningInput, reference: Reference = REFERENCE) -> Problem
     segments: dict[str, tuple[Segment, ...]] = (
         {task_key(name): segs for name, segs in data.real_segments.items()} if now else {}
     )
+    released = _released(frozen, data, segments, now, reference)
+    for name in released:
+        del frozen[name]
+        ends.pop(task_key(name), None)
 
     def launched_now(
         name: str, energy_kwh: float, cycle_min: float, shape: Shape | None
@@ -532,6 +594,7 @@ def from_input(data: PlanningInput, reference: Reference = REFERENCE) -> Problem
         needs=_needs(data, warnings),
         constraints={name: tuple(found) for name, found in data.constraints.items() if found},
         fixed_ends=ends,
+        released=released,
         warnings=warnings,
         prices_eur_kwh=data.tariff.hourly(day, data.tariff_context),
         export_prices_eur_kwh=data.tariff.export_hourly(day, data.tariff_context),
