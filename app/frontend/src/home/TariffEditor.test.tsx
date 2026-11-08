@@ -51,4 +51,24 @@ describe("minutes des plages tarifaires", () => {
     const added = (kind === "DayColorTariff" ? latest.colors[0].bands : latest.bands)[1];
     expect(added).toMatchObject({ start_hour: 0, start_minute: 0, end_hour: 6, end_minute: 0 });
   });
+
+  it("lit un prix dans Home Assistant, garde le prix saisi en repli, puis revient à la saisie", async () => {
+    const changed = vi.fn();
+    render(<I18nProvider><Editor initial={TARIFF_TEMPLATES.TimeOfUseTariff} changed={changed} /></I18nProvider>);
+    expect(screen.queryByLabelText("Unité des prix lus dans Home Assistant")).toBeNull();
+    const band = within(screen.getByRole("listitem", { name: "Plage 1" }));
+    await userEvent.click(band.getByRole("button", { name: "lire dans Home Assistant" }));
+    await userEvent.type(band.getByLabelText("capteur"), "sensor.tarif_heures_creuses_ttc");
+    const latest = () => changed.mock.lastCall![0] as Tariff;
+    expect(latest().bands[0]).toMatchObject({ eur_kwh: 0.15, eur_kwh_entity: "sensor.tarif_heures_creuses_ttc" });
+    expect(band.getByText(/si le capteur est indisponible/)).toBeInTheDocument();
+    expect(screen.getByLabelText("Unité des prix lus dans Home Assistant")).toBeInTheDocument();
+    const base = screen.getByLabelText(/Prix hors des plages/).closest("p")!;
+    await userEvent.click(within(base).getByRole("button", { name: "lire dans Home Assistant" }));
+    await userEvent.type(within(base).getByLabelText("capteur"), "sensor.hp");
+    expect(latest().base_eur_kwh_entity).toBe("sensor.hp");
+    await userEvent.click(band.getByRole("button", { name: "saisir le prix" }));
+    expect(latest().bands[0].eur_kwh_entity).toBeNull();
+    expect(band.getByRole("button", { name: "lire dans Home Assistant" })).toBeInTheDocument();
+  });
 });

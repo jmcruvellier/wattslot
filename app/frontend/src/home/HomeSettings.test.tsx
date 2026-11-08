@@ -168,7 +168,7 @@ describe("réglages de Ma maison", () => {
     await userEvent.clear(nightPrice);
     await userEvent.type(nightPrice, "0.138252");
     await userEvent.click(within(sheet).getByRole("button", { name: "Ajouter une plage" }));
-    await userEvent.click(within(sheet).getByRole("listitem", { name: "Plage 3" }).querySelector("button")!);
+    await userEvent.click(within(within(sheet).getByRole("listitem", { name: "Plage 3" })).getByRole("button", { name: "Retirer" }));
     const subscription = within(sheet).getByLabelText(/Abonnement/);
     await userEvent.clear(subscription);
     await userEvent.type(subscription, "15.5");

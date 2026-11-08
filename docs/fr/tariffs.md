@@ -23,7 +23,12 @@ La fin suit le début dans la journée, par exemple **22:30–24:00**. Les filtr
 
 Le calcul conserve des **prix horaires**, pas minute par minute : chaque heure est pondérée par le nombre de minutes à chaque prix. Les heures mixtes sont arrondies à six décimales ; une heure uniforme garde exactement son prix configuré. Le tableau de bord et l'assistant présentent ces prix et ces heures creuses horaires ; une heure partiellement moins chère peut donc apparaître comme creuse. C'est une approximation horaire, pas une optimisation infra-horaire.
 
-## Revendre votre surplus
+## Prix lus dans Home Assistant
+
+Tout prix fixe (prix de base, d'une plage, d'une couleur) peut suivre un capteur de Home Assistant dont l'état est le prix, par exemple ceux de l'intégration **Tarif EDF** (`sensor.tarif_heures_creuses_ttc`…). Cliquez sur **lire dans Home Assistant** à côté du prix et indiquez le capteur : WattSlot le lit à chaque calcul, un changement de prix de votre fournisseur ne vous demande donc rien. Le prix saisi reste le repli quand le capteur est indisponible. Choisissez l'unité du capteur (par kWh, centimes, par MWh) dans **Unité des prix lus dans Home Assistant**.
+
+Le capteur du prix de revente (réglages avancés) accepte lui aussi un capteur dont l'état est le prix, en plus d'une prévision. Les horaires des plages restent saisis dans WattSlot : ces intégrations ne les donnent pas.
+
 
 **Prix de revente du surplus** : ce que vous rapporte un kWh envoyé au réseau (0 si vous ne le vendez pas). Il peut aussi être lu dans un capteur. Avec l'objectif **le coût le plus bas**, le plan préfère consommer votre surplus quand il vaut plus que son prix de revente.
 

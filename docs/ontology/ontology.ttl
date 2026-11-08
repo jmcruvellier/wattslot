@@ -532,6 +532,10 @@ wattslot:priceFactor a owl:DatatypeProperty ;
 	rdfs:domain wattslot:Tariff ;
 	rdfs:label "facteur d'unité des prix lus"@fr , "price unit factor"@en ;
 	rdfs:range xsd:double .
+wattslot:priceStateEntity a owl:DatatypeProperty ;
+	rdfs:comment "On a tariff (base price), a color (price outside bands) or a band: Home Assistant entity whose state, times the unit factor, replaces the entered price; the latter applies when the entity is unavailable."@en , "Sur un tarif (prix de base), une couleur (prix hors plages) ou une plage : entité de Home Assistant dont l'état, multiplié par le facteur d'unité, remplace le prix saisi ; celui-ci sert quand l'entité est indisponible."@fr ;
+	rdfs:label "entité dont l'état donne le prix"@fr , "price state entity"@en ;
+	rdfs:range xsd:string .
 wattslot:quantity a owl:AnnotationProperty ;
 	rdfs:label "grandeur observée"@fr , "observed quantity"@en .
 wattslot:recurrenceRule a owl:DatatypeProperty ;

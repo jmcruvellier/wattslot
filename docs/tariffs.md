@@ -23,7 +23,12 @@ The end follows the start within the day, for example **22:30–24:00**. Day-of-
 
 The planner still uses **hourly prices**, not minute-by-minute prices: each hour is weighted by the number of minutes at each price. Mixed hours are rounded to six decimal places; a uniform hour retains its exact configured price. The dashboard and assistant show these hourly prices and hourly off-peak ranges, so a partially cheaper hour can be shown as off-peak. This is an hourly approximation, not sub-hourly optimization.
 
-## Selling your surplus
+## Prices read from Home Assistant
+
+Any fixed price (the base price, a band, a colour) can follow a Home Assistant sensor whose state is the price, for example those of the **Tarif EDF** integration (`sensor.tarif_heures_creuses_ttc`…). Click **read from Home Assistant** next to the price and enter the sensor: WattSlot reads it at every calculation, so a price change of your supplier needs nothing from you. The price you enter stays as a fallback when the sensor is unavailable. Choose the sensor's unit (per kWh, cents, per MWh) in **Unit of prices read from Home Assistant**.
+
+The export price sensor (advanced settings) also accepts a sensor whose state is the price, besides a forecast. The time ranges of the bands stay set in WattSlot: these integrations do not give them.
+
 
 **Export price of the surplus**: what a kWh sent to the grid earns you (0 if you do not sell it). It can also be read from a sensor. With the **lowest cost** objective, the plan prefers using your surplus at home when it is worth more than its resale price.
 

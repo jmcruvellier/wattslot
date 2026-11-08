@@ -115,7 +115,8 @@ export interface PriceBand {
   start_minute?: number; // absent dans les anciennes configurations : 0
   end_hour: number; // exclue
   end_minute?: number; // 0 lorsque la fin vaut 24 h
-  eur_kwh: number;
+  eur_kwh: number; // repli si l'entité est indisponible
+  eur_kwh_entity?: string | null; // entité de HA dont l'état donne le prix
   weekdays: number[]; // 0 lundi … 6 dimanche ; vide : tous les jours
   months: number[]; // 1 … 12 ; vide : toute l'année
 }
@@ -126,12 +127,14 @@ export const TARIFF_KINDS: TariffKind[] = ["SingleTariff", "TimeOfUseTariff", "D
 export interface ColorPrices {
   color: string; // état de l'entité de couleur (casse, accents et anglais ignorés)
   base_eur_kwh: number;
+  base_eur_kwh_entity?: string | null;
   bands: PriceBand[];
 }
 
 export interface Tariff {
   kind: TariffKind;
   base_eur_kwh: number; // prix unique, hors des plages, ou prix inconnu
+  base_eur_kwh_entity?: string | null; // entité de HA dont l'état donne ce prix
   bands: PriceBand[];
   export_eur_kwh: number;
   colors: ColorPrices[]; // la première : couleur d'un jour inconnu

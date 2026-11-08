@@ -101,6 +101,12 @@ def _configuration(saved: Configuration, names: Anonymizer) -> dict[str, Any]:
     if tariff:
         for field in ("color_entity", "color_tomorrow_entity", "price_entity", "export_entity"):
             tariff[field] = names.entity(tariff.get(field))
+        # Entités des prix fixes lus dans HA : prix de base, couleurs et plages.
+        owners = [tariff, *tariff.get("colors", [])]
+        for owner in owners:
+            owner["base_eur_kwh_entity"] = names.entity(owner.get("base_eur_kwh_entity"))
+            for band in owner.get("bands", []):
+                band["eur_kwh_entity"] = names.entity(band.get("eur_kwh_entity"))
     objective = found.get("objective")
     if objective:
         objective["co2_entity"] = names.entity(objective.get("co2_entity"))

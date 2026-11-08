@@ -16,9 +16,11 @@ Un tarif donne le prix du kWh soutiré à chaque heure d'une journée, et celui 
   heure par heure ou au quart d'heure, moyennée par heure) ; une heure sans prix connu prend le
   prix de base.
 
-Le prix de revente est fixe, ou lu de la même façon dans une entité. Ce qui vient de HA
-(couleurs, prix connus) forme un ``TariffContext``, lu une fois par calcul
-(``planning/sources.tariff_context``).
+Le prix de revente est fixe, ou lu de la même façon dans une entité. Tout prix fixe (prix de
+base, d'une plage, d'une couleur, de revente) peut aussi être lié à une entité de HA dont l'état
+donne le prix (intégration hass-tarif-edf, par exemple) : la valeur saisie sert de repli quand
+l'entité est indisponible. Ce qui vient de HA (couleurs, prix connus, états des entités de prix)
+forme un ``TariffContext``, lu une fois par calcul (``planning/tariff_sources.tariff_context``).
 
 Sans tarif configuré, ``DEFAULT`` : un prix unique, qui revient à soutirer le moins possible.
 Enregistré avec la configuration dans le graphe de la maison (décision 12).
@@ -54,7 +56,8 @@ class PriceBand(BaseModel):
     end_hour: int = Field(ge=1, le=24)  # exclue
     start_minute: int = Field(default=0, ge=0, le=59)
     end_minute: int = Field(default=0, ge=0, le=59)
-    eur_kwh: float = Field(ge=0)
+    eur_kwh: float = Field(ge=0)  # repli si l'entité est indisponible
+    eur_kwh_entity: str | None = None  # entité de HA dont l'état donne le prix
     weekdays: list[int] = []  # 0 lundi … 6 dimanche ; vide : tous les jours
     months: list[int] = []  # 1 … 12 ; vide : toute l'année
 
@@ -76,11 +79,26 @@ class PriceBand(BaseModel):
             and (not self.months or day.month in self.months)
         )
 
+    def live(self, prices: dict[str, float]) -> "PriceBand":
+        """La plage au prix lu dans HA, ou à son prix saisi."""
+        if self.eur_kwh_entity in prices:
+            return self.model_copy(update={"eur_kwh": prices[self.eur_kwh_entity]})
+        return self
+
 
 class ColorPrices(BaseModel):
     color: str  # état de l'entité de couleur (casse, accents et anglais ignorés)
     base_eur_kwh: float = Field(ge=0)
+    base_eur_kwh_entity: str | None = None
     bands: list[PriceBand] = []
+
+    def live(self, prices: dict[str, float]) -> "ColorPrices":
+        return self.model_copy(
+            update={
+                "base_eur_kwh": prices.get(self.base_eur_kwh_entity or "", self.base_eur_kwh),
+                "bands": [b.live(prices) for b in self.bands],
+            }
+        )
 
 
 def _price(bands: list[PriceBand], base: float, day: date, hour: int) -> float:
@@ -118,6 +136,8 @@ class TariffContext:
     colors: dict[date, str] = field(default_factory=dict)
     prices: dict[date, dict[int, float]] = field(default_factory=dict)
     export: dict[date, dict[int, float]] = field(default_factory=dict)
+    # Prix (€/kWh) des entités liées aux prix fixes, d'après leur état ; absente : indisponible.
+    entity_prices: dict[str, float] = field(default_factory=dict)
 
 
 NO_CONTEXT = TariffContext()
@@ -126,6 +146,7 @@ NO_CONTEXT = TariffContext()
 class Tariff(BaseModel):
     kind: TariffKind = TariffKind.SINGLE
     base_eur_kwh: float = Field(ge=0)  # prix unique, hors de toute plage, ou prix inconnu
+    base_eur_kwh_entity: str | None = None  # entité de HA dont l'état donne ce prix
     bands: list[PriceBand] = []  # plages horaires (TimeOfUseTariff)
     export_eur_kwh: float = Field(default=0.0, ge=0)  # revente du surplus (ou prix inconnu)
     # Couleur du jour (DayColorTariff)
@@ -146,6 +167,27 @@ class Tariff(BaseModel):
         """Part de l'abonnement d'une journée : mensuel divisé par les jours du mois."""
         return self.subscription_eur_month / monthrange(day.year, day.month)[1]
 
+    def price_entities(self) -> list[str]:
+        """Entités de HA liées aux prix fixes (prix de base, plages, couleurs)."""
+        found = [self.base_eur_kwh_entity] + [b.eur_kwh_entity for b in self.bands]
+        for color in self.colors:
+            found += [color.base_eur_kwh_entity] + [b.eur_kwh_entity for b in color.bands]
+        return list(dict.fromkeys(e for e in found if e))
+
+    def live(self, context: TariffContext) -> "Tariff":
+        """Le tarif aux prix lus dans HA ; un prix dont l'entité est indisponible garde sa
+        valeur saisie."""
+        prices = context.entity_prices
+        if not prices:
+            return self
+        return self.model_copy(
+            update={
+                "base_eur_kwh": prices.get(self.base_eur_kwh_entity or "", self.base_eur_kwh),
+                "bands": [b.live(prices) for b in self.bands],
+                "colors": [c.live(prices) for c in self.colors],
+            }
+        )
+
     def _color_prices(self, day: date, context: TariffContext) -> ColorPrices | None:
         known = context.colors.get(day)
         found = next(
@@ -155,6 +197,11 @@ class Tariff(BaseModel):
 
     def hourly(self, day: date, context: TariffContext = NO_CONTEXT) -> dict[int, float]:
         """Prix du kWh soutiré à chaque heure locale de ``day``."""
+        if context.entity_prices:
+            return self.live(context)._hourly(day, context)
+        return self._hourly(day, context)
+
+    def _hourly(self, day: date, context: TariffContext) -> dict[int, float]:
         if self.kind is TariffKind.TIME_OF_USE:
             return {h: _price(self.bands, self.base_eur_kwh, day, h) for h in range(24)}
         if self.kind is TariffKind.DAY_COLOR:
@@ -174,9 +221,11 @@ class Tariff(BaseModel):
         return dict.fromkeys(range(24), self.base_eur_kwh)
 
     def export_hourly(self, day: date, context: TariffContext = NO_CONTEXT) -> dict[int, float]:
-        """Prix du kWh injecté à chaque heure locale de ``day``."""
+        """Prix du kWh injecté à chaque heure locale de ``day`` : prévision de l'entité de
+        revente, sinon son état (prix fixe lu dans HA), sinon le prix saisi."""
         known = context.export.get(day, {})
-        return {h: known.get(h, self.export_eur_kwh) for h in range(24)}
+        fixed = context.entity_prices.get(self.export_entity or "", self.export_eur_kwh)
+        return {h: known.get(h, fixed) for h in range(24)}
 
 
 def off_peak_ranges(
@@ -271,6 +320,8 @@ def _bands_triples(owner: NamedNode, bands: list[PriceBand], prefix: str) -> lis
             Triple(node, vocab("endMinute"), _integer(band.end_minute)),
             Triple(node, vocab("priceEurKwh"), _number(band.eur_kwh)),
         ]
+        if band.eur_kwh_entity:
+            triples.append(Triple(node, vocab("priceStateEntity"), Literal(band.eur_kwh_entity)))
         triples += [Triple(node, vocab("weekday"), _integer(d)) for d in band.weekdays]
         triples += [Triple(node, vocab("month"), _integer(m)) for m in band.months]
     return triples
@@ -289,6 +340,8 @@ def to_triples(owner: NamedNode, tariff: Tariff) -> list[Triple]:
     ]
     if tariff.contract_kva is not None:
         triples.append(Triple(node, vocab("contractKva"), _number(tariff.contract_kva)))
+    if tariff.base_eur_kwh_entity:
+        triples.append(Triple(node, vocab("priceStateEntity"), Literal(tariff.base_eur_kwh_entity)))
     for name, value in (
         ("colorEntity", tariff.color_entity),
         ("colorTomorrowEntity", tariff.color_tomorrow_entity),
@@ -307,6 +360,10 @@ def to_triples(owner: NamedNode, tariff: Tariff) -> list[Triple]:
             Triple(color_node, vocab("color"), Literal(color.color)),
             Triple(color_node, vocab("basePriceEurKwh"), _number(color.base_eur_kwh)),
         ]
+        if color.base_eur_kwh_entity:
+            triples.append(
+                Triple(color_node, vocab("priceStateEntity"), Literal(color.base_eur_kwh_entity))
+            )
         triples += _bands_triples(color_node, color.bands, f"color{index}")
     return triples
 
@@ -316,13 +373,15 @@ def _load_bands(graph: GraphStore, graph_iri: str, owner: str, vocab_ns: str) ->
     for row in graph.select(
         f"""
         PREFIX wattslot: <{vocab_ns}>
-        SELECT ?order ?start ?end ?startMinute ?endMinute ?price ?weekday ?month WHERE {{
+        SELECT ?order ?start ?end ?startMinute ?endMinute ?price ?entity ?weekday ?month
+        WHERE {{
           GRAPH <{graph_iri}> {{
             <{owner}> wattslot:hasPriceBand ?band .
             ?band wattslot:order ?order ; wattslot:startHour ?start ; wattslot:endHour ?end ;
               wattslot:priceEurKwh ?price .
             OPTIONAL {{ ?band wattslot:startMinute ?startMinute }}
             OPTIONAL {{ ?band wattslot:endMinute ?endMinute }}
+            OPTIONAL {{ ?band wattslot:priceStateEntity ?entity }}
             OPTIONAL {{ ?band wattslot:weekday ?weekday }}
             OPTIONAL {{ ?band wattslot:month ?month }}
           }}
@@ -337,6 +396,7 @@ def _load_bands(graph: GraphStore, graph_iri: str, owner: str, vocab_ns: str) ->
                 start_minute=int(row.get("startMinute", 0)),
                 end_minute=int(row.get("endMinute", 0)),
                 eur_kwh=float(row["price"]),
+                eur_kwh_entity=row.get("entity"),
             ),
         )
         if "weekday" in row and int(row["weekday"]) not in band.weekdays:
@@ -355,7 +415,7 @@ def load(graph: GraphStore, graph_iri: str, owner: NamedNode, vocab_ns: str) -> 
             f"""
             PREFIX wattslot: <{vocab_ns}>
             SELECT ?tariff ?kind ?base ?export ?start ?factor ?colorEntity ?tomorrow ?price
-                   ?exportEntity ?subscription ?kva WHERE {{
+                   ?exportEntity ?subscription ?kva ?baseEntity WHERE {{
               GRAPH <{graph_iri}> {{
                 <{owner.value}> wattslot:hasTariff ?tariff .
                 ?tariff a ?kind ; wattslot:basePriceEurKwh ?base ;
@@ -368,6 +428,7 @@ def load(graph: GraphStore, graph_iri: str, owner: NamedNode, vocab_ns: str) -> 
                 OPTIONAL {{ ?tariff wattslot:exportPriceEntity ?exportEntity }}
                 OPTIONAL {{ ?tariff wattslot:subscriptionEurMonth ?subscription }}
                 OPTIONAL {{ ?tariff wattslot:contractKva ?kva }}
+                OPTIONAL {{ ?tariff wattslot:priceStateEntity ?baseEntity }}
               }}
             }}
             """
@@ -381,17 +442,19 @@ def load(graph: GraphStore, graph_iri: str, owner: NamedNode, vocab_ns: str) -> 
         ColorPrices(
             color=color["color"],
             base_eur_kwh=float(color["base"]),
+            base_eur_kwh_entity=color.get("entity"),
             bands=_load_bands(graph, graph_iri, color["node"], vocab_ns),
         )
         for color in sorted(
             graph.select(
                 f"""
                 PREFIX wattslot: <{vocab_ns}>
-                SELECT ?node ?order ?color ?base WHERE {{
+                SELECT ?node ?order ?color ?base ?entity WHERE {{
                   GRAPH <{graph_iri}> {{
                     <{node}> wattslot:hasColorPrices ?node .
                     ?node wattslot:order ?order ; wattslot:color ?color ;
                       wattslot:basePriceEurKwh ?base .
+                    OPTIONAL {{ ?node wattslot:priceStateEntity ?entity }}
                   }}
                 }}
                 """
@@ -402,6 +465,7 @@ def load(graph: GraphStore, graph_iri: str, owner: NamedNode, vocab_ns: str) -> 
     return Tariff(
         kind=TariffKind(row["kind"].removeprefix(vocab_ns)),
         base_eur_kwh=float(row["base"]),
+        base_eur_kwh_entity=row.get("baseEntity"),
         export_eur_kwh=float(row["export"]),
         bands=_load_bands(graph, graph_iri, node, vocab_ns),
         colors=colors,
