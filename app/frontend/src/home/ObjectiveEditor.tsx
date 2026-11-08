@@ -3,6 +3,7 @@
 // vaut le prix moyen du jour.
 
 import Advanced from "../common/Advanced";
+import NumberInput from "../common/NumberInput";
 import { useI18n } from "../i18n/I18nProvider";
 import { useHomeFeatures } from "./features";
 import { PRESETS, type ObjectiveSettings, type Preset, type Weights } from "./configuration";
@@ -81,12 +82,11 @@ export default function ObjectiveEditor({ objective, onChange }: {
           {criteria.map((name) => (
             <label key={name}>
               {t(`objective.weight.${name}`)}{" "}
-              <input
-                type="number"
-                min="0"
-                step="0.1"
+              <NumberInput
+                min={0}
+                step={0.1}
                 value={weights[name] ?? 0}
-                onChange={(event) => setWeight(name, Number(event.target.value))}
+                onChange={(weight) => setWeight(name, weight)}
               />{" "}
             </label>
           ))}

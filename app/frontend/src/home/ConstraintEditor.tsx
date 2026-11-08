@@ -1,6 +1,7 @@
 // Contraintes horaires d'un équipement (lot 3.5) : plages interdites, « pas avant », « terminé
 // avant » ; chacune dure (jamais violée) ou souple (violée au besoin, signalée).
 
+import NumberInput from "../common/NumberInput";
 import { useI18n } from "../i18n/I18nProvider";
 import { CONSTRAINT_KINDS, type ConstraintKind, type TimeConstraint } from "./configuration";
 
@@ -14,14 +15,7 @@ function Hour({ label, value, min, max, onChange }: {
   return (
     <label>
       {label}{" "}
-      <input
-        type="number"
-        min={min}
-        max={max}
-        step="1"
-        value={value}
-        onChange={(event) => onChange(event.target.value === "" ? min : Number(event.target.value))}
-      />{" "}
+      <NumberInput min={min} max={max} integer value={value} onChange={onChange} />{" "}
       h
     </label>
   );

@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 
 import { ApiError, getJson, putJson } from "../api";
 import { Hint } from "../common/Advanced";
+import NumberInput from "../common/NumberInput";
 import { useI18n } from "../i18n/I18nProvider";
 import Button from "../ui/Button";
 import Sheet from "../ui/Sheet";
@@ -149,14 +150,12 @@ export default function DeviceSheet({
         {draft.kind === "Battery" && (
           <label>
             {t("home.capacity")}{" "}
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={draft.capacityKwh ?? ""}
-              onChange={(event) =>
-                edit({ capacityKwh: event.target.value === "" ? null : Number(event.target.value) })
-              }
+            <NumberInput
+              nullable
+              min={0}
+              step={0.01}
+              value={draft.capacityKwh}
+              onChange={(capacityKwh) => edit({ capacityKwh })}
             />
             {draft.capacitySource && <> {t("home.capacity_source", { entity: draft.capacitySource })}</>}
           </label>

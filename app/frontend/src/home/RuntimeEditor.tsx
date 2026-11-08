@@ -2,6 +2,7 @@
 // puissance mesurée sur l'historique), heures minimales et jours sautables par saison, démarrages.
 
 import Advanced, { Hint } from "../common/Advanced";
+import NumberInput from "../common/NumberInput";
 import { useI18n } from "../i18n/I18nProvider";
 import { DEFAULT_RUNTIME, SEASONS, type RuntimeSettings, type Speed } from "./configuration";
 
@@ -9,19 +10,13 @@ function Number_({ label, value, min, step, onChange }: {
   label: string;
   value: number;
   min: number;
-  step: string;
+  step: number;
   onChange: (value: number) => void;
 }) {
   return (
     <label>
       {label}{" "}
-      <input
-        type="number"
-        min={min}
-        step={step}
-        value={value}
-        onChange={(event) => onChange(event.target.value === "" ? min : Number(event.target.value))}
-      />
+      <NumberInput min={min} step={step} integer={step === 1} value={value} onChange={onChange} />
     </label>
   );
 }
@@ -55,7 +50,7 @@ export default function RuntimeEditor({ runtime, name, onChange }: {
             label={t(`runtime.seasons.${season}`)}
             value={settings.minimum_hours[season] ?? 0}
             min={0}
-            step="1"
+            step={1}
             onChange={(hours) => set({ minimum_hours: { ...settings.minimum_hours, [season]: hours } })}
           />
         ))}
@@ -70,7 +65,7 @@ export default function RuntimeEditor({ runtime, name, onChange }: {
               {t("runtime.speed_name")}{" "}
               <input value={speed.name} onChange={(event) => setSpeed(index, { name: event.target.value })} />
             </label>{" "}
-            <Number_ label={t("runtime.power")} value={speed.kw} min={0} step="0.001" onChange={(kw) => setSpeed(index, { kw })} /> kW{" "}
+            <Number_ label={t("runtime.power")} value={speed.kw} min={0} step={0.001} onChange={(kw) => setSpeed(index, { kw })} /> kW{" "}
             <button type="button" onClick={() => set({ speeds: settings.speeds.filter((_, i) => i !== index) })}>
               {t("runtime.remove_speed")}
             </button>
@@ -90,7 +85,7 @@ export default function RuntimeEditor({ runtime, name, onChange }: {
             label={t(`runtime.seasons.${season}`)}
             value={settings.skip_days[season] ?? 0}
             min={0}
-            step="1"
+            step={1}
             onChange={(days) => set({ skip_days: { ...settings.skip_days, [season]: days } })}
           />
         ))}
@@ -100,8 +95,8 @@ export default function RuntimeEditor({ runtime, name, onChange }: {
           label={t("runtime.max_starts")}
           value={settings.max_starts}
           min={1}
-          step="1"
-          onChange={(max_starts) => set({ max_starts: Math.max(1, max_starts) })}
+          step={1}
+          onChange={(max_starts) => set({ max_starts })}
         />
       </p>
       </Advanced>
