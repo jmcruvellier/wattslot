@@ -1,6 +1,6 @@
 // Ma maison en phrases (lot 6b.5), rangées en onglets (refonte de Ma maison).
 
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -209,7 +209,8 @@ describe("Ma maison en onglets", () => {
     renderHome({ anchor: "settings-washer", onAnchor });
     expect(await screen.findByRole("dialog", { name: "Lave-linge" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Appareils" })).toHaveAttribute("aria-selected", "true");
-    expect(onAnchor).toHaveBeenCalled();
+    // Appelé par un effet, juste après l'affichage de la feuille : attendu, pas supposé.
+    await waitFor(() => expect(onAnchor).toHaveBeenCalled());
   });
 });
 
