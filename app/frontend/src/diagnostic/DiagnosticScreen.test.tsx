@@ -203,6 +203,18 @@ describe("DiagnosticScreen", () => {
     expect(globalThis.fetch).toHaveBeenCalledWith("api/diagnostic/resources/history", expect.anything());
   });
 
+  it("dit que la courbe du disque est l'espace libre, pas les données", async () => {
+    const user = userEvent.setup();
+    mockApi(HEALTHY);
+
+    renderScreen();
+
+    await user.click(await screen.findByText("Disk"));
+
+    const chart = await screen.findByRole("img", { name: "Free space over the last 24 hours" });
+    expect(chart.closest("figure")?.querySelector("figcaption")).toHaveTextContent(/^Free space · From /);
+  });
+
   it("écrit les alertes de ressources dans la langue de l'interface", async () => {
     mockApi(HEALTHY, [
       { code: "disk_low", severity: "watch", params: { free: "1.5", percent: "5" }, target: null, doc: null },

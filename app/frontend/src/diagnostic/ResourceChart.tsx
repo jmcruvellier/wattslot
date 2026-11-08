@@ -22,10 +22,12 @@ const GAP_MS = 3 * 60_000; // au-delà, deux relevés ne se suivent pas
 
 type Known = { time: number; value: number };
 
-export default function ResourceChart({ points, format, label, threshold }: {
+export default function ResourceChart({ points, format, label, threshold, title }: {
   points: ChartPoint[];
   format: (value: number) => string;
   label: string;
+  // Ce que la courbe montre quand ce n'est pas la valeur de la ligne (disque : espace libre).
+  title?: string;
   threshold?: number | null; // seuil d'alerte (ligne rouge)
 }) {
   const { language, t } = useI18n();
@@ -69,6 +71,7 @@ export default function ResourceChart({ points, format, label, threshold }: {
   return (
     <figure className="resource-chart">
       <figcaption className="ui-row-help">
+        {title && `${title} · `}
         {shown
           ? t("diagnostic.resources.chart_point", { time: clock(shown.time), value: format(shown.value) })
           : t("diagnostic.resources.chart_range", { start: clock(start), end: clock(end), top: format(top) })}
