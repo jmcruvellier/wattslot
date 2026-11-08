@@ -102,6 +102,13 @@ export interface Resources {
   measured_s: number; // durée couverte par les relevés
 }
 
+export interface ResourcePoint {
+  time: string; // fin de la minute
+  cpu_percent: number | null; // charge de la minute, en % d'un cœur
+  memory_bytes: number | null;
+  disk_free_bytes: number | null;
+}
+
 export interface Diagnostic {
   generated_at: string;
   memory_bytes: number | null;

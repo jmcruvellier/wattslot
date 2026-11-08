@@ -20,6 +20,14 @@ export function formatPercent(language: Language, value: number): string {
   );
 }
 
+/** Haut de l'axe : un peu au-dessus du plus haut point, arrondi à 1, 2 ou 5 × 10ⁿ. */
+export function niceMax(value: number): number {
+  if (value <= 0) return 1;
+  const magnitude = 10 ** Math.floor(Math.log10(value * 1.1));
+  const step = [1, 2, 5, 10].find((s) => s * magnitude >= value * 1.1) ?? 10;
+  return step * magnitude;
+}
+
 export function formatDate(language: Language, time: string | null): string {
   return time ? new Date(time).toLocaleString(language, zoned()) : "—";
 }

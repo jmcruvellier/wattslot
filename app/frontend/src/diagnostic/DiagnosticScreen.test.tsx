@@ -4,8 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { I18nProvider } from "../i18n/I18nProvider";
 import DiagnosticScreen from "./DiagnosticScreen";
-import { formatAge } from "./format";
-import type { Diagnostic, Resources } from "./types";
+import { formatAge, niceMax } from "./format";
+import type { Diagnostic, ResourcePoint, Resources } from "./types";
 import type { Problem } from "./ProblemsSection";
 import { silentEntities } from "./warnings";
 
@@ -98,11 +98,19 @@ const RESOURCES: Resources = {
   measured_s: 3600,
 };
 
+const HISTORY: ResourcePoint[] = [0, 1, 2].map((minute) => ({
+  time: new Date(Date.parse(NOW) + minute * 60_000).toISOString(),
+  cpu_percent: minute === 0 ? null : 2 * minute,
+  memory_bytes: 180_000_000 + minute * 1_000_000,
+  disk_free_bytes: 20_000_000_000,
+}));
+
 function mockApi(diagnostic: Diagnostic, problems: Problem[] = []) {
   return vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
     const url = String(input);
     if (url === "api/diagnostic") return Response.json(diagnostic);
     if (url === "api/diagnostic/resources") return Response.json(RESOURCES);
+    if (url === "api/diagnostic/resources/history") return Response.json(HISTORY);
     if (url === "api/diagnostic/problems") return Response.json(problems);
     if (url === "api/diagnostic/report") return Response.json({ format: "wattslot/report", problems: [] });
     return new Response(null, { status: 404 });
@@ -123,6 +131,14 @@ describe("silentEntities", () => {
     const entity = HEALTHY.ingestion!.entities[1].entity_id;
     expect(silentEntities(HEALTHY)).toEqual([]);
     expect(silentEntities({ ...HEALTHY, silent: [entity] })).toEqual([entity]);
+  });
+});
+
+describe("niceMax", () => {
+  it("arrondit le haut de l'axe au-dessus du plus haut point", () => {
+    expect(niceMax(14)).toBe(20);
+    expect(niceMax(244_000_000)).toBe(500_000_000);
+    expect(niceMax(0)).toBe(1);
   });
 });
 
@@ -171,6 +187,18 @@ describe("DiagnosticScreen", () => {
     expect(screen.getByText("Peak since start: 210 MB · container limit: 4 GB")).toBeInTheDocument();
     expect(screen.getByText("1.3 GB")).toBeInTheDocument();
     expect(screen.getByText("Application data · free on the disk: 20 GB of 32 GB")).toBeInTheDocument();
+  });
+
+  it("déplie la courbe d'une ressource", async () => {
+    const user = userEvent.setup();
+    mockApi(HEALTHY);
+
+    renderScreen();
+
+    await user.click(await screen.findByText("Memory"));
+
+    expect(await screen.findByRole("img", { name: "Memory over the last 24 hours" })).toBeInTheDocument();
+    expect(globalThis.fetch).toHaveBeenCalledWith("api/diagnostic/resources/history", expect.anything());
   });
 
   it("écrit les alertes de ressources dans la langue de l'interface", async () => {

@@ -18,6 +18,7 @@ import shutil
 import time
 from collections import deque
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from itertools import pairwise
 from pathlib import Path
 from typing import Literal
@@ -43,6 +44,8 @@ class Sample:
     at: float  # horloge monotone, en secondes
     cpu_s: float  # temps processeur du processus depuis son démarrage (utilisateur + système)
     memory: int | None  # mémoire résidente
+    disk_free: int | None = None  # espace libre du disque des données
+    time: datetime | None = None  # heure du relevé (courbes)
 
 
 class Resources(BaseModel):
@@ -199,19 +202,60 @@ def cpu_cores(root: Path = CGROUP) -> float | None:
     return quota if cores is None else min(cores, quota)
 
 
-def _sample() -> Sample:
-    return Sample(at=time.monotonic(), cpu_s=time.process_time(), memory=memory_bytes())
+class ResourcePoint(BaseModel):
+    """Un point des courbes : la minute écoulée jusqu'à ``time``."""
+
+    time: datetime
+    cpu_percent: float | None = None  # charge de la minute, en % d'un cœur
+    memory_bytes: int | None = None
+    disk_free_bytes: int | None = None
+
+
+def history(samples: list[Sample]) -> list[ResourcePoint]:
+    """Courbes des dernières 24 h d'après les relevés (les plus anciens d'abord) ; le premier
+    relevé n'a pas de charge, faute de minute avant lui."""
+    points = []
+    previous: Sample | None = None
+    for sample in samples:
+        if sample.time is not None:
+            points.append(
+                ResourcePoint(
+                    time=sample.time,
+                    cpu_percent=cpu_percent(previous, sample) if previous else None,
+                    memory_bytes=sample.memory,
+                    disk_free_bytes=sample.disk_free,
+                )
+            )
+        previous = sample
+    return points
+
+
+def _free(path: Path) -> int | None:
+    try:
+        return shutil.disk_usage(path).free
+    except OSError:
+        return None
+
+
+def _sample(data_dir: Path | None = None) -> Sample:
+    return Sample(
+        at=time.monotonic(),
+        cpu_s=time.process_time(),
+        memory=memory_bytes(),
+        disk_free=_free(data_dir) if data_dir is not None else None,
+        time=datetime.now(UTC),
+    )
 
 
 class ResourceMonitor:
-    """Relève le processeur et la mémoire toutes les minutes ; ``snapshot`` y ajoute le disque
-    et les limites (à appeler hors de la boucle d'événements : il parcourt le dossier des
-    données)."""
+    """Relève le processeur, la mémoire et l'espace libre toutes les minutes ; ``snapshot`` y
+    ajoute le dossier des données et les limites (à appeler hors de la boucle d'événements : il
+    parcourt ce dossier)."""
 
     def __init__(self, data_dir: Path) -> None:
         self._data_dir = data_dir
         self._samples: deque[Sample] = deque(maxlen=HISTORY_S // INTERVAL_S + 1)
-        self._samples.append(_sample())  # point de départ de la première moyenne
+        self._samples.append(_sample(data_dir))  # point de départ de la première moyenne
         self._task: asyncio.Task[None] | None = None
 
     def start(self) -> None:
@@ -230,9 +274,12 @@ class ResourceMonitor:
         while True:
             await asyncio.sleep(INTERVAL_S)
             try:
-                self.record(_sample())
+                self.record(_sample(self._data_dir))
             except Exception:  # nouvel essai à la minute suivante
                 logger.exception("Relevé des ressources impossible")
+
+    def history(self) -> list[ResourcePoint]:
+        return history(list(self._samples))
 
     def snapshot(self, now: Sample | None = None) -> Resources:
         found = summarize(list(self._samples), now or _sample())

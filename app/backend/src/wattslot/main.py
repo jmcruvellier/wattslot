@@ -47,6 +47,7 @@ from wattslot.assistant import home_config as assistant_home_config
 from wattslot.assistant import open_webui
 from wattslot.assistant import prompts as assistant_prompts
 from wattslot.assistant import server as assistant_server
+from wattslot.assistant.tools import problem_text
 from wattslot.corrections import CorrectionStore
 from wattslot.detection import (
     DeviceKind,
@@ -75,6 +76,7 @@ from wattslot.maintenance import (
     load_retention,
     save_retention,
 )
+from wattslot.notification_events import Candidate
 from wattslot.ontology import GRAPH_CONFIGURATION, GRAPH_HOME
 from wattslot.ontology import migration as ontology_migration
 from wattslot.planning import journal, open_meteo, past
@@ -82,6 +84,7 @@ from wattslot.planning.assemble import TaskRules, build_input, rules_from_tasks,
 from wattslot.planning.cancelled import router as cancelled_routes
 from wattslot.planning.choices import router as choices_routes
 from wattslot.planning.cycles import Segment
+from wattslot.planning.explain import catalog as explain_catalog
 from wattslot.planning.journal import CycleJournal, cycle_appliances
 from wattslot.planning.runner import Context, RunReport, refresh_actual, run, stored_plan
 from wattslot.planning.scheduler import PlanningScheduler, SchedulerStatus
@@ -99,12 +102,12 @@ from wattslot.planning.sources import (
     save_settings as save_planning_settings,
 )
 from wattslot.planning.store import PLAN_KINDS, PlanStore
-from wattslot.problems import Problem, collect
+from wattslot.problems import RESOURCE_ALERTS, SAMPLE_ALERT, Problem, Severity, collect
 from wattslot.quality import Monitor as QualityMonitor
 from wattslot.quality import router as quality_routes
 from wattslot.reminders import ReminderLoop
 from wattslot.reminders import router as reminders_routes
-from wattslot.resources import ResourceMonitor, Resources
+from wattslot.resources import ResourceMonitor, ResourcePoint, Resources
 from wattslot.runtime import RunMode, Settings, load_settings
 from wattslot.settings_choices import SettingsChoices, settings_choices
 from wattslot.setup import Setup, setup_status
@@ -271,12 +274,13 @@ async def _notify(
     zone: ZoneInfo,
     report: RunReport,
     week_of: notifications.WeekOf | None = None,
+    alerts_of: notifications.AlertsOf | None = None,
 ) -> None:
     """Notifications activées, envoyées après un calcul planifié (lot 5.6) ; l'échec de l'une
     est noté dans le bilan du calcul sans empêcher les autres."""
     before = len(report.errors)
     try:
-        await notifications.dispatch(client, database, now, zone, report.errors, week_of)
+        await notifications.dispatch(client, database, now, zone, report.errors, week_of, alerts_of)
     except Exception as exc:  # noqa: BLE001 — noté dans le bilan, comme les autres échecs
         report.errors.append(f"notification : {type(exc).__name__}: {exc}")
     for error in report.errors[before:]:
@@ -292,6 +296,7 @@ def _scheduler(
     lock: asyncio.Lock,
     data_dir: Path | None = None,
     week_of: notifications.WeekOf | None = None,
+    alerts_of: notifications.AlertsOf | None = None,
 ) -> PlanningScheduler:
     """Planificateur des calculs : réglages relus à chaque tour, HA connecté exigé (sauf pour
     relire les données réelles, lues sur le brut)."""
@@ -310,7 +315,7 @@ def _scheduler(
             data_dir=data_dir,
         )
         report = await run(context, now)
-        await _notify(client, database, now, raw.zone, report, week_of)
+        await _notify(client, database, now, raw.zone, report, week_of, alerts_of)
         return report
 
     async def refresher(now: datetime) -> None:
@@ -464,6 +469,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 app.state.planning_lock,
                 settings.data_dir,
                 lambda lang: views_routes.week_view_of(app.state, lang),
+                lambda lang, sample: resource_alerts(app.state, lang, sample),
             )
             scheduler.start()
         app.state.scheduler = scheduler
@@ -1159,6 +1165,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 kind,
                 zone=request.app.state.raw.zone,
                 week_of=lambda lang: views_routes.week_view_of(request.app.state, lang),
+                alerts_of=lambda lang, sample: resource_alerts(request.app.state, lang, sample),
             )
         except LookupError as exc:
             raise HTTPException(status_code=409, detail=str(exc)) from exc
@@ -1273,6 +1280,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             return Resources()
         return await asyncio.to_thread(monitor.snapshot)
 
+    @app.get("/api/diagnostic/resources/history")
+    def get_resources_history(request: Request) -> list[ResourcePoint]:
+        """Courbes des dernières 24 h, un point par minute : processeur, mémoire, espace libre."""
+        monitor: ResourceMonitor | None = getattr(request.app.state, "resources", None)
+        return monitor.history() if monitor is not None else []
+
     async def current_problems(request: Request) -> tuple[Diagnostic, list[Problem]]:
         return await current_problems_of(request.app.state)
 
@@ -1295,6 +1308,32 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             setup, found, home, configuration.load(state.graph), state.home_assistant
         )
         return found, problems
+
+    async def resource_alerts(state: Any, lang: str, sample: bool) -> list[Candidate]:
+        """Alertes de ressources du moment, en phrases (problème puis geste), pour les
+        notifications ; une par code et par jour. Avec ``sample``, un exemple s'il n'y en a
+        aucune (envoi d'essai)."""
+        _, problems = await current_problems_of(state)
+        found = [p for p in problems if p.code in RESOURCE_ALERTS]
+        if not found and sample:
+            found = [Problem(code="disk_low", severity=Severity.WATCH, params=SAMPLE_ALERT)]
+        day = datetime.now(state.raw.zone).date().isoformat()
+        texts = explain_catalog(lang)
+        return [
+            Candidate(
+                key=p.code,
+                day=day,
+                message=" ".join(
+                    part
+                    for part in (
+                        problem_text(p.code, p.params, lang),
+                        texts.get(f"problem.action.{p.code}", ""),
+                    )
+                    if part
+                ),
+            )
+            for p in found
+        ]
 
     @app.get("/api/diagnostic/problems")
     async def get_problems(request: Request, refresh: bool = False) -> list[Problem]:

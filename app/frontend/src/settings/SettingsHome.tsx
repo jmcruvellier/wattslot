@@ -20,7 +20,7 @@ import BetaCards from "./BetaCards";
 import type { NotificationKind, NotificationSettings } from "./NotificationSettings";
 import type { PlanningSettings, SettingsChoices } from "./SettingsScreen";
 
-const KINDS: NotificationKind[] = ["recommendation", "week", "device_now", "plan_gap", "battery_full", "forecast_drop"];
+const KINDS: NotificationKind[] = ["recommendation", "week", "device_now", "plan_gap", "battery_full", "forecast_drop", "resources"];
 
 interface Summaries {
   notifications?: NotificationSettings;

@@ -485,6 +485,10 @@
         "week": {
           "title": "Programma della settimana",
           "help": "Gli apparecchi previsti per i prossimi giorni, giorno per giorno, inviati nei giorni scelti. Oltre due o tre giorni, il piano segue una previsione meteo ancora incerta e può cambiare."
+        },
+        "resources": {
+          "title": "Avvisi sulle risorse",
+          "help": "Disco quasi pieno, memoria molto usata o calcolo del piano molto lungo: una volta al giorno finché dura. Attivo per impostazione predefinita."
         }
       },
       "sending_title": "Invio",
@@ -1163,7 +1167,12 @@
       "disk_used": "Dati dell'applicazione",
       "disk_free": "libero sul disco: {free} su {total}",
       "unknown": "sconosciuto",
-      "error": "Impossibile leggere le risorse."
+      "error": "Impossibile leggere le risorse.",
+      "chart_empty": "La curva si sta riempiendo: un punto al minuto, su 24 ore.",
+      "chart_point": "{time}: {value}",
+      "chart_range": "Dalle {start} alle {end} · cima dell'asse: {top}",
+      "chart_label": "{name} nelle ultime 24 ore",
+      "disk_free_title": "Spazio libero"
     },
     "next_maintenance": "Prossima manutenzione",
     "last_maintenance": "Ultima manutenzione",

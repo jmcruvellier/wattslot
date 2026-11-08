@@ -1,5 +1,6 @@
 """Ressources : moyenne du processeur, pics, limites du conteneur, disque."""
 
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from fastapi.testclient import TestClient
@@ -13,6 +14,7 @@ from wattslot.resources import (
     cpu_limit_v1,
     cpu_limit_v2,
     cpu_percent,
+    history,
     memory_limit,
     memory_limit_v1,
     memory_limit_v2,
@@ -103,3 +105,30 @@ def test_resources_route(tmp_path: Path) -> None:
     assert resources["disk_total_bytes"] > 0
     assert resources["cpu_cores"] > 0
     assert diagnostic["resources"]["disk_used_bytes"] >= 0
+
+
+def test_history_gives_one_point_a_minute() -> None:
+    start = datetime(2026, 11, 8, 8, 0, tzinfo=UTC)
+    samples = [
+        Sample(0, 0, 100, 5000, start),
+        Sample(60, 6, 120, 4900, start + timedelta(minutes=1)),
+        Sample(120, 6.6, 110, None, start + timedelta(minutes=2)),
+    ]
+
+    points = history(samples)
+
+    assert [p.time for p in points] == [s.time for s in samples]
+    assert points[0].cpu_percent is None  # pas de minute avant le premier relevé
+    assert points[1].cpu_percent == 10
+    assert points[2].cpu_percent is not None and round(points[2].cpu_percent) == 1
+    assert [p.memory_bytes for p in points] == [100, 120, 110]
+    assert [p.disk_free_bytes for p in points] == [5000, 4900, None]
+    assert history([Sample(0, 0, None)]) == []  # relevé sans heure : pas de point
+
+
+def test_history_route(tmp_path: Path) -> None:
+    with TestClient(create_app(_settings(tmp_path))) as client:
+        points = client.get("/api/diagnostic/resources/history").json()
+
+    assert len(points) == 1  # le relevé de départ
+    assert points[0]["cpu_percent"] is None and points[0]["disk_free_bytes"] > 0

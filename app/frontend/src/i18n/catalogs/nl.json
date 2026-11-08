@@ -485,6 +485,10 @@
         "week": {
           "title": "Weekplanning",
           "help": "De apparaten die voor de komende dagen gepland zijn, dag voor dag, verstuurd op de gekozen dagen. Na twee of drie dagen volgt het plan een nog onzekere weersverwachting en kan het veranderen."
+        },
+        "resources": {
+          "title": "Waarschuwingen over middelen",
+          "help": "Schijf bijna vol, geheugen zwaar belast of een zeer lange planberekening: één keer per dag zolang het duurt. Standaard ingeschakeld."
         }
       },
       "sending_title": "Verzending",
@@ -1163,7 +1167,12 @@
       "disk_used": "Gegevens van de applicatie",
       "disk_free": "vrij op de schijf: {free} van {total}",
       "unknown": "onbekend",
-      "error": "De middelen konden niet worden gelezen."
+      "error": "De middelen konden niet worden gelezen.",
+      "chart_empty": "De curve vult zich: één punt per minuut, over 24 uur.",
+      "chart_point": "{time}: {value}",
+      "chart_range": "Van {start} tot {end} · bovenkant van de as: {top}",
+      "chart_label": "{name} in de laatste 24 uur",
+      "disk_free_title": "Vrije ruimte"
     },
     "next_maintenance": "Volgend onderhoud",
     "last_maintenance": "Laatste onderhoud",
