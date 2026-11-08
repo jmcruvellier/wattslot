@@ -58,11 +58,11 @@ export default function ResourcesSection() {
   const series = (pick: (point: ResourcePoint) => number | null): ChartPoint[] =>
     (points ?? []).map((point) => ({ time: Date.parse(point.time), value: pick(point) }));
   const chart = (label: string, threshold: number | null | undefined, pick: (point: ResourcePoint) => number | null,
-    format: (value: number) => string) =>
+    format: (value: number) => string, title?: string) =>
     points === null ? (
       <p className="ui-row-help resource-chart-empty">{t("diagnostic.loading")}</p>
     ) : (
-      <ResourceChart points={series(pick)} format={format} label={t("diagnostic.resources.chart_label", { name: label })} threshold={threshold} />
+      <ResourceChart points={series(pick)} format={format} label={t("diagnostic.resources.chart_label", { name: label })} threshold={threshold} title={title} />
     );
 
   const bytes = (value: number | null) => {
@@ -132,6 +132,8 @@ export default function ResourcesSection() {
             r.disk_alert_free_bytes,
             (p) => p.disk_free_bytes,
             bytes,
+            // La ligne donne la place des données, la courbe l'espace libre : le dire.
+            t("diagnostic.resources.disk_free_title"),
           )}
           label={t("diagnostic.resources.disk")}
           value={bytes(r.disk_used_bytes)}
