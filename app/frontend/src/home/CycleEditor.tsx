@@ -3,6 +3,7 @@
 // jour), tolérance de report d'une tâche en attente.
 
 import Advanced, { Hint } from "../common/Advanced";
+import NumberInput from "../common/NumberInput";
 import { useI18n } from "../i18n/I18nProvider";
 import type { Recurrence } from "./configuration";
 
@@ -79,13 +80,7 @@ export default function CycleEditor({ after, maxDelayDays, recurrence, name, oth
         {current.mode === "daily" && (
           <label>
             {t("cycle.every")}{" "}
-            <input
-              type="number"
-              min="1"
-              step="1"
-              value={current.interval}
-              onChange={(event) => setRule(dailyRule(Math.max(1, Number(event.target.value) || 1)))}
-            />{" "}
+            <NumberInput min={1} integer value={current.interval} onChange={(days) => setRule(dailyRule(days))} />{" "}
             {t("cycle.days_since")}
           </label>
         )}
@@ -113,16 +108,14 @@ export default function CycleEditor({ after, maxDelayDays, recurrence, name, oth
       <p>
         <label>
           {t("cycle.delay")}{" "}
-          <input
-            type="number"
-            min="0"
-            max="14"
-            step="1"
+          <NumberInput
+            nullable
+            min={0}
+            max={14}
+            integer
             placeholder={String(DEFAULT_DELAY_DAYS)}
-            value={maxDelayDays ?? ""}
-            onChange={(event) =>
-              onChange({ max_delay_days: event.target.value === "" ? null : Number(event.target.value) })
-            }
+            value={maxDelayDays}
+            onChange={(max_delay_days) => onChange({ max_delay_days })}
           />{" "}
           {t("cycle.days")}
         </label>

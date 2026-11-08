@@ -59,4 +59,26 @@ describe("PanelsEditor", () => {
     await user.click(screen.getByRole("button", { name: "Ne plus décrire les panneaux" }));
     expect(onChange).toHaveBeenLastCalledWith(null);
   });
+
+  it("laisse effacer la puissance crête proposée et en taper une autre, avec une virgule", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <I18nProvider>
+        <Harness onChange={onChange} />
+      </I18nProvider>,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Décrire les panneaux" }));
+    const [kwp] = screen.getByRole("listitem", { name: "Champ 1" }).querySelectorAll("input");
+    await user.clear(kwp);
+    expect(kwp).toHaveValue("");
+    await user.type(kwp, "3,6");
+    expect(kwp).toHaveValue("3,6");
+    expect(onChange).toHaveBeenLastCalledWith({
+      arrays: [{ kwp: 3.6, tilt: 30, azimuth: 180 }],
+      inverter_kw: null,
+      efficiency: 0.9,
+    });
+  });
 });

@@ -3,6 +3,7 @@
 // plusieurs champs (puissance crête, inclinaison, orientation), l'onduleur et le rendement.
 
 import Advanced, { Hint } from "../common/Advanced";
+import NumberInput from "../common/NumberInput";
 import { useI18n } from "../i18n/I18nProvider";
 import type { PanelArray, SolarPanels } from "./configuration";
 
@@ -26,23 +27,13 @@ function NumberField({ label, value, min, max, step, onChange }: {
   value: number;
   min: number;
   max?: number;
-  step: string;
+  step: number;
   onChange: (value: number) => void;
 }) {
   return (
     <label>
       {label}{" "}
-      <input
-        type="number"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={(event) => {
-          const found = Number(event.target.value);
-          if (event.target.value !== "" && Number.isFinite(found)) onChange(found);
-        }}
-      />
+      <NumberInput min={min} max={max} step={step} integer={step === 1} value={value} onChange={onChange} />
     </label>
   );
 }
@@ -85,7 +76,7 @@ export default function PanelsEditor({ panels, name, onChange }: {
                 label={t("panels.kwp")}
                 value={array.kwp}
                 min={0.1}
-                step="0.01"
+                step={0.01}
                 onChange={(kwp) => setArray(index, { kwp })}
               />{" "}
               kWc{" "}
@@ -94,8 +85,8 @@ export default function PanelsEditor({ panels, name, onChange }: {
                 value={array.tilt}
                 min={0}
                 max={90}
-                step="1"
-                onChange={(tilt) => setArray(index, { tilt: Math.min(90, Math.max(0, tilt)) })}
+                step={1}
+                onChange={(tilt) => setArray(index, { tilt })}
               />
               °{" "}
               <label>
@@ -145,8 +136,8 @@ export default function PanelsEditor({ panels, name, onChange }: {
               value={array.azimuth}
               min={0}
               max={359}
-              step="1"
-              onChange={(azimuth) => setArray(index, { azimuth: ((azimuth % 360) + 360) % 360 })}
+              step={1}
+              onChange={(azimuth) => setArray(index, { azimuth })}
             />
             °
           </li>
@@ -155,16 +146,13 @@ export default function PanelsEditor({ panels, name, onChange }: {
       <p>
         <label>
           {t("panels.inverter")}{" "}
-          <input
-            type="number"
+          <NumberInput
+            nullable
             min={0.1}
-            step="0.1"
-            value={panels.inverter_kw ?? ""}
+            step={0.1}
+            value={panels.inverter_kw}
             placeholder={t("panels.no_inverter")}
-            onChange={(event) => {
-              const found = Number(event.target.value);
-              onChange({ ...panels, inverter_kw: event.target.value === "" || !(found > 0) ? null : found });
-            }}
+            onChange={(inverter_kw) => onChange({ ...panels, inverter_kw })}
           />
         </label>{" "}
         kW{" "}
@@ -173,8 +161,8 @@ export default function PanelsEditor({ panels, name, onChange }: {
           value={Math.round(panels.efficiency * 100)}
           min={1}
           max={100}
-          step="1"
-          onChange={(percent) => onChange({ ...panels, efficiency: Math.min(100, Math.max(1, percent)) / 100 })}
+          step={1}
+          onChange={(percent) => onChange({ ...panels, efficiency: percent / 100 })}
         />{" "}
         %
       </p>

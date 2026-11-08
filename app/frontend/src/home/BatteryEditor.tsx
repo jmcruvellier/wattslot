@@ -2,6 +2,7 @@
 // charge complète périodique. Plusieurs batteries sont vues comme une seule par le calcul.
 
 import Advanced, { Hint } from "../common/Advanced";
+import NumberInput from "../common/NumberInput";
 import { useI18n } from "../i18n/I18nProvider";
 import { C_RATE, DEFAULT_BATTERY, type BatterySettings, type FloorRange } from "./configuration";
 
@@ -16,13 +17,13 @@ function Power({ label, value, automatic, onChange }: {
   return (
     <label>
       {label}{" "}
-      <input
-        type="number"
-        min="0"
-        step="10"
+      <NumberInput
+        nullable
+        min={0}
+        step={10}
         placeholder={String(Math.round(automatic))}
-        value={value ?? ""}
-        onChange={(event) => onChange(event.target.value === "" ? null : Number(event.target.value))}
+        value={value}
+        onChange={onChange}
       />{" "}
       W
     </label>
@@ -82,13 +83,12 @@ export default function BatteryEditor({ battery, capacityKwh, onChange }: {
       <p>
         <label>
           {t("battery.floor")}{" "}
-          <input
-            type="number"
-            min="0"
-            max="100"
-            step="1"
+          <NumberInput
+            min={0}
+            max={100}
+            integer
             value={settings.floor_percent}
-            onChange={(event) => set({ floor_percent: Number(event.target.value) })}
+            onChange={(floor_percent) => set({ floor_percent })}
           />{" "}
           %
         </label>
@@ -114,13 +114,12 @@ export default function BatteryEditor({ battery, capacityKwh, onChange }: {
               <Hour label={t("battery.to")} value={range.end_hour} from={1} to={24} onChange={(end_hour) => setRange({ end_hour })} />{" "}
               <label>
                 {t("battery.not_below")}{" "}
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="1"
+                <NumberInput
+                  min={0}
+                  max={100}
+                  integer
                   value={range.percent}
-                  onChange={(event) => setRange({ percent: Number(event.target.value) })}
+                  onChange={(percent) => setRange({ percent })}
                 />{" "}
                 %
               </label>{" "}
@@ -158,12 +157,11 @@ export default function BatteryEditor({ battery, capacityKwh, onChange }: {
         {settings.full_charge_every_days !== null && (
           <label>
             {t("battery.every")}{" "}
-            <input
-              type="number"
-              min="1"
-              step="1"
+            <NumberInput
+              min={1}
+              integer
               value={settings.full_charge_every_days}
-              onChange={(event) => set({ full_charge_every_days: Math.max(1, Number(event.target.value)) })}
+              onChange={(full_charge_every_days) => set({ full_charge_every_days })}
             />{" "}
             {t("battery.days")}
           </label>

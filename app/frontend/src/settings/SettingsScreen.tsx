@@ -10,6 +10,7 @@
 import { useEffect, useState } from "react";
 
 import { ApiError, getJson, putJson } from "../api";
+import NumberInput from "../common/NumberInput";
 import { zoned } from "../i18n/homeTime";
 import { useI18n } from "../i18n/I18nProvider";
 import AppearanceSection from "./AppearanceSection";
@@ -246,17 +247,14 @@ function SettingsForm({ page }: { page: "notifications" | "calculation" }) {
                 <label className="ui-row-label" htmlFor="run-minute">
                   {capitalized(t("settings.scheduler.minute"))}
                 </label>
-                <input
+                <NumberInput
                   id="run-minute"
                   className="settings-minute"
-                  type="number"
                   min={0}
                   max={59}
+                  integer
                   value={settings.run_minute}
-                  onChange={(event) => {
-                    const minute = Math.round(Number(event.target.value));
-                    if (Number.isFinite(minute)) change({ run_minute: Math.min(59, Math.max(0, minute)) });
-                  }}
+                  onChange={(run_minute) => change({ run_minute })}
                 />
               </div>
             )}

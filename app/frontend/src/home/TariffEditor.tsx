@@ -7,6 +7,7 @@ import { useState } from "react";
 
 import { ApiError, getJson } from "../api";
 import Advanced, { Hint } from "../common/Advanced";
+import NumberInput from "../common/NumberInput";
 import { useCurrency } from "../i18n/currency";
 import { useI18n } from "../i18n/I18nProvider";
 import {
@@ -31,14 +32,11 @@ function Contract({ tariff, onChange }: { tariff: Tariff; onChange: (tariff: Tar
       <p>
         <label>
           {t("tariff.subscription")}{" "}
-          <input
-            type="number"
-            min="0"
-            step="0.01"
+          <NumberInput
+            min={0}
+            step={0.01}
             value={tariff.subscription_eur_month}
-            onChange={(event) =>
-              onChange({ ...tariff, subscription_eur_month: event.target.value === "" ? 0 : Number(event.target.value) })
-            }
+            onChange={(subscription_eur_month) => onChange({ ...tariff, subscription_eur_month })}
           />{" "}
           {t("tariff.per_month", { symbol })}
         </label>
@@ -47,14 +45,12 @@ function Contract({ tariff, onChange }: { tariff: Tariff; onChange: (tariff: Tar
       <p>
         <label>
           {t("tariff.contract_kva")}{" "}
-          <input
-            type="number"
-            min="0.1"
-            step="0.1"
-            value={tariff.contract_kva ?? ""}
-            onChange={(event) =>
-              onChange({ ...tariff, contract_kva: event.target.value === "" ? null : Number(event.target.value) })
-            }
+          <NumberInput
+            nullable
+            min={0.1}
+            step={0.1}
+            value={tariff.contract_kva}
+            onChange={(contract_kva) => onChange({ ...tariff, contract_kva })}
           />{" "}
           kVA
         </label>
@@ -69,13 +65,7 @@ function Price({ label, value, onChange }: { label: string; value: number; onCha
   return (
     <label>
       {label}{" "}
-      <input
-        type="number"
-        min="0"
-        step="0.000001"
-        value={value}
-        onChange={(event) => onChange(event.target.value === "" ? 0 : Number(event.target.value))}
-      />{" "}
+      <NumberInput min={0} step={0.01} value={value} onChange={onChange} />{" "}
       {symbol}/kWh
     </label>
   );
