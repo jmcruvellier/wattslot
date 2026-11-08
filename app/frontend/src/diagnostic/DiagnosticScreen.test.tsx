@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { I18nProvider } from "../i18n/I18nProvider";
 import DiagnosticScreen from "./DiagnosticScreen";
-import { formatAge, niceMax } from "./format";
+import { axisTop, formatAge, niceMax } from "./format";
 import type { Diagnostic, ResourcePoint, Resources } from "./types";
 import type { Problem } from "./ProblemsSection";
 import { silentEntities } from "./warnings";
@@ -145,6 +145,14 @@ describe("niceMax", () => {
     expect(niceMax(14)).toBe(20);
     expect(niceMax(244_000_000)).toBe(500_000_000);
     expect(niceMax(0)).toBe(1);
+  });
+
+  it("place le seuil d'alerte vers 80 % de la hauteur", () => {
+    expect(axisTop(13.5e9, 26.9e9)).toBe(34e9); // espace occupé : seuil à 79 %
+    expect(axisTop(2.8e9, 7.7e9)).toBe(9.7e9); // données
+    expect(axisTop(343e6, 1_073_741_824)).toBe(1.4e9); // mémoire
+    expect(axisTop(30e9, 20e9)).toBe(50e9); // valeur au-delà : l'axe s'agrandit
+    expect(axisTop(14, null)).toBe(20); // sans seuil : niceMax
   });
 });
 
