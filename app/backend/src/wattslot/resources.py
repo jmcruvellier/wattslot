@@ -34,6 +34,9 @@ logger = logging.getLogger(__name__)
 INTERVAL_S = 60
 AVERAGE_S = 15 * 60  # fenêtre de la moyenne du processeur
 HISTORY_S = 24 * 3600  # relevés gardés (pics)
+# Taille du dossier des données (courbe) : un parcours de tout le dossier, pour une valeur qui
+# bouge lentement, donc pas à chaque relevé.
+DATA_SIZE_INTERVAL_S = 10 * 60
 # cgroup v1 : « pas de limite » s'écrit comme un très grand nombre.
 UNLIMITED_V1 = 1 << 60
 
@@ -56,6 +59,7 @@ class Sample:
     memory: int | None  # mémoire résidente
     disk_free: int | None = None  # espace libre du disque des données
     time: datetime | None = None  # heure du relevé (courbes)
+    disk_used: int | None = None  # dossier des données, mesuré toutes les 10 minutes seulement
 
 
 class Resources(BaseModel):
@@ -245,14 +249,18 @@ class ResourcePoint(BaseModel):
     cpu_percent: float | None = None  # charge de la minute, en % d'un cœur
     memory_bytes: int | None = None
     disk_free_bytes: int | None = None
+    disk_used_bytes: int | None = None  # dernière mesure du dossier des données
 
 
 def history(samples: list[Sample]) -> list[ResourcePoint]:
     """Courbes des dernières 24 h d'après les relevés (les plus anciens d'abord) ; le premier
-    relevé n'a pas de charge, faute de minute avant lui."""
+    relevé n'a pas de charge, faute de minute avant lui. Le dossier des données, mesuré moins
+    souvent, garde sa dernière mesure entre deux : une courbe en marches, sans trous."""
     points = []
     previous: Sample | None = None
+    used: int | None = None
     for sample in samples:
+        used = sample.disk_used if sample.disk_used is not None else used
         if sample.time is not None:
             points.append(
                 ResourcePoint(
@@ -260,6 +268,7 @@ def history(samples: list[Sample]) -> list[ResourcePoint]:
                     cpu_percent=cpu_percent(previous, sample) if previous else None,
                     memory_bytes=sample.memory,
                     disk_free_bytes=sample.disk_free,
+                    disk_used_bytes=used,
                 )
             )
         previous = sample
@@ -273,18 +282,20 @@ def _free(path: Path) -> int | None:
         return None
 
 
-def _sample(data_dir: Path | None = None) -> Sample:
+def _sample(data_dir: Path | None = None, disk_used: int | None = None) -> Sample:
     return Sample(
         at=time.monotonic(),
         cpu_s=time.process_time(),
         memory=memory_bytes(),
         disk_free=_free(data_dir) if data_dir is not None else None,
         time=datetime.now(UTC),
+        disk_used=disk_used,
     )
 
 
 class ResourceMonitor:
-    """Relève le processeur, la mémoire et l'espace libre toutes les minutes ; ``snapshot`` y
+    """Relève le processeur, la mémoire et l'espace libre toutes les minutes, le dossier des
+    données toutes les 10 minutes ; ``snapshot`` y
     ajoute le dossier des données et les limites (à appeler hors de la boucle d'événements : il
     parcourt ce dossier)."""
 
@@ -293,6 +304,7 @@ class ResourceMonitor:
         self._samples: deque[Sample] = deque(maxlen=HISTORY_S // INTERVAL_S + 1)
         self._samples.append(_sample(data_dir))  # point de départ de la première moyenne
         self._task: asyncio.Task[None] | None = None
+        self._measured_at: float | None = None  # dernière mesure du dossier des données
 
     def start(self) -> None:
         self._task = asyncio.create_task(self._loop())
@@ -310,9 +322,18 @@ class ResourceMonitor:
         while True:
             await asyncio.sleep(INTERVAL_S)
             try:
-                self.record(_sample(self._data_dir))
+                self.record(_sample(self._data_dir, await self._data_size()))
             except Exception:  # nouvel essai à la minute suivante
                 logger.exception("Relevé des ressources impossible")
+
+    async def _data_size(self) -> int | None:
+        """Taille du dossier des données, une fois toutes les 10 minutes (sinon None), mesurée
+        hors de la boucle d'événements."""
+        now = time.monotonic()
+        if self._measured_at is not None and now - self._measured_at < DATA_SIZE_INTERVAL_S:
+            return None
+        self._measured_at = now
+        return await asyncio.to_thread(directory_size, self._data_dir)
 
     def history(self) -> list[ResourcePoint]:
         return history(list(self._samples))
