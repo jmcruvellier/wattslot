@@ -506,7 +506,8 @@ async def run(ctx: Context, now: datetime, manual: bool = False) -> RunReport:
     try:
         # Prévision recalée sur la production mesurée : calcul et plan enregistré la partagent.
         data = with_corrected_forecast(data)
-        result = plan_day(from_input(data), objective)
+        problem = from_input(data)
+        result = plan_day(problem, objective)
     except NoPlanError as exc:
         ctx.capture_no_plan(exc)
         raise
@@ -523,7 +524,8 @@ async def run(ctx: Context, now: datetime, manual: bool = False) -> RunReport:
         old,
         data.first_hour,
         {k: list(v) for k, v in data.real_segments.items()},
-        chosen=set(data.chosen_starts),
+        # Départs choisis et blocs gelés libérés : le nouveau créneau l'emporte sur l'ancien.
+        chosen=set(data.chosen_starts) | problem.released,
     )
     merged["donnees_reelles_cache"] = _actual(ctx, today, now)
     execution = {"heure_iso": now.astimezone(zone).isoformat(), "manuel": manual}
