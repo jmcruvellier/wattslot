@@ -485,6 +485,10 @@
         "week": {
           "title": "This week's plan",
           "help": "The appliances planned for the coming days, day by day, sent on the chosen days. Beyond two or three days, the plan follows a still uncertain weather forecast and may change."
+        },
+        "resources": {
+          "title": "Resource alerts",
+          "help": "Disk nearly full, memory heavily used or a very long plan computation: once a day while it lasts. On by default."
         }
       },
       "sending_title": "Sending",
@@ -1163,7 +1167,12 @@
       "disk_used": "Application data",
       "disk_free": "free on the disk: {free} of {total}",
       "unknown": "unknown",
-      "error": "The resources could not be read."
+      "error": "The resources could not be read.",
+      "chart_empty": "The curve is filling up: one point a minute, over 24 hours.",
+      "chart_point": "{time}: {value}",
+      "chart_range": "From {start} to {end} · top of the axis: {top}",
+      "chart_label": "{name} over the last 24 hours",
+      "disk_free_title": "Free space"
     },
     "next_maintenance": "Next maintenance",
     "last_maintenance": "Last maintenance",

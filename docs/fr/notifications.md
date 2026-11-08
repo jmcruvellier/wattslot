@@ -2,7 +2,7 @@
 
 *[English version](../notifications.md) · [Guide d'utilisation](README.md)*
 
-WattSlot envoie ses messages par Home Assistant, vers un appareil qui a l'**application compagnon de Home Assistant** (un service `notify.mobile_app_…`). Rien n'est envoyé tant que vous n'avez pas choisi un appareil et activé une notification. Les réglages sont dans **Réglages › Notifications**.
+WattSlot envoie ses messages par Home Assistant, vers un appareil qui a l'**application compagnon de Home Assistant** (un service `notify.mobile_app_…`). Rien n'est envoyé tant que vous n'avez pas choisi un appareil ; seules les alertes des ressources sont activées par défaut, les autres notifications sont à activer. Les réglages sont dans **Réglages › Notifications**.
 
 ## Où les envoyer
 
@@ -12,7 +12,7 @@ WattSlot envoie ses messages par Home Assistant, vers un appareil qui a l'**appl
 - **Langue du message** : l'une des six langues de l'application.
 - **Envoyer un essai** vérifie chaque notification tout de suite.
 
-## Les six notifications
+## Les sept notifications
 
 | Notification | Quand |
 |---|---|
@@ -22,6 +22,7 @@ WattSlot envoie ses messages par Home Assistant, vers un appareil qui a l'**appl
 | **Écart au plan** | Un cycle prévu n'a pas démarré 30 minutes après son heure, ou la production solaire s'écarte de plus de 25 % de la prévision |
 | **Batterie pleine avant midi** | Le plan prévoit la batterie pleine avant midi : bon moment pour lancer un appareil, le surplus suivant partirait sur le réseau |
 | **Prévision de demain en baisse** | La production prévue pour demain baisse de plus de 30 % par rapport à la prévision la plus haute vue jusque-là |
+| **Alertes des ressources** | Le disque des données est presque plein, WattSlot utilise beaucoup de mémoire, ou un calcul du plan est très long (voir [Dépannage](troubleshooting.md)). Une fois par jour pour chaque alerte tant qu'elle dure. **Activées par défaut** : désactivez-les ici |
 
 **Heures de silence**, sur chaque notification : rien n'est envoyé entre deux heures (la nuit, par exemple).
 

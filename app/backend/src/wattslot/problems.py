@@ -34,6 +34,11 @@ BACKUP_MARGIN = (
 MEMORY_CONTAINER_SHARE = 0.75  # de la limite du conteneur, tenue 15 minutes
 MEMORY_MAX = 1 << 30  # sans limite de conteneur : mémoire de WattSlot seul, tenue 15 minutes
 SLOW_PLAN = timedelta(minutes=10)  # durée d'un calcul du plan (jour, lendemain, horizon)
+# Alertes de ressources, notifiées à part (réglage « resources » des notifications).
+RESOURCE_ALERTS = frozenset(
+    {"disk_low", "backup_space", "memory_high", "memory_heavy", "plan_slow"}
+)
+SAMPLE_ALERT = {"free": "1.5", "percent": "4"}  # exemple de « disk_low » pour un envoi d'essai
 UNAVAILABLE = {"unavailable", "unknown"}
 
 DOCS = {

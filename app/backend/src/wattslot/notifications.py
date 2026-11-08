@@ -2,7 +2,8 @@
 
 Un catalogue de notifications activables, chacune avec son appareil ``notify.*`` (celui commun
 par défaut) et ses heures de silence, envoyées par HA après chaque calcul planifié. Rien n'est
-activé par défaut, pour ne pas doubler la v1 tant qu'elle notifie.
+activé par défaut, pour ne pas doubler la v1 tant qu'elle notifie, sauf les alertes de
+ressources.
 
 La recommandation du jour (PR 1), avec son rythme : à chaque calcul (comme la v1), seulement
 quand le plan change, ou une fois par jour à une heure donnée. Pendant les heures de silence,
@@ -16,6 +17,9 @@ pleine avant midi, prévision de demain qui chute.
 Le planning de la semaine part les jours choisis, une fois, au premier calcul à partir de
 l'heure choisie : les appareils prévus jour par jour, d'après la vue Semaine. Celle-ci a besoin
 de l'état de l'application ; ``dispatch`` et ``send_test`` la reçoivent donc par ``week_of``.
+
+Les alertes de ressources (disque, mémoire, calcul lent : problèmes du diagnostic), seules
+activées par défaut, partent une fois par alerte et par jour tant qu'elles durent.
 
 Les réglages sont gardés dans ``app_settings`` ; sans réglage enregistré, ceux d'avant le lot
 5.6 (``notify_service`` et ``notify_language`` des réglages du calcul) s'appliquent.
@@ -42,13 +46,18 @@ from wattslot.views.week import WeekView
 SETTINGS_KEY = "notifications"
 SERVICE_PATTERN = r"^notify\.[a-z0-9_]+$"
 
-Kind = Literal["recommendation", "device_now", "plan_gap", "battery_full", "forecast_drop", "week"]
+Kind = Literal[
+    "recommendation", "device_now", "plan_gap", "battery_full", "forecast_drop", "week", "resources"
+]
 EVENT_KINDS: tuple[Kind, ...] = ("device_now", "plan_gap", "battery_full", "forecast_drop")
 FORECAST_KEY = "notifications_forecast_reference"  # plus haute prévision vue pour demain
 Cadence = Literal["every_run", "when_changed", "daily"]
 Weekday = Annotated[int, Field(ge=0, le=6)]  # lundi = 0, comme ``date.weekday()``
 # Vue Semaine dans une langue (``views.routes.week_view_of`` sur l'état de l'application).
 WeekOf = Callable[[str], Awaitable[WeekView | None]]
+# Alertes de ressources du diagnostic (disque, mémoire, calcul lent) en phrases, dans une langue ;
+# avec ``True``, un exemple s'il n'y en a aucune (envoi d'essai).
+AlertsOf = Callable[[str, bool], Awaitable[list[events.Candidate]]]
 
 
 class QuietHours(BaseModel):
@@ -88,16 +97,21 @@ class NotificationSettings(BaseModel):
     battery_full: Rule = Rule()
     forecast_drop: Rule = Rule()
     week: WeekRule = WeekRule()
+    # Seule activée par défaut : une alerte de ressources ne double rien de la v1.
+    resources: Rule = Rule(enabled=True)
 
     def service_of(self, kind: Kind) -> str | None:
         rule: Rule = getattr(self, kind)
         return rule.service or self.service
 
     def active(self) -> bool:
-        """Au moins une notification activée qui a un appareil (le sien ou le commun)."""
+        """Au moins une notification activée qui a un appareil (le sien ou le commun). Les
+        alertes de ressources, activées par défaut, ne comptent pas : la mise en route attend un
+        choix de l'utilisateur."""
         return any(
             getattr(self, kind).enabled and self.service_of(kind) is not None
             for kind in get_args(Kind)
+            if kind != "resources"
         )
 
 
@@ -256,10 +270,12 @@ async def dispatch(
     zone: ZoneInfo,
     errors: list[str] | None = None,
     week_of: WeekOf | None = None,
+    alerts_of: AlertsOf | None = None,
 ) -> list[Sent]:
     """Notifications à envoyer après un calcul planifié ; renvoie celles envoyées. Avec
     ``errors`` (bilan du calcul), l'échec d'une notification y est noté sans empêcher les autres ;
-    sans, il remonte. Sans ``week_of``, pas de planning de la semaine."""
+    sans, il remonte. Sans ``week_of``, pas de planning de la semaine ; sans ``alerts_of``, pas
+    d'alerte de ressources. Une alerte part une fois par jour tant qu'elle dure."""
     settings = load(database)
     local = now.astimezone(zone)
     lang = settings.language
@@ -319,6 +335,21 @@ async def dispatch(
                 await deliver("week", "plan", local.date().isoformat(), text, service)
         except Exception as exc:  # noqa: BLE001 — noté, les autres continuent
             failed("week", exc)
+
+    alert_rule = settings.resources
+    service = settings.service_of("resources")
+    if (
+        alert_rule.enabled
+        and service is not None
+        and alerts_of is not None
+        and not _quiet(alert_rule, local)
+    ):
+        try:
+            for found in await alerts_of(lang, False):
+                if not already_sent(database, "resources", found.key, found.day):
+                    await deliver("resources", found.key, found.day, found.message, service)
+        except Exception as exc:  # noqa: BLE001 — noté, les autres continuent
+            failed("resources", exc)
     return sent
 
 
@@ -345,10 +376,12 @@ async def send_test(
     now: datetime | None = None,
     zone: ZoneInfo | None = None,
     week_of: WeekOf | None = None,
+    alerts_of: AlertsOf | None = None,
 ) -> Sent:
     """Envoi d'essai, tout de suite, sans heures de silence ni rythme, et sans le noter. La
     recommandation est celle du plan du jour, le planning de la semaine celui de la vue Semaine ;
     les autres, marquées « [Essai] », une candidate du moment s'il y en a, sinon un exemple.
+    Les alertes de ressources : celles du moment, sinon un exemple, marquées « [Essai] ».
     ``LookupError`` : « no_notify_service », « no_plan » ou « no_week »."""
     settings = load(database)
     lang = settings.language
@@ -363,6 +396,11 @@ async def send_test(
         if week_message is None:
             raise LookupError("no_week")
         message = week_message
+    elif kind == "resources":
+        alerts = await alerts_of(lang, True) if alerts_of is not None else []
+        if not alerts:
+            raise LookupError("no_plan")
+        message = events.text(lang, "test", message=alerts[0].message)
     elif kind == "recommendation":
         if plan is None:
             raise LookupError("no_plan")

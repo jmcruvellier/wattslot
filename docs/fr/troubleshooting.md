@@ -6,7 +6,7 @@
 
 **Réglages › État de l'application** (ou la pastille d'état du menu) liste ce qui ne va pas, par gravité : **Bloque le plan**, **Plan moins juste**, **À surveiller**. Chaque problème dit quoi faire et a un lien **Y aller**. **Vérifier à nouveau** relance les vérifications.
 
-La section **Ressources** montre le processeur (moyenne sur 15 minutes et pic, en part d'un cœur), la mémoire (avec son pic, et la limite du conteneur ou la mémoire de la machine) et le disque (données de l'application et espace libre du disque qui les porte). La limite mémoire est celle du conteneur quand il en fixe une ; sinon, c'est la mémoire de la machine, partagée avec tout ce qui y tourne.
+La section **Ressources** montre le processeur (moyenne sur 15 minutes et pic, en part d'un cœur), la mémoire (avec son pic, et la limite du conteneur ou la mémoire de la machine) et le disque (données de l'application et espace libre du disque qui les porte). Chaque ligne se déplie sur sa courbe des dernières 24 heures, un point par minute ; survolez-la pour lire une valeur. La limite mémoire est celle du conteneur quand il en fixe une ; sinon, c'est la mémoire de la machine, partagée avec tout ce qui y tourne.
 
 | Problème | Que faire |
 |---|---|
@@ -21,6 +21,8 @@ La section **Ressources** montre le processeur (moyenne sur 15 minutes et pic, e
 | Peu d'espace libre sur le disque des données (moins de 2 Go ou de 10 %), ou pas assez pour une sauvegarde (deux fois la taille de la base et du magasin principal) | Libérez de la place sur ce disque ; en module complémentaire, vous pouvez aussi raccourcir la conservation des mesures dans ses options |
 | WattSlot utilise beaucoup de mémoire depuis 15 minutes (75 % de la limite de son conteneur, ou 1 Go sans limite de conteneur) | Si cela dure, redémarrez l'application et joignez le rapport à un signalement |
 | Le dernier calcul du plan a pris 10 minutes ou plus | Si cela dure, joignez le rapport à un signalement |
+
+Ces alertes des ressources partent aussi en notification, une fois par jour tant qu'elles durent ; désactivez-les dans **Réglages › Notifications › Messages**.
 
 ## L'application ne démarre pas : « NumPy was built with baseline optimizations (X86_V2) »
 

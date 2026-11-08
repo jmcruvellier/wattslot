@@ -1,14 +1,19 @@
 // Ressources de l'application (État de l'application) : processeur, mémoire et disque, lus par
 // /api/diagnostic/resources toutes les 30 secondes. Les alertes (disque, mémoire, calcul lent)
-// sont des problèmes du diagnostic, en tête de page.
+// sont des problèmes du diagnostic, en tête de page. Chaque ligne se déplie sur sa courbe des
+// dernières 24 h (/api/diagnostic/resources/history), lue seulement quand une ligne est ouverte.
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { getJson } from "../api";
 import { useI18n } from "../i18n/I18nProvider";
+import Icon from "../ui/Icon";
 import { SettingList } from "../ui/SettingRow";
 import { formatNumber, formatPercent } from "./format";
-import type { Resources } from "./types";
+import ResourceChart, { type ChartPoint } from "./ResourceChart";
+import type { ResourcePoint, Resources } from "./types";
+
+type Kind = "cpu" | "memory" | "disk";
 
 const REFRESH_MS = 30_000;
 // En deçà, les pics ne couvrent pas encore une journée : « depuis le démarrage ».
@@ -20,6 +25,9 @@ export default function ResourcesSection() {
   const { language, t } = useI18n();
   const [load, setLoad] = useState<LoadState>({ status: "loading" });
   const [tick, setTick] = useState(0);
+  const [open, setOpen] = useState<Set<Kind>>(new Set());
+  const [points, setPoints] = useState<ResourcePoint[] | null>(null);
+  const charts = open.size > 0;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -28,12 +36,34 @@ export default function ResourcesSection() {
       .catch(() => {
         if (!controller.signal.aborted) setLoad({ status: "error" });
       });
+    if (charts) {
+      getJson<ResourcePoint[]>("api/diagnostic/resources/history", controller.signal)
+        .then(setPoints)
+        .catch(() => undefined); // courbe absente : la ligne garde ses valeurs
+    }
     const timer = window.setTimeout(() => setTick((count) => count + 1), REFRESH_MS);
     return () => {
       controller.abort();
       window.clearTimeout(timer);
     };
-  }, [tick]);
+  }, [tick, charts]);
+
+  const toggle = (kind: Kind, isOpen: boolean) =>
+    setOpen((current) => {
+      const next = new Set(current);
+      if (isOpen) next.add(kind);
+      else next.delete(kind);
+      return next;
+    });
+  const series = (pick: (point: ResourcePoint) => number | null): ChartPoint[] =>
+    (points ?? []).map((point) => ({ time: Date.parse(point.time), value: pick(point) }));
+  const chart = (label: string, pick: (point: ResourcePoint) => number | null,
+    format: (value: number) => string, max?: number) =>
+    points === null ? (
+      <p className="ui-row-help resource-chart-empty">{t("diagnostic.loading")}</p>
+    ) : (
+      <ResourceChart points={series(pick)} format={format} label={t("diagnostic.resources.chart_label", { name: label })} max={max} />
+    );
 
   const bytes = (value: number | null) => {
     if (value === null) return t("diagnostic.resources.unknown");
@@ -63,6 +93,9 @@ export default function ResourcesSection() {
     rows = (
       <>
         <Row
+          kind="cpu"
+          onToggle={toggle}
+          chart={chart(t("diagnostic.resources.cpu"), (p) => p.cpu_percent, (v) => formatPercent(language, v))}
           label={t("diagnostic.resources.cpu")}
           value={r.cpu_percent === null ? t("diagnostic.resources.unknown") : formatPercent(language, r.cpu_percent)}
           description={help(
@@ -74,6 +107,9 @@ export default function ResourcesSection() {
           )}
         />
         <Row
+          kind="memory"
+          onToggle={toggle}
+          chart={chart(t("diagnostic.resources.memory"), (p) => p.memory_bytes, bytes)}
           label={t("diagnostic.resources.memory")}
           value={bytes(r.memory_bytes)}
           description={help(
@@ -89,6 +125,14 @@ export default function ResourcesSection() {
           )}
         />
         <Row
+          kind="disk"
+          onToggle={toggle}
+          chart={chart(
+            t("diagnostic.resources.disk_free_title"),
+            (p) => p.disk_free_bytes,
+            bytes,
+            r.disk_total_bytes ?? undefined,
+          )}
           label={t("diagnostic.resources.disk")}
           value={bytes(r.disk_used_bytes)}
           description={
@@ -117,14 +161,30 @@ export default function ResourcesSection() {
   );
 }
 
-function Row({ label, value, description }: { label: string; value: string; description: string }) {
+function Row({ kind, label, value, description, chart, onToggle }: {
+  kind: Kind;
+  label: string;
+  value: string;
+  description: string;
+  chart: ReactNode;
+  onToggle: (kind: Kind, open: boolean) => void;
+}) {
   return (
-    <div className="ui-setting-row">
-      <span>
-        <span className="ui-row-label">{label}</span>
-        {description && <span className="ui-row-help">{description}</span>}
-      </span>
-      <span className="settings-value">{value}</span>
-    </div>
+    <details
+      className="ui-setting-row settings-details resource-row"
+      onToggle={(event) => onToggle(kind, event.currentTarget.open)}
+    >
+      <summary>
+        <span>
+          <span className="ui-row-label">{label}</span>
+          {description && <span className="ui-row-help">{description}</span>}
+        </span>
+        <span className="resource-row-value">
+          <span className="settings-value">{value}</span>
+          <Icon name="chevron-right" size={18} />
+        </span>
+      </summary>
+      {chart}
+    </details>
   );
 }

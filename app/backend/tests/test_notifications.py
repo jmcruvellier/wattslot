@@ -17,6 +17,7 @@ from tests.test_health import _settings
 from tests.v1_oracle import STATES
 from wattslot import notifications
 from wattslot.main import create_app
+from wattslot.notification_events import Candidate
 from wattslot.notifications import (
     NotificationSettings,
     QuietHours,
@@ -213,3 +214,57 @@ def test_settings_routes(tmp_path: Path) -> None:
         # Sans HA connecté : 503, comme l'essai d'avant le lot 5.6.
         assert api.post("/api/notifications/recommendation/test").status_code == 503
         assert api.post("/api/notifications/unknown/test").status_code == 422
+
+
+def _alerts(*codes: str) -> notifications.AlertsOf:
+    async def alerts_of(lang: str, sample: bool) -> list[Candidate]:
+        found = [
+            Candidate(key=code, day="2026-10-16", message=f"{code} ({lang})") for code in codes
+        ]
+        if not found and sample:
+            found = [Candidate(key="sample", day="2026-10-16", message="exemple")]
+        return found
+
+    return alerts_of
+
+
+def test_resource_alerts_are_on_by_default_and_sent_once_a_day(
+    database: sqlite3.Connection,
+) -> None:
+    settings = NotificationSettings(service=PHONE)
+    assert settings.resources.enabled
+    # Activées par défaut, elles ne font pas l'étape « Notifications » de la mise en route.
+    assert not settings.active()
+    save(database, settings)
+    client = FakeHA()
+
+    def run(moment: datetime, *codes: str) -> list[Any]:
+        return asyncio.run(dispatch(client, database, moment, PARIS, alerts_of=_alerts(*codes)))  # type: ignore[arg-type]
+
+    sent = run(_at(12), "disk_low")
+    assert [s.kind for s in sent] == ["resources"]
+    assert client.sent[0]["service_data"] == {
+        "title": "Ressources de WattSlot",
+        "message": "disk_low (fr)",
+    }
+    assert run(_at(13), "disk_low") == []  # déjà envoyée aujourd'hui
+    assert [s.message for s in run(_at(14), "disk_low", "plan_slow")] == ["plan_slow (fr)"]
+
+
+def test_resource_alerts_can_be_turned_off(database: sqlite3.Connection) -> None:
+    save(database, NotificationSettings(service=PHONE, resources=notifications.Rule(enabled=False)))
+    client = FakeHA()
+    sent = asyncio.run(
+        dispatch(client, database, _at(12), PARIS, alerts_of=_alerts("disk_low"))  # type: ignore[arg-type]
+    )
+    assert sent == [] and client.sent == []
+
+
+def test_resource_alert_test_send_uses_a_sample(database: sqlite3.Connection) -> None:
+    save(database, NotificationSettings(service=PHONE))
+    client = FakeHA()
+    sent = asyncio.run(
+        notifications.send_test(client, database, "resources", alerts_of=_alerts())  # type: ignore[arg-type]
+    )
+    assert sent.message == "[Essai] exemple"
+    assert notifications.last_sent(database, "resources", "sample") is None

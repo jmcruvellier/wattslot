@@ -485,6 +485,10 @@
         "week": {
           "title": "Wochenplan",
           "help": "Die für die kommenden Tage geplanten Geräte, Tag für Tag, an den gewählten Tagen gesendet. Über zwei oder drei Tage hinaus folgt der Plan einer noch unsicheren Wetterprognose und kann sich ändern."
+        },
+        "resources": {
+          "title": "Ressourcenwarnungen",
+          "help": "Festplatte fast voll, Arbeitsspeicher stark belegt oder sehr lange Planberechnung: einmal am Tag, solange es anhält. Standardmäßig aktiviert."
         }
       },
       "sending_title": "Versand",
@@ -1163,7 +1167,12 @@
       "disk_used": "Daten der Anwendung",
       "disk_free": "frei auf der Festplatte: {free} von {total}",
       "unknown": "unbekannt",
-      "error": "Die Ressourcen konnten nicht gelesen werden."
+      "error": "Die Ressourcen konnten nicht gelesen werden.",
+      "chart_empty": "Die Kurve füllt sich: ein Punkt pro Minute, über 24 Stunden.",
+      "chart_point": "{time}: {value}",
+      "chart_range": "Von {start} bis {end} · Obergrenze der Achse: {top}",
+      "chart_label": "{name} in den letzten 24 Stunden",
+      "disk_free_title": "Freier Speicher"
     },
     "next_maintenance": "Nächste Wartung",
     "last_maintenance": "Letzte Wartung",

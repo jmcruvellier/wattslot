@@ -15,8 +15,15 @@ import Icon from "../ui/Icon";
 import { SettingList } from "../ui/SettingRow";
 import Switch from "../ui/Switch";
 
-export type NotificationKind = "recommendation" | "week" | "device_now" | "plan_gap" | "battery_full" | "forecast_drop";
-const KINDS: NotificationKind[] = ["recommendation", "week", "device_now", "plan_gap", "battery_full", "forecast_drop"];
+export type NotificationKind =
+  | "recommendation"
+  | "week"
+  | "device_now"
+  | "plan_gap"
+  | "battery_full"
+  | "forecast_drop"
+  | "resources";
+const KINDS: NotificationKind[] = ["recommendation", "week", "device_now", "plan_gap", "battery_full", "forecast_drop", "resources"];
 
 // Jours de la semaine, lundi = 0 comme côté serveur ; libellés de l'éditeur de cycle.
 const WEEKDAYS = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"] as const;
@@ -51,6 +58,7 @@ export interface NotificationSettings {
   plan_gap: Rule;
   battery_full: Rule;
   forecast_drop: Rule;
+  resources: Rule; // alertes de ressources (disque, mémoire, calcul lent), activées par défaut
 }
 
 export interface Choice {

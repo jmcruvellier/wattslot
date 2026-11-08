@@ -26,6 +26,7 @@ const NOTIFICATIONS: NotificationSettings = {
   plan_gap: OFF,
   battery_full: OFF,
   forecast_drop: OFF,
+  resources: OFF,
   week: { ...OFF, weekdays: [6], at: "18:00:00" },
 };
 
@@ -122,6 +123,20 @@ describe("SettingsScreen", () => {
     const notifications = calls.find((call) => call.method === "PUT" && call.url === "api/settings/notifications");
     expect((notifications?.body as NotificationSettings).service).toBe("notify.mobile_app_phone");
     expect(calls.some((call) => call.method === "PUT" && call.url === "api/settings/planning")).toBe(false);
+  });
+
+  it("alertes des ressources : se coupent et s'enregistrent", async () => {
+    const user = userEvent.setup();
+    const calls = mockApi();
+    renderScreen("notifications");
+
+    const alerts = await screen.findByRole("switch", { name: "Alertes des ressources" });
+    await user.click(alerts);
+    await user.click(screen.getByRole("button", { name: "Enregistrer" }));
+
+    expect(await screen.findByText("Réglages enregistrés.")).toBeTruthy();
+    const saved = calls.find((call) => call.method === "PUT" && call.url === "api/settings/notifications");
+    expect((saved?.body as NotificationSettings).resources.enabled).toBe(true); // OFF au départ
   });
 
   it("règle chaque notification : activation, rythme, appareil, heures de silence", async () => {
