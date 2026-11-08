@@ -1164,7 +1164,7 @@
       "memory_limit_container": "limiet van de container: {value}",
       "memory_limit_machine": "geheugen van de machine: {value}",
       "disk_used": "Gegevens van de applicatie",
-      "disk_used_help": "Gegevensmap, elke 10 minuten gemeten",
+      "disk_used_help": "Gegevensmap, elke 10 minuten gemeten; drempels: gegevensgrootte waarbij elke schijfwaarschuwing zou afgaan",
       "disk_total": "Gegevensschijf van WattSlot: {total} in totaal",
       "unknown": "onbekend",
       "error": "De middelen konden niet worden gelezen.",
@@ -1173,7 +1173,9 @@
       "chart_range": "Van {start} tot {end} · bovenkant van de as: {top}",
       "chart_label": "{name} in de laatste 24 uur",
       "disk_free_title": "Vrije ruimte",
-      "chart_threshold": "waarschuwingsdrempel: {value}"
+      "chart_threshold": "waarschuwingsdrempel: {value}",
+      "threshold_full": "drempel ‘schijf bijna vol’: {value}",
+      "threshold_backup": "drempel ‘ruimte voor een back-up’: {value}"
     },
     "next_maintenance": "Volgend onderhoud",
     "last_maintenance": "Laatste onderhoud",

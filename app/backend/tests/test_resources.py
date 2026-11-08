@@ -18,6 +18,7 @@ from wattslot.resources import (
     cpu_limit_v1,
     cpu_limit_v2,
     cpu_percent,
+    data_limits,
     disk_alert,
     history,
     memory_alert,
@@ -172,14 +173,30 @@ def test_alert_thresholds_for_the_red_line() -> None:
     assert memory_alert(container) == 750 * mb
     machine = Resources(memory_limit_bytes=2100 * mb, memory_limit_source="machine")
     assert memory_alert(machine) == 1 << 30
-    # Disque : le plus haut de 2 Go, 10 % du disque et la place d'une sauvegarde.
+    # Disque : le plus haut de 20 % du disque (entre 2 et 20 Go) et la place d'une sauvegarde.
     assert disk_alert(Resources()) is None
-    small = Resources(disk_free_bytes=20 * gb, disk_total_bytes=16 * gb)
+    small = Resources(disk_free_bytes=5 * gb, disk_total_bytes=8 * gb)
     assert disk_alert(small) == 2 * gb
-    big = Resources(disk_free_bytes=20 * gb, disk_total_bytes=34 * gb)
-    assert disk_alert(big) == round(3.4 * gb)
-    backup = Resources(disk_free_bytes=20 * gb, disk_total_bytes=34 * gb, disk_backup_bytes=5 * gb)
-    assert disk_alert(backup) == 5 * gb
+    medium = Resources(disk_free_bytes=20 * gb, disk_total_bytes=34 * gb)
+    assert disk_alert(medium) == round(6.8 * gb)
+    huge = Resources(disk_free_bytes=400 * gb, disk_total_bytes=2000 * gb)
+    assert disk_alert(huge) == 20 * gb
+    backup = Resources(disk_free_bytes=20 * gb, disk_total_bytes=34 * gb, disk_backup_bytes=8 * gb)
+    assert disk_alert(backup) == 8 * gb
+
+
+def test_disk_thresholds_as_data_sizes() -> None:
+    """2,8 Go de données, 20,1 Go libres sur 33,6 Go, 5,4 Go pour une sauvegarde : presque plein
+    à 2,8 + 20,1 - 6,72 Go de données, sauvegarde impossible à 2,8 + (20,1 - 5,4) / 3 Go."""
+    mb = 10**6
+    resources = Resources(
+        disk_used_bytes=2800 * mb,
+        disk_free_bytes=20100 * mb,
+        disk_total_bytes=33600 * mb,
+        disk_backup_bytes=5400 * mb,
+    )
+    assert data_limits(resources) == (16180 * mb, 7700 * mb)
+    assert data_limits(Resources(disk_used_bytes=1)) == (None, None)
 
 
 def test_snapshot_gives_the_thresholds(tmp_path: Path) -> None:

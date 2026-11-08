@@ -1164,7 +1164,7 @@
       "memory_limit_container": "Grenze des Containers: {value}",
       "memory_limit_machine": "Arbeitsspeicher der Maschine: {value}",
       "disk_used": "Daten der Anwendung",
-      "disk_used_help": "Datenordner, alle 10 Minuten gemessen",
+      "disk_used_help": "Datenordner, alle 10 Minuten gemessen; Schwellen: Datengröße, bei der jede Festplattenwarnung ausgelöst würde",
       "disk_total": "Datenfestplatte von WattSlot: {total} insgesamt",
       "unknown": "unbekannt",
       "error": "Die Ressourcen konnten nicht gelesen werden.",
@@ -1173,7 +1173,9 @@
       "chart_range": "Von {start} bis {end} · Obergrenze der Achse: {top}",
       "chart_label": "{name} in den letzten 24 Stunden",
       "disk_free_title": "Freier Speicher",
-      "chart_threshold": "Warnschwelle: {value}"
+      "chart_threshold": "Warnschwelle: {value}",
+      "threshold_full": "Schwelle „Festplatte fast voll“: {value}",
+      "threshold_backup": "Schwelle „Platz für eine Sicherung“: {value}"
     },
     "next_maintenance": "Nächste Wartung",
     "last_maintenance": "Letzte Wartung",

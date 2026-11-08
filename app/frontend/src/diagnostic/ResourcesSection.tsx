@@ -11,7 +11,7 @@ import { useI18n } from "../i18n/I18nProvider";
 import Icon from "../ui/Icon";
 import { SettingList } from "../ui/SettingRow";
 import { formatNumber, formatPercent } from "./format";
-import ResourceChart, { type ChartPoint } from "./ResourceChart";
+import ResourceChart, { type ChartPoint, type Threshold } from "./ResourceChart";
 import type { ResourcePoint, Resources } from "./types";
 
 type Kind = "cpu" | "memory" | "disk" | "data";
@@ -58,12 +58,12 @@ export default function ResourcesSection() {
     });
   const series = (pick: (point: ResourcePoint) => number | null): ChartPoint[] =>
     (points ?? []).map((point) => ({ time: Date.parse(point.time), value: pick(point) }));
-  const chart = (label: string, threshold: number | null | undefined, pick: (point: ResourcePoint) => number | null,
+  const chart = (label: string, thresholds: Threshold[], pick: (point: ResourcePoint) => number | null,
     format: (value: number) => string) =>
     points === null ? (
       <p className="ui-row-help resource-chart-empty">{t("diagnostic.loading")}</p>
     ) : (
-      <ResourceChart points={series(pick)} format={format} label={t("diagnostic.resources.chart_label", { name: label })} threshold={threshold} />
+      <ResourceChart points={series(pick)} format={format} label={t("diagnostic.resources.chart_label", { name: label })} thresholds={thresholds} />
     );
 
   const bytes = (value: number | null) => {
@@ -96,7 +96,7 @@ export default function ResourcesSection() {
         <Row
           kind="cpu"
           onToggle={toggle}
-          chart={chart(t("diagnostic.resources.cpu"), null, (p) => p.cpu_percent, (v) => formatPercent(language, v))}
+          chart={chart(t("diagnostic.resources.cpu"), [], (p) => p.cpu_percent, (v) => formatPercent(language, v))}
           label={t("diagnostic.resources.cpu")}
           value={r.cpu_percent === null ? t("diagnostic.resources.unknown") : formatPercent(language, r.cpu_percent)}
           description={help(
@@ -110,7 +110,7 @@ export default function ResourcesSection() {
         <Row
           kind="memory"
           onToggle={toggle}
-          chart={chart(t("diagnostic.resources.memory"), r.memory_alert_bytes, (p) => p.memory_bytes, bytes)}
+          chart={chart(t("diagnostic.resources.memory"), [{ value: r.memory_alert_bytes }], (p) => p.memory_bytes, bytes)}
           label={t("diagnostic.resources.memory")}
           value={bytes(r.memory_bytes)}
           description={help(
@@ -125,12 +125,20 @@ export default function ResourcesSection() {
                 ),
           )}
         />
-        {/* Deux lignes pour le disque : valeur, courbe et seuil parlent chacune d'une seule
-            mesure. L'alerte porte sur l'espace libre (ligne rouge en dessous de la courbe). */}
+        {/* Deux lignes pour le disque, chacune avec les deux seuils de ses alertes : en espace
+            libre (alerte en dessous), puis en taille des données (alerte au-dessus). */}
         <Row
           kind="disk"
           onToggle={toggle}
-          chart={chart(t("diagnostic.resources.disk_free_title"), r.disk_alert_free_bytes, (p) => p.disk_free_bytes, bytes)}
+          chart={chart(
+            t("diagnostic.resources.disk_free_title"),
+            [
+              { value: r.disk_full_free_bytes, text: "diagnostic.resources.threshold_full" },
+              { value: r.disk_backup_bytes, text: "diagnostic.resources.threshold_backup", warning: true },
+            ],
+            (p) => p.disk_free_bytes,
+            bytes,
+          )}
           label={t("diagnostic.resources.disk_free_title")}
           value={bytes(r.disk_free_bytes)}
           description={
@@ -142,7 +150,15 @@ export default function ResourcesSection() {
         <Row
           kind="data"
           onToggle={toggle}
-          chart={chart(t("diagnostic.resources.disk_used"), null, (p) => p.disk_used_bytes ?? null, bytes)}
+          chart={chart(
+            t("diagnostic.resources.disk_used"),
+            [
+              { value: r.disk_full_data_bytes, text: "diagnostic.resources.threshold_full" },
+              { value: r.disk_backup_data_bytes, text: "diagnostic.resources.threshold_backup", warning: true },
+            ],
+            (p) => p.disk_used_bytes ?? null,
+            bytes,
+          )}
           label={t("diagnostic.resources.disk_used")}
           value={bytes(r.disk_used_bytes)}
           description={t("diagnostic.resources.disk_used_help")}

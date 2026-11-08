@@ -1164,7 +1164,7 @@
       "memory_limit_container": "limite du conteneur : {value}",
       "memory_limit_machine": "mémoire de la machine : {value}",
       "disk_used": "Données de l'application",
-      "disk_used_help": "Dossier des données, mesuré toutes les 10 minutes",
+      "disk_used_help": "Dossier des données, mesuré toutes les 10 minutes ; seuils : taille des données à laquelle chaque alerte du disque partirait",
       "disk_total": "Disque des données de WattSlot : {total} au total",
       "unknown": "inconnu",
       "error": "Les ressources n'ont pas pu être lues.",
@@ -1173,7 +1173,9 @@
       "chart_range": "De {start} à {end} · haut de l'axe : {top}",
       "chart_label": "{name} sur les dernières 24 heures",
       "disk_free_title": "Espace libre",
-      "chart_threshold": "seuil d'alerte : {value}"
+      "chart_threshold": "seuil d'alerte : {value}",
+      "threshold_full": "seuil « disque presque plein » : {value}",
+      "threshold_backup": "seuil « place pour une sauvegarde » : {value}"
     },
     "next_maintenance": "Prochaine maintenance",
     "last_maintenance": "Dernière maintenance",

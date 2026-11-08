@@ -43,7 +43,8 @@ UNLIMITED_V1 = 1 << 60
 # Seuils des alertes (provisoires, à revoir d'après des mesures réelles) : ici pour que les
 # problèmes du diagnostic et la ligne rouge des courbes partent des mêmes valeurs.
 DISK_FREE_MIN = 2 * 10**9  # octets libres sur le disque des données
-DISK_FREE_MIN_SHARE = 0.10  # part libre de ce disque
+DISK_FREE_MIN_SHARE = 0.20  # part libre de ce disque (80 % occupés)
+DISK_FREE_MAX = 20 * 10**9  # un très grand disque n'alerte pas avec des centaines de Go libres
 BACKUP_MARGIN = 2  # une sauvegarde copie la base et le graphe : deux fois leur taille
 MEMORY_CONTAINER_SHARE = 0.75  # de la limite du conteneur, tenue 15 minutes
 MEMORY_MAX = 1 << 30  # sans limite de conteneur : mémoire de WattSlot seul, tenue 15 minutes
@@ -78,7 +79,12 @@ class Resources(BaseModel):
     disk_backup_bytes: int | None = None  # place qu'une sauvegarde demande (base et graphe)
     # Seuils des alertes, pour la ligne rouge des courbes : mémoire au-delà, espace libre en deçà.
     memory_alert_bytes: int | None = None
-    disk_alert_free_bytes: int | None = None
+    disk_alert_free_bytes: int | None = None  # le plus haut des deux seuils du disque
+    disk_full_free_bytes: int | None = None  # « disque presque plein » : espace libre en deçà
+    # Les deux seuils du disque en taille des données, si rien d'autre ne remplit le disque :
+    # au-delà, l'alerte partirait.
+    disk_full_data_bytes: int | None = None
+    disk_backup_data_bytes: int | None = None
     measured_s: int = 0  # durée couverte par les relevés (moins de 24 h après un démarrage)
 
 
@@ -92,8 +98,23 @@ def memory_alert(resources: Resources) -> int | None:
 
 
 def disk_low_free(resources: Resources) -> int:
-    """Espace libre en deçà duquel le disque est « presque plein »."""
-    return max(DISK_FREE_MIN, round(DISK_FREE_MIN_SHARE * (resources.disk_total_bytes or 0)))
+    """Espace libre en deçà duquel le disque est « presque plein » : 20 % du disque, entre 2 et
+    20 Go."""
+    share = round(DISK_FREE_MIN_SHARE * (resources.disk_total_bytes or 0))
+    return max(DISK_FREE_MIN, min(DISK_FREE_MAX, share))
+
+
+def data_limits(resources: Resources) -> tuple[int | None, int | None]:
+    """Taille des données à laquelle chaque alerte du disque partirait, si elles seules
+    remplissaient le disque : (presque plein, sauvegarde). Un octet de données de plus est un
+    octet libre de moins ; pour la sauvegarde, il compte aussi deux fois dans la place qu'elle
+    demande (base et graphe copiés), d'où le tiers."""
+    used, free = resources.disk_used_bytes, resources.disk_free_bytes
+    if used is None or free is None or resources.disk_total_bytes is None:
+        return None, None
+    full = used + free - disk_low_free(resources)
+    backup = resources.disk_backup_bytes
+    return full, (used + round((free - backup) / 3) if backup else None)
 
 
 def disk_alert(resources: Resources) -> int | None:
@@ -358,4 +379,7 @@ class ResourceMonitor:
             found.disk_free_bytes, found.disk_total_bytes = usage.free, usage.total
         found.memory_alert_bytes = memory_alert(found)
         found.disk_alert_free_bytes = disk_alert(found)
+        if found.disk_total_bytes is not None:
+            found.disk_full_free_bytes = disk_low_free(found)
+        found.disk_full_data_bytes, found.disk_backup_data_bytes = data_limits(found)
         return found
