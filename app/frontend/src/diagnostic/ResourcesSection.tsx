@@ -1,6 +1,6 @@
 // Ressources de l'application (État de l'application) : processeur, mémoire et disque, lus par
-// /api/diagnostic/resources toutes les 30 secondes. Première étape : des valeurs, sans alerte ;
-// les seuils viendront de mesures réelles.
+// /api/diagnostic/resources toutes les 30 secondes. Les alertes (disque, mémoire, calcul lent)
+// sont des problèmes du diagnostic, en tête de page.
 
 import { useEffect, useState } from "react";
 
@@ -41,7 +41,11 @@ export default function ResourcesSection() {
       ? t("diagnostic.gigabytes", { value: formatNumber(language, value / 1e9, 1) })
       : t("diagnostic.megabytes", { value: formatNumber(language, value / 1e6, 0) });
   };
-  const help = (...parts: (string | null)[]) => parts.filter(Boolean).join(" · ");
+  // « Pic depuis le démarrage : … · limite du conteneur : … » : majuscule au premier élément.
+  const help = (...parts: (string | null)[]) => {
+    const text = parts.filter(Boolean).join(" · ");
+    return text.charAt(0).toLocaleUpperCase(language) + text.slice(1);
+  };
 
   let rows;
   if (load.status === "loading") {
@@ -76,7 +80,12 @@ export default function ResourcesSection() {
             r.memory_peak_bytes === null ? null : peak(bytes(r.memory_peak_bytes)),
             r.memory_limit_bytes === null
               ? null
-              : t("diagnostic.resources.memory_limit", { value: bytes(r.memory_limit_bytes) }),
+              : t(
+                  r.memory_limit_source === "container"
+                    ? "diagnostic.resources.memory_limit_container"
+                    : "diagnostic.resources.memory_limit_machine",
+                  { value: bytes(r.memory_limit_bytes) },
+                ),
           )}
         />
         <Row

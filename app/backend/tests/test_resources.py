@@ -40,6 +40,7 @@ def test_summary_averages_the_last_fifteen_minutes() -> None:
     assert found.cpu_peak_percent == 90
     assert found.memory_bytes == 150
     assert found.memory_peak_bytes == 300
+    assert found.memory_floor_bytes == 150  # plus bas des 15 dernières minutes, présent compris
     assert found.measured_s == now.at
 
 
@@ -63,10 +64,13 @@ def test_the_smallest_memory_limit_wins(tmp_path: Path) -> None:
     meminfo = tmp_path / "meminfo"
     meminfo.write_text("MemTotal: 4000000 kB\n")
     (tmp_path / "memory.max").write_text("max\n")
-    assert memory_limit(tmp_path, meminfo) == 4000000 * 1024
+    assert memory_limit(tmp_path, meminfo) == (4000000 * 1024, "machine")
     (tmp_path / "memory.max").write_text("1048576\n")
-    assert memory_limit(tmp_path, meminfo) == 1048576
-    assert memory_limit(tmp_path / "absent", tmp_path / "absent") is None
+    assert memory_limit(tmp_path, meminfo) == (1048576, "container")
+    # Limite du conteneur au-delà de la machine : c'est la machine qui borne.
+    (tmp_path / "memory.max").write_text(f"{8 * 10**9}\n")
+    assert memory_limit(tmp_path, meminfo) == (4000000 * 1024, "machine")
+    assert memory_limit(tmp_path / "absent", tmp_path / "absent") == (None, None)
 
 
 def test_cpu_limits(tmp_path: Path) -> None:

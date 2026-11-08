@@ -5,7 +5,8 @@ Chaque problème a un code (traduit par l'interface sous ``problems.code``), des
 d'équipements plutôt qu'identifiants d'entités quand c'est possible), une gravité, et le geste à
 faire : une page de l'application (``target``) ou la documentation de HA concernée (``doc``).
 Sources : la mise en route, la maison enregistrée confrontée à HA, l'état des composants
-(ingestion, agrégation, maintenance, calcul) et la configuration.
+(ingestion, agrégation, maintenance, calcul), les ressources (disque, mémoire) et la
+configuration.
 """
 
 from datetime import timedelta
@@ -23,6 +24,16 @@ from wattslot.setup import Setup, StepState
 
 STALE_PLAN = timedelta(hours=2)
 PENDING_MAX = 1000
+# Ressources (seuils provisoires, à revoir d'après des mesures réelles). Toutes « à surveiller » :
+# les autres gravités parlent du plan.
+DISK_FREE_MIN = 2 * 10**9  # octets libres sur le disque des données
+DISK_FREE_MIN_SHARE = 0.10  # part libre de ce disque
+BACKUP_MARGIN = (
+    2  # une sauvegarde copie la base et le graphe : il faut au moins deux fois leur taille
+)
+MEMORY_CONTAINER_SHARE = 0.75  # de la limite du conteneur, tenue 15 minutes
+MEMORY_MAX = 1 << 30  # sans limite de conteneur : mémoire de WattSlot seul, tenue 15 minutes
+SLOW_PLAN = timedelta(minutes=10)  # durée d'un calcul du plan (jour, lendemain, horizon)
 UNAVAILABLE = {"unavailable", "unknown"}
 
 DOCS = {
@@ -209,6 +220,63 @@ def _component_problems(diagnostic: Diagnostic, home: HomeModel) -> list[Problem
     return found
 
 
+def _gigabytes(value: int) -> str:
+    return f"{value / 1e9:.1f}"
+
+
+def _resource_problems(diagnostic: Diagnostic) -> list[Problem]:
+    """Disque, mémoire et durée du calcul. Les nombres partent bruts (« 1.5 » Go, « 1100 » Mo,
+    « 12 » min) : l'interface et l'assistant les écrivent dans leur langue."""
+    found = []
+    resources = diagnostic.resources
+    if resources is not None and resources.disk_free_bytes is not None:
+        free, total = resources.disk_free_bytes, resources.disk_total_bytes or 0
+        disk = diagnostic.maintenance.disk if diagnostic.maintenance else None
+        needed = BACKUP_MARGIN * (disk.graph_bytes + disk.database_bytes) if disk else 0
+        if needed and free < needed:
+            found.append(
+                _problem(
+                    "backup_space",
+                    Severity.WATCH,
+                    free=_gigabytes(free),
+                    needed=_gigabytes(needed),
+                )
+            )
+        elif free < DISK_FREE_MIN or (total and free < DISK_FREE_MIN_SHARE * total):
+            found.append(
+                _problem(
+                    "disk_low",
+                    Severity.WATCH,
+                    free=_gigabytes(free),
+                    percent=str(round(100 * free / total)) if total else "",
+                )
+            )
+    floor = resources.memory_floor_bytes if resources is not None else None
+    if resources is not None and floor is not None:
+        limit = resources.memory_limit_bytes
+        used = str(round(floor / 1e6))
+        if resources.memory_limit_source == "container" and limit:
+            if floor >= MEMORY_CONTAINER_SHARE * limit:
+                found.append(
+                    _problem(
+                        "memory_high",
+                        Severity.WATCH,
+                        used=used,
+                        percent=str(round(100 * floor / limit)),
+                    )
+                )
+        elif floor >= MEMORY_MAX:
+            found.append(_problem("memory_heavy", Severity.WATCH, used=used))
+    report = diagnostic.planning.last_report if diagnostic.planning else None
+    if report is not None:
+        seconds = (
+            report.seconds_today + (report.seconds_tomorrow or 0) + (report.seconds_horizon or 0)
+        )
+        if seconds >= SLOW_PLAN.total_seconds():
+            found.append(_problem("plan_slow", Severity.WATCH, minutes=str(round(seconds / 60))))
+    return found
+
+
 def _configuration_problems(home: HomeModel, saved: Configuration) -> list[Problem]:
     if not home.devices:
         return []
@@ -278,6 +346,7 @@ def collect(
         _setup_problems(setup)
         + _sensor_problems(home, client, diagnostic)
         + _component_problems(diagnostic, home)
+        + _resource_problems(diagnostic)
         + _configuration_problems(home, saved)
         + _dashboard_problems(diagnostic, home)
     )

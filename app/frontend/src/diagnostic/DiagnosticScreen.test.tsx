@@ -91,6 +91,7 @@ const RESOURCES: Resources = {
   memory_bytes: 180_000_000,
   memory_peak_bytes: 210_000_000,
   memory_limit_bytes: 4_000_000_000,
+  memory_limit_source: "container",
   disk_used_bytes: 1_250_000_000,
   disk_free_bytes: 20_000_000_000,
   disk_total_bytes: 32_000_000_000,
@@ -167,9 +168,23 @@ describe("DiagnosticScreen", () => {
     expect(await screen.findByText("2.5%")).toBeInTheDocument();
     expect(screen.getByText("Average over 15 minutes · peak since start: 85% · available cores: 4")).toBeInTheDocument();
     expect(screen.getByText("180 MB")).toBeInTheDocument();
-    expect(screen.getByText("peak since start: 210 MB · limit: 4 GB")).toBeInTheDocument();
+    expect(screen.getByText("Peak since start: 210 MB · container limit: 4 GB")).toBeInTheDocument();
     expect(screen.getByText("1.3 GB")).toBeInTheDocument();
-    expect(screen.getByText("Application data · free on the host: 20 GB of 32 GB")).toBeInTheDocument();
+    expect(screen.getByText("Application data · free on the disk: 20 GB of 32 GB")).toBeInTheDocument();
+  });
+
+  it("écrit les alertes de ressources dans la langue de l'interface", async () => {
+    mockApi(HEALTHY, [
+      { code: "disk_low", severity: "watch", params: { free: "1.5", percent: "5" }, target: null, doc: null },
+      { code: "memory_heavy", severity: "watch", params: { used: "1100" }, target: null, doc: null },
+      { code: "plan_slow", severity: "watch", params: { minutes: "12" }, target: null, doc: null },
+    ]);
+
+    renderScreen();
+
+    expect(await screen.findByText("Only 1.5 GB free (5%) on the WattSlot data disk.")).toBeInTheDocument();
+    expect(screen.getByText("WattSlot has been using 1,100 MB of memory for 15 minutes, much more than usual.")).toBeInTheDocument();
+    expect(screen.getByText("The last plan computation took 12 minutes, much longer than usual.")).toBeInTheDocument();
   });
 
   it("rappelle les anomalies de configuration", async () => {

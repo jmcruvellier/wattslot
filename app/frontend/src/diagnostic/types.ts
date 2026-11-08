@@ -93,7 +93,9 @@ export interface Resources {
   cpu_cores: number | null;
   memory_bytes: number | null;
   memory_peak_bytes: number | null;
+  memory_floor_bytes?: number | null; // plus bas des 15 dernières minutes
   memory_limit_bytes: number | null; // limite du conteneur, sinon mémoire de la machine
+  memory_limit_source?: "container" | "machine" | null;
   disk_used_bytes: number | null; // dossier des données de l'application
   disk_free_bytes: number | null;
   disk_total_bytes: number | null;

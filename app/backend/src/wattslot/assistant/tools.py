@@ -799,6 +799,9 @@ def _fill(template: str, params: dict[str, str]) -> str:
     return re.sub(r"\{(\w+)\}", lambda m: params.get(m.group(1), ""), template)
 
 
+RESOURCE_CODES = {"disk_low", "backup_space", "memory_high", "memory_heavy"}
+
+
 def problem_text(code: str, params: dict[str, str], lang: str) -> str:
     """Phrase d'un problème, comme l'écran Diagnostic (``ProblemsSection``), avec les textes de
     l'interface copiés dans les catalogues du serveur (``problem.*``)."""
@@ -825,6 +828,10 @@ def problem_text(code: str, params: dict[str, str], lang: str) -> str:
                 source_kwh=number(float(params.get("source_kwh", 0)), lang, 0),
                 until=long_date(params.get("until", ""), lang),
             )
+    # Ressources : nombres bruts du serveur, écrits dans la langue réglée.
+    for key, digits in (("free", 1), ("needed", 1), ("used", 0)):
+        if code in RESOURCE_CODES and params.get(key):
+            params[key] = number(float(params[key]), lang, digits)
     if "error_code" in params:
         error = params.pop("error_code")
         params["error"] = texts.get(

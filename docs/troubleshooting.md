@@ -6,7 +6,7 @@
 
 **Settings › App status** (or the status dot in the menu) lists what is wrong, by severity: **Blocks the plan**, **Less accurate plan**, **To watch**. Each problem says what to do and has a **Go there** link. **Check again** re-runs the checks.
 
-The **Resources** section shows the processor (average over 15 minutes and peak, as a share of one core), the memory (with its peak and the limit of the container or the machine) and the disk (the app's data and the free space on the host). In a container, the limits are those of the container. These values raise no alert yet.
+The **Resources** section shows the processor (average over 15 minutes and peak, as a share of one core), the memory (with its peak, and either the container limit or the machine memory) and the disk (the app's data and the free space on the disk that holds it). The memory limit is the container's when it sets one; otherwise it is the memory of the machine, shared with everything else running on it.
 
 | Problem | What to do |
 |---|---|
@@ -18,6 +18,9 @@ The **Resources** section shows the processor (average over 15 minutes and peak,
 | A sensor no longer exists / is unavailable / has sent nothing for a day | Replace it in **My home**, or check the device and its integration in Home Assistant |
 | No history in Home Assistant for some sensors | They have no statistics (no `state_class`): the plan starts from their live measurements only |
 | No plan could be computed for more than 2 hours | Look at the other problems, or **Compute** from the title bar of **Today**, **Planning** or **Curves** |
+| Little free space on the data disk (under 2 GB or 10%), or not enough for a backup (twice the size of the database and the main store) | Free up space on this disk; as a Home Assistant app, you can also shorten how long readings are kept in its options |
+| WattSlot uses a lot of memory for 15 minutes (75% of its container limit, or 1 GB without a container limit) | If it lasts, restart the application and attach the report to a bug report |
+| The last plan computation took 10 minutes or more | If it lasts, attach the report to a bug report |
 
 ## The app does not start: "NumPy was built with baseline optimizations (X86_V2)"
 

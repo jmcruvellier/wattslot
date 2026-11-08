@@ -26,6 +26,7 @@ export interface Problem {
 type Load = { status: "loading" } | { status: "ready"; problems: Problem[] } | { status: "error" };
 
 const SEVERITIES: Problem["severity"][] = ["blocking", "degraded", "watch"];
+const RESOURCE_CODES = new Set(["disk_low", "backup_space", "memory_high", "memory_heavy"]);
 
 export default function ProblemsSection({ version, onNavigate, checking, onCheck }: {
   version: number;
@@ -76,6 +77,17 @@ export default function ProblemsSection({ version, onNavigate, checking, onCheck
           source_kwh: formatNumber(language, Number(params.source_kwh), 0),
           until: longDate(params.until, language),
         }),
+      });
+    }
+    if (RESOURCE_CODES.has(problem.code)) {
+      // Ressources : nombres bruts du serveur (Go, Mo, %), écrits dans la langue de l'interface.
+      const number = (value: string | undefined, digits: number) =>
+        value ? formatNumber(language, Number(value), digits) : "";
+      return t(`problems.code.${problem.code}`, {
+        ...params,
+        free: number(params.free, 1),
+        needed: number(params.needed, 1),
+        used: number(params.used, 0),
       });
     }
     return t(`problems.code.${problem.code}`, {
