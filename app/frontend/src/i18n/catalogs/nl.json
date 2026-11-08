@@ -977,7 +977,16 @@
       "tempo": "Tempo",
       "ejp": "EJP"
     },
-    "preset_hint": "Vervangt de soorten dagen en hun prijzen door die van het sjabloon (indicatieve prijzen, te vervangen door de uwe)."
+    "preset_hint": "Vervangt de soorten dagen en hun prijzen door die van het sjabloon (indicatieve prijzen, te vervangen door de uwe).",
+    "preview": {
+      "title": "Voorbeeld van de komende 7 dagen",
+      "title_days": "Voorbeeld van elk soort dag",
+      "failed": "Het prijsvoorbeeld kon niet worden berekend.",
+      "holiday": "{day} (feestdag)",
+      "hours": "{from} – {to} uur",
+      "hint": "Beweeg over een vakje om de prijs te zien.",
+      "legend": "Prijs per kWh"
+    }
   },
   "battery": {
     "title": "Batterij",

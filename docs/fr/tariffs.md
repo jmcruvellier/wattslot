@@ -15,6 +15,10 @@ Le plan place vos appareils là où l'électricité est gratuite (votre surplus)
 | **Jour annoncé (Tempo, EJP…)** | Le prix dépend du jour annoncé par le fournisseur et de l'heure | Le capteur de Home Assistant qui donne le jour (et celui du lendemain, facultatif), l'heure où commence le jour annoncé, puis chaque sorte de jour avec son nom, les autres états du capteur qui la désignent, son prix hors plages et ses plages. La première sorte sert quand le jour n'est pas connu. **Partir d'un modèle** remplit Tempo ou EJP |
 | **Prix dynamique** | Un prix pour chaque heure, par votre fournisseur ou le marché | Le capteur de Home Assistant qui donne le prix de l'heure en cours et des heures à venir, son unité, et le prix à utiliser quand il n'est pas connu |
 
+## Aperçu des prix
+
+Sous un tarif à heures creuses ou à jour annoncé, une grille montre le prix de chaque heure, du plus clair (le moins cher) au plus foncé (le plus cher) : les sept prochains jours pour les heures creuses, jours fériés compris, ou une ligne par sorte de jour pour un jour annoncé. Elle suit vos modifications avant même l'enregistrement ; survolez une case pour lire son prix. Les prix lus dans Home Assistant prennent le dernier état connu du capteur.
+
 ## Jours, mois et jours fériés
 
 Sous chaque plage, les cases **Jours** la limitent à certains jours de la semaine (toutes cochées : tous les jours), et **Toute l'année** déplie les mois. Une case reste toujours cochée.

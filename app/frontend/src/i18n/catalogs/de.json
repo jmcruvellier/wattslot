@@ -977,7 +977,16 @@
       "tempo": "Tempo",
       "ejp": "EJP"
     },
-    "preset_hint": "Ersetzt die Tagesarten und ihre Preise durch die der Vorlage (Richtpreise, durch Ihre zu ersetzen)."
+    "preset_hint": "Ersetzt die Tagesarten und ihre Preise durch die der Vorlage (Richtpreise, durch Ihre zu ersetzen).",
+    "preview": {
+      "title": "Vorschau der nächsten 7 Tage",
+      "title_days": "Vorschau jeder Tagesart",
+      "failed": "Die Preisvorschau konnte nicht berechnet werden.",
+      "holiday": "{day} (Feiertag)",
+      "hours": "{from} – {to} Uhr",
+      "hint": "Fahren Sie über ein Feld, um seinen Preis zu sehen.",
+      "legend": "Preis pro kWh"
+    }
   },
   "battery": {
     "title": "Batterie",

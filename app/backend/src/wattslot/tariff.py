@@ -332,6 +332,44 @@ def off_peak_ranges(
     return ranges
 
 
+class PreviewRow(BaseModel):
+    """Une ligne de l'aperçu : un jour (heures creuses) ou une sorte de jour annoncé."""
+
+    day: date
+    holiday: bool = False  # jour férié compté comme un dimanche
+    color: str | None = None  # sorte de jour annoncé (Tempo, EJP…)
+    prices: list[float]  # 24 prix horaires, de 0 h à 23 h
+
+
+class TariffPreview(BaseModel):
+    rows: list[PreviewRow]
+
+
+def preview(tariff: Tariff, today: date, context: TariffContext = NO_CONTEXT) -> TariffPreview:
+    """Prix heure par heure pour l'éditeur : les sept jours à venir, ou, pour un jour annoncé,
+    une journée de chaque sorte (la veille de la même sorte, pour les heures avant le début du
+    jour annoncé). Les prix lus dans HA viennent de ``context``."""
+    if tariff.kind is TariffKind.DAY_COLOR:
+        rows = []
+        for color in tariff.colors:
+            colors = {today - timedelta(days=1): color.color, today: color.color}
+            day_context = TariffContext(colors=colors, entity_prices=context.entity_prices)
+            hourly = tariff.hourly(today, day_context)
+            rows.append(PreviewRow(day=today, color=color.color, prices=list(hourly.values())))
+        return TariffPreview(rows=rows)
+    days = [today + timedelta(days=offset) for offset in range(7)]
+    return TariffPreview(
+        rows=[
+            PreviewRow(
+                day=day,
+                holiday=tariff.weekday(day) != day.weekday(),
+                prices=list(tariff.hourly(day, context).values()),
+            )
+            for day in days
+        ]
+    )
+
+
 # Sans tarif configuré : un prix unique, ordre de grandeur des tarifs de détail européens.
 DEFAULT = Tariff(kind=TariffKind.SINGLE, base_eur_kwh=0.25)
 # Tarif implicite de la v1 (heures creuses de 0 h à 6 h et de 22 h à 24 h, prix indicatifs) :

@@ -15,6 +15,10 @@ The plan places your appliances where electricity is free (your surplus) or chea
 | **Announced day (Tempo, EJP…)** | The price depends on the day announced by the supplier and on the hour | The Home Assistant sensor giving today's day (and tomorrow's, optional), the hour the announced day starts, then each kind of day with its name, the other sensor states that mean it, its price outside bands and its bands. The first kind is used when the day is unknown. **Start from a template** fills in Tempo or EJP |
 | **Dynamic price** | A price for every hour, from your supplier or the market | The Home Assistant sensor giving the price of the current and coming hours, its unit, and the price to use when it is not known |
 
+## Price preview
+
+Below an off-peak or announced-day tariff, a grid shows the price of every hour, from the lightest (cheapest) to the darkest (most expensive): the next seven days for off-peak hours, public holidays included, or one row per kind of day for an announced day. It follows your changes before you save them; hover over a cell to read its price. Prices read from Home Assistant use the sensor's last known state.
+
 ## Days, months and public holidays
 
 Under each band, the **Days** boxes limit it to some days of the week (all ticked: every day), and **All year** unfolds the months. One box always stays ticked.
