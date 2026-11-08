@@ -1,8 +1,12 @@
 """Ressources de l'application : processeur, mémoire et disque (État de l'application).
 
-Un relevé par minute, gardé en mémoire sur 24 heures : le temps processeur du processus et sa
-mémoire résidente. Le processeur se lit en moyenne sur 15 minutes (en pourcentage d'un cœur),
-jamais en valeur instantanée : WattSlot dort la plupart du temps et travaille par à-coups, au
+Un relevé par minute : le temps processeur du processus, sa mémoire résidente et l'espace libre.
+Chaque minute écoulée est aussi gardée en base (``resource_minutes``, 24 heures) avec un résumé
+par heure (``resource_hours``, 30 jours) : les courbes et les pics survivent à un redémarrage, et
+les seuils des alertes se règlent sur plusieurs jours de mesures.
+
+Le processeur se lit en moyenne sur 15 minutes (en pourcentage d'un cœur), jamais en valeur
+instantanée : WattSlot dort la plupart du temps et travaille par à-coups, au
 calcul horaire du plan. Les limites sont celles du conteneur (cgroup v2, ou v1) quand il y en a,
 sinon celles de la machine ; le disque est celui qui porte le dossier des données (en module
 complémentaire, celui de Home Assistant).
@@ -15,10 +19,11 @@ import contextlib
 import logging
 import os
 import shutil
+import sqlite3
 import time
 from collections import deque
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from itertools import pairwise
 from pathlib import Path
 from typing import Literal
@@ -33,7 +38,9 @@ logger = logging.getLogger(__name__)
 
 INTERVAL_S = 60
 AVERAGE_S = 15 * 60  # fenêtre de la moyenne du processeur
-HISTORY_S = 24 * 3600  # relevés gardés (pics)
+HISTORY_S = 24 * 3600  # relevés gardés (pics, courbes)
+HOURS_KEPT = timedelta(days=30)  # résumés horaires gardés en base
+TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"  # largeur fixe : l'ordre du texte est celui du temps
 # cgroup v1 : « pas de limite » s'écrit comme un très grand nombre.
 UNLIMITED_V1 = 1 << 60
 
@@ -266,6 +273,100 @@ def history(samples: list[Sample]) -> list[ResourcePoint]:
     return points
 
 
+class ResourceHour(BaseModel):
+    """Résumé d'une heure (UTC) : charge moyenne et plus haute, mémoire, espace libre minimal."""
+
+    hour: datetime
+    samples: int
+    cpu_avg: float | None = None
+    cpu_max: float | None = None
+    memory_min: int | None = None
+    memory_avg: int | None = None
+    memory_max: int | None = None
+    disk_free_min: int | None = None
+
+
+def _text(moment: datetime) -> str:
+    return moment.astimezone(UTC).strftime(TIME_FORMAT)
+
+
+def _moment(text: str) -> datetime:
+    return datetime.strptime(text, TIME_FORMAT).replace(tzinfo=UTC)
+
+
+class ResourceStore:
+    """Minutes (24 h) et résumés horaires (30 jours) en base. Chaque minute enregistrée refait le
+    résumé de son heure et retire ce qui a passé sa durée de garde, dans une même transaction."""
+
+    def __init__(self, database: sqlite3.Connection) -> None:
+        self._database = database
+
+    def save(self, point: ResourcePoint) -> None:
+        moment = point.time.astimezone(UTC)
+        hour = moment.replace(minute=0, second=0, microsecond=0)
+        with self._database:
+            self._database.execute(
+                "INSERT INTO resource_minutes VALUES (?, ?, ?, ?) "
+                "ON CONFLICT(time) DO UPDATE SET cpu_percent = excluded.cpu_percent, "
+                "memory_bytes = excluded.memory_bytes, disk_free_bytes = excluded.disk_free_bytes",
+                (_text(moment), point.cpu_percent, point.memory_bytes, point.disk_free_bytes),
+            )
+            self._database.execute(
+                "INSERT INTO resource_hours "
+                "SELECT ?, COUNT(*), AVG(cpu_percent), MAX(cpu_percent), MIN(memory_bytes), "
+                "CAST(AVG(memory_bytes) AS INTEGER), MAX(memory_bytes), MIN(disk_free_bytes) "
+                "FROM resource_minutes WHERE time >= ? AND time < ? "
+                "ON CONFLICT(hour) DO UPDATE SET samples = excluded.samples, "
+                "cpu_avg = excluded.cpu_avg, cpu_max = excluded.cpu_max, "
+                "memory_min = excluded.memory_min, memory_avg = excluded.memory_avg, "
+                "memory_max = excluded.memory_max, disk_free_min = excluded.disk_free_min",
+                (_text(hour), _text(hour), _text(hour + timedelta(hours=1))),
+            )
+            self._database.execute(
+                "DELETE FROM resource_minutes WHERE time < ?",
+                (_text(moment - timedelta(seconds=HISTORY_S)),),
+            )
+            self._database.execute(
+                "DELETE FROM resource_hours WHERE hour < ?", (_text(moment - HOURS_KEPT),)
+            )
+
+    def minutes(self, since: datetime) -> list[ResourcePoint]:
+        rows = self._database.execute(
+            "SELECT time, cpu_percent, memory_bytes, disk_free_bytes FROM resource_minutes "
+            "WHERE time >= ? ORDER BY time",
+            (_text(since),),
+        ).fetchall()
+        return [
+            ResourcePoint(
+                time=_moment(row[0]),
+                cpu_percent=row[1],
+                memory_bytes=row[2],
+                disk_free_bytes=row[3],
+            )
+            for row in rows
+        ]
+
+    def hours(self, since: datetime) -> list[ResourceHour]:
+        rows = self._database.execute(
+            "SELECT hour, samples, cpu_avg, cpu_max, memory_min, memory_avg, memory_max, "
+            "disk_free_min FROM resource_hours WHERE hour >= ? ORDER BY hour",
+            (_text(since),),
+        ).fetchall()
+        return [
+            ResourceHour(
+                hour=_moment(row[0]),
+                samples=row[1],
+                cpu_avg=row[2],
+                cpu_max=row[3],
+                memory_min=row[4],
+                memory_avg=row[5],
+                memory_max=row[6],
+                disk_free_min=row[7],
+            )
+            for row in rows
+        ]
+
+
 def _free(path: Path) -> int | None:
     try:
         return shutil.disk_usage(path).free
@@ -286,12 +387,21 @@ def _sample(data_dir: Path | None = None) -> Sample:
 class ResourceMonitor:
     """Relève le processeur, la mémoire et l'espace libre toutes les minutes ; ``snapshot`` y
     ajoute le dossier des données et les limites (à appeler hors de la boucle d'événements : il
-    parcourt ce dossier)."""
+    parcourt ce dossier). Avec une base, chaque minute y est gardée, et les minutes des dernières
+    24 h d'avant le démarrage complètent courbes et pics."""
 
-    def __init__(self, data_dir: Path) -> None:
+    def __init__(self, data_dir: Path, database: sqlite3.Connection | None = None) -> None:
         self._data_dir = data_dir
+        self._store = ResourceStore(database) if database is not None else None
         self._samples: deque[Sample] = deque(maxlen=HISTORY_S // INTERVAL_S + 1)
-        self._samples.append(_sample(data_dir))  # point de départ de la première moyenne
+        start = _sample(data_dir)
+        self._samples.append(start)  # point de départ de la première moyenne
+        self._before: list[ResourcePoint] = []  # minutes gardées d'avant le démarrage
+        if self._store is not None and start.time is not None:
+            try:
+                self._before = self._store.minutes(start.time - timedelta(seconds=HISTORY_S))
+            except sqlite3.Error:
+                logger.exception("Lecture des ressources gardées impossible")
         self._task: asyncio.Task[None] | None = None
 
     def start(self) -> None:
@@ -306,19 +416,49 @@ class ResourceMonitor:
     def record(self, sample: Sample) -> None:
         self._samples.append(sample)
 
+    def save_last(self) -> None:
+        """Garde en base la dernière minute écoulée (à appeler hors de la boucle d'événements)."""
+        if self._store is None or len(self._samples) < 2:
+            return
+        self._store.save(history(list(self._samples)[-2:])[-1])
+
     async def _loop(self) -> None:
         while True:
             await asyncio.sleep(INTERVAL_S)
             try:
                 self.record(_sample(self._data_dir))
+                await asyncio.to_thread(self.save_last)
             except Exception:  # nouvel essai à la minute suivante
                 logger.exception("Relevé des ressources impossible")
 
+    def _kept(self, now: datetime) -> list[ResourcePoint]:
+        since = now - timedelta(seconds=HISTORY_S)
+        return [p for p in self._before if p.time >= since]
+
     def history(self) -> list[ResourcePoint]:
-        return history(list(self._samples))
+        return [*self._kept(datetime.now(UTC)), *history(list(self._samples))]
+
+    def hours(self, days: int = 30) -> list[ResourceHour]:
+        if self._store is None:
+            return []
+        return self._store.hours(datetime.now(UTC) - timedelta(days=days))
 
     def snapshot(self, now: Sample | None = None) -> Resources:
-        found = summarize(list(self._samples), now or _sample())
+        current = now or _sample()
+        moment = current.time or datetime.now(UTC)
+        found = summarize(list(self._samples), current)
+        # Minutes d'avant le démarrage : pics et durée couverte sur les dernières 24 h.
+        kept = self._kept(moment)
+        if kept:
+            cpus = [p.cpu_percent for p in kept if p.cpu_percent is not None]
+            memories = [p.memory_bytes for p in kept if p.memory_bytes is not None]
+            if found.cpu_peak_percent is not None:
+                cpus.append(found.cpu_peak_percent)
+            if found.memory_peak_bytes is not None:
+                memories.append(found.memory_peak_bytes)
+            found.cpu_peak_percent = max(cpus, default=None)
+            found.memory_peak_bytes = max(memories, default=None)
+            found.measured_s = round((moment - kept[0].time).total_seconds())
         found.cpu_cores = cpu_cores()
         found.memory_limit_bytes, found.memory_limit_source = memory_limit()
         found.disk_used_bytes = directory_size(self._data_dir)

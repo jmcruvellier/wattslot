@@ -107,7 +107,7 @@ from wattslot.quality import Monitor as QualityMonitor
 from wattslot.quality import router as quality_routes
 from wattslot.reminders import ReminderLoop
 from wattslot.reminders import router as reminders_routes
-from wattslot.resources import ResourceMonitor, ResourcePoint, Resources
+from wattslot.resources import ResourceHour, ResourceMonitor, ResourcePoint, Resources
 from wattslot.runtime import RunMode, Settings, load_settings
 from wattslot.settings_choices import SettingsChoices, settings_choices
 from wattslot.setup import Setup, setup_status
@@ -485,7 +485,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if reminder_loop:
             reminder_loop.start()
         # Processeur et mémoire relevés toutes les minutes (État de l'application).
-        resources = ResourceMonitor(settings.data_dir)
+        resources = ResourceMonitor(settings.data_dir, database)
         resources.start()
         app.state.resources = resources
         try:
@@ -1286,6 +1286,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         monitor: ResourceMonitor | None = getattr(request.app.state, "resources", None)
         return monitor.history() if monitor is not None else []
 
+    @app.get("/api/diagnostic/resources/hours")
+    def get_resources_hours(
+        request: Request, days: Annotated[int, Query(ge=1, le=30)] = 30
+    ) -> list[ResourceHour]:
+        """Résumés horaires des ressources gardés en base (30 jours au plus) : charge moyenne et
+        plus haute, mémoire la plus basse, moyenne et plus haute, espace libre le plus bas."""
+        monitor: ResourceMonitor | None = getattr(request.app.state, "resources", None)
+        return monitor.hours(days) if monitor is not None else []
+
     async def current_problems(request: Request) -> tuple[Diagnostic, list[Problem]]:
         return await current_problems_of(request.app.state)
 
@@ -1364,6 +1373,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             home=home_model.load(state.graph),
             saved=configuration.load(state.graph),
             settings=load_planning_settings(state.database),
+            resource_hours=state.resources.hours(report.REPORT_DAYS)
+            if getattr(state, "resources", None) is not None
+            else [],
         )
 
     def requestable(request: Request) -> list[RequestableDevice]:
