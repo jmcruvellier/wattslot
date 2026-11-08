@@ -2,6 +2,7 @@
 // continu ou par paliers, chaque jour ou seulement quand une tâche de HA le demande.
 
 import Advanced, { Hint } from "../common/Advanced";
+import NumberInput from "../common/NumberInput";
 import { useI18n } from "../i18n/I18nProvider";
 import { DEFAULT_ENERGY_NEED, type EnergyNeed } from "./configuration";
 
@@ -10,20 +11,13 @@ function Number_({ label, value, min, max, step, onChange }: {
   value: number;
   min: number;
   max?: number;
-  step: string;
+  step: number;
   onChange: (value: number) => void;
 }) {
   return (
     <label>
       {label}{" "}
-      <input
-        type="number"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={(event) => onChange(event.target.value === "" ? min : Number(event.target.value))}
-      />
+      <NumberInput min={min} max={max} step={step} integer={step === 1} value={value} onChange={onChange} />
     </label>
   );
 }
@@ -42,9 +36,9 @@ export default function EnergyNeedEditor({ need, name, onChange }: {
       <legend>{t("need.title", { device: name })}</legend>
       {need === null && <p>{t("need.unset")}</p>}
       <p>
-        <Number_ label={t("need.energy")} value={settings.energy_kwh} min={0} step="0.1" onChange={(energy_kwh) => set({ energy_kwh })} /> kWh{" "}
-        <Number_ label={t("need.deadline")} value={settings.deadline_hour} min={1} max={24} step="1" onChange={(deadline_hour) => set({ deadline_hour })} /> h{" "}
-        <Number_ label={t("need.max_power")} value={settings.max_kw} min={0} step="0.1" onChange={(max_kw) => set({ max_kw })} /> kW
+        <Number_ label={t("need.energy")} value={settings.energy_kwh} min={0} step={0.1} onChange={(energy_kwh) => set({ energy_kwh })} /> kWh{" "}
+        <Number_ label={t("need.deadline")} value={settings.deadline_hour} min={1} max={24} step={1} onChange={(deadline_hour) => set({ deadline_hour })} /> h{" "}
+        <Number_ label={t("need.max_power")} value={settings.max_kw} min={0} step={0.1} onChange={(max_kw) => set({ max_kw })} /> kW
         <Hint text={t("need.hint")} />
       </p>
       <Advanced
@@ -54,7 +48,7 @@ export default function EnergyNeedEditor({ need, name, onChange }: {
         }
       >
       <p>
-        <Number_ label={t("need.earliest")} value={settings.earliest_hour} min={0} max={23} step="1" onChange={(earliest_hour) => set({ earliest_hour })} /> h
+        <Number_ label={t("need.earliest")} value={settings.earliest_hour} min={0} max={23} step={1} onChange={(earliest_hour) => set({ earliest_hour })} /> h
       </p>
       <p>
         <label>

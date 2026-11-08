@@ -169,7 +169,7 @@ describe("Ma maison en onglets", () => {
 
     await userEvent.click(screen.getByRole("button", { name: /Batterie/ }));
     const sheet = screen.getByRole("dialog", { name: "Batterie" });
-    expect(within(sheet).getByLabelText(/Ne jamais décharger en dessous de/)).toHaveValue(12);
+    expect(within(sheet).getByLabelText(/Ne jamais décharger en dessous de/)).toHaveValue("12");
     await userEvent.click(within(sheet).getByRole("button", { name: "Fermer" }));
     expect(screen.queryByRole("dialog")).toBeNull();
   });

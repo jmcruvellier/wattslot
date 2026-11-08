@@ -164,7 +164,7 @@ fieldset {
   display: block;
 }
 
-.expert-form input[type="number"] {
+.expert-form input.number-input {
   width: 8rem;
 }
 

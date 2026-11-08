@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { putJson } from "../api";
 import Advanced, { Hint } from "../common/Advanced";
+import NumberInput from "../common/NumberInput";
 import { useI18n } from "../i18n/I18nProvider";
 import AddDevice from "./AddDevice";
 import { IssueList } from "./DeviceSheet";
@@ -148,16 +149,12 @@ export default function HomeEditor({ onSaved }: { onSaved: () => void }) {
           {device.kind === "Battery" && (
             <label>
               {t("home.capacity")}{" "}
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={device.capacityKwh ?? ""}
-                onChange={(event) =>
-                  update(device.key, {
-                    capacityKwh: event.target.value === "" ? null : Number(event.target.value),
-                  })
-                }
+              <NumberInput
+                nullable
+                min={0}
+                step={0.01}
+                value={device.capacityKwh}
+                onChange={(capacityKwh) => update(device.key, { capacityKwh })}
               />
               {device.capacitySource && (
                 <> {t("home.capacity_source", { entity: device.capacitySource })}</>

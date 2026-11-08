@@ -210,7 +210,7 @@ describe("réglages de Ma maison", () => {
     let sheet = await openSheet("L'essentiel", /^Mon contrat/, "Tarif de l'électricité");
     await userEvent.click(within(sheet).getByRole("button", { name: "Définir un tarif par couleur de jour (Tempo)" }));
     await userEvent.type(within(sheet).getByLabelText("Capteur de la couleur du jour"), "sensor.tempo_today");
-    const redPrice = within(sheet).getByRole("group", { name: "Couleur Rouge" }).querySelector("input[type=number]")!;
+    const redPrice = within(sheet).getByRole("group", { name: "Couleur Rouge" }).querySelector("input.number-input")!;
     await userEvent.clear(redPrice);
     await userEvent.type(redPrice, "0.7562");
     await save(sheet);
@@ -425,7 +425,7 @@ describe("réglages de Ma maison", () => {
     const sheet = await openSheet("Appareils", /^Lave-linge/, "Lave-linge");
     const washer = within(sheet).getByRole("group", { name: "Règles du cycle de Lave-linge" });
     expect(within(washer).getByLabelText("Revient")).toHaveValue("daily");
-    expect(within(washer).getByLabelText(/^tous les/)).toHaveValue(2);
+    expect(within(washer).getByLabelText(/^tous les/)).toHaveValue("2");
   });
 
   it("choisit l'objectif du calcul, préréglage ou poids libres", async () => {
@@ -562,8 +562,8 @@ describe("réglages de Ma maison", () => {
     await userEvent.click(inWasher("Ajouter une plage interdite"));
     await userEvent.click(inWasher("Ajouter « terminé avant »"));
     const second = within(sheet).getByRole("listitem", { name: "Contrainte 2" });
-    const before = second.querySelector("input[type=number]")!;
-    await userEvent.tripleClick(before); // champ vidé : il reprend son minimum
+    const before = second.querySelector("input.number-input")!;
+    await userEvent.tripleClick(before); // tout le texte sélectionné, remplacé par la frappe
     await userEvent.keyboard("17");
     await userEvent.click(second.querySelector("input[type=checkbox]")!);
     await save(sheet);
