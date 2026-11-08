@@ -28,6 +28,25 @@ export function niceMax(value: number): number {
   return step * magnitude;
 }
 
+// Part de la hauteur où tombe le seuil d'alerte : assez haut pour montrer la marge qui reste, avec
+// un peu de place au-dessus.
+const THRESHOLD_SHARE = 0.8;
+
+/** ``value`` arrondi vers le haut à deux chiffres significatifs (1,375 → 1,4 ; 33,6 → 34). */
+function ceilTwoDigits(value: number): number {
+  const unit = 10 ** (Math.floor(Math.log10(value)) - 1);
+  return Math.ceil(value / unit - 1e-9) * unit;
+}
+
+/** Haut de l'axe d'une courbe : avec un seuil d'alerte, la ligne tombe vers 80 % de la hauteur,
+ * quelle que soit sa valeur ; une valeur au-delà agrandit l'axe pour rester visible. Sans seuil,
+ * l'arrondi de ``niceMax``. */
+export function axisTop(highest: number, threshold?: number | null): number {
+  if (threshold == null || threshold <= 0) return niceMax(highest);
+  const top = ceilTwoDigits(threshold / THRESHOLD_SHARE);
+  return highest <= top ? top : niceMax(highest);
+}
+
 export function formatDate(language: Language, time: string | null): string {
   return time ? new Date(time).toLocaleString(language, zoned()) : "—";
 }
