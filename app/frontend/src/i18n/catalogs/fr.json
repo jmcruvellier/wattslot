@@ -977,7 +977,16 @@
       "tempo": "Tempo",
       "ejp": "EJP"
     },
-    "preset_hint": "Remplace les sortes de jours et leurs prix par ceux du modèle (prix indicatifs, à remplacer par les vôtres)."
+    "preset_hint": "Remplace les sortes de jours et leurs prix par ceux du modèle (prix indicatifs, à remplacer par les vôtres).",
+    "preview": {
+      "title": "Aperçu des 7 prochains jours",
+      "title_days": "Aperçu de chaque sorte de jour",
+      "failed": "L'aperçu des prix n'a pas pu être calculé.",
+      "holiday": "{day} (férié)",
+      "hours": "{from} h – {to} h",
+      "hint": "Survolez une case pour voir son prix.",
+      "legend": "Prix du kWh"
+    }
   },
   "battery": {
     "title": "Batterie",

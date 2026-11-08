@@ -179,6 +179,84 @@ fieldset {
   margin: 0;
 }
 
+/* Aperçu des prix d'un tarif : grille heure par heure, cases séparées de 2 px, une teinte. */
+.tariff-preview {
+  margin: 1rem 0;
+}
+
+.tariff-grid {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 2px;
+  overflow: visible;
+}
+
+.tariff-grid th,
+.tariff-grid td {
+  padding: 0;
+  border: 0;
+}
+
+.tariff-grid thead th {
+  font-size: 0.7rem;
+  font-weight: normal;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: visible;
+  text-align: left;
+}
+
+/* La première ligne fixe les largeurs (table-layout: fixed) : la colonne des jours y est réglée. */
+.tariff-grid .tariff-grid-corner {
+  width: 7rem;
+}
+
+.tariff-grid tbody th {
+  padding-right: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: normal;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tariff-grid tbody td {
+  height: 1rem;
+  border-radius: 2px;
+}
+
+.tariff-grid tbody td:hover {
+  outline: 2px solid var(--text);
+  outline-offset: -1px;
+}
+
+.tariff-preview-readout {
+  min-height: 1.45em;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+.tariff-preview-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  font-size: 0.85rem;
+}
+
+.tariff-preview-swatch {
+  display: inline-block;
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 2px;
+  vertical-align: -0.15rem;
+}
+
 .expert-form input.number-input {
   width: 8rem;
 }

@@ -977,7 +977,16 @@
       "tempo": "Tempo",
       "ejp": "EJP"
     },
-    "preset_hint": "Replaces the kinds of days and their prices with the template's (indicative prices, to replace with yours)."
+    "preset_hint": "Replaces the kinds of days and their prices with the template's (indicative prices, to replace with yours).",
+    "preview": {
+      "title": "Preview of the next 7 days",
+      "title_days": "Preview of each kind of day",
+      "failed": "The price preview could not be calculated.",
+      "holiday": "{day} (holiday)",
+      "hours": "{from} h – {to} h",
+      "hint": "Hover over a cell to see its price.",
+      "legend": "Price per kWh"
+    }
   },
   "battery": {
     "title": "Battery",

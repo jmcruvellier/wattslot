@@ -5,7 +5,7 @@
 // limitée à certains jours de la semaine (cases toujours visibles) et à certains mois (repliés
 // sous « Toute l'année ») ; les jours fériés d'un pays peuvent compter comme un dimanche.
 
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 
 import { ApiError, getJson } from "../api";
 import Advanced, { Hint } from "../common/Advanced";
@@ -25,6 +25,10 @@ import {
   type Tariff,
   type TariffKind,
 } from "./configuration";
+
+// Aperçu des prix chargé à part : utile seulement une fois la fiche du tarif ouverte, il garde
+// l'écran « Maison » dans son budget de taille.
+const TariffPreview = lazy(() => import("./TariffPreview"));
 
 const HOURS = Array.from({ length: 25 }, (_, hour) => hour);
 const WEEKDAYS = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"] as const; // 0 lundi … 6 dimanche
@@ -619,6 +623,11 @@ export default function TariffEditor({ tariff, onChange }: { tariff: Tariff | nu
       {tariff.kind === "DayColorTariff" && <ColorsEditor tariff={tariff} onChange={onChange} />}
       {(tariff.kind === "TimeOfUseTariff" || tariff.kind === "DayColorTariff") && (
         <HolidaysSetting tariff={tariff} onChange={onChange} />
+      )}
+      {(tariff.kind === "TimeOfUseTariff" || tariff.kind === "DayColorTariff") && (
+        <Suspense fallback={null}>
+          <TariffPreview tariff={tariff} />
+        </Suspense>
       )}
       {tariff.kind === "DynamicTariff" && (
         <p>

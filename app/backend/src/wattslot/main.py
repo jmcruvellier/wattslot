@@ -102,6 +102,7 @@ from wattslot.planning.sources import (
     save_settings as save_planning_settings,
 )
 from wattslot.planning.store import PLAN_KINDS, PlanStore
+from wattslot.planning.tariff_sources import tariff_context
 from wattslot.problems import RESOURCE_ALERTS, SAMPLE_ALERT, Problem, Severity, collect
 from wattslot.quality import Monitor as QualityMonitor
 from wattslot.quality import router as quality_routes
@@ -114,7 +115,14 @@ from wattslot.setup import Setup, setup_status
 from wattslot.storage.database import open_database
 from wattslot.storage.graph import GraphStore
 from wattslot.storage.raw import RawStores
-from wattslot.tariff import HolidayChoices, Tariff, holiday_choices
+from wattslot.tariff import (
+    HolidayChoices,
+    Tariff,
+    TariffContext,
+    TariffPreview,
+    holiday_choices,
+)
+from wattslot.tariff import preview as tariff_preview
 from wattslot.tariff import propose as propose_tariff
 from wattslot.templates import Preview, TariffEntities
 from wattslot.views import layout as views_layout
@@ -818,6 +826,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         client: HomeAssistantClient | None = request.app.state.home_assistant
         default = client.snapshot.config.get("country") if client is not None else None
         return holiday_choices(country, default)
+
+    @app.post("/api/configuration/tariff-preview")
+    def preview_tariff(request: Request, tariff: Tariff) -> TariffPreview:
+        """Prix heure par heure d'un tarif en cours de saisie (non enregistré), pour l'aperçu
+        de l'éditeur ; les prix liés à une entité prennent son dernier état connu de HA."""
+        zone = request.app.state.raw.zone
+        today = datetime.now(UTC).astimezone(zone).date()
+        client: HomeAssistantClient | None = request.app.state.home_assistant
+        states = list(client.snapshot.states.values()) if client is not None else []
+        context = tariff_context(tariff, states, today, zone) if states else TariffContext()
+        return tariff_preview(tariff, today, context)
 
     @app.get("/api/configuration/task-rules-proposal")
     async def task_rules_proposal(request: Request) -> list[TaskRules]:
