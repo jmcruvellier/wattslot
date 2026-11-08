@@ -1,5 +1,61 @@
 # Changelog
 
+## 0.9.8
+
+### English
+
+This release brings more flexible electricity contracts: prices read from Home Assistant, ranges limited to some days or months, public holidays counted as Sundays, the EJP contract, and a preview of your prices hour by hour as you type. WattSlot also now watches its own resources (processor, memory, disk) and warns you before the disk fills up. **Nothing to do when updating.**
+
+- **Electricity contracts**
+  - **Prices read from Home Assistant** (requested by a user): the base price, each range and each kind of day can follow a Home Assistant entity instead of a typed price. The typed price is used when the entity is unavailable.
+  - **Days and months of a range**: each range can be limited to some days of the week and some months, directly in the editor. This covers contracts such as "weekends + Wednesdays + public holidays at a lower price".
+  - **Public holidays counted as a Sunday**: a new option, with your country taken from Home Assistant and a region to choose if needed (Alsace-Moselle, overseas departments…).
+  - **"Announced day" (Tempo, EJP…)** replaces "Colour of the day (Tempo)": each kind of day can also recognise other states of the sensor (`on`, `Pointe mobile`…), in an "also recognised" field.
+  - **EJP template**, ready to use from the home page, the Templates page and the editor ("Start from a template: Tempo / EJP").
+  - **Price preview**: under the tariff, a grid shows the price of each hour for the next seven days (public holidays marked), or for each kind of announced day. It updates as you type, before saving.
+  - The "My contract" summary no longer shows a range limited to some days as daily off-peak hours.
+
+- **Resources (new)**
+  - A **Resources** section in App status shows the processor, memory, disk space used and the size of the app's data. Each line opens on a 24-hour curve with its alert threshold.
+  - **Alerts** when the disk is nearly full (less than 20 % free, with at least 2 GB and at most 20 GB), when there is not enough room left for a backup, when memory stays high for 15 minutes, or when a plan calculation takes more than 10 minutes. They show in the status badge, the report and the assistant.
+  - A new **"Resources"** notification, on by default, sends each alert once a day while it lasts (Settings → Notifications → Messages).
+  - Measurements are kept in the database: the curves survive a restart, and the problem report includes hourly summaries of the last 7 days.
+
+- **Plan of a running cycle**
+  - An appliance whose programme pauses (a washing machine below 15 W for a few minutes) is no longer seen as finished: its planned block keeps the length of the cycle.
+  - The block of a cycle that has started is realigned on its real start at each calculation, and grows if the cycle runs longer than planned.
+  - An appliance that must start after another one (a dryer after the washing machine) is moved when the first one runs late, instead of staying on its old slot.
+
+- **Settings**
+  - Number fields can now be cleared and typed again (requested by a user): no more "0" or "1" coming back while typing, and a decimal comma ("3,6") is understood in every browser, including the Home Assistant app.
+
+### Français
+
+Cette version apporte des contrats d'électricité plus souples : prix lus dans Home Assistant, plages limitées à certains jours ou mois, jours fériés comptés comme un dimanche, contrat EJP, et un aperçu de vos prix heure par heure pendant la saisie. WattSlot surveille aussi ses propres ressources (processeur, mémoire, disque) et vous prévient avant que le disque soit plein. **Rien à faire à la mise à jour.**
+
+- **Contrats d'électricité**
+  - **Prix lus dans Home Assistant** (demandé par un utilisateur) : le prix de base, chaque plage et chaque sorte de jour peuvent suivre une entité de Home Assistant au lieu d'un prix saisi. Le prix saisi sert quand l'entité est indisponible.
+  - **Jours et mois d'une plage** : chaque plage peut se limiter à certains jours de la semaine et à certains mois, directement dans l'éditeur. Cela couvre les contrats du type « week-end + mercredi + jours fériés à prix réduit ».
+  - **Jours fériés comptés comme un dimanche** : une nouvelle option, avec le pays de Home Assistant et une région à choisir au besoin (Alsace-Moselle, DOM…).
+  - **« Jour annoncé » (Tempo, EJP…)** remplace « Couleur du jour (Tempo) » : chaque sorte de jour peut aussi reconnaître d'autres états du capteur (`on`, `Pointe mobile`…), dans un champ « aussi reconnu ».
+  - **Modèle EJP**, prêt à l'emploi depuis l'accueil, la page Modèles et l'éditeur (« Partir d'un modèle : Tempo / EJP »).
+  - **Aperçu des prix** : sous le tarif, une grille montre le prix de chaque heure sur les sept prochains jours (jours fériés signalés), ou pour chaque sorte de jour annoncé. Elle suit la saisie, avant l'enregistrement.
+  - Le résumé « Mon contrat » ne présente plus une plage limitée à certains jours comme des heures creuses quotidiennes.
+
+- **Ressources (nouveau)**
+  - Une section **Ressources** dans État de l'application montre le processeur, la mémoire, l'espace disque occupé et la taille des données de l'application. Chaque ligne s'ouvre sur une courbe de 24 h avec son seuil d'alerte.
+  - **Alertes** quand le disque est presque plein (moins de 20 % libres, avec au moins 2 Go et au plus 20 Go), quand il ne reste plus la place d'une sauvegarde, quand la mémoire reste élevée pendant 15 minutes, ou quand un calcul du plan dure plus de 10 minutes. Elles apparaissent dans la pastille, le rapport et l'assistant.
+  - Une nouvelle notification **« Ressources »**, activée par défaut, envoie chaque alerte une fois par jour tant qu'elle dure (Réglages → Notifications → Messages).
+  - Les mesures sont gardées en base : les courbes survivent à un redémarrage, et le rapport de signalement comprend les résumés horaires des 7 derniers jours.
+
+- **Plan d'un cycle lancé**
+  - Un équipement dont le programme marque des pauses (un lave-linge sous 15 W pendant quelques minutes) n'est plus vu comme fini : son bloc prévu garde la durée du cycle.
+  - Le bloc d'un cycle lancé est recalé sur son démarrage réel à chaque calcul, et s'allonge si le cycle dure plus longtemps que prévu.
+  - Un équipement qui doit démarrer après un autre (un sèche-linge après le lave-linge) est replacé quand le premier déborde, au lieu de rester sur son ancien créneau.
+
+- **Réglages**
+  - Les champs numériques peuvent désormais être effacés et retapés (demandé par un utilisateur) : plus de « 0 » ou « 1 » qui revient pendant la frappe, et la virgule décimale (« 3,6 ») est comprise dans tous les navigateurs, y compris l'application Home Assistant.
+
 ## 0.9.7
 
 ### English
