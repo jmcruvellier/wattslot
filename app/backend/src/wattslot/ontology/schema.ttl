@@ -125,6 +125,10 @@
     rdfs:label "a pour prix d'une couleur"@fr, "has color prices"@en .
 <#color> a owl:DatatypeProperty ; rdfs:domain <#ColorPrices> ; rdfs:range xsd:string ;
     rdfs:label "couleur"@fr, "color"@en .
+<#colorState> a owl:DatatypeProperty ; rdfs:domain <#ColorPrices> ; rdfs:range xsd:string ;
+    rdfs:label "autre état reconnu"@fr, "other recognized state"@en ;
+    rdfs:comment "Autre état de l'entité de couleur qui désigne cette couleur (EJP : « on », « Pointe mobile »…) ; casse, accents et anglais ignorés comme pour le nom."@fr,
+        "Other state of the color entity that means this color (EJP: \"on\", \"Pointe mobile\"…); case, accents and English ignored as for the name."@en .
 <#colorEntity> a owl:DatatypeProperty ; rdfs:domain <#Tariff> ; rdfs:range xsd:string ;
     rdfs:label "entité de la couleur du jour"@fr, "day color entity"@en .
 <#colorTomorrowEntity> a owl:DatatypeProperty ; rdfs:domain <#Tariff> ; rdfs:range xsd:string ;

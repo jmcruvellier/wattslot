@@ -109,7 +109,7 @@ describe("TemplateSection", () => {
     expect(await screen.findByRole("alert")).toBeTruthy();
     expect((screen.getByRole("button", { name: "Appliquer le modèle" }) as HTMLButtonElement).disabled).toBe(true);
 
-    await user.type(screen.getByLabelText("Capteur de la couleur du jour"), "sensor.tempo_today");
+    await user.type(screen.getByLabelText("Capteur du jour annoncé"), "sensor.tempo_today");
     await user.click(screen.getByRole("button", { name: "Voir ce qui changerait" }));
     await user.click(await screen.findByRole("button", { name: "Appliquer le modèle" }));
 

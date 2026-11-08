@@ -893,14 +893,15 @@
     "use": {
       "SingleTariff": "Set a single price",
       "TimeOfUseTariff": "Set off-peak and peak hours",
-      "DayColorTariff": "Set a day-color tariff (Tempo)",
-      "DynamicTariff": "Set a dynamic price"
+      "DayColorTariff": "Set a Tempo tariff",
+      "DynamicTariff": "Set a dynamic price",
+      "ejp": "Set an EJP tariff"
     },
     "kind": "Kind of tariff",
     "kinds": {
       "SingleTariff": "Single price",
       "TimeOfUseTariff": "Off-peak and peak hours",
-      "DayColorTariff": "Day color (Tempo)",
+      "DayColorTariff": "Announced day (Tempo, EJP…)",
       "DynamicTariff": "Dynamic price"
     },
     "base_single": "Price per kWh",
@@ -925,15 +926,15 @@
     "whole_country": "Whole country",
     "choose_country": "Choose a country",
     "holidays_failed": "The list of countries could not be read.",
-    "color_entity": "Day color sensor",
-    "color_tomorrow_entity": "Tomorrow's color sensor",
-    "color_day_start": "The color day starts at",
-    "colors_hint": "Each color: its name (as the sensor shows it), its price outside bands and its bands. The first one is used when the color is unknown.",
-    "color_named": "Color {color}",
-    "color": "Color",
+    "color_entity": "Announced day sensor",
+    "color_tomorrow_entity": "Tomorrow's sensor",
+    "color_day_start": "The announced day starts at",
+    "colors_hint": "Each kind of day: its name and the other sensor states that mean it, its price outside bands and its bands. The first one is used when the day is unknown.",
+    "color_named": "Day {color}",
+    "color": "Name",
     "base_color": "price outside the bands",
-    "remove_color": "Remove the color",
-    "add_color": "Add a color",
+    "remove_color": "Remove this day",
+    "add_color": "Add a kind of day",
     "read": "read from Home Assistant",
     "read_from": "sensor",
     "stop_reading": "enter the price",
@@ -950,11 +951,11 @@
       "failed": "The suggestion could not be read."
     },
     "reset": "Back to the default price",
-    "color_entity_hint": "Home Assistant sensor giving the day color (RTE Tempo integration, for instance).",
+    "color_entity_hint": "Home Assistant sensor giving the Tempo colour or the EJP day (RTE Tempo integration, for example).",
     "kind_hints": {
       "SingleTariff": "The same price at any hour.",
       "TimeOfUseTariff": "A lower price during the off-peak hours of your contract.",
-      "DayColorTariff": "The price depends on the day color (Tempo) and the hour.",
+      "DayColorTariff": "The price depends on the day announced by the supplier (Tempo colour, EJP day…) and on the hour.",
       "DynamicTariff": "The price changes every hour, read from a Home Assistant sensor."
     },
     "price_entity_hint": "Home Assistant sensor giving the price of the current and coming hours.",
@@ -968,7 +969,15 @@
       "kwh": "{symbol}/kWh",
       "cents_kwh": "cents/kWh",
       "mwh": "{symbol}/MWh"
-    }
+    },
+    "states": "also recognized",
+    "states_placeholder": "on, Peak…",
+    "preset": "Start from a template:",
+    "presets": {
+      "tempo": "Tempo",
+      "ejp": "EJP"
+    },
+    "preset_hint": "Replaces the kinds of days and their prices with the template's (indicative prices, to replace with yours)."
   },
   "battery": {
     "title": "Battery",
@@ -1542,7 +1551,7 @@
       "off_peak": "Off-peak hours {ranges}",
       "off_peak_days": "Off-peak hours depending on the day",
       "off_peak_and_days": "Off-peak hours {ranges}, and others depending on the day",
-      "colors": "Price by day colour",
+      "colors": "Price depending on the announced day (Tempo, EJP…)",
       "dynamic": "Price that changes every hour"
     },
     "panels": {

@@ -10,10 +10,11 @@ Un tarif donne le prix du kWh soutiré à chaque heure d'une journée, et celui 
   heures mixtes. Les jours fériés d'un pays (et d'une région) peuvent compter comme un
   dimanche pour ces filtres (``holidays``, bibliothèque du même nom), comme le font la
   plupart des contrats (week-end EDF, 2.0TD espagnol, F3 italien) ;
-- **couleur du jour** (``DayColorTariff``, Tempo) : un prix de base et des plages par couleur ; la
-  couleur du jour et celle du lendemain sont lues dans des entités HA, la première couleur
-  déclarée servant au-delà. Un jour de couleur peut commencer à une autre heure que minuit
-  (6 h pour Tempo : de 0 h à 6 h, c'est la couleur de la veille) ;
+- **jour annoncé** (``DayColorTariff`` : Tempo, EJP…) : un prix de base et des plages par
+  « couleur » ; la couleur du jour et celle du lendemain sont lues dans des entités HA (le nom de
+  la couleur ou l'un de ses autres états reconnus, ``on`` pour un jour EJP par exemple), la
+  première couleur déclarée servant au-delà. Un jour de couleur peut commencer à une autre heure
+  que minuit (6 h pour Tempo : de 0 h à 6 h, c'est la couleur de la veille ; 7 h pour l'EJP) ;
 - **prix dynamique** (``DynamicTariff``) : prix lus dans les attributs d'une entité HA (prévision
   heure par heure ou au quart d'heure, moyennée par heure) ; une heure sans prix connu prend le
   prix de base.
@@ -94,9 +95,21 @@ class PriceBand(BaseModel):
 
 class ColorPrices(BaseModel):
     color: str  # état de l'entité de couleur (casse, accents et anglais ignorés)
+    # Autres états de l'entité qui désignent cette couleur (EJP : « on », « Pointe mobile »…).
+    states: list[str] = []
     base_eur_kwh: float = Field(ge=0)
     base_eur_kwh_entity: str | None = None
     bands: list[PriceBand] = []
+
+    @field_validator("states")
+    @classmethod
+    def validate_states(cls, value: list[str]) -> list[str]:
+        """États sans doublon ni vide, triés : un ensemble, enregistré tel quel dans le graphe."""
+        return sorted({state.strip() for state in value if state.strip()})
+
+    def recognized(self) -> set[str]:
+        """États reconnus (nom compris), en clés de comparaison."""
+        return {color_key(self.color)} | {color_key(state) for state in self.states}
 
     def live(self, prices: dict[str, float]) -> "ColorPrices":
         return self.model_copy(
@@ -265,9 +278,7 @@ class Tariff(BaseModel):
 
     def _color_prices(self, day: date, context: TariffContext) -> ColorPrices | None:
         known = context.colors.get(day)
-        found = next(
-            (c for c in self.colors if known and color_key(c.color) == color_key(known)), None
-        )
+        found = next((c for c in self.colors if known and color_key(known) in c.recognized()), None)
         return found or (self.colors[0] if self.colors else None)
 
     def hourly(self, day: date, context: TariffContext = NO_CONTEXT) -> dict[int, float]:
@@ -360,7 +371,7 @@ def problems(tariff: Tariff) -> list[tuple[str, dict[str, str]]]:
             found.append(("tariff_without_colors", {}))
         if not tariff.color_entity:
             found.append(("tariff_without_color_entity", {}))
-        keys = [color_key(c.color) for c in tariff.colors]
+        keys = [key for c in tariff.colors for key in c.recognized()]
         if len(keys) != len(set(keys)):
             found.append(("color_twice", {}))
     if tariff.kind is TariffKind.DYNAMIC and not tariff.price_entity:
@@ -444,12 +455,23 @@ def to_triples(owner: NamedNode, tariff: Tariff) -> list[Triple]:
             Triple(color_node, vocab("color"), Literal(color.color)),
             Triple(color_node, vocab("basePriceEurKwh"), _number(color.base_eur_kwh)),
         ]
+        triples += [Triple(color_node, vocab("colorState"), Literal(st)) for st in color.states]
         if color.base_eur_kwh_entity:
             triples.append(
                 Triple(color_node, vocab("priceStateEntity"), Literal(color.base_eur_kwh_entity))
             )
         triples += _bands_triples(color_node, color.bands, f"color{index}")
     return triples
+
+
+def _load_states(graph: GraphStore, graph_iri: str, owner: str, vocab_ns: str) -> list[str]:
+    rows = graph.select(
+        f"""
+        PREFIX wattslot: <{vocab_ns}>
+        SELECT ?state WHERE {{ GRAPH <{graph_iri}> {{ <{owner}> wattslot:colorState ?state }} }}
+        """
+    )
+    return [row["state"] for row in rows]
 
 
 def _load_bands(graph: GraphStore, graph_iri: str, owner: str, vocab_ns: str) -> list[PriceBand]:
@@ -530,6 +552,7 @@ def load(graph: GraphStore, graph_iri: str, owner: NamedNode, vocab_ns: str) -> 
             color=color["color"],
             base_eur_kwh=float(color["base"]),
             base_eur_kwh_entity=color.get("entity"),
+            states=_load_states(graph, graph_iri, color["node"], vocab_ns),
             bands=_load_bands(graph, graph_iri, color["node"], vocab_ns),
         )
         for color in sorted(

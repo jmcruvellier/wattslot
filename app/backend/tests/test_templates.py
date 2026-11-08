@@ -28,7 +28,7 @@ PROFILES = {
 
 def test_every_profile_has_its_template() -> None:
     assert set(PROFILES) == set(profiles.names())
-    assert templates.names() == ["dynamic", "off_peak", "single", "tempo"]
+    assert templates.names() == ["dynamic", "ejp", "off_peak", "single", "tempo"]
     for template in templates.all_templates():
         assert template.name.keys() == template.description.keys() == {"fr", "en"}
 
@@ -110,7 +110,7 @@ def test_api(tmp_path: Path) -> None:
         home = profiles.load("ev").home.model_dump(mode="json")
         assert api.put("/api/home", json=home).status_code == 200
         listed = api.get("/api/templates").json()
-        assert [t["key"] for t in listed] == ["dynamic", "off_peak", "single", "tempo"]
+        assert [t["key"] for t in listed] == ["dynamic", "ejp", "off_peak", "single", "tempo"]
         off_peak = next(t for t in listed if t["key"] == "off_peak")
         assert "ev" in off_peak["devices"] and "solar" not in off_peak["devices"]
         assert off_peak["name"]["fr"] == "Heures creuses"

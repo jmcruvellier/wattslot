@@ -12,7 +12,7 @@ The plan places your appliances where electricity is free (your surplus) or chea
 |---|---|---|
 | **Single price** | The same price at any hour | The price per kWh |
 | **Off-peak and peak hours** | A lower price at some hours | The peak price, then one **band** per cheaper range (from, to, price). A band can be **limited to some days or months** (weekends, summer) |
-| **Day color (Tempo)** | The price depends on the day colour and the hour | The Home Assistant sensor giving today's colour (and tomorrow's, optional), the hour the colour day starts, then each colour with its price outside bands and its bands. The first colour is used when the colour is unknown |
+| **Announced day (Tempo, EJP…)** | The price depends on the day announced by the supplier and on the hour | The Home Assistant sensor giving today's day (and tomorrow's, optional), the hour the announced day starts, then each kind of day with its name, the other sensor states that mean it, its price outside bands and its bands. The first kind is used when the day is unknown. **Start from a template** fills in Tempo or EJP |
 | **Dynamic price** | A price for every hour, from your supplier or the market | The Home Assistant sensor giving the price of the current and coming hours, its unit, and the price to use when it is not known |
 
 ## Days, months and public holidays
@@ -55,4 +55,5 @@ WattSlot is just as useful without panels: with off-peak hours, colour days or d
 
 - Template prices are **indicative**: replace them with yours, they drive every decision.
 - For Tempo, the colour sensor usually comes from the **RTE Tempo** integration; enter colour names exactly as the sensor shows them.
+- For EJP, the peak day runs from 7 am to 1 am the next day: the template starts the announced day at 7 am and returns to the normal price from 1 am to 7 am. If your sensor shows other states than `on`/`off` or `EJP`/`Non EJP`, add them under **also recognized** (case and accents do not matter).
 - Prices are per kWh, in the currency of your home (**Settings › Language and display**). For a sensor per MWh (spot prices) or in cents, choose that unit: WattSlot converts.

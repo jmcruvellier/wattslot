@@ -13,10 +13,12 @@ import NumberInput from "../common/NumberInput";
 import { useCurrency } from "../i18n/currency";
 import { useI18n } from "../i18n/I18nProvider";
 import {
+  ANNOUNCED_PRESETS,
   DEFAULT_PRICE_EUR_KWH,
   PRICE_UNITS,
   TARIFF_KINDS,
   TARIFF_TEMPLATES,
+  type AnnouncedPreset,
   type ColorPrices,
   type Holidays,
   type PriceBand,
@@ -394,6 +396,37 @@ function BandsEditor({ bands, fallback, label, onChange }: {
   );
 }
 
+// Autres états reconnus d'une couleur, séparés par des virgules ; le texte tapé est gardé tel quel.
+function StatesInput({ states, onChange }: { states: string[]; onChange: (states: string[]) => void }) {
+  const { t } = useI18n();
+  const [text, setText] = useState(states.join(", "));
+  const [seen, setSeen] = useState(states);
+  const parse = (value: string) => value.split(",").map((state) => state.trim()).filter(Boolean);
+  if (states !== seen) {
+    setSeen(states);
+    if (parse(text).join("\n") !== states.join("\n")) setText(states.join(", "));
+  }
+  return (
+    <label>
+      {t("tariff.states")}{" "}
+      <input
+        placeholder={t("tariff.states_placeholder")}
+        value={text}
+        onChange={(event) => {
+          setText(event.target.value);
+          onChange(parse(event.target.value));
+        }}
+      />
+    </label>
+  );
+}
+
+// Remplace les sortes de jours par celles d'un jour annoncé connu (prix indicatifs).
+function withPreset(tariff: Tariff, preset: AnnouncedPreset): Tariff {
+  const { colors, color_day_start_hour } = ANNOUNCED_PRESETS[preset];
+  return { ...tariff, kind: "DayColorTariff", colors, color_day_start_hour, base_eur_kwh: colors[0].base_eur_kwh };
+}
+
 function ColorsEditor({ tariff, onChange }: { tariff: Tariff; onChange: (tariff: Tariff) => void }) {
   const { t } = useI18n();
   const setColor = (index: number, change: Partial<ColorPrices>) =>
@@ -424,6 +457,17 @@ function ColorsEditor({ tariff, onChange }: { tariff: Tariff; onChange: (tariff:
         />
       </p>
       </Advanced>
+      <p>
+        {t("tariff.preset")}{" "}
+        {(["tempo", "ejp"] as const).map((preset) => (
+          <span key={preset}>
+            <button type="button" onClick={() => onChange(withPreset(tariff, preset))}>
+              {t(`tariff.presets.${preset}`)}
+            </button>{" "}
+          </span>
+        ))}
+        <Hint text={t("tariff.preset_hint")} />
+      </p>
       <p>{t("tariff.colors_hint")}</p>
       {tariff.colors.map((color, index) => (
         <fieldset key={index} aria-label={t("tariff.color_named", { color: color.color })}>
@@ -431,6 +475,7 @@ function ColorsEditor({ tariff, onChange }: { tariff: Tariff; onChange: (tariff:
             {t("tariff.color")}{" "}
             <input value={color.color} onChange={(event) => setColor(index, { color: event.target.value })} />
           </label>{" "}
+          <StatesInput states={color.states ?? []} onChange={(states) => setColor(index, { states })} />{" "}
           <Price
             label={t("tariff.base_color")}
             value={color.base_eur_kwh}
@@ -452,7 +497,7 @@ function ColorsEditor({ tariff, onChange }: { tariff: Tariff; onChange: (tariff:
       <button
         type="button"
         onClick={() =>
-          onChange({ ...tariff, colors: [...tariff.colors, { color: "", base_eur_kwh: tariff.base_eur_kwh, bands: [] }] })
+          onChange({ ...tariff, colors: [...tariff.colors, { color: "", states: [], base_eur_kwh: tariff.base_eur_kwh, bands: [] }] })
         }
       >
         {t("tariff.add_color")}
@@ -504,6 +549,9 @@ export default function TariffEditor({ tariff, onChange }: { tariff: Tariff | nu
             {t(`tariff.use.${kind}`)}
           </button>
         ))}
+        <button type="button" onClick={() => onChange(withPreset(TARIFF_TEMPLATES.DayColorTariff, "ejp"))}>
+          {t("tariff.use.ejp")}
+        </button>
       </div>
     );
   }
