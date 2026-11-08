@@ -7,7 +7,7 @@ calcul horaire du plan. Les limites sont celles du conteneur (cgroup v2, ou v1) 
 sinon celles de la machine ; le disque est celui qui porte le dossier des données (en module
 complémentaire, celui de Home Assistant).
 
-Première étape : mesurer et afficher, sans alerte ; les seuils viendront de mesures réelles.
+Les alertes (disque, mémoire) sont des problèmes du diagnostic : ``problems._resource_problems``.
 """
 
 import asyncio
@@ -20,6 +20,7 @@ from collections import deque
 from dataclasses import dataclass
 from itertools import pairwise
 from pathlib import Path
+from typing import Literal
 
 from pydantic import BaseModel
 
@@ -50,7 +51,10 @@ class Resources(BaseModel):
     cpu_cores: float | None = None  # cœurs à la disposition de l'application
     memory_bytes: int | None = None  # mémoire résidente (Linux)
     memory_peak_bytes: int | None = None  # plus haut relevé des dernières 24 h
+    # Plus bas relevé des 15 dernières minutes : une alerte sur une consommation qui dure.
+    memory_floor_bytes: int | None = None
     memory_limit_bytes: int | None = None  # limite du conteneur, sinon mémoire de la machine
+    memory_limit_source: Literal["container", "machine"] | None = None
     disk_used_bytes: int | None = None  # dossier des données de l'application
     disk_free_bytes: int | None = None  # espace libre du disque qui le porte
     disk_total_bytes: int | None = None
@@ -69,7 +73,9 @@ def summarize(samples: list[Sample], now: Sample) -> Resources:
     """Moyenne, pics et durée couverte, d'après les relevés (les plus anciens d'abord) et
     l'instant présent."""
     if not samples:
-        return Resources(memory_bytes=now.memory, memory_peak_bytes=now.memory)
+        return Resources(
+            memory_bytes=now.memory, memory_peak_bytes=now.memory, memory_floor_bytes=now.memory
+        )
     window = [s for s in samples if now.at - s.at <= AVERAGE_S] or samples[-1:]
     series = [*samples, now]
     # Pics par minute : l'intervalle en cours n'y entre qu'une fois assez long (quelques
@@ -77,11 +83,13 @@ def summarize(samples: list[Sample], now: Sample) -> Resources:
     pairs = list(pairwise(series if now.at - samples[-1].at >= INTERVAL_S / 2 else samples))
     peaks = [cpu_percent(a, b) for a, b in pairs]
     memories = [s.memory for s in series if s.memory is not None]
+    recent = [s.memory for s in [*window, now] if s.memory is not None]
     return Resources(
         cpu_percent=cpu_percent(window[0], now),
         cpu_peak_percent=max((p for p in peaks if p is not None), default=None),
         memory_bytes=now.memory,
         memory_peak_bytes=max(memories, default=None),
+        memory_floor_bytes=min(recent, default=None),
         measured_s=round(now.at - samples[0].at),
     )
 
@@ -151,17 +159,27 @@ def _read(path: Path) -> str | None:
         return None
 
 
-def memory_limit(root: Path = CGROUP, meminfo: Path = MEMINFO) -> int | None:
-    """La plus petite des limites connues : conteneur (v2 puis v1) et machine."""
-    limits: list[int | None] = []
+MemorySource = Literal["container", "machine"]
+
+
+def memory_limit(
+    root: Path = CGROUP, meminfo: Path = MEMINFO
+) -> tuple[int, MemorySource] | tuple[None, None]:
+    """La plus petite des limites connues, et d'où elle vient : conteneur (cgroup v2 puis v1)
+    ou machine. Dans un conteneur sans limite (le cas courant d'un module complémentaire),
+    c'est la mémoire de la machine, partagée avec le reste ; dans un LXC, celle du LXC."""
+    container: int | None = None
     if (text := _read(root / "memory.max")) is not None:
-        limits.append(memory_limit_v2(text))
+        container = memory_limit_v2(text)
     elif (text := _read(root / "memory" / "memory.limit_in_bytes")) is not None:
-        limits.append(memory_limit_v1(text))
-    if (text := _read(meminfo)) is not None:
-        limits.append(memory_total(text))
-    known = [limit for limit in limits if limit is not None]
-    return min(known, default=None)
+        container = memory_limit_v1(text)
+    text = _read(meminfo)
+    machine = memory_total(text) if text is not None else None
+    if container is not None and (machine is None or container < machine):
+        return container, "container"
+    if machine is not None:
+        return machine, "machine"
+    return None, None
 
 
 def cpu_cores(root: Path = CGROUP) -> float | None:
@@ -219,7 +237,7 @@ class ResourceMonitor:
     def snapshot(self, now: Sample | None = None) -> Resources:
         found = summarize(list(self._samples), now or _sample())
         found.cpu_cores = cpu_cores()
-        found.memory_limit_bytes = memory_limit()
+        found.memory_limit_bytes, found.memory_limit_source = memory_limit()
         found.disk_used_bytes = directory_size(self._data_dir)
         try:
             usage = shutil.disk_usage(self._data_dir)

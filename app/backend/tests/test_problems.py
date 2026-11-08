@@ -20,11 +20,13 @@ from wattslot.home_assistant import ConnectionState
 from wattslot.home_model import HomeDevice, HomeModel, HomeSensor
 from wattslot.ingestion import EntityStatus, IngestionStatus
 from wattslot.main import create_app
+from wattslot.maintenance import DiskUsage, MaintenanceStatus, Retention
 from wattslot.objective_settings import ObjectiveSettings, Preset
 from wattslot.planning.runner import ImpossibleData, RunReport
 from wattslot.planning.scheduler import SchedulerStatus
 from wattslot.planning.sources import PlanningSettings
 from wattslot.problems import Problem, Severity, collect
+from wattslot.resources import Resources
 from wattslot.setup import Setup, setup_status
 from wattslot.storage.database import open_database
 from wattslot.storage.graph import GraphStore
@@ -367,3 +369,74 @@ def test_an_impossible_day_names_the_meter_jump() -> None:
     assert bare.code == "impossible_data_unknown"
     assert bare.params == {"day": "2026-10-24", "hour": "7", "kwh": "80", "limit": "11.5"}
     assert "internal_error" not in codes(found)
+
+
+def _resources_diagnostic(**resources: Any) -> Diagnostic:
+    return Diagnostic(generated_at=NOW, resources=Resources(**resources))
+
+
+def _resource_codes(diagnostic: Diagnostic) -> dict[str, Problem]:
+    found = collect(_ready(), diagnostic, HomeModel(), Configuration(), None)
+    return {p.code: p for p in found}
+
+
+def test_a_nearly_full_disk_is_to_watch() -> None:
+    gb = 10**9
+    assert (
+        _resource_codes(_resources_diagnostic(disk_free_bytes=20 * gb, disk_total_bytes=33 * gb))
+        == {}
+    )
+    low = _resource_codes(_resources_diagnostic(disk_free_bytes=gb, disk_total_bytes=33 * gb))
+    assert low["disk_low"].params == {"free": "1.0", "percent": "3"}
+    assert low["disk_low"].severity is Severity.WATCH
+    # Gros disque : moins de 10 % libres alertent, même au-delà de 2 Go.
+    share = _resource_codes(
+        _resources_diagnostic(disk_free_bytes=40 * gb, disk_total_bytes=500 * gb)
+    )
+    assert "disk_low" in share
+
+
+def test_a_backup_that_would_not_fit_is_said_first() -> None:
+    gb = 10**9
+    diagnostic = _resources_diagnostic(disk_free_bytes=5 * gb, disk_total_bytes=33 * gb)
+    diagnostic.maintenance = MaintenanceStatus(
+        running=True,
+        retention=Retention(),
+        disk=DiskUsage(raw_bytes=gb, graph_bytes=2 * gb, database_bytes=gb),
+    )
+    found = _resource_codes(diagnostic)
+    assert set(found) == {"backup_space"}
+    assert found["backup_space"].params == {"free": "5.0", "needed": "6.0"}
+
+
+def test_memory_against_the_container_limit_or_on_its_own() -> None:
+    mb = 10**6
+    container: dict[str, Any] = {
+        "memory_limit_bytes": 1000 * mb,
+        "memory_limit_source": "container",
+    }
+    assert _resource_codes(_resources_diagnostic(memory_floor_bytes=700 * mb, **container)) == {}
+    high = _resource_codes(_resources_diagnostic(memory_floor_bytes=800 * mb, **container))
+    assert high["memory_high"].params == {"used": "800", "percent": "80"}
+    # Mémoire de la machine, partagée : pas de pourcentage, la consommation de WattSlot seule.
+    machine: dict[str, Any] = {"memory_limit_bytes": 2100 * mb, "memory_limit_source": "machine"}
+    assert _resource_codes(_resources_diagnostic(memory_floor_bytes=900 * mb, **machine)) == {}
+    heavy = _resource_codes(_resources_diagnostic(memory_floor_bytes=1100 * mb, **machine))
+    assert heavy["memory_heavy"].params == {"used": "1100"}
+
+
+def test_a_slow_plan_computation_is_to_watch() -> None:
+    def with_seconds(today: float, horizon: float) -> Diagnostic:
+        report = RunReport(
+            day=date(2026, 10, 17),
+            started_at=NOW,
+            manual=False,
+            seconds_today=today,
+            seconds_horizon=horizon,
+        )
+        planning = SchedulerStatus(running=True, enabled=True, last_report=report)
+        return Diagnostic(generated_at=NOW, planning=planning)
+
+    assert "plan_slow" not in _resource_codes(with_seconds(20, 40))
+    slow = _resource_codes(with_seconds(300, 420))
+    assert slow["plan_slow"].params == {"minutes": "12"}

@@ -314,6 +314,13 @@ def test_problems_read_as_on_the_diagnostic_screen() -> None:
     assert problem_text(
         "configuration_issue", {"issue": "duplicate_device", "device": "Lave-linge"}, "fr"
     ) == ("Lave-linge : réglé deux fois.")
+    assert problem_text("backup_space", {"free": "5.0", "needed": "6.0"}, "fr") == (
+        "Plus que 5,0 Go libres sur le disque des données : une sauvegarde de WattSlot demande "
+        "environ 6,0 Go et risque d'échouer."
+    )
+    assert problem_text("memory_heavy", {"used": "1100"}, "en").startswith(
+        "WattSlot has been using 1100 MB of memory"
+    )
     assert "18 Octobre 2026" in problem_text(
         "impossible_data_unknown",
         {"day": "2026-10-18", "hour": "19", "kwh": "12.4", "limit": "9.0"},
