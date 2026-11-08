@@ -80,11 +80,11 @@ class Resources(BaseModel):
     # Seuils des alertes, pour la ligne rouge des courbes : mémoire au-delà, espace libre en deçà.
     memory_alert_bytes: int | None = None
     disk_alert_free_bytes: int | None = None  # le plus haut des deux seuils du disque
-    disk_full_free_bytes: int | None = None  # « disque presque plein » : espace libre en deçà
-    # Les deux seuils du disque en taille des données, si rien d'autre ne remplit le disque :
-    # au-delà, l'alerte partirait.
-    disk_full_data_bytes: int | None = None
-    disk_backup_data_bytes: int | None = None
+    # Le même seuil, pour les courbes où l'alerte part au-dessus de la ligne : en espace occupé du
+    # disque, et en taille des données (la première des deux alertes qu'elles déclencheraient, si
+    # rien d'autre ne remplissait le disque).
+    disk_alert_used_bytes: int | None = None
+    disk_alert_data_bytes: int | None = None
     measured_s: int = 0  # durée couverte par les relevés (moins de 24 h après un démarrage)
 
 
@@ -379,7 +379,8 @@ class ResourceMonitor:
             found.disk_free_bytes, found.disk_total_bytes = usage.free, usage.total
         found.memory_alert_bytes = memory_alert(found)
         found.disk_alert_free_bytes = disk_alert(found)
-        if found.disk_total_bytes is not None:
-            found.disk_full_free_bytes = disk_low_free(found)
-        found.disk_full_data_bytes, found.disk_backup_data_bytes = data_limits(found)
+        if found.disk_total_bytes is not None and found.disk_alert_free_bytes is not None:
+            found.disk_alert_used_bytes = found.disk_total_bytes - found.disk_alert_free_bytes
+        limits = [limit for limit in data_limits(found) if limit is not None]
+        found.disk_alert_data_bytes = min(limits, default=None)
         return found
