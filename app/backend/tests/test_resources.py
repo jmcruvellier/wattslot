@@ -12,7 +12,9 @@ from wattslot.main import create_app
 from wattslot.resources import (
     DATA_SIZE_INTERVAL_S,
     ResourceMonitor,
+    ResourcePoint,
     Resources,
+    ResourceStore,
     Sample,
     cpu_cores,
     cpu_limit_v1,
@@ -28,7 +30,7 @@ from wattslot.resources import (
     memory_total,
     summarize,
 )
-from wattslot.storage.database import DATABASE_FILENAME
+from wattslot.storage.database import DATABASE_FILENAME, open_database
 
 
 def test_cpu_percent_is_relative_to_one_core() -> None:
@@ -215,3 +217,67 @@ def test_snapshot_gives_the_thresholds(tmp_path: Path) -> None:
     assert found.disk_backup_bytes == 2000  # deux fois la base, sans graphe
     assert found.memory_alert_bytes is not None
     assert found.disk_alert_free_bytes is not None and found.disk_alert_free_bytes >= 2 * 10**9
+
+
+def _point(moment: datetime, cpu: float | None, memory: int, free: int = 10**10) -> ResourcePoint:
+    return ResourcePoint(time=moment, cpu_percent=cpu, memory_bytes=memory, disk_free_bytes=free)
+
+
+def test_minutes_and_hourly_summaries_are_kept(tmp_path: Path) -> None:
+    store = ResourceStore(open_database(tmp_path))
+    start = datetime(2026, 11, 8, 9, 58, tzinfo=UTC)
+    for minute, (cpu, memory) in enumerate([(2.0, 200), (4.0, 300), (10.0, 250), (None, 260)]):
+        store.save(_point(start + timedelta(minutes=minute), cpu, memory, 10**10 - minute))
+
+    minutes = store.minutes(start)
+    assert [p.time for p in minutes] == [start + timedelta(minutes=m) for m in range(4)]
+    assert minutes[3].cpu_percent is None and minutes[0].memory_bytes == 200
+
+    hours = store.hours(start - timedelta(hours=1))
+    assert [h.hour.hour for h in hours] == [9, 10]
+    assert hours[0].samples == 2 and hours[0].cpu_avg == 3.0 and hours[0].cpu_max == 4.0
+    assert (hours[0].memory_min, hours[0].memory_avg, hours[0].memory_max) == (200, 250, 300)
+    assert hours[1].samples == 2 and hours[1].cpu_max == 10.0  # moyenne sans la minute vide
+    assert hours[1].disk_free_min == 10**10 - 3
+
+
+def test_old_minutes_and_hours_are_removed(tmp_path: Path) -> None:
+    store = ResourceStore(open_database(tmp_path))
+    old = datetime(2026, 10, 1, 12, tzinfo=UTC)
+    store.save(_point(old, 1.0, 100))
+    now = datetime(2026, 11, 8, 12, tzinfo=UTC)
+    store.save(_point(now - timedelta(hours=25), 1.0, 100))  # minute de plus de 24 h
+    store.save(_point(now, 2.0, 200))
+
+    assert [p.time for p in store.minutes(old)] == [now]
+    # Résumé de plus de 30 jours retiré, celui d'il y a 25 h gardé.
+    assert [h.hour for h in store.hours(old)] == [now - timedelta(hours=25), now]
+
+
+def test_the_curves_and_peaks_survive_a_restart(tmp_path: Path) -> None:
+    database = open_database(tmp_path)
+    first = ResourceMonitor(tmp_path, database)
+    start = first._samples[0]  # relevé de départ, pris à la création
+    assert start.time is not None
+    # Minute écoulée il y a dix minutes (avant le redémarrage qui suit).
+    ended = start.time - timedelta(minutes=10)
+    first.record(Sample(start.at + 60, start.cpu_s + 30, 400 * 10**6, 10**10, ended, 5 * 10**6))
+    first.save_last()
+
+    second = ResourceMonitor(tmp_path, database)  # redémarrage
+
+    points = second.history()
+    assert points[0].time == ended
+    assert points[0].cpu_percent == 50 and points[0].memory_bytes == 400 * 10**6
+    assert points[0].disk_used_bytes == 5 * 10**6  # taille des données gardée aussi
+    found = second.snapshot()
+    assert found.cpu_peak_percent == 50  # pic d'avant le redémarrage
+    assert found.memory_peak_bytes is not None and found.memory_peak_bytes >= 400 * 10**6
+    assert found.measured_s >= 600  # depuis la minute gardée, pas depuis le redémarrage
+    assert [h.samples for h in second.hours()] == [1]
+
+
+def test_hours_route(tmp_path: Path) -> None:
+    with TestClient(create_app(_settings(tmp_path))) as client:
+        assert client.get("/api/diagnostic/resources/hours").json() == []
+        assert client.get("/api/diagnostic/resources/hours?days=31").status_code == 422

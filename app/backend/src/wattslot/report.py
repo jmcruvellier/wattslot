@@ -19,8 +19,10 @@ from wattslot.diagnostic import Diagnostic
 from wattslot.home_model import HomeModel
 from wattslot.planning.sources import PlanningSettings
 from wattslot.problems import Problem
+from wattslot.resources import ResourceHour
 
 FORMAT = "wattslot/report"
+REPORT_DAYS = 7  # résumés horaires des ressources joints au rapport
 VERSION = 1
 # Identifiant d'entité de HA (« domaine.objet ») resté dans un texte libre.
 ENTITY = re.compile(r"\b[a-z_]+\.[a-z0-9_]+\b")
@@ -175,6 +177,7 @@ def build(
     home: HomeModel,
     saved: Configuration,
     settings: PlanningSettings,
+    resource_hours: list[ResourceHour] | None = None,
 ) -> dict[str, Any]:
     names = Anonymizer(home)
     return {
@@ -195,4 +198,6 @@ def build(
             "scheduler_enabled": settings.scheduler_enabled,
             "run_minute": settings.run_minute,
         },
+        # Résumés horaires des ressources (des nombres seulement) : seuils des alertes.
+        "resource_hours": [hour.model_dump(mode="json") for hour in resource_hours or []],
     }
