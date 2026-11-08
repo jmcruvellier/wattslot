@@ -104,6 +104,7 @@ from wattslot.quality import Monitor as QualityMonitor
 from wattslot.quality import router as quality_routes
 from wattslot.reminders import ReminderLoop
 from wattslot.reminders import router as reminders_routes
+from wattslot.resources import ResourceMonitor, Resources
 from wattslot.runtime import RunMode, Settings, load_settings
 from wattslot.settings_choices import SettingsChoices, settings_choices
 from wattslot.setup import Setup, setup_status
@@ -477,6 +478,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
         if reminder_loop:
             reminder_loop.start()
+        # Processeur et mémoire relevés toutes les minutes (État de l'application).
+        resources = ResourceMonitor(settings.data_dir)
+        resources.start()
+        app.state.resources = resources
         try:
             yield
         finally:
@@ -487,6 +492,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             # Chaque étape à part : une erreur dans l'une (connexion à HA à demi ouverte…) ne
             # saute pas les suivantes, qui vident relevés, agrégats et base sur disque.
             steps: list[tuple[str, Callable[[], Awaitable[object]] | None]] = [
+                ("ressources", resources.stop),
                 ("rappels", reminder_loop.stop if reminder_loop else None),
                 ("planification", scheduler.stop if scheduler else None),
                 ("maintenance", maintenance.stop if maintenance else None),
@@ -1256,7 +1262,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             state.aggregator,
             state.maintenance,
             state.scheduler,
+            getattr(state, "resources", None),
         )
+
+    @app.get("/api/diagnostic/resources")
+    async def get_resources(request: Request) -> Resources:
+        """Processeur, mémoire et disque de l'application, lus sans le reste du diagnostic."""
+        monitor: ResourceMonitor | None = getattr(request.app.state, "resources", None)
+        if monitor is None:
+            return Resources()
+        return await asyncio.to_thread(monitor.snapshot)
 
     async def current_problems(request: Request) -> tuple[Diagnostic, list[Problem]]:
         return await current_problems_of(request.app.state)
@@ -1270,6 +1285,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             state.aggregator,
             state.maintenance,
             state.scheduler,
+            getattr(state, "resources", None),
         )
         setup = await setup_status(
             state.home_assistant, state.graph, state.database, state.aggregator, state.raw.zone

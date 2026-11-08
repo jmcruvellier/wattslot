@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { I18nProvider } from "../i18n/I18nProvider";
 import DiagnosticScreen from "./DiagnosticScreen";
 import { formatAge } from "./format";
-import type { Diagnostic } from "./types";
+import type { Diagnostic, Resources } from "./types";
 import type { Problem } from "./ProblemsSection";
 import { silentEntities } from "./warnings";
 
@@ -84,10 +84,24 @@ const HEALTHY: Diagnostic = {
   issues: [],
 };
 
+const RESOURCES: Resources = {
+  cpu_percent: 2.5,
+  cpu_peak_percent: 85,
+  cpu_cores: 4,
+  memory_bytes: 180_000_000,
+  memory_peak_bytes: 210_000_000,
+  memory_limit_bytes: 4_000_000_000,
+  disk_used_bytes: 1_250_000_000,
+  disk_free_bytes: 20_000_000_000,
+  disk_total_bytes: 32_000_000_000,
+  measured_s: 3600,
+};
+
 function mockApi(diagnostic: Diagnostic, problems: Problem[] = []) {
   return vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
     const url = String(input);
     if (url === "api/diagnostic") return Response.json(diagnostic);
+    if (url === "api/diagnostic/resources") return Response.json(RESOURCES);
     if (url === "api/diagnostic/problems") return Response.json(problems);
     if (url === "api/diagnostic/report") return Response.json({ format: "wattslot/report", problems: [] });
     return new Response(null, { status: 404 });
@@ -143,6 +157,19 @@ describe("DiagnosticScreen", () => {
     expect(screen.getByText(/2,000 MB since start .*, i\.e\. 2 GB per day/)).toBeInTheDocument();
     expect(screen.getByText(/6.2 s for today, 20 s in all/)).toBeInTheDocument();
     expect(globalThis.fetch).toHaveBeenCalledWith("api/diagnostic", expect.anything());
+  });
+
+  it("montre processeur, mémoire et disque", async () => {
+    mockApi(HEALTHY);
+
+    renderScreen();
+
+    expect(await screen.findByText("2.5%")).toBeInTheDocument();
+    expect(screen.getByText("Average over 15 minutes · peak since start: 85% · available cores: 4")).toBeInTheDocument();
+    expect(screen.getByText("180 MB")).toBeInTheDocument();
+    expect(screen.getByText("peak since start: 210 MB · limit: 4 GB")).toBeInTheDocument();
+    expect(screen.getByText("1.3 GB")).toBeInTheDocument();
+    expect(screen.getByText("Application data · free on the host: 20 GB of 32 GB")).toBeInTheDocument();
   });
 
   it("rappelle les anomalies de configuration", async () => {

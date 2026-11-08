@@ -6,6 +6,8 @@
 
 **Réglages › État de l'application** (ou la pastille d'état du menu) liste ce qui ne va pas, par gravité : **Bloque le plan**, **Plan moins juste**, **À surveiller**. Chaque problème dit quoi faire et a un lien **Y aller**. **Vérifier à nouveau** relance les vérifications.
 
+La section **Ressources** montre le processeur (moyenne sur 15 minutes et pic, en part d'un cœur), la mémoire (avec son pic et la limite du conteneur ou de la machine) et le disque (données de l'application et espace libre sur l'hôte). Dans un conteneur, les limites sont celles du conteneur. Ces valeurs ne déclenchent pas encore d'alerte.
+
 | Problème | Que faire |
 |---|---|
 | L'application ne connaît pas l'adresse de Home Assistant | Comme application : redémarrez-la. En mode autonome : réglez l'adresse et connectez-vous (**Réglages › Connexion à Home Assistant**) |

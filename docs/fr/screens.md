@@ -75,7 +75,7 @@ Votre maison en phrases, en quatre onglets. Touchez une ligne : son réglage s'o
 - **Notifications** : quels messages, sur quel appareil, heures de silence ([Notifications](notifications.md)).
 - **Calcul automatique** : chaque heure à une minute donnée (59 par défaut), ou à la main ; la liste de tâches de Home Assistant dont les tâches deviennent des demandes.
 - **Langue et affichage** : six langues, cinq thèmes (Ivoire, Graphite, Océan, Prairie, Crépuscule) ou **Automatique**, qui suit le mode clair ou sombre de votre appareil, et la **devise** de vos prix et de vos coûts. Par défaut, celle de Home Assistant (Paramètres › Système › Général) ; en changer ne convertit pas les prix déjà saisis.
-- **État de l'application** : ce qui ne va pas, s'il y a lieu, et comment le corriger ; la version, et s'il en existe une nouvelle ; les liens pour soutenir le projet ; un rapport à joindre à un signalement ([Dépannage](troubleshooting.md)).
+- **État de l'application** : ce qui ne va pas, s'il y a lieu, et comment le corriger ; la version, et s'il en existe une nouvelle ; les liens pour soutenir le projet ; les ressources utilisées (processeur en moyenne sur 15 minutes, mémoire, données sur disque et espace libre sur l'hôte) ; un rapport à joindre à un signalement ([Dépannage](troubleshooting.md)).
 - **Connexion à Home Assistant** (mode autonome).
 - En bas, **Version bêta**, avec **Donner mon avis** (un formulaire tout prêt sur GitHub), et **Soutenir WattSlot** (GitHub Sponsors et Ko-fi).
 

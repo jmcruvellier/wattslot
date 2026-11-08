@@ -18,6 +18,7 @@ from wattslot.home_assistant import ConnectionState, HomeAssistantClient
 from wattslot.ingestion import IngestionStatus, Ingestor, silent_entities
 from wattslot.maintenance import Maintenance, MaintenanceStatus
 from wattslot.planning.scheduler import PlanningScheduler, SchedulerStatus
+from wattslot.resources import ResourceMonitor, Resources, memory_bytes
 from wattslot.storage.raw import RawStores
 
 STARTED_AT = datetime.now(UTC)  # chargement du module, au démarrage de l'application
@@ -42,14 +43,7 @@ class Diagnostic(BaseModel):
     maintenance: MaintenanceStatus | None = None
     planning: SchedulerStatus | None = None
     issues: list[DeviceIssue] | None = None  # None : HA non connecté, anomalies inconnues
-
-
-def resident_bytes(proc_status: str) -> int | None:
-    """Mémoire résidente (``VmRSS``) dans le contenu de ``/proc/self/status``."""
-    for line in proc_status.splitlines():
-        if line.startswith("VmRSS:"):
-            return int(line.split()[1]) * 1024
-    return None
+    resources: Resources | None = None  # processeur, mémoire et disque
 
 
 def written_from(proc_io: str) -> int | None:
@@ -66,16 +60,6 @@ def disk_written_bytes() -> int | None:
         return None
     try:
         return written_from(Path("/proc/self/io").read_text())
-    except OSError:
-        return None
-
-
-def memory_bytes() -> int | None:
-    """Mémoire résidente du processus ; inconnue hors de Linux."""
-    if not sys.platform.startswith("linux"):
-        return None
-    try:
-        return resident_bytes(Path("/proc/self/status").read_text())
     except OSError:
         return None
 
@@ -113,6 +97,7 @@ def diagnostic(
     aggregator: Aggregator | None,
     maintenance: Maintenance | None,
     scheduler: PlanningScheduler | None = None,
+    resources: ResourceMonitor | None = None,
 ) -> Diagnostic:
     """Lit les disques et le magasin du jour : à appeler hors de la boucle d'événements."""
     now = datetime.now(UTC)
@@ -130,4 +115,5 @@ def diagnostic(
         maintenance=maintenance.status() if maintenance else None,
         planning=scheduler.status() if scheduler else None,
         issues=configuration_issues(client),
+        resources=resources.snapshot() if resources else None,
     )
