@@ -156,3 +156,30 @@ def test_real_cycles_of_the_day(setup: tuple[CycleJournal, RawStores, QuarterRea
     # Heure locale de la maison (le brut est en UTC) : le calcul lit l'heure du démarrage.
     assert (cycle.start.hour, cycle.start.utcoffset()) == (9, timedelta(hours=2))
     assert cycle.energy_kwh == pytest.approx(0.15)  # au compteur, relevé de 9 h 30
+
+
+def test_real_cycle_paused_is_still_running(
+    setup: tuple[CycleJournal, RawStores, QuarterReader],
+) -> None:
+    """Relevé tombé dans une pause du programme (sous le seuil, moins longue que la fenêtre de
+    fusion) : le cycle n'est pas fini, sa fin prévue ne s'arrête pas à l'heure du calcul."""
+    _, raw, _ = setup
+    raw_cycle(raw, TODAY, local(TODAY, 9, 35), 23, 0.1, 50.0)  # puissance à 0 dès 9 h 58
+    now = local(TODAY, 10).astimezone(UTC)
+
+    (cycle,) = real_cycles(MODEL, raw, now)["Lave-linge"]
+
+    assert cycle.end == local(TODAY, 9, 58) and cycle.running
+
+
+def test_real_cycle_ended_after_long_pause(
+    setup: tuple[CycleJournal, RawStores, QuarterReader],
+) -> None:
+    """Pause plus longue que la fenêtre de fusion du lave-linge (30 min) : le cycle est fini."""
+    _, raw, _ = setup
+    raw_cycle(raw, TODAY, local(TODAY, 9, 35), 23, 0.1, 50.0)
+    now = local(TODAY, 10, 29).astimezone(UTC)
+
+    (cycle,) = real_cycles(MODEL, raw, now)["Lave-linge"]
+
+    assert cycle.end == local(TODAY, 9, 58) and not cycle.running
