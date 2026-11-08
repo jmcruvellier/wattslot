@@ -1,4 +1,5 @@
-// Ressources de l'application (État de l'application) : processeur, mémoire et disque, lus par
+// Ressources de l'application (État de l'application) : processeur, mémoire, espace libre du
+// disque et données de l'application, lus par
 // /api/diagnostic/resources toutes les 30 secondes. Les alertes (disque, mémoire, calcul lent)
 // sont des problèmes du diagnostic, en tête de page. Chaque ligne se déplie sur sa courbe des
 // dernières 24 h (/api/diagnostic/resources/history), lue seulement quand une ligne est ouverte.
@@ -13,7 +14,7 @@ import { formatNumber, formatPercent } from "./format";
 import ResourceChart, { type ChartPoint } from "./ResourceChart";
 import type { ResourcePoint, Resources } from "./types";
 
-type Kind = "cpu" | "memory" | "disk";
+type Kind = "cpu" | "memory" | "disk" | "data";
 
 const REFRESH_MS = 30_000;
 // En deçà, les pics ne couvrent pas encore une journée : « depuis le démarrage ».
@@ -58,11 +59,11 @@ export default function ResourcesSection() {
   const series = (pick: (point: ResourcePoint) => number | null): ChartPoint[] =>
     (points ?? []).map((point) => ({ time: Date.parse(point.time), value: pick(point) }));
   const chart = (label: string, threshold: number | null | undefined, pick: (point: ResourcePoint) => number | null,
-    format: (value: number) => string, title?: string) =>
+    format: (value: number) => string) =>
     points === null ? (
       <p className="ui-row-help resource-chart-empty">{t("diagnostic.loading")}</p>
     ) : (
-      <ResourceChart points={series(pick)} format={format} label={t("diagnostic.resources.chart_label", { name: label })} threshold={threshold} title={title} />
+      <ResourceChart points={series(pick)} format={format} label={t("diagnostic.resources.chart_label", { name: label })} threshold={threshold} />
     );
 
   const bytes = (value: number | null) => {
@@ -124,30 +125,27 @@ export default function ResourcesSection() {
                 ),
           )}
         />
+        {/* Deux lignes pour le disque : valeur, courbe et seuil parlent chacune d'une seule
+            mesure. L'alerte porte sur l'espace libre (ligne rouge en dessous de la courbe). */}
         <Row
           kind="disk"
           onToggle={toggle}
-          chart={chart(
-            t("diagnostic.resources.disk_free_title"),
-            r.disk_alert_free_bytes,
-            (p) => p.disk_free_bytes,
-            bytes,
-            // La ligne donne la place des données, la courbe l'espace libre : le dire.
-            t("diagnostic.resources.disk_free_title"),
-          )}
-          label={t("diagnostic.resources.disk")}
-          value={bytes(r.disk_used_bytes)}
+          chart={chart(t("diagnostic.resources.disk_free_title"), r.disk_alert_free_bytes, (p) => p.disk_free_bytes, bytes)}
+          label={t("diagnostic.resources.disk_free_title")}
+          value={bytes(r.disk_free_bytes)}
           description={
-            r.disk_free_bytes === null || r.disk_total_bytes === null
-              ? t("diagnostic.resources.disk_used")
-              : help(
-                  t("diagnostic.resources.disk_used"),
-                  t("diagnostic.resources.disk_free", {
-                    free: bytes(r.disk_free_bytes),
-                    total: bytes(r.disk_total_bytes),
-                  }),
-                )
+            r.disk_total_bytes === null
+              ? undefined
+              : t("diagnostic.resources.disk_total", { total: bytes(r.disk_total_bytes) })
           }
+        />
+        <Row
+          kind="data"
+          onToggle={toggle}
+          chart={chart(t("diagnostic.resources.disk_used"), null, (p) => p.disk_used_bytes ?? null, bytes)}
+          label={t("diagnostic.resources.disk_used")}
+          value={bytes(r.disk_used_bytes)}
+          description={t("diagnostic.resources.disk_used_help")}
         />
       </>
     );
@@ -167,7 +165,7 @@ function Row({ kind, label, value, description, chart, onToggle }: {
   kind: Kind;
   label: string;
   value: string;
-  description: string;
+  description?: string;
   chart: ReactNode;
   onToggle: (kind: Kind, open: boolean) => void;
 }) {

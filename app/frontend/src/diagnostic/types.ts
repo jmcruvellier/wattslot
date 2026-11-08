@@ -110,6 +110,7 @@ export interface ResourcePoint {
   cpu_percent: number | null; // charge de la minute, en % d'un cœur
   memory_bytes: number | null;
   disk_free_bytes: number | null;
+  disk_used_bytes?: number | null; // dossier des données, dernière mesure (toutes les 10 min)
 }
 
 export interface Diagnostic {

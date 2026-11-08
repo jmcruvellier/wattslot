@@ -1,5 +1,7 @@
 """Ressources : moyenne du processeur, pics, limites du conteneur, disque."""
 
+import asyncio
+import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -8,6 +10,7 @@ from fastapi.testclient import TestClient
 from tests.test_health import _settings
 from wattslot.main import create_app
 from wattslot.resources import (
+    DATA_SIZE_INTERVAL_S,
     ResourceMonitor,
     Resources,
     Sample,
@@ -128,6 +131,31 @@ def test_history_gives_one_point_a_minute() -> None:
     assert [p.memory_bytes for p in points] == [100, 120, 110]
     assert [p.disk_free_bytes for p in points] == [5000, 4900, None]
     assert history([Sample(0, 0, None)]) == []  # relevé sans heure : pas de point
+
+
+def test_history_keeps_the_last_data_size() -> None:
+    """Dossier des données mesuré toutes les 10 minutes : chaque point garde la dernière
+    mesure, rien avant la première."""
+    start = datetime(2026, 11, 8, 8, 0, tzinfo=UTC)
+    used = [None, 2800, None, None, 2900]
+    samples = [
+        Sample(60 * i, 0, None, None, start + timedelta(minutes=i), disk_used=u)
+        for i, u in enumerate(used)
+    ]
+
+    assert [p.disk_used_bytes for p in history(samples)] == [None, 2800, 2800, 2800, 2900]
+
+
+def test_data_size_measured_every_ten_minutes(tmp_path: Path) -> None:
+    (tmp_path / "base.sqlite").write_bytes(b"x" * 1000)
+    monitor = ResourceMonitor(tmp_path)
+
+    first = asyncio.run(monitor._data_size())
+    again = asyncio.run(monitor._data_size())
+    monitor._measured_at = time.monotonic() - DATA_SIZE_INTERVAL_S
+    later = asyncio.run(monitor._data_size())
+
+    assert (first, again, later) == (1000, None, 1000)
 
 
 def test_history_route(tmp_path: Path) -> None:
