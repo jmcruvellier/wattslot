@@ -27,6 +27,7 @@ from wattslot.planning.engine import (
     solve,
 )
 from wattslot.planning.inputs import from_v1
+from wattslot.planning.merge import merge_plans
 from wattslot.planning.plan import POOL, Indicators
 from wattslot.planning.problem import Problem, from_input
 
@@ -144,9 +145,14 @@ def test_output_has_the_format_of_v1(path: Path) -> None:
     assert sorted(output["residu_reseau_horaire"]) == list(problem.hours)
     by_name = {item["equipement"]: item for item in output["planning"]}
     expected_by_name = {item["equipement"]: item for item in expected_output["planning"]}
-    assert set(by_name) == set(expected_by_name)  # mêmes équipements que la v1
+    # Mêmes équipements que la v1, plus les blocs gelés dont le cycle a démarré : recalés sur
+    # le démarrage réel (la v1 les laissait au plan précédent, repris par la fusion).
+    realigned = {c.name for c in problem.launched} - set(expected_by_name)
+    assert realigned <= {item["equipement"] for item in state.get("equipements_geles") or []}
+    assert set(by_name) - realigned == set(expected_by_name)
     for name, item in by_name.items():
-        assert set(item) - {"explication"} == set(expected_by_name[name]), name  # lot 3.7
+        if name not in realigned:
+            assert set(item) - {"explication"} == set(expected_by_name[name]), name  # lot 3.7
     assert sorted(by_name["Batterie"]["soc_horaire_kwh"]) == list(problem.hours)
     segments = by_name["Piscine (filtration)"]["segments"]
     assert segments[0]["heure_debut"] == problem.first_hour
@@ -406,3 +412,22 @@ def test_the_forecast_of_the_day_follows_the_measured_production() -> None:
     assert corrected_production(early, REFERENCE) == (production, net)
     assert forecast_ratio(replace(cloudy, measured_production_kwh=0.0), REFERENCE) == 0.2
     assert forecast_ratio(replace(cloudy, measured_production_kwh=9.0), REFERENCE) == 1.5
+
+
+def test_frozen_slot_realigned_on_its_real_start() -> None:
+    """Bloc gelé (12 h 00 → 13 h 57, plan précédent) dont le cycle réel a démarré à 13 h 04 et
+    tourne encore : le calcul le recale sur ce démarrage (fin : 13 h 04 + 117 min) et la fusion
+    garde ce bloc recalé plutôt que l'ancien, dont la fin ne suivait plus le cycle."""
+    state, _ = load(state_named("06_today_h13_dishwasher_running"))
+    (frozen,) = state["equipements_geles"]
+    problem = from_input(from_v1(state))
+
+    output = plan_day(problem).output
+    (slot,) = [i for i in output["planning"] if i["equipement"] == "Lave-vaisselle"]
+
+    assert (slot["debut_min"], slot["fin_min"]) == (13 * 60 + 4, 15 * 60 + 2)
+    assert slot["explication"]["raisons"][0]["code"] == "launched"
+    old = {**output, "planning": [frozen]}
+    merged = merge_plans(output, old, problem.first_hour)
+    (kept,) = [i for i in merged["planning"] if i["equipement"] == "Lave-vaisselle"]
+    assert kept["fin_min"] == 15 * 60 + 2
