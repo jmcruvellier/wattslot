@@ -19,7 +19,7 @@ import json
 import sqlite3
 from collections import defaultdict
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, datetime, time, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -261,6 +261,16 @@ class CycleJournal:
         return dict(counts)
 
 
+def _paused_as_running(cycles: list[Cycle], now: datetime, merge_min: float) -> list[Cycle]:
+    """Dernier cycle encore « en marche » s'il est en pause depuis moins que la fenêtre de
+    fusion de l'équipement : un programme marque des pauses sous le seuil (trempage, entre deux
+    phases) et une reprise serait fusionnée au même cycle. Sans cela, un relevé tombé dans une
+    pause donnait un cycle fini à l'heure du calcul."""
+    if not cycles or cycles[-1].running or now - cycles[-1].end > timedelta(minutes=merge_min):
+        return cycles
+    return [*cycles[:-1], replace(cycles[-1], running=True)]
+
+
 def real_cycles(
     model: HomeModel, raw: RawStores, now: datetime, configuration: Configuration | None = None
 ) -> dict[str, tuple[Segment, ...]]:
@@ -280,6 +290,7 @@ def real_cycles(
         if cycles and appliance.counter:
             _, counter = _raw_observations(raw, appliance, midnight - timedelta(days=1), now)
             cycles = apply_counter(cycles, counter)
+        cycles = _paused_as_running(cycles, now, rules.merge_min)
         found[appliance.name] = tuple(
             Segment(c.start.astimezone(zone), c.end.astimezone(zone), c.energy_kwh, c.running)
             for c in cycles
