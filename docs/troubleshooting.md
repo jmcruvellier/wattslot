@@ -6,7 +6,7 @@
 
 **Settings › App status** (or the status dot in the menu) lists what is wrong, by severity: **Blocks the plan**, **Less accurate plan**, **To watch**. Each problem says what to do and has a **Go there** link. **Check again** re-runs the checks.
 
-The **Resources** section shows the processor (average over 15 minutes and peak, as a share of one core), the memory (with its peak, and either the container limit or the machine memory) and the disk (the app's data and the free space on the disk that holds it). Each line opens on its curve over the last 24 hours, one point a minute; hover over it to read a value. The memory limit is the container's when it sets one; otherwise it is the memory of the machine, shared with everything else running on it.
+The **Resources** section shows the processor (average over 15 minutes and peak, as a share of one core), the memory (with its peak, and either the container limit or the machine memory) and the disk (the app's data and the free space on the disk that holds it). Each line opens on its curve over the last 24 hours, one point a minute; hover over it to read a value. A dashed red line marks the alert threshold (memory above it, free space below it); the processor has none yet. The memory limit is the container's when it sets one; otherwise it is the memory of the machine, shared with everything else running on it.
 
 | Problem | What to do |
 |---|---|

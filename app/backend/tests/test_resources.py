@@ -9,18 +9,22 @@ from tests.test_health import _settings
 from wattslot.main import create_app
 from wattslot.resources import (
     ResourceMonitor,
+    Resources,
     Sample,
     cpu_cores,
     cpu_limit_v1,
     cpu_limit_v2,
     cpu_percent,
+    disk_alert,
     history,
+    memory_alert,
     memory_limit,
     memory_limit_v1,
     memory_limit_v2,
     memory_total,
     summarize,
 )
+from wattslot.storage.database import DATABASE_FILENAME
 
 
 def test_cpu_percent_is_relative_to_one_core() -> None:
@@ -132,3 +136,27 @@ def test_history_route(tmp_path: Path) -> None:
 
     assert len(points) == 1  # le relevé de départ
     assert points[0]["cpu_percent"] is None and points[0]["disk_free_bytes"] > 0
+
+
+def test_alert_thresholds_for_the_red_line() -> None:
+    gb, mb = 10**9, 10**6
+    container = Resources(memory_limit_bytes=1000 * mb, memory_limit_source="container")
+    assert memory_alert(container) == 750 * mb
+    machine = Resources(memory_limit_bytes=2100 * mb, memory_limit_source="machine")
+    assert memory_alert(machine) == 1 << 30
+    # Disque : le plus haut de 2 Go, 10 % du disque et la place d'une sauvegarde.
+    assert disk_alert(Resources()) is None
+    small = Resources(disk_free_bytes=20 * gb, disk_total_bytes=16 * gb)
+    assert disk_alert(small) == 2 * gb
+    big = Resources(disk_free_bytes=20 * gb, disk_total_bytes=34 * gb)
+    assert disk_alert(big) == round(3.4 * gb)
+    backup = Resources(disk_free_bytes=20 * gb, disk_total_bytes=34 * gb, disk_backup_bytes=5 * gb)
+    assert disk_alert(backup) == 5 * gb
+
+
+def test_snapshot_gives_the_thresholds(tmp_path: Path) -> None:
+    (tmp_path / DATABASE_FILENAME).write_bytes(b"x" * 1000)
+    found = ResourceMonitor(tmp_path).snapshot()
+    assert found.disk_backup_bytes == 2000  # deux fois la base, sans graphe
+    assert found.memory_alert_bytes is not None
+    assert found.disk_alert_free_bytes is not None and found.disk_alert_free_bytes >= 2 * 10**9

@@ -99,6 +99,9 @@ export interface Resources {
   disk_used_bytes: number | null; // dossier des données de l'application
   disk_free_bytes: number | null;
   disk_total_bytes: number | null;
+  disk_backup_bytes?: number | null; // place qu'une sauvegarde demande
+  memory_alert_bytes?: number | null; // seuil d'alerte (ligne rouge) : mémoire au-delà
+  disk_alert_free_bytes?: number | null; // seuil d'alerte : espace libre en deçà
   measured_s: number; // durée couverte par les relevés
 }
 

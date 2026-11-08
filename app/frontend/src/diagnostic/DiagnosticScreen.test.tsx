@@ -92,6 +92,7 @@ const RESOURCES: Resources = {
   memory_peak_bytes: 210_000_000,
   memory_limit_bytes: 4_000_000_000,
   memory_limit_source: "container",
+  memory_alert_bytes: 3_000_000_000,
   disk_used_bytes: 1_250_000_000,
   disk_free_bytes: 20_000_000_000,
   disk_total_bytes: 32_000_000_000,
@@ -198,6 +199,7 @@ describe("DiagnosticScreen", () => {
     await user.click(await screen.findByText("Memory"));
 
     expect(await screen.findByRole("img", { name: "Memory over the last 24 hours" })).toBeInTheDocument();
+    expect(screen.getByText("alert threshold: 3 GB")).toBeInTheDocument();
     expect(globalThis.fetch).toHaveBeenCalledWith("api/diagnostic/resources/history", expect.anything());
   });
 

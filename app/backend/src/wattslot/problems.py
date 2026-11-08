@@ -20,19 +20,13 @@ from wattslot.diagnostic import Diagnostic
 from wattslot.home_assistant import HomeAssistantClient
 from wattslot.home_model import HomeModel
 from wattslot.ingestion import silent_entities
+from wattslot.resources import disk_low_free, memory_alert
 from wattslot.setup import Setup, StepState
 
 STALE_PLAN = timedelta(hours=2)
 PENDING_MAX = 1000
-# Ressources (seuils provisoires, à revoir d'après des mesures réelles). Toutes « à surveiller » :
-# les autres gravités parlent du plan.
-DISK_FREE_MIN = 2 * 10**9  # octets libres sur le disque des données
-DISK_FREE_MIN_SHARE = 0.10  # part libre de ce disque
-BACKUP_MARGIN = (
-    2  # une sauvegarde copie la base et le graphe : il faut au moins deux fois leur taille
-)
-MEMORY_CONTAINER_SHARE = 0.75  # de la limite du conteneur, tenue 15 minutes
-MEMORY_MAX = 1 << 30  # sans limite de conteneur : mémoire de WattSlot seul, tenue 15 minutes
+# Ressources : seuils dans ``resources`` (ligne rouge des courbes). Toutes « à surveiller » : les
+# autres gravités parlent du plan.
 SLOW_PLAN = timedelta(minutes=10)  # durée d'un calcul du plan (jour, lendemain, horizon)
 # Alertes de ressources, notifiées à part (réglage « resources » des notifications).
 RESOURCE_ALERTS = frozenset(
@@ -236,8 +230,7 @@ def _resource_problems(diagnostic: Diagnostic) -> list[Problem]:
     resources = diagnostic.resources
     if resources is not None and resources.disk_free_bytes is not None:
         free, total = resources.disk_free_bytes, resources.disk_total_bytes or 0
-        disk = diagnostic.maintenance.disk if diagnostic.maintenance else None
-        needed = BACKUP_MARGIN * (disk.graph_bytes + disk.database_bytes) if disk else 0
+        needed = resources.disk_backup_bytes or 0
         if needed and free < needed:
             found.append(
                 _problem(
@@ -247,7 +240,7 @@ def _resource_problems(diagnostic: Diagnostic) -> list[Problem]:
                     needed=_gigabytes(needed),
                 )
             )
-        elif free < DISK_FREE_MIN or (total and free < DISK_FREE_MIN_SHARE * total):
+        elif free < disk_low_free(resources):
             found.append(
                 _problem(
                     "disk_low",
@@ -257,20 +250,14 @@ def _resource_problems(diagnostic: Diagnostic) -> list[Problem]:
                 )
             )
     floor = resources.memory_floor_bytes if resources is not None else None
-    if resources is not None and floor is not None:
+    alert = memory_alert(resources) if resources is not None else None
+    if resources is not None and floor is not None and alert is not None and floor >= alert:
         limit = resources.memory_limit_bytes
         used = str(round(floor / 1e6))
         if resources.memory_limit_source == "container" and limit:
-            if floor >= MEMORY_CONTAINER_SHARE * limit:
-                found.append(
-                    _problem(
-                        "memory_high",
-                        Severity.WATCH,
-                        used=used,
-                        percent=str(round(100 * floor / limit)),
-                    )
-                )
-        elif floor >= MEMORY_MAX:
+            percent = str(round(100 * floor / limit))
+            found.append(_problem("memory_high", Severity.WATCH, used=used, percent=percent))
+        else:
             found.append(_problem("memory_heavy", Severity.WATCH, used=used))
     report = diagnostic.planning.last_report if diagnostic.planning else None
     if report is not None:

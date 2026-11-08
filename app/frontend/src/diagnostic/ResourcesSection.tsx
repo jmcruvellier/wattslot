@@ -57,12 +57,12 @@ export default function ResourcesSection() {
     });
   const series = (pick: (point: ResourcePoint) => number | null): ChartPoint[] =>
     (points ?? []).map((point) => ({ time: Date.parse(point.time), value: pick(point) }));
-  const chart = (label: string, pick: (point: ResourcePoint) => number | null,
-    format: (value: number) => string, max?: number) =>
+  const chart = (label: string, threshold: number | null | undefined, pick: (point: ResourcePoint) => number | null,
+    format: (value: number) => string) =>
     points === null ? (
       <p className="ui-row-help resource-chart-empty">{t("diagnostic.loading")}</p>
     ) : (
-      <ResourceChart points={series(pick)} format={format} label={t("diagnostic.resources.chart_label", { name: label })} max={max} />
+      <ResourceChart points={series(pick)} format={format} label={t("diagnostic.resources.chart_label", { name: label })} threshold={threshold} />
     );
 
   const bytes = (value: number | null) => {
@@ -95,7 +95,7 @@ export default function ResourcesSection() {
         <Row
           kind="cpu"
           onToggle={toggle}
-          chart={chart(t("diagnostic.resources.cpu"), (p) => p.cpu_percent, (v) => formatPercent(language, v))}
+          chart={chart(t("diagnostic.resources.cpu"), null, (p) => p.cpu_percent, (v) => formatPercent(language, v))}
           label={t("diagnostic.resources.cpu")}
           value={r.cpu_percent === null ? t("diagnostic.resources.unknown") : formatPercent(language, r.cpu_percent)}
           description={help(
@@ -109,7 +109,7 @@ export default function ResourcesSection() {
         <Row
           kind="memory"
           onToggle={toggle}
-          chart={chart(t("diagnostic.resources.memory"), (p) => p.memory_bytes, bytes)}
+          chart={chart(t("diagnostic.resources.memory"), r.memory_alert_bytes, (p) => p.memory_bytes, bytes)}
           label={t("diagnostic.resources.memory")}
           value={bytes(r.memory_bytes)}
           description={help(
@@ -129,9 +129,9 @@ export default function ResourcesSection() {
           onToggle={toggle}
           chart={chart(
             t("diagnostic.resources.disk_free_title"),
+            r.disk_alert_free_bytes,
             (p) => p.disk_free_bytes,
             bytes,
-            r.disk_total_bytes ?? undefined,
           )}
           label={t("diagnostic.resources.disk")}
           value={bytes(r.disk_used_bytes)}
