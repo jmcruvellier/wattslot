@@ -59,9 +59,16 @@ export function tariffText(
     case "SingleTariff":
       return t("home_summary.contract.single", { price: price(tariff.base_eur_kwh) });
     case "TimeOfUseTariff": {
-      const ranges = cheapestRanges(tariff.bands);
-      if (ranges.length === 0) return t("home_summary.contract.single", { price: price(tariff.base_eur_kwh) });
-      return t("home_summary.contract.off_peak", {
+      // Heures des plages de tous les jours ; celles limitées à certains jours ou mois sont signalées.
+      const everyDay = tariff.bands.filter((band) => band.weekdays.length === 0 && band.months.length === 0);
+      const limited = everyDay.length < tariff.bands.length;
+      const ranges = cheapestRanges(everyDay);
+      if (ranges.length === 0) {
+        return limited
+          ? t("home_summary.contract.off_peak_days")
+          : t("home_summary.contract.single", { price: price(tariff.base_eur_kwh) });
+      }
+      return t(limited ? "home_summary.contract.off_peak_and_days" : "home_summary.contract.off_peak", {
         ranges: ranges.map(([start, end]) => `${bandTime(start)} – ${bandTime(end)}`).join(", "),
       });
     }

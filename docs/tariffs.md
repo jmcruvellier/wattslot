@@ -15,6 +15,14 @@ The plan places your appliances where electricity is free (your surplus) or chea
 | **Day color (Tempo)** | The price depends on the day colour and the hour | The Home Assistant sensor giving today's colour (and tomorrow's, optional), the hour the colour day starts, then each colour with its price outside bands and its bands. The first colour is used when the colour is unknown |
 | **Dynamic price** | A price for every hour, from your supplier or the market | The Home Assistant sensor giving the price of the current and coming hours, its unit, and the price to use when it is not known |
 
+## Days, months and public holidays
+
+Under each band, the **Days** boxes limit it to some days of the week (all ticked: every day), and **All year** unfolds the months. One box always stays ticked.
+
+**Public holidays count as a Sunday**, below the bands, gives public holidays the Sunday prices, as most contracts do (weekend offers, Spanish 2.0TD, Italian F3). The country is Home Assistant's by default; choose a **region** when it has its own holidays (Alsace, Moselle…). The holidays come from the open-source *holidays* library.
+
+Example, a reduced price on Wednesdays, weekends and public holidays: a band from 00:00 to 24:00 at the reduced price, with only Wednesday, Saturday and Sunday ticked, and **Public holidays count as a Sunday** ticked.
+
 ## Minute-precision bands
 
 Bands use local times, with the start included and the end excluded: **01:30–05:38** includes 30 minutes of the first hour and 38 minutes of the last hour. Minutes range from 00 to 59; **24:00** is allowed only as an end time. Older configurations without minutes keep their whole-hour times.

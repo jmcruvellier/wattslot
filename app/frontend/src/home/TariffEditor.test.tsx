@@ -1,6 +1,6 @@
 // Minutes des plages classiques et par couleur, y compris les anciennes configurations.
 import { useState } from "react";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -70,5 +70,52 @@ describe("minutes des plages tarifaires", () => {
     await userEvent.click(band.getByRole("button", { name: "saisir le prix" }));
     expect(latest().bands[0].eur_kwh_entity).toBeNull();
     expect(band.getByRole("button", { name: "lire dans Home Assistant" })).toBeInTheDocument();
+  });
+
+  it("limite une plage à certains jours et mois, sans pouvoir tout décocher", async () => {
+    const changed = vi.fn();
+    render(<I18nProvider><Editor initial={TARIFF_TEMPLATES.TimeOfUseTariff} changed={changed} /></I18nProvider>);
+    const band = within(screen.getByRole("listitem", { name: "Plage 1" }));
+    const days = within(band.getByRole("group", { name: "Jours" }));
+    const latest = () => (changed.mock.lastCall![0] as Tariff).bands[0];
+    for (const day of ["lun.", "mar.", "jeu.", "ven."]) await userEvent.click(days.getByLabelText(day));
+    expect(latest().weekdays).toEqual([2, 5, 6]); // mercredi et week-end
+    await userEvent.click(days.getByLabelText("mer."));
+    await userEvent.click(days.getByLabelText("sam."));
+    expect(days.getByLabelText("dim.")).toBeDisabled(); // dernière case cochée
+    for (const day of ["lun.", "mar.", "mer.", "jeu.", "ven.", "sam."]) await userEvent.click(days.getByLabelText(day));
+    expect(latest().weekdays).toEqual([]); // tous les jours
+    await userEvent.click(band.getByText("Toute l'année"));
+    const months = within(band.getByRole("group", { name: "Mois" }));
+    for (const month of ["avr.", "mai", "juin", "juil.", "août", "sept."]) await userEvent.click(months.getByLabelText(month));
+    expect(latest().months).toEqual([1, 2, 3, 10, 11, 12]);
+    expect(band.getByText(/^Mois : janv\., févr\., mars, oct\., nov\., déc\.$/)).toBeInTheDocument();
+  });
+
+  it("compte les jours fériés comme un dimanche, pays de Home Assistant par défaut", async () => {
+    const choices = (country: string) => ({
+      default_country: "FR",
+      country,
+      countries: ["ES", "FR", "IT"],
+      subdivisions: country === "FR" ? [{ code: "57", name: "Moselle" }, { code: "6AE", name: "Alsace" }] : [],
+    });
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const country = new URL(String(input), "http://test/").searchParams.get("country");
+      return Response.json(choices(country ?? "FR"));
+    });
+    const changed = vi.fn();
+    render(<I18nProvider><Editor initial={TARIFF_TEMPLATES.TimeOfUseTariff} changed={changed} /></I18nProvider>);
+    const latest = () => changed.mock.lastCall![0] as Tariff;
+    await userEvent.click(screen.getByLabelText("Jours fériés comptés comme un dimanche"));
+    await waitFor(() => expect(latest().holidays).toEqual({ country: "FR", subdivision: null }));
+    expect(screen.getByLabelText("Pays")).toHaveValue("FR");
+    await userEvent.selectOptions(await screen.findByLabelText("Région"), "57");
+    expect(latest().holidays).toEqual({ country: "FR", subdivision: "57" });
+    await userEvent.selectOptions(screen.getByLabelText("Pays"), "ES");
+    expect(latest().holidays).toEqual({ country: "ES", subdivision: null });
+    await waitFor(() => expect(screen.queryByLabelText("Région")).toBeNull());
+    await userEvent.click(screen.getByLabelText("Jours fériés comptés comme un dimanche"));
+    expect(latest().holidays).toBeNull();
+    expect(screen.queryByLabelText("Pays")).toBeNull();
   });
 });

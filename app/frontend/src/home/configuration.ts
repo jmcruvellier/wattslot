@@ -131,6 +131,12 @@ export interface ColorPrices {
   bands: PriceBand[];
 }
 
+// Jours fériés comptés comme un dimanche dans les filtres des plages.
+export interface Holidays {
+  country: string; // code ISO 3166-1 ; vide : à choisir
+  subdivision: string | null; // région aux jours fériés propres (57 : Moselle…)
+}
+
 export interface Tariff {
   kind: TariffKind;
   base_eur_kwh: number; // prix unique, hors des plages, ou prix inconnu
@@ -146,6 +152,7 @@ export interface Tariff {
   price_factor: number; // unité des entités vers le prix du kWh (devise de la maison)
   subscription_eur_month: number; // abonnement, ajouté au coût de chaque jour au prorata du mois
   contract_kva: number | null; // puissance souscrite ; null : inconnue
+  holidays?: Holidays | null; // absent : jours fériés ordinaires
 }
 
 export interface BatterySettings {

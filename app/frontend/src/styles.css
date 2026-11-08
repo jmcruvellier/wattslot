@@ -164,6 +164,21 @@ fieldset {
   display: block;
 }
 
+/* Jours et mois d'une plage tarifaire : cases côte à côte, sur une ligne qui se replie. */
+.expert-form .band-days {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.9rem;
+  margin: 0.25rem 0;
+}
+
+.expert-form .band-days label:has(> input[type="checkbox"]) {
+  display: inline-flex;
+  gap: 0.3rem;
+  margin: 0;
+}
+
 .expert-form input.number-input {
   width: 8rem;
 }
