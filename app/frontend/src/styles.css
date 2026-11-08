@@ -3282,6 +3282,14 @@ p[role="status"]:not(.state-message) {
   color: var(--danger);
 }
 
+.resource-chart-threshold.warning {
+  stroke: var(--warning);
+}
+
+.resource-chart-threshold-text.warning {
+  color: var(--warning);
+}
+
 .resource-chart-dot {
   position: absolute;
   width: 8px;
