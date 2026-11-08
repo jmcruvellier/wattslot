@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { I18nProvider } from "../i18n/I18nProvider";
 import DiagnosticScreen from "./DiagnosticScreen";
-import { formatAge, niceMax } from "./format";
+import { axisTop, formatAge, niceMax } from "./format";
 import type { Diagnostic, ResourcePoint, Resources } from "./types";
 import type { Problem } from "./ProblemsSection";
 import { silentEntities } from "./warnings";
@@ -96,6 +96,10 @@ const RESOURCES: Resources = {
   disk_used_bytes: 1_250_000_000,
   disk_free_bytes: 20_000_000_000,
   disk_total_bytes: 32_000_000_000,
+  disk_alert_free_bytes: 6_400_000_000,
+  disk_backup_bytes: 5_400_000_000,
+  disk_alert_used_bytes: 25_600_000_000,
+  disk_alert_data_bytes: 6_120_000_000,
   measured_s: 3600,
 };
 
@@ -104,6 +108,7 @@ const HISTORY: ResourcePoint[] = [0, 1, 2].map((minute) => ({
   cpu_percent: minute === 0 ? null : 2 * minute,
   memory_bytes: 180_000_000 + minute * 1_000_000,
   disk_free_bytes: 20_000_000_000,
+  disk_used_bytes: 1_250_000_000,
 }));
 
 function mockApi(diagnostic: Diagnostic, problems: Problem[] = []) {
@@ -140,6 +145,14 @@ describe("niceMax", () => {
     expect(niceMax(14)).toBe(20);
     expect(niceMax(244_000_000)).toBe(500_000_000);
     expect(niceMax(0)).toBe(1);
+  });
+
+  it("place le seuil d'alerte vers 80 % de la hauteur", () => {
+    expect(axisTop(13.5e9, 26.9e9)).toBe(34e9); // espace occupé : seuil à 79 %
+    expect(axisTop(2.8e9, 7.7e9)).toBe(9.7e9); // données
+    expect(axisTop(343e6, 1_073_741_824)).toBe(1.4e9); // mémoire
+    expect(axisTop(30e9, 20e9)).toBe(50e9); // valeur au-delà : l'axe s'agrandit
+    expect(axisTop(14, null)).toBe(20); // sans seuil : niceMax
   });
 });
 
@@ -186,8 +199,10 @@ describe("DiagnosticScreen", () => {
     expect(screen.getByText("Average over 15 minutes · peak since start: 85% · available cores: 4")).toBeInTheDocument();
     expect(screen.getByText("180 MB")).toBeInTheDocument();
     expect(screen.getByText("Peak since start: 210 MB · container limit: 4 GB")).toBeInTheDocument();
+    expect(screen.getByText("12 GB")).toBeInTheDocument(); // occupé : 32 - 20
+    expect(screen.getByText("Free: 20 GB of 32 GB")).toBeInTheDocument();
     expect(screen.getByText("1.3 GB")).toBeInTheDocument();
-    expect(screen.getByText("Application data · free on the disk: 20 GB of 32 GB")).toBeInTheDocument();
+    expect(screen.getByText(/^Data folder, measured every 10 minutes; threshold:/)).toBeInTheDocument();
   });
 
   it("déplie la courbe d'une ressource", async () => {
@@ -201,6 +216,24 @@ describe("DiagnosticScreen", () => {
     expect(await screen.findByRole("img", { name: "Memory over the last 24 hours" })).toBeInTheDocument();
     expect(screen.getByText("alert threshold: 3 GB")).toBeInTheDocument();
     expect(globalThis.fetch).toHaveBeenCalledWith("api/diagnostic/resources/history", expect.anything());
+  });
+
+  it("trace l'espace occupé et les données, chacun sous un seul seuil d'alerte", async () => {
+    const user = userEvent.setup();
+    mockApi(HEALTHY);
+
+    renderScreen();
+
+    await user.click(await screen.findByText("Disk space used"));
+    const used = (await screen.findByRole("img", { name: "Disk space used over the last 24 hours" })).closest("figure");
+    expect(used).toHaveTextContent("alert threshold: 25.6 GB");
+    expect(used?.querySelectorAll("line.resource-chart-threshold")).toHaveLength(1);
+    await user.click(screen.getByText("Application data"));
+    const data = (await screen.findByRole("img", { name: "Application data over the last 24 hours" })).closest(
+      "figure",
+    );
+    expect(data).toHaveTextContent("alert threshold: 6.1 GB");
+    expect(data?.querySelectorAll("line.resource-chart-threshold")).toHaveLength(1);
   });
 
   it("écrit les alertes de ressources dans la langue de l'interface", async () => {

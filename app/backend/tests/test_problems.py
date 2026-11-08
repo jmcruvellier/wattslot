@@ -388,11 +388,11 @@ def test_a_nearly_full_disk_is_to_watch() -> None:
     low = _resource_codes(_resources_diagnostic(disk_free_bytes=gb, disk_total_bytes=33 * gb))
     assert low["disk_low"].params == {"free": "1.0", "percent": "3"}
     assert low["disk_low"].severity is Severity.WATCH
-    # Gros disque : moins de 10 % libres alertent, même au-delà de 2 Go.
-    share = _resource_codes(
-        _resources_diagnostic(disk_free_bytes=40 * gb, disk_total_bytes=500 * gb)
-    )
+    # Moins de 20 % libres alertent, même au-delà de 2 Go ; au plus 20 Go sur un gros disque.
+    share = _resource_codes(_resources_diagnostic(disk_free_bytes=6 * gb, disk_total_bytes=33 * gb))
     assert "disk_low" in share
+    big = _resource_codes(_resources_diagnostic(disk_free_bytes=25 * gb, disk_total_bytes=500 * gb))
+    assert big == {}
 
 
 def test_a_backup_that_would_not_fit_is_said_first() -> None:

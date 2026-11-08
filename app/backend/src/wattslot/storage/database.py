@@ -191,13 +191,15 @@ MIGRATIONS: tuple[str, ...] = (
     )
     """,
     # 19 : ressources de l'application minute par minute (courbes des dernières 24 h, gardées
-    # après un redémarrage) : charge de la minute en % d'un cœur, mémoire, espace libre.
+    # après un redémarrage) : charge de la minute en % d'un cœur, mémoire, espace libre,
+    # dernière taille mesurée du dossier des données.
     """
     CREATE TABLE resource_minutes (
         time TEXT PRIMARY KEY,
         cpu_percent REAL,
         memory_bytes INTEGER,
-        disk_free_bytes INTEGER
+        disk_free_bytes INTEGER,
+        disk_used_bytes INTEGER
     )
     """,
     # 20 : résumé des ressources heure par heure, gardé 30 jours (seuils des alertes, fuite de
@@ -211,7 +213,8 @@ MIGRATIONS: tuple[str, ...] = (
         memory_min INTEGER,
         memory_avg INTEGER,
         memory_max INTEGER,
-        disk_free_min INTEGER
+        disk_free_min INTEGER,
+        disk_used_max INTEGER
     )
     """,
 )

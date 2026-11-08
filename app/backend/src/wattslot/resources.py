@@ -41,13 +41,17 @@ AVERAGE_S = 15 * 60  # fenêtre de la moyenne du processeur
 HISTORY_S = 24 * 3600  # relevés gardés (pics, courbes)
 HOURS_KEPT = timedelta(days=30)  # résumés horaires gardés en base
 TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"  # largeur fixe : l'ordre du texte est celui du temps
+# Taille du dossier des données (courbe) : un parcours de tout le dossier, pour une valeur qui
+# bouge lentement, donc pas à chaque relevé.
+DATA_SIZE_INTERVAL_S = 10 * 60
 # cgroup v1 : « pas de limite » s'écrit comme un très grand nombre.
 UNLIMITED_V1 = 1 << 60
 
 # Seuils des alertes (provisoires, à revoir d'après des mesures réelles) : ici pour que les
 # problèmes du diagnostic et la ligne rouge des courbes partent des mêmes valeurs.
 DISK_FREE_MIN = 2 * 10**9  # octets libres sur le disque des données
-DISK_FREE_MIN_SHARE = 0.10  # part libre de ce disque
+DISK_FREE_MIN_SHARE = 0.20  # part libre de ce disque (80 % occupés)
+DISK_FREE_MAX = 20 * 10**9  # un très grand disque n'alerte pas avec des centaines de Go libres
 BACKUP_MARGIN = 2  # une sauvegarde copie la base et le graphe : deux fois leur taille
 MEMORY_CONTAINER_SHARE = 0.75  # de la limite du conteneur, tenue 15 minutes
 MEMORY_MAX = 1 << 30  # sans limite de conteneur : mémoire de WattSlot seul, tenue 15 minutes
@@ -63,6 +67,7 @@ class Sample:
     memory: int | None  # mémoire résidente
     disk_free: int | None = None  # espace libre du disque des données
     time: datetime | None = None  # heure du relevé (courbes)
+    disk_used: int | None = None  # dossier des données, mesuré toutes les 10 minutes seulement
 
 
 class Resources(BaseModel):
@@ -81,7 +86,12 @@ class Resources(BaseModel):
     disk_backup_bytes: int | None = None  # place qu'une sauvegarde demande (base et graphe)
     # Seuils des alertes, pour la ligne rouge des courbes : mémoire au-delà, espace libre en deçà.
     memory_alert_bytes: int | None = None
-    disk_alert_free_bytes: int | None = None
+    disk_alert_free_bytes: int | None = None  # le plus haut des deux seuils du disque
+    # Le même seuil, pour les courbes où l'alerte part au-dessus de la ligne : en espace occupé du
+    # disque, et en taille des données (la première des deux alertes qu'elles déclencheraient, si
+    # rien d'autre ne remplissait le disque).
+    disk_alert_used_bytes: int | None = None
+    disk_alert_data_bytes: int | None = None
     measured_s: int = 0  # durée couverte par les relevés (moins de 24 h après un démarrage)
 
 
@@ -95,8 +105,23 @@ def memory_alert(resources: Resources) -> int | None:
 
 
 def disk_low_free(resources: Resources) -> int:
-    """Espace libre en deçà duquel le disque est « presque plein »."""
-    return max(DISK_FREE_MIN, round(DISK_FREE_MIN_SHARE * (resources.disk_total_bytes or 0)))
+    """Espace libre en deçà duquel le disque est « presque plein » : 20 % du disque, entre 2 et
+    20 Go."""
+    share = round(DISK_FREE_MIN_SHARE * (resources.disk_total_bytes or 0))
+    return max(DISK_FREE_MIN, min(DISK_FREE_MAX, share))
+
+
+def data_limits(resources: Resources) -> tuple[int | None, int | None]:
+    """Taille des données à laquelle chaque alerte du disque partirait, si elles seules
+    remplissaient le disque : (presque plein, sauvegarde). Un octet de données de plus est un
+    octet libre de moins ; pour la sauvegarde, il compte aussi deux fois dans la place qu'elle
+    demande (base et graphe copiés), d'où le tiers."""
+    used, free = resources.disk_used_bytes, resources.disk_free_bytes
+    if used is None or free is None or resources.disk_total_bytes is None:
+        return None, None
+    full = used + free - disk_low_free(resources)
+    backup = resources.disk_backup_bytes
+    return full, (used + round((free - backup) / 3) if backup else None)
 
 
 def disk_alert(resources: Resources) -> int | None:
@@ -252,14 +277,18 @@ class ResourcePoint(BaseModel):
     cpu_percent: float | None = None  # charge de la minute, en % d'un cœur
     memory_bytes: int | None = None
     disk_free_bytes: int | None = None
+    disk_used_bytes: int | None = None  # dernière mesure du dossier des données
 
 
 def history(samples: list[Sample]) -> list[ResourcePoint]:
     """Courbes des dernières 24 h d'après les relevés (les plus anciens d'abord) ; le premier
-    relevé n'a pas de charge, faute de minute avant lui."""
+    relevé n'a pas de charge, faute de minute avant lui. Le dossier des données, mesuré moins
+    souvent, garde sa dernière mesure entre deux : une courbe en marches, sans trous."""
     points = []
     previous: Sample | None = None
+    used: int | None = None
     for sample in samples:
+        used = sample.disk_used if sample.disk_used is not None else used
         if sample.time is not None:
             points.append(
                 ResourcePoint(
@@ -267,6 +296,7 @@ def history(samples: list[Sample]) -> list[ResourcePoint]:
                     cpu_percent=cpu_percent(previous, sample) if previous else None,
                     memory_bytes=sample.memory,
                     disk_free_bytes=sample.disk_free,
+                    disk_used_bytes=used,
                 )
             )
         previous = sample
@@ -284,6 +314,7 @@ class ResourceHour(BaseModel):
     memory_avg: int | None = None
     memory_max: int | None = None
     disk_free_min: int | None = None
+    disk_used_max: int | None = None  # dossier des données, plus haute mesure de l'heure
 
 
 def _text(moment: datetime) -> str:
@@ -306,20 +337,29 @@ class ResourceStore:
         hour = moment.replace(minute=0, second=0, microsecond=0)
         with self._database:
             self._database.execute(
-                "INSERT INTO resource_minutes VALUES (?, ?, ?, ?) "
+                "INSERT INTO resource_minutes VALUES (?, ?, ?, ?, ?) "
                 "ON CONFLICT(time) DO UPDATE SET cpu_percent = excluded.cpu_percent, "
-                "memory_bytes = excluded.memory_bytes, disk_free_bytes = excluded.disk_free_bytes",
-                (_text(moment), point.cpu_percent, point.memory_bytes, point.disk_free_bytes),
+                "memory_bytes = excluded.memory_bytes, disk_free_bytes = excluded.disk_free_bytes, "
+                "disk_used_bytes = excluded.disk_used_bytes",
+                (
+                    _text(moment),
+                    point.cpu_percent,
+                    point.memory_bytes,
+                    point.disk_free_bytes,
+                    point.disk_used_bytes,
+                ),
             )
             self._database.execute(
                 "INSERT INTO resource_hours "
                 "SELECT ?, COUNT(*), AVG(cpu_percent), MAX(cpu_percent), MIN(memory_bytes), "
-                "CAST(AVG(memory_bytes) AS INTEGER), MAX(memory_bytes), MIN(disk_free_bytes) "
+                "CAST(AVG(memory_bytes) AS INTEGER), MAX(memory_bytes), MIN(disk_free_bytes), "
+                "MAX(disk_used_bytes) "
                 "FROM resource_minutes WHERE time >= ? AND time < ? "
                 "ON CONFLICT(hour) DO UPDATE SET samples = excluded.samples, "
                 "cpu_avg = excluded.cpu_avg, cpu_max = excluded.cpu_max, "
                 "memory_min = excluded.memory_min, memory_avg = excluded.memory_avg, "
-                "memory_max = excluded.memory_max, disk_free_min = excluded.disk_free_min",
+                "memory_max = excluded.memory_max, disk_free_min = excluded.disk_free_min, "
+                "disk_used_max = excluded.disk_used_max",
                 (_text(hour), _text(hour), _text(hour + timedelta(hours=1))),
             )
             self._database.execute(
@@ -332,8 +372,8 @@ class ResourceStore:
 
     def minutes(self, since: datetime) -> list[ResourcePoint]:
         rows = self._database.execute(
-            "SELECT time, cpu_percent, memory_bytes, disk_free_bytes FROM resource_minutes "
-            "WHERE time >= ? ORDER BY time",
+            "SELECT time, cpu_percent, memory_bytes, disk_free_bytes, disk_used_bytes "
+            "FROM resource_minutes WHERE time >= ? ORDER BY time",
             (_text(since),),
         ).fetchall()
         return [
@@ -342,6 +382,7 @@ class ResourceStore:
                 cpu_percent=row[1],
                 memory_bytes=row[2],
                 disk_free_bytes=row[3],
+                disk_used_bytes=row[4],
             )
             for row in rows
         ]
@@ -349,7 +390,7 @@ class ResourceStore:
     def hours(self, since: datetime) -> list[ResourceHour]:
         rows = self._database.execute(
             "SELECT hour, samples, cpu_avg, cpu_max, memory_min, memory_avg, memory_max, "
-            "disk_free_min FROM resource_hours WHERE hour >= ? ORDER BY hour",
+            "disk_free_min, disk_used_max FROM resource_hours WHERE hour >= ? ORDER BY hour",
             (_text(since),),
         ).fetchall()
         return [
@@ -362,6 +403,7 @@ class ResourceStore:
                 memory_avg=row[5],
                 memory_max=row[6],
                 disk_free_min=row[7],
+                disk_used_max=row[8],
             )
             for row in rows
         ]
@@ -374,21 +416,23 @@ def _free(path: Path) -> int | None:
         return None
 
 
-def _sample(data_dir: Path | None = None) -> Sample:
+def _sample(data_dir: Path | None = None, disk_used: int | None = None) -> Sample:
     return Sample(
         at=time.monotonic(),
         cpu_s=time.process_time(),
         memory=memory_bytes(),
         disk_free=_free(data_dir) if data_dir is not None else None,
         time=datetime.now(UTC),
+        disk_used=disk_used,
     )
 
 
 class ResourceMonitor:
-    """Relève le processeur, la mémoire et l'espace libre toutes les minutes ; ``snapshot`` y
-    ajoute le dossier des données et les limites (à appeler hors de la boucle d'événements : il
-    parcourt ce dossier). Avec une base, chaque minute y est gardée, et les minutes des dernières
-    24 h d'avant le démarrage complètent courbes et pics."""
+    """Relève le processeur, la mémoire et l'espace libre toutes les minutes, le dossier des
+    données toutes les 10 minutes ; ``snapshot`` y ajoute le dossier des données et les limites
+    (à appeler hors de la boucle d'événements : il parcourt ce dossier). Avec une base, chaque
+    minute y est gardée, et les minutes des dernières 24 h d'avant le démarrage complètent
+    courbes et pics."""
 
     def __init__(self, data_dir: Path, database: sqlite3.Connection | None = None) -> None:
         self._data_dir = data_dir
@@ -403,6 +447,7 @@ class ResourceMonitor:
             except sqlite3.Error:
                 logger.exception("Lecture des ressources gardées impossible")
         self._task: asyncio.Task[None] | None = None
+        self._measured_at: float | None = None  # dernière mesure du dossier des données
 
     def start(self) -> None:
         self._task = asyncio.create_task(self._loop())
@@ -420,13 +465,13 @@ class ResourceMonitor:
         """Garde en base la dernière minute écoulée (à appeler hors de la boucle d'événements)."""
         if self._store is None or len(self._samples) < 2:
             return
-        self._store.save(history(list(self._samples)[-2:])[-1])
+        self._store.save(history(list(self._samples))[-1])
 
     async def _loop(self) -> None:
         while True:
             await asyncio.sleep(INTERVAL_S)
             try:
-                self.record(_sample(self._data_dir))
+                self.record(_sample(self._data_dir, await self._data_size()))
                 await asyncio.to_thread(self.save_last)
             except Exception:  # nouvel essai à la minute suivante
                 logger.exception("Relevé des ressources impossible")
@@ -434,6 +479,15 @@ class ResourceMonitor:
     def _kept(self, now: datetime) -> list[ResourcePoint]:
         since = now - timedelta(seconds=HISTORY_S)
         return [p for p in self._before if p.time >= since]
+
+    async def _data_size(self) -> int | None:
+        """Taille du dossier des données, une fois toutes les 10 minutes (sinon None), mesurée
+        hors de la boucle d'événements."""
+        now = time.monotonic()
+        if self._measured_at is not None and now - self._measured_at < DATA_SIZE_INTERVAL_S:
+            return None
+        self._measured_at = now
+        return await asyncio.to_thread(directory_size, self._data_dir)
 
     def history(self) -> list[ResourcePoint]:
         return [*self._kept(datetime.now(UTC)), *history(list(self._samples))]
@@ -477,4 +531,8 @@ class ResourceMonitor:
             found.disk_free_bytes, found.disk_total_bytes = usage.free, usage.total
         found.memory_alert_bytes = memory_alert(found)
         found.disk_alert_free_bytes = disk_alert(found)
+        if found.disk_total_bytes is not None and found.disk_alert_free_bytes is not None:
+            found.disk_alert_used_bytes = found.disk_total_bytes - found.disk_alert_free_bytes
+        limits = [limit for limit in data_limits(found) if limit is not None]
+        found.disk_alert_data_bytes = min(limits, default=None)
         return found

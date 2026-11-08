@@ -1,4 +1,5 @@
-// Ressources de l'application (État de l'application) : processeur, mémoire et disque, lus par
+// Ressources de l'application (État de l'application) : processeur, mémoire, espace occupé du
+// disque et données de l'application, lus par
 // /api/diagnostic/resources toutes les 30 secondes. Les alertes (disque, mémoire, calcul lent)
 // sont des problèmes du diagnostic, en tête de page. Chaque ligne se déplie sur sa courbe des
 // dernières 24 h (/api/diagnostic/resources/history), lue seulement quand une ligne est ouverte.
@@ -13,7 +14,7 @@ import { formatNumber, formatPercent } from "./format";
 import ResourceChart, { type ChartPoint } from "./ResourceChart";
 import type { ResourcePoint, Resources } from "./types";
 
-type Kind = "cpu" | "memory" | "disk";
+type Kind = "cpu" | "memory" | "disk" | "data";
 
 const REFRESH_MS = 30_000;
 // En deçà, les pics ne couvrent pas encore une journée : « depuis le démarrage ».
@@ -88,6 +89,7 @@ export default function ResourcesSection() {
     );
   } else {
     const r = load.resources;
+    const total = r.disk_total_bytes;
     const peak = (value: string) =>
       t(r.measured_s >= DAY_S ? "diagnostic.resources.peak_day" : "diagnostic.resources.peak_start", { value });
     rows = (
@@ -124,28 +126,32 @@ export default function ResourcesSection() {
                 ),
           )}
         />
+        {/* Disque en deux lignes, comme les autres : la courbe monte vers son seuil d'alerte,
+            le premier atteint des deux alertes du disque (presque plein, sauvegarde). */}
         <Row
           kind="disk"
           onToggle={toggle}
           chart={chart(
-            t("diagnostic.resources.disk_free_title"),
-            r.disk_alert_free_bytes,
-            (p) => p.disk_free_bytes,
+            t("diagnostic.resources.disk_occupied"),
+            r.disk_alert_used_bytes,
+            (p) => (total === null || p.disk_free_bytes === null ? null : total - p.disk_free_bytes),
             bytes,
           )}
-          label={t("diagnostic.resources.disk")}
-          value={bytes(r.disk_used_bytes)}
+          label={t("diagnostic.resources.disk_occupied")}
+          value={bytes(total === null || r.disk_free_bytes === null ? null : total - r.disk_free_bytes)}
           description={
-            r.disk_free_bytes === null || r.disk_total_bytes === null
-              ? t("diagnostic.resources.disk_used")
-              : help(
-                  t("diagnostic.resources.disk_used"),
-                  t("diagnostic.resources.disk_free", {
-                    free: bytes(r.disk_free_bytes),
-                    total: bytes(r.disk_total_bytes),
-                  }),
-                )
+            total === null || r.disk_free_bytes === null
+              ? undefined
+              : t("diagnostic.resources.disk_free", { free: bytes(r.disk_free_bytes), total: bytes(total) })
           }
+        />
+        <Row
+          kind="data"
+          onToggle={toggle}
+          chart={chart(t("diagnostic.resources.disk_used"), r.disk_alert_data_bytes, (p) => p.disk_used_bytes ?? null, bytes)}
+          label={t("diagnostic.resources.disk_used")}
+          value={bytes(r.disk_used_bytes)}
+          description={t("diagnostic.resources.disk_used_help")}
         />
       </>
     );
@@ -165,7 +171,7 @@ function Row({ kind, label, value, description, chart, onToggle }: {
   kind: Kind;
   label: string;
   value: string;
-  description: string;
+  description?: string;
   chart: ReactNode;
   onToggle: (kind: Kind, open: boolean) => void;
 }) {

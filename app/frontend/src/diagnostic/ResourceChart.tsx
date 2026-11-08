@@ -1,6 +1,7 @@
 // Courbe d'une ressource sur les dernières 24 h (un point par minute), en SVG sans bibliothèque :
 // la page d'état reste légère. Le SVG s'étire sur la largeur à hauteur fixe ; les textes restent en
-// HTML, à la taille de la page. Une ligne rouge marque le seuil d'alerte quand il y en a un. Le
+// HTML, à la taille de la page. Une ligne rouge marque le seuil d'alerte quand il y en a un, vers
+// 80 % de la hauteur ; la courbe est lissée sans dépasser les relevés (``smoothPath``). Le
 // survol (ou le toucher) montre l'heure et la valeur du point le plus proche ; un trou dans les
 // relevés (redémarrage) coupe la courbe.
 
@@ -8,7 +9,8 @@ import { useState, type PointerEvent } from "react";
 
 import { useI18n } from "../i18n/I18nProvider";
 import { zoned } from "../i18n/homeTime";
-import { niceMax } from "./format";
+import { smoothPath } from "./chartPath";
+import { axisTop } from "./format";
 
 export interface ChartPoint {
   time: number; // millisecondes
@@ -35,8 +37,8 @@ export default function ResourceChart({ points, format, label, threshold }: {
 
   const start = known[0].time;
   const end = known[known.length - 1].time;
-  // Haut de l'axe au-dessus des valeurs et du seuil : la ligne rouge reste visible.
-  const top = niceMax(Math.max(...known.map((p) => p.value), threshold ?? 0));
+  // Seuil vers 80 % de la hauteur : la marge qui reste se lit d'un coup d'œil.
+  const top = axisTop(Math.max(...known.map((p) => p.value)), threshold);
   const x = (time: number) => ((time - start) / Math.max(end - start, 1)) * WIDTH;
   const y = (value: number) => (1 - Math.min(value, top) / top) * HEIGHT;
   const clock = (time: number) =>
@@ -49,8 +51,7 @@ export default function ResourceChart({ points, format, label, threshold }: {
     if (last && point.time - last[last.length - 1].time <= GAP_MS) last.push(point);
     else segments.push([point]);
   }
-  const line = (segment: Known[]) =>
-    segment.map((p, i) => `${i ? "L" : "M"}${x(p.time).toFixed(1)},${y(p.value).toFixed(1)}`).join("");
+  const line = (segment: Known[]) => smoothPath(segment.map((p) => [x(p.time), y(p.value)]));
   const area = (segment: Known[]) =>
     `${line(segment)}L${x(segment[segment.length - 1].time).toFixed(1)},${HEIGHT}L${x(segment[0].time).toFixed(1)},${HEIGHT}Z`;
 

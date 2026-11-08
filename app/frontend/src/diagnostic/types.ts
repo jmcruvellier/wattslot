@@ -102,6 +102,8 @@ export interface Resources {
   disk_backup_bytes?: number | null; // place qu'une sauvegarde demande
   memory_alert_bytes?: number | null; // seuil d'alerte (ligne rouge) : mémoire au-delà
   disk_alert_free_bytes?: number | null; // seuil d'alerte : espace libre en deçà
+  disk_alert_used_bytes?: number | null; // le même seuil en espace occupé : au-delà
+  disk_alert_data_bytes?: number | null; // en taille des données : au-delà
   measured_s: number; // durée couverte par les relevés
 }
 
@@ -110,6 +112,7 @@ export interface ResourcePoint {
   cpu_percent: number | null; // charge de la minute, en % d'un cœur
   memory_bytes: number | null;
   disk_free_bytes: number | null;
+  disk_used_bytes?: number | null; // dossier des données, dernière mesure (toutes les 10 min)
 }
 
 export interface Diagnostic {
