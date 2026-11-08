@@ -20,7 +20,6 @@ from wattslot.home_assistant import ConnectionState
 from wattslot.home_model import HomeDevice, HomeModel, HomeSensor
 from wattslot.ingestion import EntityStatus, IngestionStatus
 from wattslot.main import create_app
-from wattslot.maintenance import DiskUsage, MaintenanceStatus, Retention
 from wattslot.objective_settings import ObjectiveSettings, Preset
 from wattslot.planning.runner import ImpossibleData, RunReport
 from wattslot.planning.scheduler import SchedulerStatus
@@ -398,11 +397,8 @@ def test_a_nearly_full_disk_is_to_watch() -> None:
 
 def test_a_backup_that_would_not_fit_is_said_first() -> None:
     gb = 10**9
-    diagnostic = _resources_diagnostic(disk_free_bytes=5 * gb, disk_total_bytes=33 * gb)
-    diagnostic.maintenance = MaintenanceStatus(
-        running=True,
-        retention=Retention(),
-        disk=DiskUsage(raw_bytes=gb, graph_bytes=2 * gb, database_bytes=gb),
+    diagnostic = _resources_diagnostic(
+        disk_free_bytes=5 * gb, disk_total_bytes=33 * gb, disk_backup_bytes=6 * gb
     )
     found = _resource_codes(diagnostic)
     assert set(found) == {"backup_space"}

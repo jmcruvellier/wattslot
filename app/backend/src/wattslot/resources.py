@@ -26,6 +26,8 @@ from typing import Literal
 from pydantic import BaseModel
 
 from wattslot.maintenance import directory_size
+from wattslot.storage.database import DATABASE_FILENAME
+from wattslot.storage.graph import GRAPH_DIRNAME
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +36,14 @@ AVERAGE_S = 15 * 60  # fenêtre de la moyenne du processeur
 HISTORY_S = 24 * 3600  # relevés gardés (pics)
 # cgroup v1 : « pas de limite » s'écrit comme un très grand nombre.
 UNLIMITED_V1 = 1 << 60
+
+# Seuils des alertes (provisoires, à revoir d'après des mesures réelles) : ici pour que les
+# problèmes du diagnostic et la ligne rouge des courbes partent des mêmes valeurs.
+DISK_FREE_MIN = 2 * 10**9  # octets libres sur le disque des données
+DISK_FREE_MIN_SHARE = 0.10  # part libre de ce disque
+BACKUP_MARGIN = 2  # une sauvegarde copie la base et le graphe : deux fois leur taille
+MEMORY_CONTAINER_SHARE = 0.75  # de la limite du conteneur, tenue 15 minutes
+MEMORY_MAX = 1 << 30  # sans limite de conteneur : mémoire de WattSlot seul, tenue 15 minutes
 
 CGROUP = Path("/sys/fs/cgroup")
 MEMINFO = Path("/proc/meminfo")
@@ -61,7 +71,33 @@ class Resources(BaseModel):
     disk_used_bytes: int | None = None  # dossier des données de l'application
     disk_free_bytes: int | None = None  # espace libre du disque qui le porte
     disk_total_bytes: int | None = None
+    disk_backup_bytes: int | None = None  # place qu'une sauvegarde demande (base et graphe)
+    # Seuils des alertes, pour la ligne rouge des courbes : mémoire au-delà, espace libre en deçà.
+    memory_alert_bytes: int | None = None
+    disk_alert_free_bytes: int | None = None
     measured_s: int = 0  # durée couverte par les relevés (moins de 24 h après un démarrage)
+
+
+def memory_alert(resources: Resources) -> int | None:
+    """Mémoire au-delà de laquelle WattSlot alerte : une part de la limite du conteneur, ou,
+    sans limite de conteneur (mémoire de la machine, partagée), un plafond pour lui seul."""
+    limit = resources.memory_limit_bytes
+    if resources.memory_limit_source == "container" and limit:
+        return round(MEMORY_CONTAINER_SHARE * limit)
+    return MEMORY_MAX
+
+
+def disk_low_free(resources: Resources) -> int:
+    """Espace libre en deçà duquel le disque est « presque plein »."""
+    return max(DISK_FREE_MIN, round(DISK_FREE_MIN_SHARE * (resources.disk_total_bytes or 0)))
+
+
+def disk_alert(resources: Resources) -> int | None:
+    """Espace libre en deçà duquel une alerte part : disque presque plein, ou sauvegarde qui ne
+    tiendrait plus."""
+    if resources.disk_free_bytes is None:
+        return None
+    return max(disk_low_free(resources), resources.disk_backup_bytes or 0)
 
 
 def cpu_percent(older: Sample, newer: Sample) -> float | None:
@@ -286,9 +322,19 @@ class ResourceMonitor:
         found.cpu_cores = cpu_cores()
         found.memory_limit_bytes, found.memory_limit_source = memory_limit()
         found.disk_used_bytes = directory_size(self._data_dir)
+        found.disk_backup_bytes = BACKUP_MARGIN * (
+            directory_size(self._data_dir / GRAPH_DIRNAME)
+            + sum(
+                directory_size(self._data_dir / f"{DATABASE_FILENAME}{suffix}")
+                for suffix in ("", "-wal", "-shm")
+            )
+        )
         try:
             usage = shutil.disk_usage(self._data_dir)
         except OSError:
-            return found
-        found.disk_free_bytes, found.disk_total_bytes = usage.free, usage.total
+            usage = None
+        if usage is not None:
+            found.disk_free_bytes, found.disk_total_bytes = usage.free, usage.total
+        found.memory_alert_bytes = memory_alert(found)
+        found.disk_alert_free_bytes = disk_alert(found)
         return found

@@ -1172,7 +1172,8 @@
       "chart_point": "{time}: {value}",
       "chart_range": "De {start} a {end} · parte alta del eje: {top}",
       "chart_label": "{name} en las últimas 24 horas",
-      "disk_free_title": "Espacio libre"
+      "disk_free_title": "Espacio libre",
+      "chart_threshold": "umbral de alerta: {value}"
     },
     "next_maintenance": "Próximo mantenimiento",
     "last_maintenance": "Último mantenimiento",

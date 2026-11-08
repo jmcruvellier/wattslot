@@ -3218,15 +3218,29 @@ p[role="status"]:not(.state-message) {
   margin: 0.75rem 0 0.25rem;
 }
 
-.resource-chart svg {
-  display: block;
-  width: 100%;
-  height: auto;
+.resource-chart-empty {
+  margin: 0.75rem 0 0.25rem;
+}
+
+/* Hauteur fixe : le SVG s'étire sur la largeur seulement, les textes restent en HTML. */
+.resource-chart-plot {
+  position: relative;
+  height: 7rem;
+  margin-top: 0.5rem;
   touch-action: pan-y;
 }
 
-.resource-chart-empty {
-  margin: 0.75rem 0 0.25rem;
+.resource-chart-plot svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.resource-chart-times {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.25rem;
 }
 
 .resource-chart-line {
@@ -3245,6 +3259,7 @@ p[role="status"]:not(.state-message) {
 .resource-chart-grid,
 .resource-chart-cursor {
   stroke: var(--border);
+  stroke-width: 1;
   vector-effect: non-scaling-stroke;
 }
 
@@ -3256,11 +3271,23 @@ p[role="status"]:not(.state-message) {
   stroke: var(--text-dim);
 }
 
-.resource-chart-dot {
-  fill: var(--accent);
+.resource-chart-threshold {
+  stroke: var(--danger);
+  stroke-width: 1.5;
+  stroke-dasharray: 6 4;
+  vector-effect: non-scaling-stroke;
 }
 
-.resource-chart-label {
-  fill: var(--text-dim);
-  font-size: 12px;
+.resource-chart-threshold-text {
+  color: var(--danger);
+}
+
+.resource-chart-dot {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  margin: -4px 0 0 -4px;
+  border-radius: 50%;
+  background: var(--accent);
+  pointer-events: none;
 }

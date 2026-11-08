@@ -6,7 +6,7 @@
 
 **Réglages › État de l'application** (ou la pastille d'état du menu) liste ce qui ne va pas, par gravité : **Bloque le plan**, **Plan moins juste**, **À surveiller**. Chaque problème dit quoi faire et a un lien **Y aller**. **Vérifier à nouveau** relance les vérifications.
 
-La section **Ressources** montre le processeur (moyenne sur 15 minutes et pic, en part d'un cœur), la mémoire (avec son pic, et la limite du conteneur ou la mémoire de la machine) et le disque (données de l'application et espace libre du disque qui les porte). Chaque ligne se déplie sur sa courbe des dernières 24 heures, un point par minute ; survolez-la pour lire une valeur. La limite mémoire est celle du conteneur quand il en fixe une ; sinon, c'est la mémoire de la machine, partagée avec tout ce qui y tourne.
+La section **Ressources** montre le processeur (moyenne sur 15 minutes et pic, en part d'un cœur), la mémoire (avec son pic, et la limite du conteneur ou la mémoire de la machine) et le disque (données de l'application et espace libre du disque qui les porte). Chaque ligne se déplie sur sa courbe des dernières 24 heures, un point par minute ; survolez-la pour lire une valeur. Une ligne rouge en pointillés marque le seuil d'alerte (mémoire au-dessus, espace libre en dessous) ; le processeur n'en a pas encore. La limite mémoire est celle du conteneur quand il en fixe une ; sinon, c'est la mémoire de la machine, partagée avec tout ce qui y tourne.
 
 | Problème | Que faire |
 |---|---|
