@@ -9,7 +9,8 @@ du plan précédent, ensuite du nouveau. Un plan d'une autre journée n'est pas 
 - **Batterie** : mouvements et SoC découpés ; SoC initial du tout premier calcul du jour.
 - **Piscine** : modes découpés heure par heure, segments reconstruits.
 - **Équipements** : un bloc commencé avant l'heure d'exécution est gelé, sauf si sa tâche a
-  été retirée de HA sans que l'équipement ait tourné (annulation).
+  été retirée de HA sans que l'équipement ait tourné (annulation), ou si son cycle réel a
+  démarré : le nouveau calcul le recale alors sur ce démarrage (écart à la v1).
 - **Avertissements** : réunion sans doublon.
 
 Le plan suit le format de la v1 (sortie du moteur, ``engine.output``), lu par le dashboard.
@@ -180,6 +181,7 @@ def merge_planning(
             and old_item["heure_debut"] < first_hour
             and still_active
             and (chosen is None or name not in chosen)
+            and not _launched(new_by_name.get(name))
         ):
             merged.append(old_item)  # commencé ou décidé dans le passé : gelé
         elif name in new_by_name:
@@ -188,6 +190,13 @@ def merge_planning(
             merged.append(old_item)
         # sinon : tâche annulée dans HA, et plus proposée par le nouveau calcul
     return merged
+
+
+def _launched(item: Mapping[str, Any] | None) -> bool:
+    """Bloc d'un cycle lancé, recalé par le nouveau calcul sur son démarrage réel : il remplace
+    le bloc gelé, dont la fin ne suivait plus le cycle (pas dans la v1)."""
+    reasons = ((item or {}).get("explication") or {}).get("raisons") or []
+    return any(r.get("code") == "launched" for r in reasons if isinstance(r, Mapping))
 
 
 def merge_plans(

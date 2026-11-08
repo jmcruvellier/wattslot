@@ -373,13 +373,31 @@ def from_input(data: PlanningInput, reference: Reference = REFERENCE) -> Problem
         return result.start
 
     launched_end_hours: dict[str, int] = {}
+    launched: list[LaunchedCycle] = []
     for item in frozen.values():
         cycle = _frozen_cycle(item)
         cycle_min = item.cycle_min or (item.end_hour - item.start_hour) * 60
-        if launched_now(item.name, item.energy_kwh, cycle_min, item.shape) is None:
+        started = launched_now(item.name, item.energy_kwh, cycle_min, item.shape)
+        if started is None:
             for hour, kwh in planned_hourly(cycle).items():
                 if hour >= first_hour:
                     fixed[hour] += kwh
+            continue
+        # Bloc gelé dont le cycle réel a démarré : recalé à chaque calcul (démarrage réel, fin
+        # repoussée tant qu'il tourne), le plan fusionné prend ce bloc plutôt que l'ancien.
+        launched.append(
+            LaunchedCycle(
+                name=item.name,
+                priority=item.priority,
+                energy_kwh=item.energy_kwh,
+                cycle_min=cycle_min,
+                shape=item.shape,
+                start=started,
+                end_hour=max(started.hour + 1, launched_end_hours[item.name]),
+                end_min=max(started.hour * 60 + started.minute, ends[task_key(item.name)]),
+                planned=data.planned_reasons.get(item.name, ()),
+            )
+        )
 
     due_today = [t for t in data.due_tasks if t.due == day]
     on_demand = [t for t in due_today if t.on_demand]
@@ -393,7 +411,6 @@ def from_input(data: PlanningInput, reference: Reference = REFERENCE) -> Problem
     waiting_keys = {task_key(t.name) for t in waiting}
 
     tasks: list[Task] = []
-    launched: list[LaunchedCycle] = []
     for priority, group, suffix in ((1, recurring, "du"), (3, waiting, "attente")):
         for request in group:
             if request.name in frozen:
