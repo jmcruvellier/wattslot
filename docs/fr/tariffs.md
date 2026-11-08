@@ -12,7 +12,7 @@ Le plan place vos appareils là où l'électricité est gratuite (votre surplus)
 |---|---|---|
 | **Prix unique** | Le même prix à toute heure (option base) | Le prix du kWh |
 | **Heures creuses et pleines** | Un prix plus bas à certaines heures | Le prix des heures pleines, puis une **plage** par tranche moins chère (de, à, prix). Une plage peut être **limitée à certains jours ou mois** (week-end, été) |
-| **Couleur du jour (Tempo)** | Le prix dépend de la couleur du jour et de l'heure | Le capteur de Home Assistant qui donne la couleur du jour (et celle du lendemain, facultatif), l'heure où commence le jour de couleur, puis chaque couleur avec son prix hors plages et ses plages. La première couleur sert quand la couleur n'est pas connue |
+| **Jour annoncé (Tempo, EJP…)** | Le prix dépend du jour annoncé par le fournisseur et de l'heure | Le capteur de Home Assistant qui donne le jour (et celui du lendemain, facultatif), l'heure où commence le jour annoncé, puis chaque sorte de jour avec son nom, les autres états du capteur qui la désignent, son prix hors plages et ses plages. La première sorte sert quand le jour n'est pas connu. **Partir d'un modèle** remplit Tempo ou EJP |
 | **Prix dynamique** | Un prix pour chaque heure, par votre fournisseur ou le marché | Le capteur de Home Assistant qui donne le prix de l'heure en cours et des heures à venir, son unité, et le prix à utiliser quand il n'est pas connu |
 
 ## Jours, mois et jours fériés
@@ -55,4 +55,5 @@ WattSlot est tout aussi utile sans panneaux : avec des heures creuses, des jours
 
 - Les prix des modèles sont **indicatifs** : remplacez-les par les vôtres, ils guident chaque décision.
 - Pour Tempo, le capteur de couleur vient en général de l'intégration **RTE Tempo** ; saisissez le nom des couleurs exactement comme le capteur les affiche.
+- Pour l'EJP, le jour de pointe va de 7 h à 1 h le lendemain : le modèle fait commencer le jour annoncé à 7 h et revient au prix normal de 1 h à 7 h. Si votre capteur affiche d'autres états que `on`/`off` ou `EJP`/`Non EJP`, ajoutez-les dans **aussi reconnu** (casse et accents sans importance).
 - Les prix sont au kWh, dans la devise de votre maison (**Réglages › Langue et affichage**). Pour un capteur au MWh (prix spot) ou en centimes, choisissez cette unité : WattSlot convertit.

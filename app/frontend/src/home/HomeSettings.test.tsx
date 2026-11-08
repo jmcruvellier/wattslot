@@ -208,9 +208,9 @@ describe("réglages de Ma maison", () => {
     renderHome();
 
     let sheet = await openSheet("L'essentiel", /^Mon contrat/, "Tarif de l'électricité");
-    await userEvent.click(within(sheet).getByRole("button", { name: "Définir un tarif par couleur de jour (Tempo)" }));
-    await userEvent.type(within(sheet).getByLabelText("Capteur de la couleur du jour"), "sensor.tempo_today");
-    const redPrice = within(sheet).getByRole("group", { name: "Couleur Rouge" }).querySelector("input.number-input")!;
+    await userEvent.click(within(sheet).getByRole("button", { name: "Définir un tarif Tempo" }));
+    await userEvent.type(within(sheet).getByLabelText("Capteur du jour annoncé"), "sensor.tempo_today");
+    const redPrice = within(sheet).getByRole("group", { name: "Jour Rouge" }).querySelector("input.number-input")!;
     await userEvent.clear(redPrice);
     await userEvent.type(redPrice, "0.7562");
     await save(sheet);

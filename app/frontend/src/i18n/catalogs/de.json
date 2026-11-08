@@ -893,14 +893,15 @@
     "use": {
       "SingleTariff": "Einheitspreis einstellen",
       "TimeOfUseTariff": "Neben- und Hauptzeiten einstellen",
-      "DayColorTariff": "Tarif nach Tagesfarbe einstellen (Tempo)",
-      "DynamicTariff": "Dynamischen Preis einstellen"
+      "DayColorTariff": "Tempo-Tarif festlegen",
+      "DynamicTariff": "Dynamischen Preis einstellen",
+      "ejp": "EJP-Tarif festlegen"
     },
     "kind": "Tarifart",
     "kinds": {
       "SingleTariff": "Einheitspreis",
       "TimeOfUseTariff": "Neben- und Hauptzeiten",
-      "DayColorTariff": "Tagesfarbe (Tempo)",
+      "DayColorTariff": "Angekündigter Tag (Tempo, EJP…)",
       "DynamicTariff": "Dynamischer Preis"
     },
     "base_single": "Preis pro kWh",
@@ -925,15 +926,15 @@
     "whole_country": "Ganzes Land",
     "choose_country": "Land wählen",
     "holidays_failed": "Die Liste der Länder konnte nicht gelesen werden.",
-    "color_entity": "Sensor der Tagesfarbe",
-    "color_tomorrow_entity": "Sensor der Farbe von morgen",
-    "color_day_start": "Der Farbtag beginnt um",
-    "colors_hint": "Jede Farbe: ihr Name (wie der Sensor ihn anzeigt), ihr Preis außerhalb der Zeitfenster und ihre Zeitfenster. Die erste gilt, wenn die Farbe unbekannt ist.",
-    "color_named": "Farbe {color}",
-    "color": "Farbe",
+    "color_entity": "Sensor des angekündigten Tages",
+    "color_tomorrow_entity": "Sensor für morgen",
+    "color_day_start": "Der angekündigte Tag beginnt um",
+    "colors_hint": "Jede Tagesart: ihr Name und die weiteren Sensorzustände, die sie bezeichnen, ihr Preis außerhalb der Zeitfenster und ihre Zeitfenster. Die erste gilt, wenn der Tag unbekannt ist.",
+    "color_named": "Tag {color}",
+    "color": "Name",
     "base_color": "Preis außerhalb der Zeitfenster",
-    "remove_color": "Farbe entfernen",
-    "add_color": "Farbe hinzufügen",
+    "remove_color": "Diesen Tag entfernen",
+    "add_color": "Tagesart hinzufügen",
     "read": "aus Home Assistant lesen",
     "read_from": "Sensor",
     "stop_reading": "Preis eingeben",
@@ -950,11 +951,11 @@
       "failed": "Der Vorschlag konnte nicht gelesen werden."
     },
     "reset": "Zum Standardpreis zurück",
-    "color_entity_hint": "Home-Assistant-Sensor, der die Tagesfarbe liefert (zum Beispiel die Integration RTE Tempo).",
+    "color_entity_hint": "Sensor von Home Assistant, der die Tempo-Farbe oder den EJP-Tag liefert (zum Beispiel die Integration RTE Tempo).",
     "kind_hints": {
       "SingleTariff": "Der gleiche Preis zu jeder Stunde.",
       "TimeOfUseTariff": "Ein niedrigerer Preis während der Nebenzeiten Ihres Vertrags.",
-      "DayColorTariff": "Der Preis hängt von der Tagesfarbe (Tempo) und der Uhrzeit ab.",
+      "DayColorTariff": "Der Preis hängt vom vom Anbieter angekündigten Tag (Tempo-Farbe, EJP-Tag…) und von der Uhrzeit ab.",
       "DynamicTariff": "Der Preis ändert sich stündlich und wird von einem Home-Assistant-Sensor gelesen."
     },
     "price_entity_hint": "Home-Assistant-Sensor, der den Preis der aktuellen und kommenden Stunden liefert.",
@@ -968,7 +969,15 @@
       "kwh": "{symbol}/kWh",
       "cents_kwh": "Cent/kWh",
       "mwh": "{symbol}/MWh"
-    }
+    },
+    "states": "auch erkannt",
+    "states_placeholder": "on, Spitze…",
+    "preset": "Von einer Vorlage ausgehen:",
+    "presets": {
+      "tempo": "Tempo",
+      "ejp": "EJP"
+    },
+    "preset_hint": "Ersetzt die Tagesarten und ihre Preise durch die der Vorlage (Richtpreise, durch Ihre zu ersetzen)."
   },
   "battery": {
     "title": "Batterie",
@@ -1542,7 +1551,7 @@
       "off_peak": "Niedertarif {ranges}",
       "off_peak_days": "Nebenzeiten je nach Tag",
       "off_peak_and_days": "Nebenzeiten {ranges}, weitere je nach Tag",
-      "colors": "Preis nach Tagesfarbe",
+      "colors": "Preis je nach angekündigtem Tag (Tempo, EJP…)",
       "dynamic": "Preis, der sich stündlich ändert"
     },
     "panels": {

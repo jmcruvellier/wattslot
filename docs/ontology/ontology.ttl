@@ -274,6 +274,11 @@ wattslot:colorEntity a owl:DatatypeProperty ;
 	rdfs:domain wattslot:Tariff ;
 	rdfs:label "day color entity"@en , "entité de la couleur du jour"@fr ;
 	rdfs:range xsd:string .
+wattslot:colorState a owl:DatatypeProperty ;
+	rdfs:comment "Autre état de l'entité de couleur qui désigne cette couleur (EJP : « on », « Pointe mobile »…) ; casse, accents et anglais ignorés comme pour le nom."@fr , "Other state of the color entity that means this color (EJP: \"on\", \"Pointe mobile\"…); case, accents and English ignored as for the name."@en ;
+	rdfs:domain wattslot:ColorPrices ;
+	rdfs:label "autre état reconnu"@fr , "other recognized state"@en ;
+	rdfs:range xsd:string .
 wattslot:colorTomorrowEntity a owl:DatatypeProperty ;
 	rdfs:domain wattslot:Tariff ;
 	rdfs:label "entité de la couleur du lendemain"@fr , "tomorrow color entity"@en ;

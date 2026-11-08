@@ -893,14 +893,15 @@
     "use": {
       "SingleTariff": "Définir un prix unique",
       "TimeOfUseTariff": "Définir des heures creuses et pleines",
-      "DayColorTariff": "Définir un tarif par couleur de jour (Tempo)",
-      "DynamicTariff": "Définir un prix dynamique"
+      "DayColorTariff": "Définir un tarif Tempo",
+      "DynamicTariff": "Définir un prix dynamique",
+      "ejp": "Définir un tarif EJP"
     },
     "kind": "Type de tarif",
     "kinds": {
       "SingleTariff": "Prix unique",
       "TimeOfUseTariff": "Heures creuses et pleines",
-      "DayColorTariff": "Couleur du jour (Tempo)",
+      "DayColorTariff": "Jour annoncé (Tempo, EJP…)",
       "DynamicTariff": "Prix dynamique"
     },
     "base_single": "Prix du kWh",
@@ -925,15 +926,15 @@
     "whole_country": "Tout le pays",
     "choose_country": "Choisir un pays",
     "holidays_failed": "La liste des pays n'a pas pu être lue.",
-    "color_entity": "Capteur de la couleur du jour",
-    "color_tomorrow_entity": "Capteur de la couleur du lendemain",
-    "color_day_start": "Le jour de couleur commence à",
-    "colors_hint": "Chaque couleur : son nom (tel que le capteur l'affiche), son prix hors plages et ses plages. La première sert quand la couleur n'est pas connue.",
-    "color_named": "Couleur {color}",
-    "color": "Couleur",
+    "color_entity": "Capteur du jour annoncé",
+    "color_tomorrow_entity": "Capteur du lendemain",
+    "color_day_start": "Le jour annoncé commence à",
+    "colors_hint": "Chaque sorte de jour : son nom et les autres états du capteur qui la désignent, son prix hors plages et ses plages. La première sert quand le jour n'est pas connu.",
+    "color_named": "Jour {color}",
+    "color": "Nom",
     "base_color": "prix hors plages",
-    "remove_color": "Retirer la couleur",
-    "add_color": "Ajouter une couleur",
+    "remove_color": "Retirer ce jour",
+    "add_color": "Ajouter une sorte de jour",
     "read": "lire dans Home Assistant",
     "read_from": "capteur",
     "stop_reading": "saisir le prix",
@@ -950,11 +951,11 @@
       "failed": "La proposition n'a pas pu être lue."
     },
     "reset": "Revenir au prix par défaut",
-    "color_entity_hint": "Capteur de Home Assistant qui donne la couleur du jour (intégration RTE Tempo, par exemple).",
+    "color_entity_hint": "Capteur de Home Assistant qui donne la couleur Tempo ou le jour EJP (intégration RTE Tempo, par exemple).",
     "kind_hints": {
       "SingleTariff": "Le même prix à toute heure (option base).",
       "TimeOfUseTariff": "Un prix plus bas pendant les heures creuses de votre contrat.",
-      "DayColorTariff": "Le prix dépend de la couleur du jour (Tempo) et de l'heure.",
+      "DayColorTariff": "Le prix dépend du jour annoncé par le fournisseur (couleur Tempo, jour EJP…) et de l'heure.",
       "DynamicTariff": "Le prix change chaque heure, lu dans un capteur de Home Assistant."
     },
     "price_entity_hint": "Capteur de Home Assistant qui donne le prix de l'heure en cours et à venir.",
@@ -968,7 +969,15 @@
       "kwh": "{symbol}/kWh",
       "cents_kwh": "centimes/kWh",
       "mwh": "{symbol}/MWh"
-    }
+    },
+    "states": "aussi reconnu",
+    "states_placeholder": "on, Pointe…",
+    "preset": "Partir d'un modèle :",
+    "presets": {
+      "tempo": "Tempo",
+      "ejp": "EJP"
+    },
+    "preset_hint": "Remplace les sortes de jours et leurs prix par ceux du modèle (prix indicatifs, à remplacer par les vôtres)."
   },
   "battery": {
     "title": "Batterie",
@@ -1542,7 +1551,7 @@
       "off_peak": "Heures creuses {ranges}",
       "off_peak_days": "Heures creuses selon les jours",
       "off_peak_and_days": "Heures creuses {ranges}, et d'autres selon les jours",
-      "colors": "Prix selon la couleur du jour",
+      "colors": "Prix selon le jour annoncé (Tempo, EJP…)",
       "dynamic": "Prix qui change chaque heure"
     },
     "panels": {

@@ -1,0 +1,99 @@
+{
+  "format": "wattslot/template",
+  "version": 1,
+  "name": {
+    "fr": "EJP",
+    "en": "EJP (peak days)"
+  },
+  "description": {
+    "fr": "Tarif EJP : 22 jours de pointe mobile entre novembre et mars, de 7 h à 1 h le lendemain, annoncés la veille et lus dans une entité de Home Assistant (prix indicatifs). Les appareils de votre maison reçoivent aussi des réglages habituels, modifiables ensuite.",
+    "en": "EJP tariff: 22 peak days between November and March, from 7 am to 1 am the next day, announced the day before and read from a Home Assistant entity (indicative prices). The appliances of your home also get usual settings, which you can change afterwards."
+  },
+  "devices": [
+    {
+      "type": "WaterHeater",
+      "behavior": "CycleBehavior",
+      "recurrence": {
+        "rule": "FREQ=DAILY;INTERVAL=2"
+      }
+    },
+    {
+      "type": "WashingMachine",
+      "behavior": "CycleBehavior"
+    },
+    {
+      "type": "Dryer",
+      "behavior": "CycleBehavior",
+      "after": "WashingMachine"
+    },
+    {
+      "type": "Dishwasher",
+      "behavior": "CycleBehavior"
+    },
+    {
+      "type": "PoolPump",
+      "behavior": "RuntimeBehavior",
+      "runtime": {}
+    },
+    {
+      "type": "heat_pump",
+      "behavior": "RuntimeBehavior",
+      "runtime": {
+        "minimum_hours": {
+          "summer": 0,
+          "mid_season": 2,
+          "winter": 4
+        },
+        "skip_days": {
+          "summer": 365,
+          "mid_season": 1,
+          "winter": 0
+        },
+        "max_starts": 3
+      }
+    },
+    {
+      "type": "ev",
+      "behavior": "EnergyByDeadlineBehavior",
+      "energy": {
+        "energy_kwh": 10,
+        "earliest_hour": 0,
+        "deadline_hour": 7,
+        "max_kw": 7.4
+      }
+    }
+  ],
+  "tariff": {
+    "kind": "DayColorTariff",
+    "base_eur_kwh": 0.2,
+    "export_eur_kwh": 0.0,
+    "colors": [
+      {
+        "color": "Normal",
+        "states": [
+          "off",
+          "Non EJP"
+        ],
+        "base_eur_kwh": 0.2,
+        "bands": []
+      },
+      {
+        "color": "EJP",
+        "states": [
+          "on",
+          "Pointe",
+          "Pointe mobile"
+        ],
+        "base_eur_kwh": 0.9,
+        "bands": [
+          {
+            "start_hour": 1,
+            "end_hour": 7,
+            "eur_kwh": 0.2
+          }
+        ]
+      }
+    ],
+    "color_day_start_hour": 7
+  }
+}

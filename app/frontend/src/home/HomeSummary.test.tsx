@@ -68,7 +68,7 @@ describe("phrases de la maison", () => {
     expect(tariffText(BLANK_TARIFF, t, "fr")).toBe("Heures creuses 22 h – 6 h");
     expect(tariffText(null, t, "fr")).toBe("Prix unique, 0,25\u00a0€/kWh");
     expect(tariffText({ ...BLANK_TARIFF, kind: "SingleTariff" }, t, "fr")).toBe("Prix unique, 0,18\u00a0€/kWh");
-    expect(tariffText({ ...BLANK_TARIFF, kind: "DayColorTariff" }, t, "fr")).toBe("Prix selon la couleur du jour");
+    expect(tariffText({ ...BLANK_TARIFF, kind: "DayColorTariff" }, t, "fr")).toBe("Prix selon le jour annoncé (Tempo, EJP…)");
     expect(tariffText({ ...BLANK_TARIFF, kind: "DynamicTariff" }, t, "fr")).toBe("Prix qui change chaque heure");
   });
 

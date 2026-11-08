@@ -893,14 +893,15 @@
     "use": {
       "SingleTariff": "Een vaste prijs instellen",
       "TimeOfUseTariff": "Dal- en piekuren instellen",
-      "DayColorTariff": "Een tarief per dagkleur instellen (Tempo)",
-      "DynamicTariff": "Een dynamische prijs instellen"
+      "DayColorTariff": "Een Tempo-tarief instellen",
+      "DynamicTariff": "Een dynamische prijs instellen",
+      "ejp": "Een EJP-tarief instellen"
     },
     "kind": "Soort tarief",
     "kinds": {
       "SingleTariff": "Vaste prijs",
       "TimeOfUseTariff": "Dal- en piekuren",
-      "DayColorTariff": "Dagkleur (Tempo)",
+      "DayColorTariff": "Aangekondigde dag (Tempo, EJP…)",
       "DynamicTariff": "Dynamische prijs"
     },
     "base_single": "Prijs per kWh",
@@ -925,15 +926,15 @@
     "whole_country": "Heel het land",
     "choose_country": "Kies een land",
     "holidays_failed": "De lijst met landen kon niet worden gelezen.",
-    "color_entity": "Sensor van de dagkleur",
-    "color_tomorrow_entity": "Sensor van de kleur van morgen",
-    "color_day_start": "De kleurdag begint om",
-    "colors_hint": "Elke kleur: haar naam (zoals de sensor die toont), haar prijs buiten de tijdvakken en haar tijdvakken. De eerste geldt als de kleur onbekend is.",
-    "color_named": "Kleur {color}",
-    "color": "Kleur",
+    "color_entity": "Sensor van de aangekondigde dag",
+    "color_tomorrow_entity": "Sensor van morgen",
+    "color_day_start": "De aangekondigde dag begint om",
+    "colors_hint": "Elk soort dag: de naam en de andere sensorstatussen die ermee overeenkomen, de prijs buiten de tijdvakken en de tijdvakken. De eerste geldt als de dag niet bekend is.",
+    "color_named": "Dag {color}",
+    "color": "Naam",
     "base_color": "prijs buiten de tijdvakken",
-    "remove_color": "De kleur verwijderen",
-    "add_color": "Een kleur toevoegen",
+    "remove_color": "Deze dag verwijderen",
+    "add_color": "Een soort dag toevoegen",
     "read": "uit Home Assistant lezen",
     "read_from": "sensor",
     "stop_reading": "prijs invoeren",
@@ -950,11 +951,11 @@
       "failed": "Het voorstel kon niet worden gelezen."
     },
     "reset": "Terug naar de standaardprijs",
-    "color_entity_hint": "Home Assistant-sensor die de dagkleur geeft (bijvoorbeeld de integratie RTE Tempo).",
+    "color_entity_hint": "Sensor van Home Assistant die de Tempo-kleur of de EJP-dag geeft (bijvoorbeeld de integratie RTE Tempo).",
     "kind_hints": {
       "SingleTariff": "Dezelfde prijs op elk uur.",
       "TimeOfUseTariff": "Een lagere prijs tijdens de daluren van uw contract.",
-      "DayColorTariff": "De prijs hangt af van de dagkleur (Tempo) en het uur.",
+      "DayColorTariff": "De prijs hangt af van de door de leverancier aangekondigde dag (Tempo-kleur, EJP-dag…) en van het uur.",
       "DynamicTariff": "De prijs verandert elk uur en wordt gelezen uit een Home Assistant-sensor."
     },
     "price_entity_hint": "Home Assistant-sensor die de prijs van het huidige en de komende uren geeft.",
@@ -968,7 +969,15 @@
       "kwh": "{symbol}/kWh",
       "cents_kwh": "cent/kWh",
       "mwh": "{symbol}/MWh"
-    }
+    },
+    "states": "ook herkend",
+    "states_placeholder": "on, Piek…",
+    "preset": "Vertrekken van een sjabloon:",
+    "presets": {
+      "tempo": "Tempo",
+      "ejp": "EJP"
+    },
+    "preset_hint": "Vervangt de soorten dagen en hun prijzen door die van het sjabloon (indicatieve prijzen, te vervangen door de uwe)."
   },
   "battery": {
     "title": "Batterij",
@@ -1542,7 +1551,7 @@
       "off_peak": "Daltarief {ranges}",
       "off_peak_days": "Daluren afhankelijk van de dag",
       "off_peak_and_days": "Daluren {ranges}, en andere afhankelijk van de dag",
-      "colors": "Prijs volgens de kleur van de dag",
+      "colors": "Prijs afhankelijk van de aangekondigde dag (Tempo, EJP…)",
       "dynamic": "Prijs die elk uur verandert"
     },
     "panels": {

@@ -126,6 +126,7 @@ export const TARIFF_KINDS: TariffKind[] = ["SingleTariff", "TimeOfUseTariff", "D
 
 export interface ColorPrices {
   color: string; // état de l'entité de couleur (casse, accents et anglais ignorés)
+  states?: string[]; // autres états qui désignent cette couleur (EJP : « on »…)
   base_eur_kwh: number;
   base_eur_kwh_entity?: string | null;
   bands: PriceBand[];
@@ -251,6 +252,20 @@ export const TARIFF_TEMPLATES: Record<TariffKind, Tariff> = {
     ],
   },
   DynamicTariff: { ...BLANK, kind: "DynamicTariff", base_eur_kwh: DEFAULT_PRICE_EUR_KWH },
+};
+
+// Jours annoncés connus : sortes de jours, prix indicatifs et heure de début du jour annoncé.
+export type AnnouncedPreset = "tempo" | "ejp";
+export const ANNOUNCED_PRESETS: Record<AnnouncedPreset, Pick<Tariff, "colors" | "color_day_start_hour">> = {
+  tempo: { colors: TARIFF_TEMPLATES.DayColorTariff.colors, color_day_start_hour: 6 },
+  ejp: {
+    // 22 jours de pointe mobile, de 7 h à 1 h le lendemain : de 1 h à 7 h, retour au prix normal.
+    colors: [
+      { color: "Normal", states: ["Non EJP", "off"], base_eur_kwh: 0.2, bands: [] },
+      { color: "EJP", states: ["Pointe", "Pointe mobile", "on"], base_eur_kwh: 0.9, bands: [band(1, 7, 0.2)] },
+    ],
+    color_day_start_hour: 7,
+  },
 };
 
 // Unités possibles des entités de prix (facteur vers le prix du kWh), dans la devise de la maison.

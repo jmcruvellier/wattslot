@@ -893,14 +893,15 @@
     "use": {
       "SingleTariff": "Imposta un prezzo unico",
       "TimeOfUseTariff": "Imposta fasce fuori punta e di punta",
-      "DayColorTariff": "Imposta una tariffa per colore del giorno (Tempo)",
-      "DynamicTariff": "Imposta un prezzo dinamico"
+      "DayColorTariff": "Imposta una tariffa Tempo",
+      "DynamicTariff": "Imposta un prezzo dinamico",
+      "ejp": "Imposta una tariffa EJP"
     },
     "kind": "Tipo di tariffa",
     "kinds": {
       "SingleTariff": "Prezzo unico",
       "TimeOfUseTariff": "Fasce fuori punta e di punta",
-      "DayColorTariff": "Colore del giorno (Tempo)",
+      "DayColorTariff": "Giorno annunciato (Tempo, EJP…)",
       "DynamicTariff": "Prezzo dinamico"
     },
     "base_single": "Prezzo per kWh",
@@ -925,15 +926,15 @@
     "whole_country": "Tutto il paese",
     "choose_country": "Scegli un paese",
     "holidays_failed": "Impossibile leggere l'elenco dei paesi.",
-    "color_entity": "Sensore del colore del giorno",
-    "color_tomorrow_entity": "Sensore del colore di domani",
-    "color_day_start": "Il giorno di colore inizia alle",
-    "colors_hint": "Ogni colore: il suo nome (come lo mostra il sensore), il suo prezzo fuori dalle fasce e le sue fasce. Il primo si usa quando il colore è sconosciuto.",
-    "color_named": "Colore {color}",
-    "color": "Colore",
+    "color_entity": "Sensore del giorno annunciato",
+    "color_tomorrow_entity": "Sensore del giorno dopo",
+    "color_day_start": "Il giorno annunciato inizia alle",
+    "colors_hint": "Ogni tipo di giorno: il suo nome e gli altri stati del sensore che lo indicano, il suo prezzo fuori fascia e le sue fasce. Il primo vale quando il giorno non è noto.",
+    "color_named": "Giorno {color}",
+    "color": "Nome",
     "base_color": "prezzo fuori dalle fasce",
-    "remove_color": "Rimuovi il colore",
-    "add_color": "Aggiungi un colore",
+    "remove_color": "Rimuovi questo giorno",
+    "add_color": "Aggiungi un tipo di giorno",
     "read": "leggi da Home Assistant",
     "read_from": "sensore",
     "stop_reading": "inserisci il prezzo",
@@ -950,11 +951,11 @@
       "failed": "Impossibile leggere la proposta."
     },
     "reset": "Torna al prezzo predefinito",
-    "color_entity_hint": "Sensore di Home Assistant che fornisce il colore del giorno (per esempio l'integrazione RTE Tempo).",
+    "color_entity_hint": "Sensore di Home Assistant che fornisce il colore Tempo o il giorno EJP (integrazione RTE Tempo, per esempio).",
     "kind_hints": {
       "SingleTariff": "Lo stesso prezzo a qualsiasi ora.",
       "TimeOfUseTariff": "Un prezzo più basso nelle fasce fuori punta del suo contratto.",
-      "DayColorTariff": "Il prezzo dipende dal colore del giorno (Tempo) e dall'ora.",
+      "DayColorTariff": "Il prezzo dipende dal giorno annunciato dal fornitore (colore Tempo, giorno EJP…) e dall'ora.",
       "DynamicTariff": "Il prezzo cambia ogni ora ed è letto da un sensore di Home Assistant."
     },
     "price_entity_hint": "Sensore di Home Assistant che fornisce il prezzo dell'ora attuale e delle prossime.",
@@ -968,7 +969,15 @@
       "kwh": "{symbol}/kWh",
       "cents_kwh": "centesimi/kWh",
       "mwh": "{symbol}/MWh"
-    }
+    },
+    "states": "riconosciuto anche",
+    "states_placeholder": "on, Punta…",
+    "preset": "Parti da un modello:",
+    "presets": {
+      "tempo": "Tempo",
+      "ejp": "EJP"
+    },
+    "preset_hint": "Sostituisce i tipi di giorno e i loro prezzi con quelli del modello (prezzi indicativi, da sostituire con i tuoi)."
   },
   "battery": {
     "title": "Batteria",
@@ -1542,7 +1551,7 @@
       "off_peak": "Fascia economica {ranges}",
       "off_peak_days": "Ore vuote secondo il giorno",
       "off_peak_and_days": "Ore vuote {ranges}, e altre secondo il giorno",
-      "colors": "Prezzo secondo il colore del giorno",
+      "colors": "Prezzo secondo il giorno annunciato (Tempo, EJP…)",
       "dynamic": "Prezzo che cambia ogni ora"
     },
     "panels": {

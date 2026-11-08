@@ -118,4 +118,29 @@ describe("minutes des plages tarifaires", () => {
     expect(latest().holidays).toBeNull();
     expect(screen.queryByLabelText("Pays")).toBeNull();
   });
+
+  it("part du modèle EJP et règle les autres états reconnus", async () => {
+    const changed = vi.fn();
+    render(<I18nProvider><Editor initial={TARIFF_TEMPLATES.DayColorTariff} changed={changed} /></I18nProvider>);
+    const latest = () => changed.mock.lastCall![0] as Tariff;
+    await userEvent.click(screen.getByRole("button", { name: "EJP" }));
+    expect(latest().color_day_start_hour).toBe(7);
+    expect(latest().colors.map((c) => [c.color, c.states])).toEqual([
+      ["Normal", ["Non EJP", "off"]],
+      ["EJP", ["Pointe", "Pointe mobile", "on"]],
+    ]);
+    expect(latest().colors[1].bands[0]).toMatchObject({ start_hour: 1, end_hour: 7, eur_kwh: 0.2 });
+    const peak = within(screen.getByRole("group", { name: "Jour EJP" }));
+    const states = peak.getByLabelText("aussi reconnu");
+    expect(states).toHaveValue("Pointe, Pointe mobile, on");
+    await userEvent.clear(states);
+    await userEvent.type(states, "on, ");
+    expect(states).toHaveValue("on, "); // la virgule tapée reste
+    expect(latest().colors[1].states).toEqual(["on"]);
+    await userEvent.type(states, "true");
+    expect(latest().colors[1].states).toEqual(["on", "true"]);
+    await userEvent.click(screen.getByRole("button", { name: "Tempo" }));
+    expect(latest().colors.map((c) => c.color)).toEqual(["Bleu", "Blanc", "Rouge"]);
+    expect(latest().color_day_start_hour).toBe(6);
+  });
 });
