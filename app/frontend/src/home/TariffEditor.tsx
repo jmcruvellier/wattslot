@@ -1,10 +1,11 @@
 // Tarif de la maison (lot 3.2) : prix unique, heures creuses et pleines, couleur du jour (Tempo)
 // ou prix dynamique lu dans HA ; prix de revente fixe ou lu dans une entité. Chaque prix fixe peut
 // suivre l'état d'une entité de HA (hass-tarif-edf, issue #54), le prix saisi servant de repli.
-// Proposition d'après les prix déclarés dans le tableau Énergie de HA. Les plages limitées à
-// certains jours ou mois se règlent par l'API ; elles sont signalées ici.
+// Proposition d'après les prix déclarés dans le tableau Énergie de HA. Chaque plage peut être
+// limitée à certains jours de la semaine (cases toujours visibles) et à certains mois (repliés
+// sous « Toute l'année ») ; les jours fériés d'un pays peuvent compter comme un dimanche.
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { ApiError, getJson } from "../api";
 import Advanced, { Hint } from "../common/Advanced";
@@ -17,12 +18,188 @@ import {
   TARIFF_KINDS,
   TARIFF_TEMPLATES,
   type ColorPrices,
+  type Holidays,
   type PriceBand,
   type Tariff,
   type TariffKind,
 } from "./configuration";
 
 const HOURS = Array.from({ length: 25 }, (_, hour) => hour);
+const WEEKDAYS = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"] as const; // 0 lundi … 6 dimanche
+const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
+const ALL_MONTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+
+// Cases cochées d'une liste où « vide » veut dire « toutes » ; la dernière case ne se décoche pas.
+function toggled(chosen: number[], all: number[], value: number, on: boolean): number[] {
+  const current = chosen.length === 0 ? all : chosen;
+  const next = on ? [...current, value].sort((a, b) => a - b) : current.filter((v) => v !== value);
+  return next.length === all.length ? [] : next;
+}
+
+// Jours de la semaine et mois d'une plage (vides : tous).
+function BandDays({ band, onChange }: { band: PriceBand; onChange: (change: Partial<PriceBand>) => void }) {
+  const { t, language } = useI18n();
+  const days = band.weekdays.length === 0 ? ALL_DAYS : band.weekdays;
+  const months = band.months.length === 0 ? ALL_MONTHS : band.months;
+  const monthName = (month: number) => new Date(2026, month - 1, 1).toLocaleDateString(language, { month: "short" });
+  return (
+    <>
+      <div className="band-days" role="group" aria-label={t("tariff.days")}>
+        {t("tariff.days")}{" "}
+        {WEEKDAYS.map((code, day) => (
+          <label key={code} className="settings-inline">
+            <input
+              type="checkbox"
+              checked={days.includes(day)}
+              disabled={days.length === 1 && days.includes(day)}
+              onChange={(event) => onChange({ weekdays: toggled(band.weekdays, ALL_DAYS, day, event.target.checked) })}
+            />{" "}
+            {t(`cycle.weekdays.${code}`)}{" "}
+          </label>
+        ))}
+      </div>
+      <details>
+        <summary>
+          {band.months.length === 0 ? t("tariff.all_year") : t("tariff.some_months", { months: band.months.map(monthName).join(", ") })}
+        </summary>
+        <div className="band-days" role="group" aria-label={t("tariff.months")}>
+          {ALL_MONTHS.map((month) => (
+            <label key={month} className="settings-inline">
+              <input
+                type="checkbox"
+                checked={months.includes(month)}
+                disabled={months.length === 1 && months.includes(month)}
+                onChange={(event) => onChange({ months: toggled(band.months, ALL_MONTHS, month, event.target.checked) })}
+              />{" "}
+              {monthName(month)}{" "}
+            </label>
+          ))}
+        </div>
+      </details>
+    </>
+  );
+}
+
+interface HolidayChoices {
+  default_country: string | null; // pays de Home Assistant
+  country: string | null;
+  countries: string[];
+  subdivisions: { code: string; name: string }[];
+}
+
+const holidayUrl = (country: string | null) =>
+  `api/configuration/holidays${country ? `?country=${encodeURIComponent(country)}` : ""}`;
+
+// Jours fériés comptés comme un dimanche : pays (celui de HA par défaut) et région.
+function HolidaysSetting({ tariff, onChange }: { tariff: Tariff; onChange: (tariff: Tariff) => void }) {
+  const { t, language } = useI18n();
+  const rule = tariff.holidays ?? null;
+  const [choices, setChoices] = useState<HolidayChoices | null>(null);
+  const [failed, setFailed] = useState(false);
+  const enabled = rule !== null;
+  const country = rule?.country || null;
+  const names = useMemo(() => {
+    try {
+      return new Intl.DisplayNames([language], { type: "region" });
+    } catch {
+      return null;
+    }
+  }, [language]);
+  const countryName = (code: string) => {
+    try {
+      return names?.of(code) ?? code;
+    } catch {
+      return code;
+    }
+  };
+
+  useEffect(() => {
+    if (!enabled) return;
+    let cancelled = false;
+    getJson<HolidayChoices>(holidayUrl(country))
+      .then((found) => {
+        if (!cancelled) setChoices(found);
+      })
+      .catch(() => {
+        if (!cancelled) setFailed(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled, country]);
+
+  const setRule = (holidays: Holidays | null) => onChange({ ...tariff, holidays });
+  const countries = useMemo(
+    () => [...(choices?.countries ?? [])].sort((a, b) => countryName(a).localeCompare(countryName(b), language)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- countryName ne dépend que de names
+    [choices, names, language],
+  );
+
+  return (
+    <p>
+      <label>
+        <input
+          type="checkbox"
+          checked={enabled}
+          onChange={(event) => {
+            if (!event.target.checked) {
+              setRule(null);
+              return;
+            }
+            setRule({ country: "", subdivision: null });
+            getJson<HolidayChoices>(holidayUrl(null))
+              .then((found) => {
+                setChoices(found);
+                onChange({ ...tariff, holidays: { country: found.default_country ?? "", subdivision: null } });
+              })
+              .catch(() => setFailed(true));
+          }}
+        />{" "}
+        {t("tariff.holidays")}
+      </label>
+      <Hint text={t("tariff.holidays_hint")} />
+      {rule !== null && (
+        <>
+          <br />
+          <label>
+            {t("tariff.holiday_country")}{" "}
+            <select value={rule.country} onChange={(event) => setRule({ country: event.target.value, subdivision: null })}>
+              {rule.country === "" && <option value="">{t("tariff.choose_country")}</option>}
+              {rule.country !== "" && !countries.includes(rule.country) && (
+                <option value={rule.country}>{countryName(rule.country)}</option>
+              )}
+              {countries.map((code) => (
+                <option key={code} value={code}>
+                  {countryName(code)}
+                </option>
+              ))}
+            </select>
+          </label>
+          {choices !== null && choices.country === rule.country && choices.subdivisions.length > 0 && (
+            <>
+              {" "}
+              <label>
+                {t("tariff.holiday_region")}{" "}
+                <select
+                  value={rule.subdivision ?? ""}
+                  onChange={(event) => setRule({ ...rule, subdivision: event.target.value === "" ? null : event.target.value })}
+                >
+                  <option value="">{t("tariff.whole_country")}</option>
+                  {choices.subdivisions.map(({ code, name }) => (
+                    <option key={code} value={code}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </>
+          )}
+          {failed && <small role="status"> {t("tariff.holidays_failed")}</small>}
+        </>
+      )}
+    </p>
+  );
+}
 
 // Contrat (lot 7.3) : abonnement mensuel et puissance souscrite, quel que soit le tarif.
 function Contract({ tariff, onChange }: { tariff: Tariff; onChange: (tariff: Tariff) => void }) {
@@ -199,10 +376,10 @@ function BandsEditor({ bands, fallback, label, onChange }: {
             entity={band.eur_kwh_entity}
             onEntity={(eur_kwh_entity) => setBand(index, { eur_kwh_entity })}
           />{" "}
-          {(band.weekdays.length > 0 || band.months.length > 0) && <em>{t("tariff.limited")}</em>}{" "}
           <button type="button" onClick={() => onChange(bands.filter((_, i) => i !== index))}>
             {t("tariff.remove_band")}
           </button>
+          <BandDays band={band} onChange={(change) => setBand(index, change)} />
         </li>
       ))}
       <li>
@@ -367,6 +544,7 @@ export default function TariffEditor({ tariff, onChange }: { tariff: Tariff | nu
               export_entity: tariff.export_entity,
               subscription_eur_month: tariff.subscription_eur_month,
               contract_kva: tariff.contract_kva,
+              holidays: tariff.holidays,
             });
           }}
         >
@@ -391,6 +569,9 @@ export default function TariffEditor({ tariff, onChange }: { tariff: Tariff | nu
         <BandsEditor bands={tariff.bands} fallback={tariff.base_eur_kwh} label="" onChange={(bands) => onChange({ ...tariff, bands })} />
       )}
       {tariff.kind === "DayColorTariff" && <ColorsEditor tariff={tariff} onChange={onChange} />}
+      {(tariff.kind === "TimeOfUseTariff" || tariff.kind === "DayColorTariff") && (
+        <HolidaysSetting tariff={tariff} onChange={onChange} />
+      )}
       {tariff.kind === "DynamicTariff" && (
         <p>
           <Entity label={t("tariff.price_entity")} value={tariff.price_entity} onChange={(price_entity) => onChange({ ...tariff, price_entity })} />

@@ -10,6 +10,7 @@ requires-python = ">=3.11"
 dependencies = [
     "fastapi==0.162.0",
     "highspy==1.15.1",  # moteur du calcul (décision 11), roues amd64 et arm64
+    "holidays==0.107",  # jours fériés par pays et région (tarifs : comptés comme un dimanche)
     "mcp==2.3.0",  # serveur MCP pour l'Assist de HA (lot 6.1), SDK officiel
     "pyoxigraph==0.5.13",
     "tzdata==2026.6",  # fuseaux horaires : l'image Python « slim » n'en a pas

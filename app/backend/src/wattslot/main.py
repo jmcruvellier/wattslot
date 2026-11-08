@@ -114,7 +114,7 @@ from wattslot.setup import Setup, setup_status
 from wattslot.storage.database import open_database
 from wattslot.storage.graph import GraphStore
 from wattslot.storage.raw import RawStores
-from wattslot.tariff import Tariff
+from wattslot.tariff import HolidayChoices, Tariff, holiday_choices
 from wattslot.tariff import propose as propose_tariff
 from wattslot.templates import Preview, TariffEntities
 from wattslot.views import layout as views_layout
@@ -810,6 +810,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             grid.export_price,
             grid.export_price_entity,
         )
+
+    @app.get("/api/configuration/holidays")
+    def holidays(request: Request, country: str | None = None) -> HolidayChoices:
+        """Pays et régions des jours fériés (comptés comme un dimanche dans les plages) ; pays
+        par défaut : celui de Home Assistant, s'il est connecté."""
+        client: HomeAssistantClient | None = request.app.state.home_assistant
+        default = client.snapshot.config.get("country") if client is not None else None
+        return holiday_choices(country, default)
 
     @app.get("/api/configuration/task-rules-proposal")
     async def task_rules_proposal(request: Request) -> list[TaskRules]:

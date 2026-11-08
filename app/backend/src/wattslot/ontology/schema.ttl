@@ -139,6 +139,14 @@
     rdfs:label "entité dont l'état donne le prix"@fr, "price state entity"@en ;
     rdfs:comment "Sur un tarif (prix de base), une couleur (prix hors plages) ou une plage : entité de Home Assistant dont l'état, multiplié par le facteur d'unité, remplace le prix saisi ; celui-ci sert quand l'entité est indisponible."@fr,
         "On a tariff (base price), a color (price outside bands) or a band: Home Assistant entity whose state, times the unit factor, replaces the entered price; the latter applies when the entity is unavailable."@en .
+<#holidayCountry> a owl:DatatypeProperty ; rdfs:domain <#Tariff> ; rdfs:range xsd:string ;
+    rdfs:label "pays des jours fériés"@fr, "holiday country"@en ;
+    rdfs:comment "Code ISO 3166-1 ; présent, les jours fériés de ce pays comptent comme un dimanche dans les filtres des plages."@fr,
+        "ISO 3166-1 code; when present, this country's public holidays count as a Sunday in band filters."@en .
+<#holidaySubdivision> a owl:DatatypeProperty ; rdfs:domain <#Tariff> ; rdfs:range xsd:string ;
+    rdfs:label "région des jours fériés"@fr, "holiday subdivision"@en ;
+    rdfs:comment "Région aux jours fériés propres (Moselle, Alsace…), codée comme la bibliothèque holidays."@fr,
+        "Region with its own public holidays, coded as in the holidays library."@en .
 <#priceFactor> a owl:DatatypeProperty ; rdfs:domain <#Tariff> ; rdfs:range xsd:double ;
     rdfs:label "facteur d'unité des prix lus"@fr, "price unit factor"@en .
 # Contrat (lot 7.3) : abonnement mensuel, puissance souscrite (absente : inconnue).

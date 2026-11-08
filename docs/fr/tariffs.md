@@ -15,6 +15,14 @@ Le plan place vos appareils là où l'électricité est gratuite (votre surplus)
 | **Couleur du jour (Tempo)** | Le prix dépend de la couleur du jour et de l'heure | Le capteur de Home Assistant qui donne la couleur du jour (et celle du lendemain, facultatif), l'heure où commence le jour de couleur, puis chaque couleur avec son prix hors plages et ses plages. La première couleur sert quand la couleur n'est pas connue |
 | **Prix dynamique** | Un prix pour chaque heure, par votre fournisseur ou le marché | Le capteur de Home Assistant qui donne le prix de l'heure en cours et des heures à venir, son unité, et le prix à utiliser quand il n'est pas connu |
 
+## Jours, mois et jours fériés
+
+Sous chaque plage, les cases **Jours** la limitent à certains jours de la semaine (toutes cochées : tous les jours), et **Toute l'année** déplie les mois. Une case reste toujours cochée.
+
+**Jours fériés comptés comme un dimanche**, sous les plages, donne aux jours fériés les prix du dimanche, comme le font la plupart des contrats (offres week-end, 2.0TD espagnol, F3 italien). Le pays est celui de Home Assistant par défaut ; choisissez une **région** quand elle a ses propres jours fériés (Alsace, Moselle…). Les jours fériés viennent de la bibliothèque libre *holidays*.
+
+Exemple, un prix réduit le mercredi, le week-end et les jours fériés : une plage de 0 h à 24 h au prix réduit, où seuls mercredi, samedi et dimanche sont cochés, et **Jours fériés comptés comme un dimanche** coché.
+
 ## Plages à la minute
 
 Les plages utilisent l'heure locale, début inclus et fin exclue : **01:30–05:38** couvre 30 minutes de la première heure et 38 minutes de la dernière. Les minutes vont de 00 à 59 ; **24:00** est autorisé seulement comme fin. Les anciennes configurations sans minutes conservent leurs heures pleines.

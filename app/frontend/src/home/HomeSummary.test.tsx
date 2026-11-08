@@ -55,6 +55,15 @@ describe("phrases de la maison", () => {
     expect(text([band(22, 30, 0, 38)])).toBe("Heures creuses 22 h 30 – 0 h 38");
   });
 
+  it("signale les plages limitées à certains jours ou mois", () => {
+    const band = (start_hour: number, end_hour: number, weekdays: number[], months: number[] = []) =>
+      ({ start_hour, end_hour, eur_kwh: 0.1, weekdays, months });
+    const text = (bands: Tariff["bands"]) => tariffText({ ...BLANK_TARIFF, bands }, t, "fr");
+    expect(text([band(0, 24, [2, 5, 6])])).toBe("Heures creuses selon les jours");
+    expect(text([band(0, 24, [2, 5, 6]), band(0, 6, [])])).toBe("Heures creuses 0 h – 6 h, et d'autres selon les jours");
+    expect(text([band(0, 6, [], [11, 12, 1])])).toBe("Heures creuses selon les jours");
+  });
+
   it("décrit chaque sorte de contrat", () => {
     expect(tariffText(BLANK_TARIFF, t, "fr")).toBe("Heures creuses 22 h – 6 h");
     expect(tariffText(null, t, "fr")).toBe("Prix unique, 0,25\u00a0€/kWh");

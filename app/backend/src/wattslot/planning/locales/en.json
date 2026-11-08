@@ -150,6 +150,7 @@
   "problem.configuration_issue.bands_not_used": "Tariff: this kind of tariff uses no bands.",
   "problem.configuration_issue.band_empty": "Tariff: band {band} is empty (end before start).",
   "problem.configuration_issue.band_weekday": "Tariff: impossible weekday in band {band}.",
+  "problem.configuration_issue.holiday_country_unknown": "Tariff: unknown country or region for public holidays; holidays count as ordinary days.",
   "problem.configuration_issue.band_month": "Tariff: impossible month in band {band}.",
   "problem.configuration_issue.tariff_without_colors": "Tariff: no color declared.",
   "problem.configuration_issue.tariff_without_color_entity": "Tariff: the day color sensor is missing.",

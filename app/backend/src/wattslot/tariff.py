@@ -7,7 +7,9 @@ Un tarif donne le prix du kWh soutiré à chaque heure d'une journée, et celui 
   avec leur prix et leurs filtres de jour civil (semaine, mois) ; hors plage, le prix de base
   s'applique. La première plage couvrant chaque minute l'emporte. Le moteur conserve ses
   heures : moyenne pondérée par minutes, arrondie à six décimales seulement pour les
-  heures mixtes ;
+  heures mixtes. Les jours fériés d'un pays (et d'une région) peuvent compter comme un
+  dimanche pour ces filtres (``holidays``, bibliothèque du même nom), comme le font la
+  plupart des contrats (week-end EDF, 2.0TD espagnol, F3 italien) ;
 - **couleur du jour** (``DayColorTariff``, Tempo) : un prix de base et des plages par couleur ; la
   couleur du jour et celle du lendemain sont lues dans des entités HA, la première couleur
   déclarée servant au-delà. Un jour de couleur peut commencer à une autre heure que minuit
@@ -31,9 +33,11 @@ from calendar import monthrange
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 from enum import StrEnum
+from functools import cache
 from itertools import pairwise
 from math import fsum
 
+import holidays as holiday_calendars
 from pydantic import BaseModel, Field, ValidationInfo, field_validator
 from pydantic_core import PydanticKnownError
 from pyoxigraph import BlankNode, Literal, NamedNode, Triple
@@ -68,14 +72,16 @@ class PriceBand(BaseModel):
             raise PydanticKnownError("less_than_equal", {"le": 0})
         return value
 
-    def applies(self, day: date, hour: int, minute: int = 0) -> bool:
-        """Bornes locales, fin exclue ; les filtres portent sur le jour civil interrogé."""
+    def applies(self, day: date, hour: int, minute: int = 0, weekday: int | None = None) -> bool:
+        """Bornes locales, fin exclue ; les filtres portent sur le jour civil interrogé, dont le
+        jour de la semaine est ``weekday`` s'il est donné (6 pour un jour férié)."""
         start = self.start_hour * 60 + self.start_minute
         end = self.end_hour * 60 + self.end_minute
         current = hour * 60 + minute
+        weekday = day.weekday() if weekday is None else weekday
         return (
             start <= current < end
-            and (not self.weekdays or day.weekday() in self.weekdays)
+            and (not self.weekdays or weekday in self.weekdays)
             and (not self.months or day.month in self.months)
         )
 
@@ -101,7 +107,67 @@ class ColorPrices(BaseModel):
         )
 
 
-def _price(bands: list[PriceBand], base: float, day: date, hour: int) -> float:
+class Holidays(BaseModel):
+    """Jours fériés comptés comme un dimanche dans les filtres des plages."""
+
+    country: str  # code ISO 3166-1 (FR, ES, IT…)
+    subdivision: str | None = None  # région aux jours fériés propres (57 : Moselle…)
+
+
+@cache
+def holiday_dates(country: str, subdivision: str | None, year: int) -> frozenset[date]:
+    """Jours fériés d'une année ; aucun pour un pays ou une région inconnus."""
+    try:
+        found = holiday_calendars.country_holidays(country, subdiv=subdivision, years=year)
+    except NotImplementedError:
+        return frozenset()
+    return frozenset(found)
+
+
+def holidays_known(rule: Holidays) -> bool:
+    supported = holiday_calendars.list_supported_countries()
+    return rule.country in supported and (
+        rule.subdivision is None or rule.subdivision in supported[rule.country]
+    )
+
+
+class HolidayRegion(BaseModel):
+    code: str
+    name: str  # nom donné par la bibliothèque, sinon le code
+
+
+class HolidayChoices(BaseModel):
+    """Pays connus (codes ISO ; noms traduits par l'interface) et régions de ``country``."""
+
+    default_country: str | None  # pays de Home Assistant, s'il est connu
+    country: str | None
+    countries: list[str]
+    subdivisions: list[HolidayRegion]
+
+
+def holiday_choices(country: str | None, default_country: str | None) -> HolidayChoices:
+    supported = holiday_calendars.list_supported_countries()
+    default = default_country if default_country in supported else None
+    wanted = country if country in supported else default
+    regions: list[HolidayRegion] = []
+    if wanted:
+        aliases = getattr(holiday_calendars.country_holidays(wanted), "subdivisions_aliases", {})
+        names: dict[str, str] = {}
+        for alias, code in aliases.items():
+            if len(alias) > len(names.get(code, "")):  # le plus long : le nom, pas un sigle
+                names[code] = alias
+        regions = [HolidayRegion(code=c, name=names.get(c, c)) for c in supported[wanted]]
+    return HolidayChoices(
+        default_country=default,
+        country=wanted,
+        countries=sorted(supported),
+        subdivisions=regions,
+    )
+
+
+def _price(
+    bands: list[PriceBand], base: float, day: date, hour: int, weekday: int | None = None
+) -> float:
     # Découpage aux bornes des plages, puis regroupement des minutes par prix.
     cuts = sorted(
         {0, 60}
@@ -110,7 +176,7 @@ def _price(bands: list[PriceBand], base: float, day: date, hour: int) -> float:
     )
     weights: dict[float, int] = {}
     for start, end in pairwise(cuts):
-        price = next((b.eur_kwh for b in bands if b.applies(day, hour, start)), base)
+        price = next((b.eur_kwh for b in bands if b.applies(day, hour, start, weekday)), base)
         weights[price] = weights.get(price, 0) + end - start
     if len(weights) == 1:
         return next(iter(weights))
@@ -162,6 +228,15 @@ class Tariff(BaseModel):
     # puissance souscrite, que le soutirage d'une heure ne dépasse pas (1 kW par kVA).
     subscription_eur_month: float = Field(default=0.0, ge=0)
     contract_kva: float | None = Field(default=None, gt=0)
+    # Jours fériés comptés comme un dimanche (filtres des plages) ; absent : jours ordinaires.
+    holidays: Holidays | None = None
+
+    def weekday(self, day: date) -> int:
+        """Jour de la semaine de ``day`` pour les plages : 6 (dimanche) s'il est férié."""
+        rule = self.holidays
+        if rule and day in holiday_dates(rule.country, rule.subdivision, day.year):
+            return 6
+        return day.weekday()
 
     def subscription_eur(self, day: date) -> float:
         """Part de l'abonnement d'une journée : mensuel divisé par les jours du mois."""
@@ -202,15 +277,16 @@ class Tariff(BaseModel):
         return self._hourly(day, context)
 
     def _hourly(self, day: date, context: TariffContext) -> dict[int, float]:
+        weekday = self.weekday(day)
         if self.kind is TariffKind.TIME_OF_USE:
-            return {h: _price(self.bands, self.base_eur_kwh, day, h) for h in range(24)}
+            return {h: _price(self.bands, self.base_eur_kwh, day, h, weekday) for h in range(24)}
         if self.kind is TariffKind.DAY_COLOR:
             found: dict[int, float] = {}
             for hour in range(24):
                 color_day = day if hour >= self.color_day_start_hour else day - timedelta(days=1)
                 prices = self._color_prices(color_day, context)
                 found[hour] = (
-                    _price(prices.bands, prices.base_eur_kwh, day, hour)
+                    _price(prices.bands, prices.base_eur_kwh, day, hour, weekday)
                     if prices
                     else self.base_eur_kwh
                 )
@@ -289,6 +365,8 @@ def problems(tariff: Tariff) -> list[tuple[str, dict[str, str]]]:
             found.append(("color_twice", {}))
     if tariff.kind is TariffKind.DYNAMIC and not tariff.price_entity:
         found.append(("tariff_without_price_entity", {}))
+    if tariff.holidays and not holidays_known(tariff.holidays):
+        found.append(("holiday_country_unknown", {}))
     found += _band_problems(tariff.bands, "")
     for color in tariff.colors:
         found += _band_problems(color.bands, f"{color.color} ")
@@ -342,6 +420,12 @@ def to_triples(owner: NamedNode, tariff: Tariff) -> list[Triple]:
         triples.append(Triple(node, vocab("contractKva"), _number(tariff.contract_kva)))
     if tariff.base_eur_kwh_entity:
         triples.append(Triple(node, vocab("priceStateEntity"), Literal(tariff.base_eur_kwh_entity)))
+    if tariff.holidays:
+        triples.append(Triple(node, vocab("holidayCountry"), Literal(tariff.holidays.country)))
+        if tariff.holidays.subdivision:
+            triples.append(
+                Triple(node, vocab("holidaySubdivision"), Literal(tariff.holidays.subdivision))
+            )
     for name, value in (
         ("colorEntity", tariff.color_entity),
         ("colorTomorrowEntity", tariff.color_tomorrow_entity),
@@ -415,7 +499,8 @@ def load(graph: GraphStore, graph_iri: str, owner: NamedNode, vocab_ns: str) -> 
             f"""
             PREFIX wattslot: <{vocab_ns}>
             SELECT ?tariff ?kind ?base ?export ?start ?factor ?colorEntity ?tomorrow ?price
-                   ?exportEntity ?subscription ?kva ?baseEntity WHERE {{
+                   ?exportEntity ?subscription ?kva ?baseEntity ?holidayCountry
+                   ?holidaySubdivision WHERE {{
               GRAPH <{graph_iri}> {{
                 <{owner.value}> wattslot:hasTariff ?tariff .
                 ?tariff a ?kind ; wattslot:basePriceEurKwh ?base ;
@@ -429,6 +514,8 @@ def load(graph: GraphStore, graph_iri: str, owner: NamedNode, vocab_ns: str) -> 
                 OPTIONAL {{ ?tariff wattslot:subscriptionEurMonth ?subscription }}
                 OPTIONAL {{ ?tariff wattslot:contractKva ?kva }}
                 OPTIONAL {{ ?tariff wattslot:priceStateEntity ?baseEntity }}
+                OPTIONAL {{ ?tariff wattslot:holidayCountry ?holidayCountry }}
+                OPTIONAL {{ ?tariff wattslot:holidaySubdivision ?holidaySubdivision }}
               }}
             }}
             """
@@ -477,6 +564,11 @@ def load(graph: GraphStore, graph_iri: str, owner: NamedNode, vocab_ns: str) -> 
         price_factor=float(row.get("factor", 1.0)),
         subscription_eur_month=float(row.get("subscription", 0.0)),
         contract_kva=float(row["kva"]) if "kva" in row else None,
+        holidays=(
+            Holidays(country=row["holidayCountry"], subdivision=row.get("holidaySubdivision"))
+            if "holidayCountry" in row
+            else None
+        ),
     )
 
 

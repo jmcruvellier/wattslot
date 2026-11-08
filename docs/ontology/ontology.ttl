@@ -443,6 +443,16 @@ wattslot:hasTimeConstraint a owl:ObjectProperty ;
 	rdfs:domain wattslot:DeviceSettings ;
 	rdfs:label "a pour contrainte horaire"@fr , "has time constraint"@en ;
 	rdfs:range wattslot:TimeConstraint .
+wattslot:holidayCountry a owl:DatatypeProperty ;
+	rdfs:comment "Code ISO 3166-1 ; présent, les jours fériés de ce pays comptent comme un dimanche dans les filtres des plages."@fr , "ISO 3166-1 code; when present, this country's public holidays count as a Sunday in band filters."@en ;
+	rdfs:domain wattslot:Tariff ;
+	rdfs:label "holiday country"@en , "pays des jours fériés"@fr ;
+	rdfs:range xsd:string .
+wattslot:holidaySubdivision a owl:DatatypeProperty ;
+	rdfs:comment "Region with its own public holidays, coded as in the holidays library."@en , "Région aux jours fériés propres (Moselle, Alsace…), codée comme la bibliothèque holidays."@fr ;
+	rdfs:domain wattslot:Tariff ;
+	rdfs:label "holiday subdivision"@en , "région des jours fériés"@fr ;
+	rdfs:range xsd:string .
 wattslot:importWeight a owl:DatatypeProperty ;
 	rdfs:domain wattslot:Objective ;
 	rdfs:label "import weight (euro equivalent)"@en , "poids du soutirage (équivalent euros)"@fr ;
