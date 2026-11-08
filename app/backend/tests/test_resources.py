@@ -5,6 +5,7 @@ import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 
 from tests.test_health import _settings
@@ -268,10 +269,12 @@ def test_the_curves_and_peaks_survive_a_restart(tmp_path: Path) -> None:
 
     points = second.history()
     assert points[0].time == ended
-    assert points[0].cpu_percent == 50 and points[0].memory_bytes == 400 * 10**6
+    # Horloges réelles : 30 s de CPU sur 60 s, aux arrondis des flottants près.
+    assert points[0].cpu_percent == pytest.approx(50)
+    assert points[0].memory_bytes == 400 * 10**6
     assert points[0].disk_used_bytes == 5 * 10**6  # taille des données gardée aussi
     found = second.snapshot()
-    assert found.cpu_peak_percent == 50  # pic d'avant le redémarrage
+    assert found.cpu_peak_percent == pytest.approx(50)  # pic d'avant le redémarrage
     assert found.memory_peak_bytes is not None and found.memory_peak_bytes >= 400 * 10**6
     assert found.measured_s >= 600  # depuis la minute gardée, pas depuis le redémarrage
     assert [h.samples for h in second.hours()] == [1]
