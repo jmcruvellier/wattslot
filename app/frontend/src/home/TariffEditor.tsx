@@ -1,7 +1,8 @@
 // Tarif de la maison (lot 3.2) : prix unique, heures creuses et pleines, couleur du jour (Tempo)
-// ou prix dynamique lu dans HA ; prix de revente fixe ou lu dans une entité. Proposition d'après
-// les prix déclarés dans le tableau Énergie de HA. Les plages limitées à certains jours ou mois se
-// règlent par l'API ; elles sont signalées ici.
+// ou prix dynamique lu dans HA ; prix de revente fixe ou lu dans une entité. Chaque prix fixe peut
+// suivre l'état d'une entité de HA (hass-tarif-edf, issue #54), le prix saisi servant de repli.
+// Proposition d'après les prix déclarés dans le tableau Énergie de HA. Les plages limitées à
+// certains jours ou mois se règlent par l'API ; elles sont signalées ici.
 
 import { useState } from "react";
 
@@ -64,21 +65,71 @@ function Contract({ tariff, onChange }: { tariff: Tariff; onChange: (tariff: Tar
   );
 }
 
-function Price({ label, value, onChange }: { label: string; value: number; onChange: (value: number) => void }) {
+// Prix saisi ; avec ``onEntity``, il peut suivre l'état d'une entité de HA (repli : le prix saisi).
+function Price({ label, value, onChange, entity, onEntity }: {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+  entity?: string | null;
+  onEntity?: (entity: string | null) => void;
+}) {
+  const { t } = useI18n();
   const { symbol } = useCurrency();
+  const [reading, setReading] = useState(Boolean(entity));
+  const linked = onEntity !== undefined && (reading || Boolean(entity));
   return (
-    <label>
-      {label}{" "}
-      <input
-        type="number"
-        min="0"
-        step="0.000001"
-        value={value}
-        onChange={(event) => onChange(event.target.value === "" ? 0 : Number(event.target.value))}
-      />{" "}
-      {symbol}/kWh
-    </label>
+    <>
+      <label>
+        {label}
+        {linked && ` ${t("tariff.if_unavailable")}`}{" "}
+        <input
+          type="number"
+          min="0"
+          step="0.000001"
+          value={value}
+          onChange={(event) => onChange(event.target.value === "" ? 0 : Number(event.target.value))}
+        />{" "}
+        {symbol}/kWh
+      </label>
+      {onEntity && !linked && (
+        <>
+          {" "}
+          <button type="button" className="link" onClick={() => setReading(true)}>
+            {t("tariff.read")}
+          </button>
+        </>
+      )}
+      {onEntity && linked && (
+        <>
+          {" "}
+          <label>
+            {t("tariff.read_from")}{" "}
+            <input
+              placeholder="sensor.…"
+              value={entity ?? ""}
+              onChange={(event) => onEntity(event.target.value.trim() === "" ? null : event.target.value.trim())}
+            />
+          </label>{" "}
+          <button
+            type="button"
+            className="link"
+            onClick={() => {
+              setReading(false);
+              onEntity(null);
+            }}
+          >
+            {t("tariff.stop_reading")}
+          </button>
+        </>
+      )}
+    </>
   );
+}
+
+// Le tarif lit-il des prix fixes dans HA ? (l'unité des entités s'affiche alors)
+function readsFixedPrices(tariff: Tariff): boolean {
+  const owners = [tariff, ...tariff.colors];
+  return owners.some((owner) => Boolean(owner.base_eur_kwh_entity) || owner.bands.some((band) => Boolean(band.eur_kwh_entity)));
 }
 
 function Hour({ label, value, from, to, onChange }: {
@@ -151,7 +202,13 @@ function BandsEditor({ bands, fallback, label, onChange }: {
           <Minute label={t("tariff.start_minute")} value={band.start_minute ?? 0} onChange={(start_minute) => setBand(index, { start_minute })} />{" "}
           <Hour label={t("tariff.to")} value={band.end_hour} from={1} to={24} onChange={(end_hour) => setBand(index, { end_hour, end_minute: end_hour === 24 ? 0 : (band.end_minute ?? 0) })} />{" "}
           <Minute label={t("tariff.end_minute")} value={band.end_hour === 24 ? 0 : (band.end_minute ?? 0)} disabled={band.end_hour === 24} onChange={(end_minute) => setBand(index, { end_minute })} />{" "}
-          <Price label={t("tariff.price")} value={band.eur_kwh} onChange={(eur_kwh) => setBand(index, { eur_kwh })} />{" "}
+          <Price
+            label={t("tariff.price")}
+            value={band.eur_kwh}
+            onChange={(eur_kwh) => setBand(index, { eur_kwh })}
+            entity={band.eur_kwh_entity}
+            onEntity={(eur_kwh_entity) => setBand(index, { eur_kwh_entity })}
+          />{" "}
           {(band.weekdays.length > 0 || band.months.length > 0) && <em>{t("tariff.limited")}</em>}{" "}
           <button type="button" onClick={() => onChange(bands.filter((_, i) => i !== index))}>
             {t("tariff.remove_band")}
@@ -207,7 +264,13 @@ function ColorsEditor({ tariff, onChange }: { tariff: Tariff; onChange: (tariff:
             {t("tariff.color")}{" "}
             <input value={color.color} onChange={(event) => setColor(index, { color: event.target.value })} />
           </label>{" "}
-          <Price label={t("tariff.base_color")} value={color.base_eur_kwh} onChange={(base_eur_kwh) => setColor(index, { base_eur_kwh })} />{" "}
+          <Price
+            label={t("tariff.base_color")}
+            value={color.base_eur_kwh}
+            onChange={(base_eur_kwh) => setColor(index, { base_eur_kwh })}
+            entity={color.base_eur_kwh_entity}
+            onEntity={(base_eur_kwh_entity) => setColor(index, { base_eur_kwh_entity })}
+          />{" "}
           <button type="button" onClick={() => onChange({ ...tariff, colors: tariff.colors.filter((_, i) => i !== index) })}>
             {t("tariff.remove_color")}
           </button>
@@ -285,7 +348,8 @@ export default function TariffEditor({ tariff, onChange }: { tariff: Tariff | nu
     DynamicTariff: "tariff.base_unknown",
   }[tariff.kind];
 
-  // Unité des prix lus dans HA : visible pour le prix dynamique, avancée pour la revente seule.
+  // Unité des prix lus dans HA : visible pour le prix dynamique et les prix fixes lus dans HA,
+  // avancée pour la revente seule.
   const unitSelect = (
     <label>
         {t("tariff.unit")}{" "}
@@ -325,7 +389,13 @@ export default function TariffEditor({ tariff, onChange }: { tariff: Tariff | nu
       </label>
       <Hint text={t(`tariff.kind_hints.${tariff.kind}`)} />
       <p>
-        <Price label={t(baseLabel)} value={tariff.base_eur_kwh} onChange={(base_eur_kwh) => onChange({ ...tariff, base_eur_kwh })} />
+        <Price
+          label={t(baseLabel)}
+          value={tariff.base_eur_kwh}
+          onChange={(base_eur_kwh) => onChange({ ...tariff, base_eur_kwh })}
+          entity={tariff.base_eur_kwh_entity}
+          onEntity={(base_eur_kwh_entity) => onChange({ ...tariff, base_eur_kwh_entity })}
+        />
       </p>
       {tariff.kind === "TimeOfUseTariff" && (
         <BandsEditor bands={tariff.bands} fallback={tariff.base_eur_kwh} label="" onChange={(bands) => onChange({ ...tariff, bands })} />
@@ -337,7 +407,7 @@ export default function TariffEditor({ tariff, onChange }: { tariff: Tariff | nu
           <Hint text={t("tariff.price_entity_hint")} />
         </p>
       )}
-      {tariff.kind === "DynamicTariff" && (
+      {(tariff.kind === "DynamicTariff" || readsFixedPrices(tariff)) && (
         <p>{unitSelect}</p>
       )}
       <p>
@@ -352,7 +422,7 @@ export default function TariffEditor({ tariff, onChange }: { tariff: Tariff | nu
         <p>
           <Entity label={t("tariff.export_entity")} value={tariff.export_entity} onChange={(export_entity) => onChange({ ...tariff, export_entity })} />
         </p>
-        {tariff.kind !== "DynamicTariff" && tariff.export_entity !== null && <p>{unitSelect}</p>}
+        {tariff.kind !== "DynamicTariff" && !readsFixedPrices(tariff) && tariff.export_entity !== null && <p>{unitSelect}</p>}
       </Advanced>
       <Contract tariff={tariff} onChange={onChange} />
       <ProposeButton onChange={onChange} />{" "}

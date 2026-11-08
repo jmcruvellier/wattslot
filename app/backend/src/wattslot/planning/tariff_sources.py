@@ -9,11 +9,15 @@ Lu une fois par calcul, sur les états de HA déjà lus pour les prévisions (``
   ``value``), ENTSO-e (``prices`` : ``time``, ``price``), Tibber (``startsAt``, ``total``),
   Octopus (``valid_from``, ``value_inc_vat``)… Prix multipliés par ``price_factor`` (unité de
   l'entité vers €/kWh), moyennés par heure locale (quarts d'heure compris).
+- **Prix fixes lus dans HA** : état numérique des entités liées aux prix saisis (prix de base,
+  plages, couleurs), multiplié par ``price_factor`` ; l'entité de revente sans prévision donne
+  aussi son état. Un état inconnu ou non numérique laisse le prix saisi.
 """
 
 from collections import defaultdict
 from collections.abc import Sequence
 from datetime import date, datetime, timedelta
+from math import isfinite
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -100,12 +104,29 @@ def tariff_context(
         if state:
             points = price_points(state.get("attributes") or {})
             context.prices = hourly_prices(points, tariff.price_factor, zone)
+    for entity_id in tariff.price_entities():
+        _add_state_price(context, states, entity_id, tariff.price_factor)
     state = _state(states, tariff.export_entity)
     if state:
         points = price_points(state.get("attributes") or {})
         context.export = hourly_prices(points, tariff.price_factor, zone)
+        if not context.export and tariff.export_entity:
+            _add_state_price(context, states, tariff.export_entity, tariff.price_factor)
     return context
 
 
+def _add_state_price(
+    context: TariffContext, states: Sequence[dict[str, Any]], entity_id: str, factor: float
+) -> None:
+    state = _state(states, entity_id)
+    price = _number(state.get("state")) if state else None
+    if price is not None and isfinite(price):
+        context.entity_prices[entity_id] = round(price * factor, 6)
+
+
 def needs_states(tariff: Tariff) -> bool:
-    return bool(tariff.kind in (TariffKind.DAY_COLOR, TariffKind.DYNAMIC) or tariff.export_entity)
+    return bool(
+        tariff.kind in (TariffKind.DAY_COLOR, TariffKind.DYNAMIC)
+        or tariff.export_entity
+        or tariff.price_entities()
+    )
