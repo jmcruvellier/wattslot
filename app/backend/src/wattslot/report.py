@@ -110,6 +110,7 @@ def _components(diagnostic: Diagnostic, names: Anonymizer) -> dict[str, Any]:
     maintenance, planning = diagnostic.maintenance, diagnostic.planning
     return {
         "memory_bytes": diagnostic.memory_bytes,
+        "resources": diagnostic.resources.model_dump() if diagnostic.resources else None,
         "written_bytes": diagnostic.written_bytes,
         "started_at": diagnostic.started_at.isoformat() if diagnostic.started_at else None,
         "ingestion": ingestion

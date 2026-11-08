@@ -87,6 +87,19 @@ export interface DeviceIssue {
   issue: Issue;
 }
 
+export interface Resources {
+  cpu_percent: number | null; // moyenne sur 15 min, en % d'un cœur
+  cpu_peak_percent: number | null; // minute la plus chargée des dernières 24 h
+  cpu_cores: number | null;
+  memory_bytes: number | null;
+  memory_peak_bytes: number | null;
+  memory_limit_bytes: number | null; // limite du conteneur, sinon mémoire de la machine
+  disk_used_bytes: number | null; // dossier des données de l'application
+  disk_free_bytes: number | null;
+  disk_total_bytes: number | null;
+  measured_s: number; // durée couverte par les relevés
+}
+
 export interface Diagnostic {
   generated_at: string;
   memory_bytes: number | null;
@@ -99,4 +112,5 @@ export interface Diagnostic {
   maintenance: MaintenanceStatus | null;
   planning: PlanningStatus | null;
   issues: DeviceIssue[] | null;
+  resources?: Resources | null;
 }

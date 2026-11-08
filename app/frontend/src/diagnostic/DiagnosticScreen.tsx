@@ -9,6 +9,7 @@ import { SettingList } from "../ui/SettingRow";
 import ForecastComparison from "./ForecastComparison";
 import ProblemsSection from "./ProblemsSection";
 import ReportSection from "./ReportSection";
+import ResourcesSection from "./ResourcesSection";
 import { formatAge, formatDate, formatNumber, unitOf } from "./format";
 import type { Diagnostic } from "./types";
 import { silentEntities } from "./warnings";
@@ -19,7 +20,7 @@ type LoadState = { status: "loading" } | { status: "ready"; diagnostic: Diagnost
 
 // Diagnostic pour tous (lot 4.8), en listes comme les autres sous-pages des Réglages : l'état et
 // ce qui ne va pas d'abord, puis l'application (lignes passées par la page : mode, Home
-// Assistant, version, soutien), le rapport, et le détail technique replié tout en bas.
+// Assistant, version, soutien), ses ressources (processeur, mémoire, disque), le rapport, et le détail technique replié tout en bas.
 export default function DiagnosticScreen({ onNavigate, children }: {
   onNavigate: (target: string) => void;
   children?: ReactNode;
@@ -53,6 +54,7 @@ export default function DiagnosticScreen({ onNavigate, children }: {
           <SettingList>{children}</SettingList>
         </>
       )}
+      <ResourcesSection />
       <ReportSection />
       <h3 className="home-summary-heading">{t("nav.more")}</h3>
       <SettingList>

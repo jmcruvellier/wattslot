@@ -13,6 +13,13 @@ export function formatNumber(language: Language, value: number, digits = 2): str
   return new Intl.NumberFormat(language, { maximumFractionDigits: digits }).format(value);
 }
 
+/** Pourcentage (« 2,5 % », « 85 % ») : une décimale sous 10 %. */
+export function formatPercent(language: Language, value: number): string {
+  return new Intl.NumberFormat(language, { style: "percent", maximumFractionDigits: value < 10 ? 1 : 0 }).format(
+    value / 100,
+  );
+}
+
 export function formatDate(language: Language, time: string | null): string {
   return time ? new Date(time).toLocaleString(language, zoned()) : "—";
 }

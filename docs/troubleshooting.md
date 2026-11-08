@@ -6,6 +6,8 @@
 
 **Settings › App status** (or the status dot in the menu) lists what is wrong, by severity: **Blocks the plan**, **Less accurate plan**, **To watch**. Each problem says what to do and has a **Go there** link. **Check again** re-runs the checks.
 
+The **Resources** section shows the processor (average over 15 minutes and peak, as a share of one core), the memory (with its peak and the limit of the container or the machine) and the disk (the app's data and the free space on the host). In a container, the limits are those of the container. These values raise no alert yet.
+
 | Problem | What to do |
 |---|---|
 | The application does not know the Home Assistant address | As an app: restart it. Standalone: set the address and log in (**Settings › Home Assistant connection**) |
