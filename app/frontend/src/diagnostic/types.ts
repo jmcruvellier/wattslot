@@ -102,9 +102,8 @@ export interface Resources {
   disk_backup_bytes?: number | null; // place qu'une sauvegarde demande
   memory_alert_bytes?: number | null; // seuil d'alerte (ligne rouge) : mémoire au-delà
   disk_alert_free_bytes?: number | null; // seuil d'alerte : espace libre en deçà
-  disk_full_free_bytes?: number | null; // « disque presque plein » : espace libre en deçà
-  disk_full_data_bytes?: number | null; // les deux seuils du disque en taille des données
-  disk_backup_data_bytes?: number | null;
+  disk_alert_used_bytes?: number | null; // le même seuil en espace occupé : au-delà
+  disk_alert_data_bytes?: number | null; // en taille des données : au-delà
   measured_s: number; // durée couverte par les relevés
 }
 

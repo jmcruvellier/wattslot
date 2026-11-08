@@ -199,6 +199,16 @@ def test_disk_thresholds_as_data_sizes() -> None:
     assert data_limits(Resources(disk_used_bytes=1)) == (None, None)
 
 
+def test_snapshot_gives_one_threshold_per_curve(tmp_path: Path) -> None:
+    """Espace occupé : le disque moins l'espace libre d'alerte ; données : la première des deux
+    alertes qu'elles déclencheraient."""
+    (tmp_path / DATABASE_FILENAME).write_bytes(b"x" * 1000)
+    found = ResourceMonitor(tmp_path).snapshot()
+    assert found.disk_total_bytes is not None and found.disk_alert_free_bytes is not None
+    assert found.disk_alert_used_bytes == found.disk_total_bytes - found.disk_alert_free_bytes
+    assert found.disk_alert_data_bytes == min(v for v in data_limits(found) if v is not None)
+
+
 def test_snapshot_gives_the_thresholds(tmp_path: Path) -> None:
     (tmp_path / DATABASE_FILENAME).write_bytes(b"x" * 1000)
     found = ResourceMonitor(tmp_path).snapshot()

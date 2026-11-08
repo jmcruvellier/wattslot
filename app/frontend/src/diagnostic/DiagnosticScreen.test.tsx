@@ -98,9 +98,8 @@ const RESOURCES: Resources = {
   disk_total_bytes: 32_000_000_000,
   disk_alert_free_bytes: 6_400_000_000,
   disk_backup_bytes: 5_400_000_000,
-  disk_full_free_bytes: 6_400_000_000,
-  disk_full_data_bytes: 14_850_000_000,
-  disk_backup_data_bytes: 6_120_000_000,
+  disk_alert_used_bytes: 25_600_000_000,
+  disk_alert_data_bytes: 6_120_000_000,
   measured_s: 3600,
 };
 
@@ -192,10 +191,10 @@ describe("DiagnosticScreen", () => {
     expect(screen.getByText("Average over 15 minutes · peak since start: 85% · available cores: 4")).toBeInTheDocument();
     expect(screen.getByText("180 MB")).toBeInTheDocument();
     expect(screen.getByText("Peak since start: 210 MB · container limit: 4 GB")).toBeInTheDocument();
-    expect(screen.getByText("20 GB")).toBeInTheDocument();
-    expect(screen.getByText("WattSlot data disk: 32 GB in all")).toBeInTheDocument();
+    expect(screen.getByText("12 GB")).toBeInTheDocument(); // occupé : 32 - 20
+    expect(screen.getByText("Free: 20 GB of 32 GB")).toBeInTheDocument();
     expect(screen.getByText("1.3 GB")).toBeInTheDocument();
-    expect(screen.getByText(/^Data folder, measured every 10 minutes; thresholds:/)).toBeInTheDocument();
+    expect(screen.getByText(/^Data folder, measured every 10 minutes; threshold:/)).toBeInTheDocument();
   });
 
   it("déplie la courbe d'une ressource", async () => {
@@ -211,23 +210,22 @@ describe("DiagnosticScreen", () => {
     expect(globalThis.fetch).toHaveBeenCalledWith("api/diagnostic/resources/history", expect.anything());
   });
 
-  it("montre les deux seuils du disque, en espace libre et en taille des données", async () => {
+  it("trace l'espace occupé et les données, chacun sous un seul seuil d'alerte", async () => {
     const user = userEvent.setup();
     mockApi(HEALTHY);
 
     renderScreen();
 
-    await user.click(await screen.findByText("Free space"));
-    const free = (await screen.findByRole("img", { name: "Free space over the last 24 hours" })).closest("figure");
-    expect(free).toHaveTextContent("“disk nearly full” threshold: 6.4 GB");
-    expect(free).toHaveTextContent("“room for a backup” threshold: 5.4 GB");
-    expect(free?.querySelectorAll("line.resource-chart-threshold")).toHaveLength(2);
+    await user.click(await screen.findByText("Disk space used"));
+    const used = (await screen.findByRole("img", { name: "Disk space used over the last 24 hours" })).closest("figure");
+    expect(used).toHaveTextContent("alert threshold: 25.6 GB");
+    expect(used?.querySelectorAll("line.resource-chart-threshold")).toHaveLength(1);
     await user.click(screen.getByText("Application data"));
     const data = (await screen.findByRole("img", { name: "Application data over the last 24 hours" })).closest(
       "figure",
     );
-    expect(data).toHaveTextContent("“disk nearly full” threshold: 14.9 GB");
-    expect(data).toHaveTextContent("“room for a backup” threshold: 6.1 GB");
+    expect(data).toHaveTextContent("alert threshold: 6.1 GB");
+    expect(data?.querySelectorAll("line.resource-chart-threshold")).toHaveLength(1);
   });
 
   it("écrit les alertes de ressources dans la langue de l'interface", async () => {
