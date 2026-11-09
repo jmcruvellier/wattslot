@@ -65,6 +65,29 @@ class FrozenCycle:
 
 
 @dataclass(frozen=True)
+class NextDay:
+    """Lendemain du jour calculé, pour prolonger le calcul après minuit (un cycle lancé le soir
+    peut finir le lendemain) : prévision du lendemain, heure par heure ; ``prices_known`` : faux
+    si le tarif du lendemain n'est pas encore connu (prix dynamiques, couleur du jour), et le
+    débordement alors refusé."""
+
+    net_kwh: Mapping[int, float]
+    production_kwh: Mapping[int, float]
+    prices_known: bool = True
+
+
+@dataclass(frozen=True)
+class CarriedCycle:
+    """Fin d'un cycle commencé la veille avant minuit : consommation déjà décidée du jour, de
+    minuit à ``end_min``."""
+
+    name: str
+    end_min: int
+    hourly_kwh: Mapping[int, float]  # heure du jour → kWh
+    energy_kwh: float = 0.0  # énergie du cycle entier
+
+
+@dataclass(frozen=True)
 class Battery:
     capacity_kwh: float
     stored_kwh: float
@@ -171,6 +194,10 @@ class PlanningInput:
     measured_production_kwh: float | None = None  # production mesurée au relevé
     measured_at_hour: float | None = None  # heure du relevé (fractionnaire)
     forecast_warnings: tuple[dict[str, Any], ...] = ()
+    # Débordement après minuit : lendemain pour prolonger le calcul, et fins de cycles
+    # commencés la veille, reprises comme consommation déjà décidée.
+    next_day: NextDay | None = None
+    carried: tuple[CarriedCycle, ...] = ()
 
 
 def _date(value: Any) -> date | None:

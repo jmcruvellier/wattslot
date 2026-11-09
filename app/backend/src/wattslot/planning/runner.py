@@ -37,7 +37,7 @@ from wattslot.detection import DeviceKind, Role
 from wattslot.home_assistant import HomeAssistantClient
 from wattslot.home_model import HomeModel
 from wattslot.objective_settings import Preset
-from wattslot.planning import cancelled, capture, choices, open_meteo, past
+from wattslot.planning import cancelled, capture, choices, open_meteo, overnight, past
 from wattslot.planning.actual import actual_day
 from wattslot.planning.assemble import build_input, to_v1
 from wattslot.planning.assignment import decide, launched_keys
@@ -50,7 +50,7 @@ from wattslot.planning.engine import (
     plan_day,
 )
 from wattslot.planning.horizon import HORIZON_DAYS, DayForecast, compute_horizon, end_soc_kwh
-from wattslot.planning.inputs import FrozenCycle, PlanningInput, RecentHistory
+from wattslot.planning.inputs import FrozenCycle, NextDay, PlanningInput, RecentHistory
 from wattslot.planning.journal import CycleJournal, cycle_appliances
 from wattslot.planning.merge import BATTERY, POOL, merge_plans, pool_modes, soc_at_hour_start
 from wattslot.planning.past import AggregateReader
@@ -345,8 +345,24 @@ def plan_state(
         **result.output,
         "date_cible": data.day.isoformat(),
         "duree_calcul_s": round(result.seconds, 2),
+        overnight.CARRIED_KEY: overnight.stored(data.carried),
         **(extra or {}),
     }
+
+
+async def next_day_of(
+    forecasts: Forecasts, ctx: Context, data: PlanningInput, day: date, today: date
+) -> NextDay | None:
+    """Lendemain ``day`` pour prolonger le calcul de la veille après minuit ; aucun sans
+    prévision (le calcul ne déborde pas)."""
+    try:
+        forecast = await day_forecast(forecasts, ctx, day, today)
+    except Exception:  # noqa: BLE001 — sans prévision du lendemain : pas de débordement
+        logger.info("Prévision du %s indisponible : pas de débordement après minuit", day)
+        return None
+    return overnight.next_day(
+        forecast.net_kwh, forecast.production_kwh, data.tariff, data.tariff_context, day
+    )
 
 
 def _actual(ctx: Context, day: date, until: datetime, manual: bool = False) -> Any:
@@ -486,6 +502,14 @@ async def run(ctx: Context, now: datetime, manual: bool = False) -> RunReport:
         if previous_tomorrow is not None and previous_tomorrow.day == today
         else None
     )
+    # Fins des cycles commencés la veille avant minuit (débordement), avant l'archivage.
+    carried = overnight.carried_into(
+        (previous.day, previous.content) if previous is not None else None,
+        (previous_tomorrow.day, previous_tomorrow.content)
+        if previous_tomorrow is not None
+        else None,
+        today,
+    )
     if previous is not None and previous.day != today:
         archive(ctx, previous.day, previous.content, previous.seconds, previous.manual, now)
         previous = None
@@ -505,7 +529,11 @@ async def run(ctx: Context, now: datetime, manual: bool = False) -> RunReport:
         ctx.configuration,
         ctx.database,
     )
-    data = replace(data, chosen_starts=choices.load(ctx.database, today))
+    data = replace(
+        overnight.with_carried(data, carried),
+        chosen_starts=choices.load(ctx.database, today),
+        next_day=await next_day_of(forecasts, ctx, data, today + timedelta(days=1), today),
+    )
     data = with_past(data, old, now, ctx)
     # Planifications annulées pour aujourd'hui (bouton « Annuler ») : ni tâche, ni besoin, ni
     # durée à placer ; le calcul de demain les reprendra.
@@ -615,6 +643,7 @@ async def run(ctx: Context, now: datetime, manual: bool = False) -> RunReport:
             ),
             assignments=data.assignments,
             chosen_starts=choices.load(ctx.database, tomorrow),
+            next_day=await next_day_of(forecasts, ctx, data_t, tomorrow + timedelta(days=1), today),
             history=history,
             # Une durée à placer qui tourne aujourd'hui (prévu) n'a pas de jour sans demain.
             runtimes=tuple(
@@ -622,6 +651,7 @@ async def run(ctx: Context, now: datetime, manual: bool = False) -> RunReport:
                 for r in data_t.runtimes
             ),
         )
+        data_t = overnight.with_carried(data_t, overnight.carried_from(merged_plan))
         result_t = plan_day(from_input(data_t), objective)
         state_t = plan_state(data_t, result_t, {"derniere_execution": execution})
         state_t["texte_recommandation"] = recommendation(state_t)

@@ -132,10 +132,11 @@ export interface Unplanned {
 
 export interface Bar {
   start_hour: number;
-  end_hour: number;
+  end_hour: number; // au-delà de 24 : cycle qui finit le lendemain (débordement après minuit)
   energy_kwh: number;
   action: "charge" | "discharge" | null;
   mode: string | null;
+  carried?: boolean; // fin d'un cycle commencé la veille avant minuit : rien à lancer
 }
 
 export interface TimelineRow {

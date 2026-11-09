@@ -9,6 +9,10 @@ Tâches : les tâches datées qui concernent le jour (une tâche récurrente rev
 règle, ``recurrence.py``) ; les tâches en attente seulement le jour auquel elles sont
 affectées (``assignment.py``), sans quoi un lave-linge serait placé chaque jour.
 
+Débordement après minuit : chaque jour reçoit la prévision du suivant (son calcul est prolongé
+après minuit, ``problem.py``) et la fin des cycles du précédent qui débordent (``overnight.py``).
+Le dernier jour, sans prévision du suivant, ne déborde pas.
+
 Si la prévision d'un jour manque, ou si son calcul échoue, l'horizon s'arrête au dernier jour
 calculé, avec un avertissement : les jours suivants dépendent de son SoC. Un problème que HiGHS
 déclare impossible est passé à ``on_no_plan`` pour être capturé (``capture.py``, lot 7.3).
@@ -20,6 +24,7 @@ from dataclasses import dataclass, field, replace
 from datetime import date, timedelta
 from typing import Any
 
+from wattslot.planning import overnight
 from wattslot.planning.engine import (
     Goal,
     ImpossibleDataError,
@@ -28,7 +33,7 @@ from wattslot.planning.engine import (
     Result,
     plan_day,
 )
-from wattslot.planning.inputs import PlanningInput
+from wattslot.planning.inputs import CarriedCycle, PlanningInput
 from wattslot.planning.problem import from_input
 from wattslot.planning.recurrence import tasks_of_day
 
@@ -68,9 +73,24 @@ def next_day_input(
     forecast: DayForecast,
     start_soc_kwh: float,
     chosen: Mapping[str, int] | None = None,
+    carried: tuple[CarriedCycle, ...] = (),
+    following: DayForecast | None = None,
 ) -> PlanningInput:
     """Entrée d'un jour de l'horizon au-delà du premier ; ``chosen`` : départs choisis par
-    l'utilisateur pour ce jour."""
+    l'utilisateur pour ce jour ; ``carried`` : fins des cycles de la veille qui débordent ;
+    ``following`` : prévision du jour suivant, pour déborder après minuit."""
+    tomorrow = day + timedelta(days=1)
+    next_day = (
+        overnight.next_day(
+            following.net_kwh,
+            following.production_kwh,
+            first.tariff,
+            first.tariff_context,
+            tomorrow,
+        )
+        if following is not None
+        else None
+    )
     tasks, unsupported = tasks_of_day(list(first.due_tasks), day)
     assignments = first.assignments or {}
     capacity = first.battery.capacity_kwh
@@ -90,6 +110,8 @@ def next_day_input(
         ),
         assignments=first.assignments,
         chosen_starts=dict(chosen or {}),
+        carried=carried,
+        next_day=next_day,
         runtimes=tuple(replace(r, past={}) for r in first.runtimes),
         needs=tuple(n for n in first.needs if n.daily),
         constraints=first.constraints,
@@ -122,6 +144,19 @@ async def compute_horizon(
     """Le premier jour tel quel, puis au plus ``days - 1`` jours calculés à la suite ;
     ``chosen`` : départs choisis par l'utilisateur, par jour."""
     horizon = Horizon(days=[(first, first_result)])
+    known: dict[date, DayForecast] = {}
+
+    async def following(day: date) -> DayForecast | None:
+        """Prévision du jour suivant un jour de l'horizon, pour son débordement ; aucune au-delà
+        du dernier jour ou si elle manque (le jour ne déborde pas)."""
+        if day > first.day + timedelta(days=days - 1):
+            return None
+        try:
+            known[day] = known.get(day) or await forecast_of(day)
+        except Exception:  # noqa: BLE001 — sans elle, pas de débordement ce jour-là
+            return None
+        return known[day]
+
     for offset in range(1, days):
         day = first.day + timedelta(days=offset)
         soc = end_soc_kwh(horizon.days[-1][1])
@@ -130,11 +165,19 @@ async def compute_horizon(
             break
         began = time.perf_counter()
         try:
-            forecast = await forecast_of(day)
+            forecast = known.pop(day, None) or await forecast_of(day)
         except Exception as exc:  # noqa: BLE001 — l'horizon s'arrête au dernier jour connu
             horizon.warnings.append(_interrupted(day, NO_FORECAST, f"{type(exc).__name__} : {exc}"))
             break
-        data = next_day_input(first, day, forecast, soc, (chosen or {}).get(day))
+        data = next_day_input(
+            first,
+            day,
+            forecast,
+            soc,
+            (chosen or {}).get(day),
+            overnight.carried_from(horizon.days[-1][1].day),
+            await following(day + timedelta(days=1)),
+        )
         try:
             result = plan_day(from_input(data), objective, explained=False)
         except Exception as exc:  # noqa: BLE001 — l'horizon s'arrête au dernier jour calculé

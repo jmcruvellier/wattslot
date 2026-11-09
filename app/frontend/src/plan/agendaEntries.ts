@@ -17,7 +17,8 @@ export function agenda(view: DayView): AgendaEntry[] {
   const explanations = new Map(view.explanations.map((item) => [item.device, item.text]));
   const entries: AgendaEntry[] = [];
   for (const row of view.timeline.rows) {
-    for (const bar of row.planned) {
+    // La fin d'un cycle commencé la veille n'est pas une action du jour.
+    for (const bar of row.planned.filter((planned) => !planned.carried)) {
       const minute = toMinute(bar.start_hour);
       const end = toMinute(bar.end_hour);
       if (row.kind === "battery") {

@@ -11,6 +11,12 @@ départages (moins d'injection, batterie pleine, prime forte les jours où la ch
 hebdomadaire est due). Une tâche qui ne peut plus tenir dans la journée n'est pas placée
 (avertissement), comme dans la v1.
 
+Calcul prolongé après minuit (``Problem.overnight``) : les premières heures du lendemain
+s'ajoutent (24, 25…), avec leur tarif, leur consommation de base et la batterie qui continue
+(plage active, plancher du lendemain) ; l'énergie restant stockée est alors valorisée à la fin
+du prolongement. Un cycle qui démarre le soir et finit le lendemain y est chiffré au tarif du
+lendemain. Le plan et sa simulation restent ceux de la journée (0 h à 24 h).
+
 La sortie suit le format de ``calculer_planning`` (v1) : la fusion passé/futur, le dashboard
 et la comparaison avec la v1 la lisent sans adaptation. Le plan est ensuite simulé (batterie
 de ``simulation.py``) : mouvements, SoC heure par heure et résidu réseau en viennent.
@@ -18,7 +24,7 @@ de ``simulation.py``) : mouvements, SoC heure par heure et résidu réseau en vi
 
 import math
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field, replace
 from datetime import date
 from enum import StrEnum
@@ -144,6 +150,17 @@ def battery_cost(problem: Problem, objective: Goal) -> float:
     return objective.battery * sum(price[h] for h in hours) / len(hours) if hours else 0.0
 
 
+def extended_hours(problem: Problem) -> list[int]:
+    """Heures du calcul : celles du jour, puis celles du prolongement après minuit."""
+    later = list(problem.overnight.problem_hours) if problem.overnight else []
+    return list(problem.hours) + later
+
+
+def _extended(day: Mapping[int, float], night: Mapping[int, float] | None) -> dict[int, float]:
+    """Valeurs par heure du jour, suivies de celles du lendemain (heures 24, 25…)."""
+    return {**day, **{24 + h: v for h, v in (night or {}).items()}}
+
+
 def _scaled(prices: dict[int, float], problem: Problem) -> dict[int, float]:
     """Prix ramenés à l'échelle de l'euro (``Problem.price_scale``), pour l'objectif seul."""
     if problem.price_scale == 1.0:
@@ -154,9 +171,15 @@ def _scaled(prices: dict[int, float], problem: Problem) -> dict[int, float]:
 def _terms(problem: Problem, objective: Goal) -> tuple[dict[int, float], dict[int, float], float]:
     """(poids d'un kWh soutiré, d'un kWh injecté, par heure ; valeur d'un kWh restant stocké à
     minuit avant rendement) selon l'objectif."""
-    hours = list(problem.hours)
-    price = _scaled(problem.prices_eur_kwh, problem)
-    export_price = _scaled(problem.export_prices_eur_kwh, problem)
+    hours = extended_hours(problem)
+    night = problem.overnight
+    price = _scaled(
+        _extended(problem.prices_eur_kwh, night.prices_eur_kwh if night else None), problem
+    )
+    export_price = _scaled(
+        _extended(problem.export_prices_eur_kwh, night.export_prices_eur_kwh if night else None),
+        problem,
+    )
     lowest = min(price.values())
     if objective is Objective.COST:
         weight = {hour: price[hour] + IMPORT_TIE_EUR for hour in hours}
@@ -170,7 +193,8 @@ def _terms(problem: Problem, objective: Goal) -> tuple[dict[int, float], dict[in
     # Poids libres : un kWh soutiré ou injecté vaut le prix moyen du jour ; pour le CO₂, le
     # kWh d'une heure d'intensité moyenne aussi.
     mean = sum(price[h] for h in hours) / len(hours) if hours else 0.0
-    carbon = {h: problem.co2_g_kwh.get(h, 0.0) for h in hours}
+    co2 = _extended(problem.co2_g_kwh, night.co2_g_kwh if night else None)
+    carbon = {h: co2.get(h, 0.0) for h in hours}
     mean_carbon = sum(carbon.values()) / len(hours) if hours else 0.0
     relative = {h: carbon[h] / mean_carbon if mean_carbon > 0 else 1.0 for h in hours}
     weight = {
@@ -214,7 +238,8 @@ def solve(problem: Problem, objective: Goal = Objective.COST, time_limit_s: floa
                 s + parent.slot_min
                 for s in parent.candidates()
                 if s + parent.slot_min >= task.earliest_min
-                and s + parent.slot_min + task.slot_min <= 24 * 60
+                and s + parent.slot_min < 24 * 60
+                and s + parent.slot_min + task.slot_min <= 24 * 60 + task.overflow_min
             }
         allowed = {
             s for s in candidates if not problem.hard_blocks(task.name, s, s + task.slot_min)
@@ -235,6 +260,10 @@ def solve(problem: Problem, objective: Goal = Objective.COST, time_limit_s: floa
             h.addConstr(start >= parent_end - 24 * 60 * skips[task.name])
 
     load: dict[int, Any] = {hour: problem.fixed_kwh.get(hour, 0.0) for hour in hours}
+    night = problem.overnight
+    later = list(night.problem_hours) if night else []
+    for hour in later:  # prolongement : parts du lendemain des cycles gelés ou lancés
+        load[hour] = night.fixed_kwh.get(hour - 24, 0.0) if night else 0.0
     for task in problem.tasks:
         for start, x in choices[task.name].items():
             for hour, kwh in task.hourly_kwh(start).items():
@@ -315,14 +344,16 @@ def solve(problem: Problem, objective: Goal = Objective.COST, time_limit_s: floa
     imports, exports, full_hours = {}, {}, []
     over_contract: list[Any] = []  # soutirage au-delà de la puissance souscrite (lot 7.3)
     throughput: list[Any] = []  # énergie qui passe par la batterie (ménagement)
-    for hour in hours:
+    net = _extended(problem.net_kwh, night.net_kwh if night else None)
+    for hour in hours + later:
         imports[hour], exports[hour] = var(), var()
         if problem.contract_kwh is not None:
             over = var()
             h.addConstr(imports[hour] <= problem.contract_kwh + over)
             over_contract.append(over)
-        balance = problem.net_kwh.get(hour, 0.0) - load[hour]
-        if battery.active_from <= hour < battery.active_to and battery.capacity_kwh > 0:
+        balance = net.get(hour, 0.0) - load[hour]
+        clock = hour % 24  # heure du lendemain dans le prolongement
+        if battery.active_from <= clock < battery.active_to and battery.capacity_kwh > 0:
             charge = var(0, battery.charge_max_kw)
             discharge = var(0, battery.discharge_max_kw)
             throughput.append(charge + discharge)
@@ -343,7 +374,11 @@ def solve(problem: Problem, objective: Goal = Objective.COST, time_limit_s: floa
             # de rendre le problème impossible. Batterie sous le plancher sans décharger en
             # heure de déficit : seulement si le contenu était déjà au plancher ou dessous (le
             # soutirage exige sinon la pleine puissance de décharge, ci-dessous).
-            floor = battery.floor_at(hour)
+            floor = (
+                night.floor_kwh.get(clock, battery.floor_kwh)
+                if night and hour >= 24
+                else battery.floor_at(hour)
+            )
             if floor > 0:
                 below = var(0, 1, True)
                 h.addConstr(soc >= floor - floor * below)
@@ -357,10 +392,11 @@ def solve(problem: Problem, objective: Goal = Objective.COST, time_limit_s: floa
             discharge_max, at_floor = var(0, 1, True), var(0, 1, True)
             h.addConstr(imports[hour] <= BIG_KWH * (discharge_max + at_floor))
             h.addConstr(discharge >= battery.discharge_max_kw * discharge_max)
-            h.addConstr(soc <= battery.floor_at(hour) + battery.capacity_kwh * (1 - at_floor))
-            full = var(0, 1, True)
-            h.addConstr(soc >= battery.full_kwh * full)
-            full_hours.append(full)
+            h.addConstr(soc <= floor + battery.capacity_kwh * (1 - at_floor))
+            if hour < 24:  # batterie pleine dans la journée seulement
+                full = var(0, 1, True)
+                h.addConstr(soc >= battery.full_kwh * full)
+                full_hours.append(full)
             soc_previous = soc
             balance = balance - charge + discharge
         else:
@@ -382,7 +418,10 @@ def solve(problem: Problem, objective: Goal = Objective.COST, time_limit_s: floa
     stored_value = cheapest * battery.discharge_efficiency
     bonus = FULL_PRIORITY_BONUS if battery.full_priority else FULL_BONUS
     h.minimize(
-        sum(weight[hour] * imports[hour] + export_cost[hour] * exports[hour] for hour in hours)
+        sum(
+            weight[hour] * imports[hour] + export_cost[hour] * exports[hour]
+            for hour in hours + later
+        )
         - stored_value * soc_previous
         - bonus * full_day
         + SKIP_PENALTY * sum(skips.values())
@@ -467,8 +506,68 @@ def simulate_plan(problem: Problem, plan: Plan) -> BatteryRun:
     )
 
 
+def overnight_kwh(problem: Problem, plan: Plan) -> dict[int, float]:
+    """Consommation du prolongement après minuit, par heure du lendemain : parts du lendemain
+    des cycles fixés et des tâches placées."""
+    night = problem.overnight
+    if night is None:
+        return {}
+    load = {hour: night.fixed_kwh.get(hour, 0.0) for hour in range(night.hours)}
+    by_name = {task.name: task for task in problem.tasks}
+    for name, start in plan.starts.items():
+        for hour, kwh in by_name[name].hourly_kwh(start).items():
+            if hour - 24 in load:
+                load[hour - 24] += kwh
+    return load
+
+
+def with_overnight(problem: Problem, plan: Plan, run: BatteryRun, day: Indicators) -> Indicators:
+    """Indicateurs de la journée augmentés de ceux du prolongement après minuit (batterie
+    simulée à partir de la fin de journée, tarif du lendemain) : pour comparer des départs dont
+    l'un déborde. Sans prolongement : ceux de la journée."""
+    night = problem.overnight
+    if night is None:
+        return day
+    battery = problem.battery
+    load = overnight_kwh(problem, plan)
+    later = simulate(
+        {hour: night.net_kwh.get(hour, 0.0) - load[hour] for hour in load},
+        run.end_kwh,
+        battery.capacity_kwh,
+        battery.charge_max_kw,
+        battery.discharge_max_kw,
+        battery.active_from,
+        battery.active_to,
+        battery.charge_efficiency,
+        battery.discharge_efficiency,
+        battery.floor_kwh,
+        floor_by_hour=night.floor_kwh,
+    )
+    imported = {h: max(0.0, -kwh) for h, kwh in later.residual_kwh.items() if h in load}
+    exported = {h: max(0.0, kwh) for h, kwh in later.residual_kwh.items() if h in load}
+    price, export_price = night.prices_eur_kwh, night.export_prices_eur_kwh
+    cost = sum(price.get(h, 0.0) * kwh for h, kwh in imported.items()) - sum(
+        export_price.get(h, 0.0) * kwh for h, kwh in exported.items()
+    )
+    co2 = sum(night.co2_g_kwh.get(h, 0.0) * kwh for h, kwh in imported.items()) / 1000
+    return day.model_copy(
+        update={
+            "cost_eur": round(day.cost_eur + cost, 3),
+            "import_kwh": round(day.import_kwh + sum(imported.values()), 3),
+            "export_kwh": round(day.export_kwh + sum(exported.values()), 3),
+            "battery_throughput_kwh": round(
+                day.battery_throughput_kwh
+                + sum(m.energy_kwh for m in later.movements if m.hour in load),
+                3,
+            ),
+            "co2_kg": round(day.co2_kg + co2, 3) if day.co2_kg is not None else None,
+        }
+    )
+
+
 def _hhmm(minutes: int) -> str:
     hours, rest = divmod(int(minutes), 60)
+    hours %= 24  # fin le lendemain (débordement après minuit) : « 1h », pas « 25h »
     return f"{hours}h{rest:02d}" if rest else f"{hours}h"
 
 
@@ -758,7 +857,9 @@ def plan_day(problem: Problem, objective: Goal = Objective.COST, explained: bool
     if explained:
 
         def evaluate(starts: dict[str, int]) -> Indicators:
-            return indicators(problem, simulate_plan(problem, replace(plan, starts=starts)))
+            changed = replace(plan, starts=starts)
+            day_run = simulate_plan(problem, changed)
+            return with_overnight(problem, changed, day_run, indicators(problem, day_run))
 
         name = objective.value if isinstance(objective, Objective) else "custom"
         day = explain(

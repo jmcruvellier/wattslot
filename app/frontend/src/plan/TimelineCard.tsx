@@ -91,7 +91,8 @@ export default function TimelineCard({
       : bar.mode
         ? t("plan.timeline.mode", { mode: bar.mode })
         : row.device;
-    return t(actual ? "plan.timeline.tip_actual" : "plan.timeline.tip_planned", {
+    const tip = actual ? "plan.timeline.tip_actual" : bar.carried ? "plan.timeline.tip_carried" : "plan.timeline.tip_planned";
+    return t(tip, {
       start: hour(Math.round(bar.start_hour * 60) / 60, lang),
       end: hour(Math.round(bar.end_hour * 60) / 60, lang),
       what,
@@ -102,14 +103,17 @@ export default function TimelineCard({
   const bars = (row: TimelineRow, items: Bar[], actual: boolean) =>
     items.map((bar, index) => {
       const text = describe(row, bar, actual);
-      const [free_start, free_end] = freeSpan(items, index);
+      // Un cycle qui finit le lendemain s'arrête à minuit sur la frise du jour.
+      const shownEnd = Math.min(bar.end_hour, 24);
+      const [free_start, span_end] = freeSpan(items, index);
+      const free_end = Math.min(span_end, 24);
       const wide = ((free_end - free_start) / 24) * trackWidth >= LABEL_MIN_PX;
-      const duration = bar.end_hour - bar.start_hour;
+      const duration = shownEnd - bar.start_hour;
       // Départ d'un appareil pas encore lancé — même si son créneau est passé, personne ne l'a
       // démarré : la feuille s'ouvre au clic, changer de créneau ou annuler la planification.
       // Un équipement lancé ou en cours ne se déplace plus : son bloc reste une info-bulle.
       const choice =
-        !actual && pickable && row.kind === "cycle" && !launched(row, nowMin)
+        !actual && !bar.carried && pickable && row.kind === "cycle" && !launched(row, nowMin)
           ? choices[row.device]
           : undefined;
       const opens = choice !== undefined;
@@ -120,7 +124,7 @@ export default function TimelineCard({
           className={actual ? "tl-bar tl-actual" : opens ? "tl-bar tl-planned tl-pickable" : "tl-bar tl-planned"}
           style={{
             left: `${(bar.start_hour / 24) * 100}%`,
-            width: `max(3px, ${((bar.end_hour - bar.start_hour) / 24) * 100}%)`,
+            width: `max(3px, ${(duration / 24) * 100}%)`,
             ["--bar" as string]: color(row, bar),
           }}
           title={text}

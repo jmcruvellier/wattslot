@@ -4,7 +4,8 @@ Réécriture de ``recalage_cycles.py`` (v1), qui sert d'oracle aux tests différ
 
 - **Énergie d'un cycle par heure** : selon la forme mesurée du cycle (part de l'énergie par
   quart d'heure depuis le démarrage) quand elle est connue, sinon à puissance constante sur
-  sa durée. La part postérieure à minuit n'est pas comptée.
+  sa durée. La part postérieure à minuit n'est pas comptée, sauf à le demander (``days=2`` :
+  heures 24, 25… du lendemain, pour un cycle qui déborde après minuit).
 - **Recalage** : un équipement est souvent lancé à un autre moment que prévu. Dès qu'un cycle
   réel significatif apparaît dans les relevés du jour (au moins ``RECOGNIZED_FRACTION`` de
   l'énergie prévue), la fin prévue devient démarrage réel + durée du cycle (repoussée si le
@@ -15,7 +16,7 @@ Réécriture de ``recalage_cycles.py`` (v1), qui sert d'oracle aux tests différ
 
 import math
 from collections import defaultdict
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
@@ -58,17 +59,20 @@ class Realignment:
     remaining_kwh: float
 
 
-def spread(start: datetime, end: datetime, energy_kwh: float) -> dict[int, float]:
-    """kWh par heure, à puissance constante sur [start, end), jusqu'à minuit."""
+def spread(start: datetime, end: datetime, energy_kwh: float, days: int = 1) -> dict[int, float]:
+    """kWh par heure, à puissance constante sur [start, end), jusqu'à minuit (``days=2`` :
+    jusqu'au minuit suivant, heures du lendemain numérotées 24, 25…)."""
     hours = (end - start).total_seconds() / 3600
     if hours <= 0 or energy_kwh <= 0:
         return {}
-    midnight = start.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
+    day = start.replace(hour=0, minute=0, second=0, microsecond=0)
+    midnight = day + timedelta(days=days)
     by_hour: dict[int, float] = defaultdict(float)
     cursor = start
     while cursor < min(end, midnight):
         bound = min(end, cursor.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1))
-        by_hour[cursor.hour] += energy_kwh * (bound - cursor).total_seconds() / 3600 / hours
+        hour = cursor.hour + 24 * (cursor - day).days
+        by_hour[hour] += energy_kwh * (bound - cursor).total_seconds() / 3600 / hours
         cursor = bound
     return dict(by_hour)
 
@@ -79,6 +83,7 @@ def spread_shape(
     energy_kwh: float,
     since: datetime | None = None,
     until: datetime | None = None,
+    days: int = 1,
 ) -> dict[int, float]:
     """kWh par heure selon la forme du cycle démarré à ``start``.
 
@@ -99,19 +104,28 @@ def spread_shape(
         return {}
     by_hour: dict[int, float] = defaultdict(float)
     for low, high, weight in pieces:
-        for hour, kwh in spread(low, high, energy_kwh * weight / total).items():
-            by_hour[hour] += kwh
+        # ``days=1`` : comme la v1 (oracle), une part d'après minuit retombe sur les heures du
+        # même jour ; sinon, elle va aux heures du lendemain (24, 25…).
+        offset = 24 * (low.date() - start.date()).days if days > 1 else 0
+        for hour, kwh in spread(low, high, energy_kwh * weight / total, days).items():
+            by_hour[hour + offset] += kwh
     return dict(by_hour)
 
 
-def planned_hourly(cycle: PlannedCycle) -> dict[int, float]:
-    """kWh par heure d'un cycle placé, pas encore lancé."""
+def planned_hourly(cycle: PlannedCycle, days: int = 1) -> dict[int, float]:
+    """kWh par heure d'un cycle placé, pas encore lancé (``days=2`` : avec sa part du
+    lendemain, heures 24, 25…)."""
     day = datetime(2000, 1, 1)
     start = day + timedelta(minutes=cycle.start_min)
-    by_hour = spread_shape(start, cycle.shape, cycle.energy_kwh)
+    by_hour = spread_shape(start, cycle.shape, cycle.energy_kwh, days=days)
     if by_hour or cycle.end_min <= cycle.start_min:
         return by_hour
-    return spread(start, day + timedelta(minutes=cycle.end_min), cycle.energy_kwh)
+    return spread(start, day + timedelta(minutes=cycle.end_min), cycle.energy_kwh, days)
+
+
+def after_midnight(hourly: Mapping[int, float]) -> dict[int, float]:
+    """Part du lendemain (heures 24, 25…) ramenée aux heures du lendemain (0, 1…)."""
+    return {hour - 24: kwh for hour, kwh in hourly.items() if hour >= 24 and kwh > 0}
 
 
 def recognized_segment(segments: Sequence[Segment], planned_kwh: float) -> Segment | None:
@@ -144,13 +158,14 @@ def realign(
     )
 
 
-def free_from_minute(realignment: Realignment) -> int:
-    """Minute du jour (arrondie au-dessus, au plus minuit) où l'équipement est libre."""
+def free_from_minute(realignment: Realignment, capped: bool = True) -> int:
+    """Minute du jour (arrondie au-dessus, au plus minuit sauf ``capped=False``) où
+    l'équipement est libre."""
     start, end = realignment.start, realignment.expected_end
     minutes = (end.date() - start.date()).days * DAY_MIN + end.hour * 60 + end.minute
     if end.second or end.microsecond:
         minutes += 1
-    return min(DAY_MIN, minutes)
+    return min(DAY_MIN, minutes) if capped else minutes
 
 
 def free_from_hour(realignment: Realignment) -> int:
@@ -158,13 +173,19 @@ def free_from_hour(realignment: Realignment) -> int:
 
 
 def remaining_hourly(
-    realignment: Realignment, now: datetime, shape: Shape | None = None
+    realignment: Realignment, now: datetime, shape: Shape | None = None, days: int = 1
 ) -> dict[int, float]:
-    """kWh par heure de l'énergie restante du cycle, de maintenant à sa fin prévue."""
+    """kWh par heure de l'énergie restante du cycle, de maintenant à sa fin prévue
+    (``days=2`` : avec sa part du lendemain, heures 24, 25…, du jour de ``now``)."""
     if not realignment.running:
         return {}
-    by_hour = spread_shape(realignment.start, shape, realignment.remaining_kwh, since=now)
-    return by_hour or spread(now, realignment.expected_end, realignment.remaining_kwh)
+    by_hour = spread_shape(
+        realignment.start, shape, realignment.remaining_kwh, since=now, days=days
+    )
+    if by_hour and realignment.start.date() != now.date():
+        shift = 24 * (realignment.start.date() - now.date()).days
+        by_hour = {hour + shift: kwh for hour, kwh in by_hour.items()}
+    return by_hour or spread(now, realignment.expected_end, realignment.remaining_kwh, days)
 
 
 def measured_hourly(

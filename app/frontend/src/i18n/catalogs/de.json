@@ -303,6 +303,7 @@
       "discharge": "Entladen",
       "mode": "Modus {mode}",
       "tip_planned": "Geplant {start} → {end}: {what}, {kwh} kWh",
+      "tip_carried": "Fortsetzung vom Vortag {start} → {end}: {what}, {kwh} kWh",
       "tip_actual": "Tatsächlich {start} → {end}: {what}, {kwh} kWh",
       "no_surplus": "Kein Solarüberschuss erwartet (Erzeugung {production} kWh, Verbrauch {consumption} kWh): kein Gerät eingeplant.",
       "nothing": "An diesem Tag ist kein Gerät eingeplant.",

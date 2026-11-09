@@ -23,6 +23,28 @@ describe("construction de l'agenda", () => {
     expect(entries[2]).toMatchObject({ device: "Piscine", end: 900, mode: "eco" });
   });
 
+  it("n'annonce pas la fin d'un cycle commencé la veille, et garde la fin le lendemain", () => {
+    const view: DayView = {
+      ...TODAY,
+      timeline: {
+        ...TODAY.timeline,
+        rows: [
+          {
+            device: "Chauffe-eau",
+            kind: "cycle",
+            planned: [
+              { start_hour: 0, end_hour: 1, energy_kwh: 0.6, action: null, mode: null, carried: true },
+              { start_hour: 22, end_hour: 25, energy_kwh: 3, action: null, mode: null },
+            ],
+            actual: [],
+          },
+        ],
+      },
+    };
+    const cycles = agenda(view).filter((entry) => entry.kind === "cycle");
+    expect(cycles.map((entry) => [entry.minute, entry.end])).toEqual([[1320, 1500]]);
+  });
+
   it("joint son explication à chaque appareil", () => {
     const view = { ...TODAY, explanations: [{ device: "Lave-linge", text: "Au plus fort du soleil." }] };
     expect(agenda(view)[1]).toMatchObject({ device: "Lave-linge", explanation: "Au plus fort du soleil." });

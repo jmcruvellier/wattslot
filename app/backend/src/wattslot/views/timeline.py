@@ -26,6 +26,9 @@ class Bar(BaseModel):
     energy_kwh: float
     action: Literal["charge", "discharge"] | None = None  # batterie
     mode: str | None = None  # vitesse de la filtration
+    # Fin d'un cycle commencé la veille avant minuit (débordement) : de 0 h à sa fin, rien à
+    # lancer. Un cycle qui déborde a, lui, ``end_hour`` au-delà de 24.
+    carried: bool = False
 
 
 class TimelineRow(BaseModel):
@@ -318,6 +321,26 @@ def build_timeline(
             )
         )
         rendered.add(item["equipement"])
+    for carried in state.get("suite_veille") or []:  # fins des cycles de la veille
+        bar = Bar(
+            start_hour=0,
+            end_hour=round(carried["fin_min"] / 60, 4),
+            energy_kwh=round(carried.get("energie_kwh", 0.0), 3),
+            carried=True,
+        )
+        row = next((r for r in rows if r.device == carried["equipement"]), None)
+        if row is not None:
+            row.planned.insert(0, bar)
+        else:
+            rows.append(
+                TimelineRow(
+                    device=carried["equipement"],
+                    kind="cycle",
+                    planned=[bar],
+                    actual=_actual_bars(measured.get(carried["equipement"]) or [], context),
+                )
+            )
+            rendered.add(carried["equipement"])
     runtimes = [item for item in planning if is_runtime(item)]
     runtime_names = {item["equipement"] for item in runtimes}
     for name in context.appliances:

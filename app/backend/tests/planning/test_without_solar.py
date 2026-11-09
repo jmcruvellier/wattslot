@@ -104,7 +104,8 @@ def test_without_panels_the_appliances_go_to_off_peak_hours(tmp_path: Path) -> N
     assert set(slots) == {"Lave-linge", "Chauffe-eau"}
     for slot in slots.values():
         assert slot.start_min is not None and slot.end_min is not None
-        hours = range(slot.start_min // 60, (slot.end_min - 1) // 60 + 1)
+        # Un cycle peut finir le lendemain (débordement après minuit) : heures du lendemain.
+        hours = {h % 24 for h in range(slot.start_min // 60, (slot.end_min - 1) // 60 + 1)}
         assert set(hours) <= OFF_PEAK, (slot.device, slot.start_min, slot.end_min)
     # Indicateurs : rien de produit, autoconsommation non applicable plutôt que 0 %.
     assert plan.indicators is not None

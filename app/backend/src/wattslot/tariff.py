@@ -307,6 +307,21 @@ class Tariff(BaseModel):
             return {h: known.get(h, self.base_eur_kwh) for h in range(24)}
         return dict.fromkeys(range(24), self.base_eur_kwh)
 
+    def known(self, day: date, context: TariffContext = NO_CONTEXT, hours: int = 24) -> bool:
+        """Prix des ``hours`` premières heures de ``day`` connus : prix dynamiques publiés,
+        couleur du jour connue (avant ``color_day_start_hour``, celle de la veille) ; toujours
+        vrai pour un tarif sans donnée du jour."""
+        if self.kind is TariffKind.DYNAMIC and self.price_entity:
+            known = context.prices.get(day, {})
+            return all(h in known for h in range(hours))
+        if self.kind is TariffKind.DAY_COLOR and self.color_entity:
+            days = {
+                day if h >= self.color_day_start_hour else day - timedelta(days=1)
+                for h in range(hours)
+            }
+            return all(d in context.colors for d in days)
+        return True
+
     def export_hourly(self, day: date, context: TariffContext = NO_CONTEXT) -> dict[int, float]:
         """Prix du kWh injecté à chaque heure locale de ``day`` : prévision de l'entité de
         revente, sinon son état (prix fixe lu dans HA), sinon le prix saisi."""

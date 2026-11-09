@@ -4,9 +4,13 @@ Mêmes règles que ``calculer_planning`` (v1) pour tout ce qui n'est pas le plac
 
 - **fixé** : la consommation restante des cycles décidés plus tôt dans la journée (« passé
   gelé ») et des cycles déjà lancés (recalés sur leur démarrage réel) ;
-- **à décider** : le départ de chaque tâche restante (au plus tôt, puis chaque heure pile,
-  sans franchir minuit ; le sèche-linge après la fin du lave-linge) et le mode de la pompe de
-  piscine, heure par heure ;
+- **à décider** : le départ de chaque tâche restante (au plus tôt, puis chaque heure pile ; le
+  sèche-linge après la fin du lave-linge) et le mode de la pompe de piscine, heure par heure ;
+- **débordement après minuit** : avec la prévision du lendemain (``PlanningInput.next_day``) et
+  son tarif connu, un cycle peut démarrer avant minuit et finir le lendemain ; le calcul est
+  alors prolongé de quelques heures (``Overnight``) : tarif, consommation de base, production
+  et batterie (plage active, plancher) du lendemain. Sans elle, rien ne franchit minuit. La fin
+  d'un cycle commencé la veille (``PlanningInput.carried``) est une consommation déjà décidée ;
 - filtration minimale de la saison, jours « prioritaires » pour la charge complète
   hebdomadaire, prévision qui dévie ; batterie (plage active, rendements par sens).
 
@@ -17,7 +21,7 @@ import math
 from collections import defaultdict
 from collections.abc import Mapping
 from dataclasses import dataclass, field, replace
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import Any
 
 from wattslot import currency
@@ -27,6 +31,7 @@ from wattslot.planning.cycles import (
     PlannedCycle,
     Segment,
     Shape,
+    after_midnight,
     free_from_hour,
     free_from_minute,
     measured_hourly,
@@ -56,23 +61,33 @@ class Task:
     earliest_min: int
     depends_on: str | None = None  # clé d'une autre tâche à placer, à finir avant
     chosen_min: int | None = None  # départ choisi par l'utilisateur, imposé au calcul
+    # Minutes permises après minuit (calcul prolongé, ``Overnight``) ; 0 : finir avant minuit.
+    overflow_min: int = 0
 
     def cycle(self, start_min: int) -> PlannedCycle:
         return PlannedCycle(start_min, start_min + self.slot_min, self.energy_kwh, self.shape)
 
     def hourly_kwh(self, start_min: int) -> dict[int, float]:
-        return planned_hourly(self.cycle(start_min))
+        """kWh par heure ; un cycle qui déborde a aussi ses heures du lendemain (24, 25…)."""
+        overnight = start_min + self.slot_min > DAY_MIN
+        return planned_hourly(self.cycle(start_min), days=2 if overnight else 1)
 
     def candidates(self, earliest_min: int | None = None, chosen: bool = True) -> list[int]:
-        """Départs possibles : au plus tôt, puis chaque heure pile, sans franchir minuit ; le
-        départ choisi seul s'il est encore possible (``chosen=False`` : sans en tenir compte)."""
+        """Départs possibles : au plus tôt, puis chaque heure pile, avant minuit et sans
+        dépasser ``overflow_min`` après ; le départ choisi seul s'il est encore possible
+        (``chosen=False`` : sans en tenir compte)."""
         earliest = self.earliest_min if earliest_min is None else earliest_min
         chosen_min = self.chosen_min if chosen else None
-        if chosen_min is not None and earliest <= chosen_min <= DAY_MIN - self.slot_min:
+        limit = DAY_MIN + self.overflow_min
+        if (
+            chosen_min is not None
+            and earliest <= chosen_min < DAY_MIN
+            and chosen_min + self.slot_min <= limit
+        ):
             return [chosen_min]
         first_full_hour = math.ceil(earliest / 60) * 60
         starts = [earliest] + [m for m in range(first_full_hour, DAY_MIN, 60) if m != earliest]
-        return [s for s in starts if s + self.slot_min <= DAY_MIN]
+        return [s for s in starts if s < DAY_MIN and s + self.slot_min <= limit]
 
 
 @dataclass(frozen=True)
@@ -111,6 +126,25 @@ class BatteryModel:
 
     def floor_at(self, hour: int) -> float:
         return self.floor_by_hour.get(hour, self.floor_kwh)
+
+
+@dataclass(frozen=True)
+class Overnight:
+    """Prolongement du calcul après minuit : les ``hours`` premières heures du lendemain,
+    numérotées 24, 25… dans le problème. Données du lendemain, par heure du lendemain (0, 1…)."""
+
+    hours: int
+    net_kwh: Mapping[int, float]
+    production_kwh: Mapping[int, float]
+    prices_eur_kwh: Mapping[int, float]
+    export_prices_eur_kwh: Mapping[int, float]
+    co2_g_kwh: Mapping[int, float]
+    floor_kwh: Mapping[int, float]  # plancher de la batterie
+    fixed_kwh: Mapping[int, float] = field(default_factory=dict)  # cycles gelés ou lancés
+
+    @property
+    def problem_hours(self) -> range:
+        return range(24, 24 + self.hours)
 
 
 @dataclass(frozen=True)
@@ -177,6 +211,7 @@ class Problem:
     # Ordre de grandeur d'un euro dans la devise de la maison (lot 7.3) : les prix sont ramenés à
     # l'échelle de l'euro dans l'objectif, où pénalités et départages sont réglés en euros.
     price_scale: float = 1.0
+    overnight: Overnight | None = None  # calcul prolongé après minuit (débordement)
 
     @property
     def hours(self) -> range:
@@ -392,7 +427,14 @@ def from_input(data: PlanningInput, reference: Reference = REFERENCE) -> Problem
     day, first_hour = data.day, data.first_hour
     warnings: list[dict[str, Any]] = list(data.forecast_warnings)
     fixed: dict[int, float] = defaultdict(float)
+    tail: dict[int, float] = defaultdict(float)  # cycles fixés : part du lendemain
     ends: dict[str, int] = {}
+    for carried in data.carried:  # fin d'un cycle commencé la veille avant minuit
+        for hour, kwh in carried.hourly_kwh.items():
+            if hour >= first_hour:
+                fixed[hour] += kwh
+        key = task_key(carried.name)
+        ends[key] = max(ends.get(key, 0), carried.end_min)
 
     active_names = {t.name for t in data.due_tasks if t.due == day} | {
         t.name for t in data.waiting_tasks
@@ -424,6 +466,8 @@ def from_input(data: PlanningInput, reference: Reference = REFERENCE) -> Problem
         if result is None:
             return None
         remaining = dict(remaining_hourly(result, now, shape))
+        for hour, kwh in after_midnight(remaining_hourly(result, now, shape, days=2)).items():
+            tail[hour] += kwh
         segment = recognized_segment(segs, energy_kwh)
         measured = measured_hourly(result, segment, shape) if segment else {}
         remaining[first_hour] = remaining.get(first_hour, 0.0) + measured.get(first_hour, 0.0)
@@ -432,9 +476,12 @@ def from_input(data: PlanningInput, reference: Reference = REFERENCE) -> Problem
                 fixed[hour] += kwh
         ends[task_key(name)] = free_from_minute(result)
         launched_end_hours[name] = free_from_hour(result)
+        # Fin réelle, après minuit pour un cycle lancé le soir qui déborde.
+        launched_end_mins[name] = free_from_minute(result, capped=False)
         return result.start
 
     launched_end_hours: dict[str, int] = {}
+    launched_end_mins: dict[str, int] = {}
     launched: list[LaunchedCycle] = []
     for item in frozen.values():
         cycle = _frozen_cycle(item)
@@ -444,6 +491,10 @@ def from_input(data: PlanningInput, reference: Reference = REFERENCE) -> Problem
             for hour, kwh in planned_hourly(cycle).items():
                 if hour >= first_hour:
                     fixed[hour] += kwh
+            if item.end_min is not None and item.end_min > DAY_MIN:
+                whole = PlannedCycle(cycle.start_min, item.end_min, item.energy_kwh, item.shape)
+                for hour, kwh in after_midnight(planned_hourly(whole, days=2)).items():
+                    tail[hour] += kwh
             continue
         # Bloc gelé dont le cycle réel a démarré : recalé à chaque calcul (démarrage réel, fin
         # repoussée tant qu'il tourne), le plan fusionné prend ce bloc plutôt que l'ancien.
@@ -455,8 +506,8 @@ def from_input(data: PlanningInput, reference: Reference = REFERENCE) -> Problem
                 cycle_min=cycle_min,
                 shape=item.shape,
                 start=started,
-                end_hour=max(started.hour + 1, launched_end_hours[item.name]),
-                end_min=max(started.hour * 60 + started.minute, ends[task_key(item.name)]),
+                end_hour=max(started.hour + 1, math.ceil(launched_end_mins[item.name] / 60)),
+                end_min=max(started.hour * 60 + started.minute, launched_end_mins[item.name]),
                 planned=data.planned_reasons.get(item.name, ()),
             )
         )
@@ -505,8 +556,12 @@ def from_input(data: PlanningInput, reference: Reference = REFERENCE) -> Problem
                         cycle_min=cycle_min,
                         shape=shape,
                         start=start,
-                        end_hour=max(start.hour + 1, launched_end_hours[request.name]),
-                        end_min=max(start.hour * 60 + start.minute, ends[task_key(request.name)]),
+                        end_hour=max(
+                            start.hour + 1, math.ceil(launched_end_mins[request.name] / 60)
+                        ),
+                        end_min=max(
+                            start.hour * 60 + start.minute, launched_end_mins[request.name]
+                        ),
                         planned=data.planned_reasons.get(request.name, ()),
                     )
                 )
@@ -528,6 +583,9 @@ def from_input(data: PlanningInput, reference: Reference = REFERENCE) -> Problem
                 )
             )
 
+    overnight = _overnight(data, tasks, tail, reference)
+    if overnight is not None:
+        tasks = [replace(task, overflow_min=overnight.hours * 60) for task in tasks]
     tasks = _resolve_dependencies(tasks, ends, waiting_keys, warnings)
 
     drifting, priority_day = _context(data, reference)
@@ -602,6 +660,45 @@ def from_input(data: PlanningInput, reference: Reference = REFERENCE) -> Problem
         contract_kwh=data.tariff.contract_kva,
         price_scale=currency.scale(),
         co2_g_kwh=data.co2.hourly(day),
+        overnight=overnight,
+    )
+
+
+def _overnight(
+    data: PlanningInput,
+    tasks: list[Task],
+    tail: Mapping[int, float],
+    reference: Reference,
+) -> Overnight | None:
+    """Prolongement après minuit : assez d'heures pour le plus long cycle à placer et les parts
+    du lendemain des cycles fixés ; aucun sans prévision ou tarif connu du lendemain."""
+    next_day = data.next_day
+    if next_day is None or not next_day.prices_known:
+        return None
+    longest = max((task.slot_min for task in tasks), default=0)
+    hours = max(math.ceil(longest / 60), max(tail, default=-1) + 1)
+    hours = min(hours, reference.cycle_max_hours, 24)
+    if hours <= 0:
+        return None
+    tomorrow = data.day + timedelta(days=1)
+    prices = data.tariff.hourly(tomorrow, data.tariff_context)
+    exports = data.tariff.export_hourly(tomorrow, data.tariff_context)
+    co2 = data.co2.hourly(tomorrow)
+    battery = data.battery
+    return Overnight(
+        hours=hours,
+        net_kwh={h: next_day.net_kwh.get(h, 0.0) for h in range(hours)},
+        production_kwh={h: next_day.production_kwh.get(h, 0.0) for h in range(hours)},
+        prices_eur_kwh={h: prices[h] for h in range(hours)},
+        export_prices_eur_kwh={h: exports.get(h, 0.0) for h in range(hours)},
+        co2_g_kwh={h: co2[h] for h in range(hours) if h in co2},
+        floor_kwh={
+            h: battery.capacity_kwh
+            * floor_percent_at(battery.floor_percent, battery.floor_ranges, h)
+            / 100
+            for h in range(hours)
+        },
+        fixed_kwh={h: kwh for h, kwh in tail.items() if h < hours},
     )
 
 

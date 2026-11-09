@@ -148,7 +148,9 @@ def explain(
     launched = {c.name: c for c in problem.launched}
     needs = {n.name: n for n in problem.needs}
     runtimes = {r.name: r for r in problem.runtimes}
-    base = day.indicators
+    # Avec un calcul prolongé après minuit, les autres départs se comparent sur la journée et
+    # le prolongement : le plan retenu aussi.
+    base = evaluate(dict(starts)) if problem.overnight and day.indicators else day.indicators
     items = []
     for item in day.items:
         explanation = Explanation()

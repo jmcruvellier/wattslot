@@ -30,6 +30,7 @@ def _text(lang: str, key: str, **params: Any) -> str:
 def _hhmm(minutes: int) -> str:
     """« 10h », « 11h20 » (minutes depuis minuit)."""
     hours, rest = divmod(int(minutes), 60)
+    hours %= 24  # fin le lendemain (débordement après minuit) : « 1h », pas « 25h »
     return f"{hours}h{rest:02d}" if rest else f"{hours}h"
 
 

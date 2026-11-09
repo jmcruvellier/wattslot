@@ -303,6 +303,7 @@
       "discharge": "scarica",
       "mode": "modalità {mode}",
       "tip_planned": "Previsto {start} → {end}: {what}, {kwh} kWh",
+      "tip_carried": "Seguito del giorno prima {start} → {end}: {what}, {kwh} kWh",
       "tip_actual": "Reale {start} → {end}: {what}, {kwh} kWh",
       "no_surplus": "Nessun surplus solare previsto (produzione {production} kWh, consumo {consumption} kWh): nessun apparecchio programmato.",
       "nothing": "Nessun apparecchio programmato in questo giorno.",

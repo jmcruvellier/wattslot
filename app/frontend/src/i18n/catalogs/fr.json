@@ -303,6 +303,7 @@
       "discharge": "décharge",
       "mode": "mode {mode}",
       "tip_planned": "Prévu {start} → {end} : {what}, {kwh} kWh",
+      "tip_carried": "Suite de la veille {start} → {end} : {what}, {kwh} kWh",
       "tip_actual": "Réel {start} → {end} : {what}, {kwh} kWh",
       "no_surplus": "Pas de surplus solaire prévu (production {production} kWh, consommation {consumption} kWh) : aucun équipement planifié.",
       "nothing": "Aucun équipement planifié ce jour.",
