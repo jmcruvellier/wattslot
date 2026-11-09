@@ -186,8 +186,15 @@ def test_route(tmp_path: Path) -> None:
 def test_route_of_the_following_days(tmp_path: Path) -> None:
     """J+2 à J+6 : jours de l'horizon (gardé sous la date de demain), affichés comme Demain."""
     tomorrow = date(2026, 10, 13)
+    # Historique repris de demain, sans dernière charge complète connue (comme en démo) : il
+    # donnait « Aucune charge à 100 % depuis jours ».
+    history = {"derniere_charge_complete": None, "nb_jours": None}
     days = [
-        {**state_of(path), "date_cible": tomorrow + timedelta(days=i + 1)}
+        {
+            **state_of(path),
+            "date_cible": tomorrow + timedelta(days=i + 1),
+            "historique_recent": history,
+        }
         for i, path in enumerate(STATES[1:3])
     ]
     execution = {"heure_iso": "2026-10-12T21:00:00+02:00", "manuel": False}
@@ -204,6 +211,7 @@ def test_route_of_the_following_days(tmp_path: Path) -> None:
     assert d2["actual_updated_at"] is None and d2["cards"] is None
     assert d2["computed_at"] is not None
     assert d2["departure"]["source"] == "eve" and d2["departure"]["badge"] is None
+    assert d2["departure"]["full_charge"] is None
 
 
 def test_route_sets_aside_impossible_measurements(tmp_path: Path) -> None:
