@@ -6,7 +6,10 @@ tâche « à la demande » qu'une tâche de HA (affectation à un jour, report t
 configuration). Une seule demande ouverte par équipement ; si la liste de HA demande déjà le même
 équipement, c'est elle qui compte. Quand un calcul constate le lancement de l'équipement, la demande
 reste ouverte jusqu'au lendemain (le plan du jour garde le cycle lancé, comme une tâche de HA pas
-encore cochée), puis devient faite ; on peut aussi la clore à la main. Rien n'est écrit dans HA.
+encore cochée), puis devient faite ; on peut aussi la clore à la main. Une nouvelle demande pour un
+équipement dont la demande ouverte est déjà lancée clôt celle-ci (faite) et en ouvre une autre :
+sinon, la clore à la main effacerait aussi la nouvelle. Un lancement ne compte que pour une seule
+demande. Rien n'est écrit dans HA.
 """
 
 import sqlite3
@@ -76,11 +79,18 @@ def recent(database: sqlite3.Connection, now: datetime) -> list[UserRequest]:
 def ask(
     database: sqlite3.Connection, device: str, latest: date | None, now: datetime
 ) -> UserRequest:
-    """Demande pour ``device`` ; une demande déjà ouverte pour lui change seulement de date."""
+    """Demande pour ``device`` ; une demande déjà ouverte pour lui change seulement de date,
+    sauf si son lancement a été constaté : elle est alors faite, et une nouvelle est ouverte."""
     with database:
         row = database.execute(
-            "SELECT id FROM requests WHERE device = ? AND status = 'open'", (device,)
+            "SELECT id, launched_on FROM requests WHERE device = ? AND status = 'open'", (device,)
         ).fetchone()
+        if row and row[1]:
+            database.execute(
+                "UPDATE requests SET status = ?, closed_at = ? WHERE id = ?",
+                (Status.DONE.value, now.isoformat(), row[0]),
+            )
+            row = None
         if row:
             database.execute(
                 "UPDATE requests SET latest = ? WHERE id = ?",
@@ -149,12 +159,19 @@ def mark_launched(
     today: date,
 ) -> list[int]:
     """Note le lancement constaté aujourd'hui (clés de ``launched_keys``) des équipements
-    demandés."""
+    demandés ; un lancement déjà compté aujourd'hui pour une autre demande du même équipement
+    (close depuis, par une nouvelle demande) ne compte pas une seconde fois."""
     names = {a.key: task_key(a.name) for a in candidates}
+    counted = {
+        str(row[0])
+        for row in database.execute(
+            "SELECT device FROM requests WHERE launched_on = ?", (today.isoformat(),)
+        )
+    }
     found = [
         r.id
         for r in open_requests(database)
-        if r.launched_on is None and names.get(r.device) in launched
+        if r.launched_on is None and r.device not in counted and names.get(r.device) in launched
     ]
     with database:
         for request_id in found:

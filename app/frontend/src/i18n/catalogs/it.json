@@ -397,7 +397,7 @@
     "device": "Apparecchio",
     "latest": "Al più tardi il",
     "ask": "Richiedi",
-    "hint": "Senza data: non appena il sole lo permette. Una nuova richiesta per lo stesso apparecchio ne cambia solo la data.",
+    "hint": "Senza data: non appena il sole lo permette. Una nuova richiesta per lo stesso apparecchio ne cambia solo la data, a meno che non sia già avviata: allora si apre una nuova richiesta.",
     "failed": "Impossibile salvare la richiesta.",
     "error": "Impossibile leggere le richieste.",
     "none": "Nessuna richiesta in corso.",
