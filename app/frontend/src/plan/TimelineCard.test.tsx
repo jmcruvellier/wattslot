@@ -311,7 +311,8 @@ describe("frise des équipements", () => {
     });
 
     const evening = screen.getByRole("button", { name: "Prévu 22h → 1h : Chauffe-eau, 3,00 kWh" });
-    expect(evening.style.width).toBe("max(3px, 8.333333333333332%)"); // de 22 h à minuit
+    // De 22 h à minuit : 2/24 de la piste (l'écriture du nombre varie selon jsdom).
+    expect(Number(/max\(3px, ([\d.]+)%\)/.exec(evening.style.width)?.[1])).toBeCloseTo(100 / 12, 3);
     expect(evening).toHaveClass("tl-pickable");
     const carried = screen.getByRole("button", { name: "Suite de la veille 0h → 1h : Chauffe-eau, 0,60 kWh" });
     expect(carried).not.toHaveClass("tl-pickable");
