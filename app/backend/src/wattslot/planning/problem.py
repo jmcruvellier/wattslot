@@ -511,6 +511,31 @@ def from_input(data: PlanningInput, reference: Reference = REFERENCE) -> Problem
                 planned=data.planned_reasons.get(item.name, ()),
             )
         )
+    # Cycle lancé dont la tâche est close depuis (« Fait », tâche de HA cochée, nouvelle demande
+    # du même équipement) : il a bien tourné aujourd'hui. Le plan le garde, recalé sur le réel,
+    # sans le replacer : sinon son bloc et sa consommation prévue disparaîtraient de la journée.
+    # Un bloc gelé jamais lancé (demande annulée) disparaît, lui, comme avant.
+    others = {need.name for need in data.needs} | {runtime.name for runtime in data.runtimes}
+    for item in data.frozen:
+        if item.name in active_names or item.name in others or item.name in released:
+            continue
+        cycle_min = item.cycle_min or (item.end_hour - item.start_hour) * 60
+        started = launched_now(item.name, item.energy_kwh, cycle_min, item.shape)
+        if started is None:
+            continue
+        launched.append(
+            LaunchedCycle(
+                name=item.name,
+                priority=item.priority,
+                energy_kwh=item.energy_kwh,
+                cycle_min=cycle_min,
+                shape=item.shape,
+                start=started,
+                end_hour=max(started.hour + 1, math.ceil(launched_end_mins[item.name] / 60)),
+                end_min=max(started.hour * 60 + started.minute, launched_end_mins[item.name]),
+                planned=data.planned_reasons.get(item.name, ()),
+            )
+        )
 
     due_today = [t for t in data.due_tasks if t.due == day]
     on_demand = [t for t in due_today if t.on_demand]
