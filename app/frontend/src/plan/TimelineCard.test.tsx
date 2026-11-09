@@ -71,7 +71,9 @@ describe("frise des équipements", () => {
     const washer = within(card).getByLabelText("Lave-linge");
     const planned = within(washer).getByRole("button", { name: "Prévu 10h → 11h30 : Lave-linge, 1,00 kWh" });
     expect(planned).toHaveClass("tl-planned");
-    expect(planned.style.left).toBe(`${(10 / 24) * 100}%`);
+    // jsdom arrondit les pourcentages du style à 4 décimales : on compare la valeur, pas le texte.
+    expect(planned.style.left).toMatch(/%$/);
+    expect(parseFloat(planned.style.left)).toBeCloseTo((10 / 24) * 100, 3);
     expect(within(washer).getByRole("button", { name: "Réel 10h05 → 11h30 : Lave-linge, 1,30 kWh" })).toHaveClass(
       "tl-actual",
     );
@@ -116,7 +118,8 @@ describe("frise des équipements", () => {
     const charge = screen.getByRole("button", { name: /^Réel 9h → 15h/ });
     const value = charge.querySelector(".tl-value") as HTMLElement;
     expect(value).toHaveTextContent("2,0 kWh");
-    expect(value.style.left).toBe(`${((10.75 - 9) / 6) * 100}%`); // milieu de 9h–12h30
+    expect(value.style.left).toMatch(/%$/);
+    expect(parseFloat(value.style.left)).toBeCloseTo(((10.75 - 9) / 6) * 100, 3); // milieu de 9h–12h30
     expect(charge).toHaveClass("tl-actual");
   });
 
