@@ -216,6 +216,6 @@ Ce que l'assistant peut faire : lire le plan d'un jour et ses explications, la s
 | GET | `/api/diagnostic` | Tout l'état en une réponse, pour la page Diagnostic : ingestion (avec les relevés écrits aujourd'hui par entité), agrégation, maintenance et volumes sur disque, planificateur des calculs, mémoire du processus et octets écrits sur disque depuis son démarrage (`started_at`, `written_bytes`, Linux), anomalies de configuration du tableau Énergie (`null` si HA n'est pas connecté) |
 | GET | `/api/settings/retention` | Durées de conservation en jours : `raw_days` (3), `quarter_days` (35, au moins 31), `hour_days` (sans limite : `null`, sinon au moins 366) |
 | PUT | `/api/settings/retention` | Modifie ces durées, appliquées à la prochaine maintenance |
-| GET | `/api/maintenance` | Maintenance nocturne (3 h 30, heure locale) : prochaine exécution, dernier bilan (journées de brut supprimées ou gardées faute d'agrégation complète, agrégats supprimés, durée), volumes sur disque (brut, magasin principal, base) |
+| GET | `/api/maintenance` | Maintenance nocturne (3 h 30, heure locale) : prochaine exécution, dernier bilan (journées de brut supprimées ou gardées faute d'agrégation complète, agrégats supprimés, magasin compacté ou non, durée), volumes sur disque (brut, magasin principal, base) |
 | POST | `/api/maintenance/run` | Lance la maintenance tout de suite et renvoie son bilan |
 | GET | `/` | Interface compilée (image Docker) |

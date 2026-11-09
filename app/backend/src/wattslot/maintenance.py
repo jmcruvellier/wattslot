@@ -7,7 +7,12 @@ Chaque nuit (``MAINTENANCE_AT``, heure locale de la maison), ou à la demande :
 2. **Agrégats** : suppression des périodes échues, capteur par capteur et graphe par graphe, avec
    un ``flush`` après chaque suppression (règles de mémoire : jamais de transaction de plusieurs
    millions de triplets). Un graphe mensuel vidé est retiré.
-3. **Compactage** du magasin principal (``optimize``), qui rend la place des suppressions.
+3. **Compactage** du magasin principal (``optimize``), seulement si un graphe mensuel a été
+   retiré (une fois par mois avec les réglages par défaut). Le compactage réécrit tout le magasin
+   (3,5 Go écrits chaque nuit pour un magasin de 3,4 Go, rapport du 09/11/2026) ; les petites
+   suppressions de chaque nuit (une journée de quarts d'heure) sont mêlées aux écritures du jour
+   et rendues par les compactages ordinaires de RocksDB, alors qu'un mois retiré occupe une plage
+   de clés que plus rien n'écrit (index par graphe) et n'est rendu que par ``optimize``.
 
 Durées de conservation réglables (``Retention``), gardées en base (``app_settings``) : brut
 3 jours, quarts d'heure 35 jours (profils de cycle sur 30 jours), heures sans limite.
@@ -57,6 +62,7 @@ class MaintenanceRun(BaseModel):
     removed_days: list[date] = []
     kept_days: list[date] = []  # échues mais pas encore entièrement agrégées
     removed_aggregates: dict[str, int] = {}
+    compacted: bool = False  # magasin compacté : au moins un graphe mensuel retiré
 
 
 class MaintenanceStatus(BaseModel):
@@ -213,18 +219,24 @@ class Maintenance:
                 continue
             self._raw.remove_day(day)
             run.removed_days.append(day)
+        removed_graphs = 0
         for period, days in ((QUARTER, retention.quarter_days), (HOUR, retention.hour_days)):
             if days is not None:
                 cutoff = datetime.combine(today - timedelta(days=days), time(), zone)
-                run.removed_aggregates[period] = self._prune(period, cutoff.astimezone(UTC))
-        self._graph.optimize()
+                removed, graphs = self._prune(period, cutoff.astimezone(UTC))
+                run.removed_aggregates[period] = removed
+                removed_graphs += graphs
+        if removed_graphs:
+            self._graph.optimize()
+            run.compacted = True
         run.duration_s = round(time_module.monotonic() - began, 1)
         return run
 
-    def _prune(self, period: str, cutoff: datetime) -> int:
-        """Supprime les agrégats d'une période antérieurs à ``cutoff``, capteur par capteur."""
+    def _prune(self, period: str, cutoff: datetime) -> tuple[int, int]:
+        """Supprime les agrégats d'une période antérieurs à ``cutoff``, capteur par capteur ;
+        rend le nombre d'agrégats supprimés et celui des graphes mensuels retirés."""
         zone = self._raw.zone
-        removed = 0
+        removed = graphs_removed = 0
         for graph in self._graph.named_graphs(f"{BASE}/graph/aggregates/{period}/"):
             month = date.fromisoformat(graph.rsplit("/", 1)[1] + "-01")
             if datetime.combine(month, time(), zone) >= cutoff:
@@ -256,4 +268,5 @@ class Maintenance:
                 )
             ):
                 self._graph.remove_graph(graph)
-        return removed
+                graphs_removed += 1
+        return removed, graphs_removed
