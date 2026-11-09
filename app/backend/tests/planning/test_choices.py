@@ -2,7 +2,7 @@
 expliqués, gardés en base pour la journée."""
 
 from dataclasses import replace
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
 from zoneinfo import ZoneInfo
@@ -100,7 +100,7 @@ def test_routes(tmp_path: Path) -> None:
             == 201
         )
         assert api.get("/api/planning/choices").json() == [
-            {"device": "Chauffe-eau", "start_min": 1200}
+            {"device": "Chauffe-eau", "start_min": 1200, "day": None}
         ]
         assert (
             api.post(
@@ -110,6 +110,46 @@ def test_routes(tmp_path: Path) -> None:
         )
         assert api.delete("/api/planning/choices/Chauffe-eau").status_code == 204
         assert api.delete("/api/planning/choices/Chauffe-eau").status_code == 404
+
+
+def test_choices_for_the_following_days(tmp_path: Path) -> None:
+    """Un départ choisi pour demain ou un jour de l'horizon n'efface pas celui d'aujourd'hui."""
+    database = open_database(tmp_path)
+    now = datetime(2026, 10, 21, 8, 0, tzinfo=UTC)
+    today, tomorrow = date(2026, 10, 21), date(2026, 10, 22)
+    choices.choose(database, today, "Lave-linge", 900, now)
+    choices.choose(database, tomorrow, "Chauffe-eau", 60, now, today=today)
+
+    assert choices.load(database, today) == {"Lave-linge": 900}
+    assert choices.load_days(database, [today, tomorrow, date(2026, 10, 23)]) == {
+        today: {"Lave-linge": 900},
+        tomorrow: {"Chauffe-eau": 60},
+    }
+
+
+def test_routes_for_the_following_days(tmp_path: Path) -> None:
+    app = FastAPI()
+    app.include_router(choices.router)
+    app.state.database = open_database(tmp_path)
+    app.state.raw = SimpleNamespace(zone=ZoneInfo("Europe/Paris"))
+    today = datetime.now(UTC).astimezone(ZoneInfo("Europe/Paris")).date()
+    tomorrow, last = (today + timedelta(days=1)).isoformat(), today + timedelta(days=6)
+    with TestClient(app) as api:
+        body = {"device": "Chauffe-eau", "start_min": 60, "day": tomorrow}
+        assert api.post("/api/planning/choices", json=body).status_code == 201
+        assert api.get("/api/planning/choices").json() == []
+        assert api.get("/api/planning/choices", params={"day": tomorrow}).json() == [body]
+        late = {**body, "day": (last + timedelta(days=1)).isoformat()}
+        assert api.post("/api/planning/choices", json=late).status_code == 422
+        early = {**body, "day": (today - timedelta(days=1)).isoformat()}
+        assert api.post("/api/planning/choices", json=early).status_code == 422
+        assert (
+            api.post("/api/planning/choices", json={**body, "day": last.isoformat()}).status_code
+            == 201
+        )
+        assert api.delete("/api/planning/choices/Chauffe-eau").status_code == 404
+        gone = api.delete("/api/planning/choices/Chauffe-eau", params={"day": tomorrow})
+        assert gone.status_code == 204
 
 
 def test_a_cheaper_start_set_aside_for_the_battery_says_so() -> None:

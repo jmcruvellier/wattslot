@@ -63,9 +63,14 @@ def end_soc_kwh(result: Result) -> float | None:
 
 
 def next_day_input(
-    first: PlanningInput, day: date, forecast: DayForecast, start_soc_kwh: float
+    first: PlanningInput,
+    day: date,
+    forecast: DayForecast,
+    start_soc_kwh: float,
+    chosen: Mapping[str, int] | None = None,
 ) -> PlanningInput:
-    """Entrée d'un jour de l'horizon au-delà du premier."""
+    """Entrée d'un jour de l'horizon au-delà du premier ; ``chosen`` : départs choisis par
+    l'utilisateur pour ce jour."""
     tasks, unsupported = tasks_of_day(list(first.due_tasks), day)
     assignments = first.assignments or {}
     capacity = first.battery.capacity_kwh
@@ -84,6 +89,7 @@ def next_day_input(
             t for t in first.waiting_tasks if t.uid is not None and assignments.get(t.uid) == day
         ),
         assignments=first.assignments,
+        chosen_starts=dict(chosen or {}),
         runtimes=tuple(replace(r, past={}) for r in first.runtimes),
         needs=tuple(n for n in first.needs if n.daily),
         constraints=first.constraints,
@@ -111,8 +117,10 @@ async def compute_horizon(
     days: int = HORIZON_DAYS,
     on_no_plan: OnNoPlan | None = None,
     on_impossible: OnImpossible | None = None,
+    chosen: Mapping[date, Mapping[str, int]] | None = None,
 ) -> Horizon:
-    """Le premier jour tel quel, puis au plus ``days - 1`` jours calculés à la suite."""
+    """Le premier jour tel quel, puis au plus ``days - 1`` jours calculés à la suite ;
+    ``chosen`` : départs choisis par l'utilisateur, par jour."""
     horizon = Horizon(days=[(first, first_result)])
     for offset in range(1, days):
         day = first.day + timedelta(days=offset)
@@ -126,7 +134,7 @@ async def compute_horizon(
         except Exception as exc:  # noqa: BLE001 — l'horizon s'arrête au dernier jour connu
             horizon.warnings.append(_interrupted(day, NO_FORECAST, f"{type(exc).__name__} : {exc}"))
             break
-        data = next_day_input(first, day, forecast, soc)
+        data = next_day_input(first, day, forecast, soc, (chosen or {}).get(day))
         try:
             result = plan_day(from_input(data), objective, explained=False)
         except Exception as exc:  # noqa: BLE001 — l'horizon s'arrête au dernier jour calculé

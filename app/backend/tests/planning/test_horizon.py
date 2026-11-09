@@ -160,6 +160,32 @@ def test_horizon_chains_the_battery_and_stops_without_forecast() -> None:
     assert len(result.seconds) == 3
 
 
+def test_horizon_days_take_the_starts_chosen_for_them() -> None:
+    first_state, _ = load(state_named("tomorrow_laundry"))
+    first = from_v1(first_state)
+    rng = random.Random(0)
+    available = {first.day + timedelta(days=k): forecast(rng) for k in range(1, 3)}
+    later = first.day + timedelta(days=2)
+
+    async def forecast_of(day: date) -> DayForecast:
+        surplus = available[day]
+        return DayForecast(surplus["net_horaire_signe"], surplus["production_solaire_horaire"])
+
+    result = asyncio.run(
+        compute_horizon(
+            first,
+            plan_day(from_input(first)),
+            forecast_of,
+            days=3,
+            chosen={later: {"Lave-linge": 60}},
+        )
+    )
+
+    by_day = {data.day: data for data, _ in result.days}
+    assert by_day[later].chosen_starts == {"Lave-linge": 60}
+    assert by_day[first.day + timedelta(days=1)].chosen_starts == {}
+
+
 def test_horizon_stops_at_the_day_without_plan_and_hands_it_over(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

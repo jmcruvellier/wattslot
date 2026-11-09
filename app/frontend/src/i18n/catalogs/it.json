@@ -392,6 +392,8 @@
       "others": "Altri avvii possibili:",
       "choose": "Scegli l'avvio delle {time} ({cost}, {grid} kWh prelevati rispetto al piano)",
       "revert": "Torna alla scelta del calcolo",
+      "other_time": "Altro orario di avvio:",
+      "start_at": "Avviare alle {time}",
       "running": "Nuovo calcolo con questo avvio…",
       "failed": "Impossibile cambiare l'avvio."
     },

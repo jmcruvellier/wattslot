@@ -49,7 +49,7 @@ from wattslot.planning.engine import (
     Result,
     plan_day,
 )
-from wattslot.planning.horizon import DayForecast, compute_horizon, end_soc_kwh
+from wattslot.planning.horizon import HORIZON_DAYS, DayForecast, compute_horizon, end_soc_kwh
 from wattslot.planning.inputs import FrozenCycle, PlanningInput, RecentHistory
 from wattslot.planning.journal import CycleJournal, cycle_appliances
 from wattslot.planning.merge import BATTERY, POOL, merge_plans, pool_modes, soc_at_hour_start
@@ -292,6 +292,16 @@ async def day_forecast(forecasts: Forecasts, ctx: Context, day: date, today: dat
     )
 
 
+def pinned_days(database: sqlite3.Connection, today: date) -> dict[str, date]:
+    """Jour du premier départ choisi de chaque appareil, d'aujourd'hui à J+6."""
+    found: dict[str, date] = {}
+    days = (today + timedelta(days=k) for k in range(HORIZON_DAYS + 1))
+    for day, chosen in sorted(choices.load_days(database, days).items()):
+        for name in chosen:
+            found.setdefault(name, day)
+    return found
+
+
 async def with_assignments(
     data: PlanningInput, forecasts: Forecasts, ctx: Context, store: PlanStore
 ) -> tuple[PlanningInput, list[dict[str, Any]]]:
@@ -320,6 +330,7 @@ async def with_assignments(
         store.assignments(today),
         launched_keys(data),
         delays=data.max_delay_days,
+        pinned=pinned_days(ctx.database, today),
     )
     store.save_assignments(assignments)
     return replace(data, assignments={uid: a.day for uid, a in assignments.items()}), reports
@@ -603,6 +614,7 @@ async def run(ctx: Context, now: datetime, manual: bool = False) -> RunReport:
                 soc_percent=round(start_kwh / capacity * 100, 1) if capacity > 0 else 0.0,
             ),
             assignments=data.assignments,
+            chosen_starts=choices.load(ctx.database, tomorrow),
             history=history,
             # Une durée à placer qui tourne aujourd'hui (prévu) n'a pas de jour sans demain.
             runtimes=tuple(
@@ -651,6 +663,9 @@ async def run(ctx: Context, now: datetime, manual: bool = False) -> RunReport:
             objective,
             on_no_plan=ctx.capture_no_plan,
             on_impossible=on_impossible,
+            chosen=choices.load_days(
+                ctx.database, (tomorrow + timedelta(days=k) for k in range(1, HORIZON_DAYS))
+            ),
         )
         days = [plan_state(d, r) for d, r in horizon.days[1:]]
         store.save(

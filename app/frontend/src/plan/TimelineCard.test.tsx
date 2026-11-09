@@ -28,7 +28,7 @@ function mockChoices(): Call[] {
 function renderTimeline(
   timeline: Timeline,
   readingHour: number | null = 14.5,
-  props: { choices?: Record<string, StartChoice>; onChanged?: () => void } = {},
+  props: { choices?: Record<string, StartChoice>; onChanged?: () => void; day?: string } = {},
 ) {
   render(
     <I18nProvider>
@@ -246,6 +246,51 @@ describe("frise des équipements", () => {
     expect(calls[0].body).toEqual({ device: "Sèche-linge", start_min: 1140 });
     expect(onChanged).toHaveBeenCalled();
     expect(screen.queryByRole("dialog")).toBeNull(); // la feuille se ferme, le plan recalcule
+  });
+
+  it("choisit une heure libre pour aujourd'hui, seulement parmi les heures à venir", async () => {
+    vi.setSystemTime(new Date("2026-10-17T12:00:00"));
+    const calls = mockChoices();
+    const user = userEvent.setup();
+    renderTimeline({ ...TODAY.timeline, rows: [FUTURE] }, 14.5, { choices: CHOICES, onChanged: vi.fn() });
+
+    await user.click(screen.getByRole("button", { name: "Prévu 16h → 17h : Sèche-linge, 1,00 kWh" }));
+    const hours = within(screen.getByRole("combobox", { name: "Autre heure de départ :" })).getAllByRole("option");
+    expect(hours[0]).toHaveTextContent("13h00");
+    await user.selectOptions(screen.getByRole("combobox"), "20");
+    await user.click(screen.getByRole("button", { name: "Démarrer à 20h00" }));
+
+    expect(calls[0].body).toEqual({ device: "Sèche-linge", start_min: 1200 });
+  });
+
+  it("change le départ d'un jour à venir (demain, J+2…) à toute heure, sans bouton Annuler", async () => {
+    vi.setSystemTime(new Date("2026-10-17T22:00:00"));
+    const calls = mockChoices();
+    const onChanged = vi.fn();
+    const user = userEvent.setup();
+    renderTimeline({ ...TODAY.timeline, rows: [FUTURE] }, null, {
+      choices: { "Sèche-linge": { alternatives: [], chosen: true } },
+      onChanged,
+      day: "2026-10-18",
+    });
+
+    await user.click(screen.getByRole("button", { name: "Prévu 16h → 17h : Sèche-linge, 1,00 kWh" }));
+    const sheet = screen.getByRole("dialog");
+    expect(within(sheet).queryByRole("button", { name: "Annuler le lancement" })).toBeNull();
+    expect(within(within(sheet).getByRole("combobox")).getAllByRole("option")).toHaveLength(24); // 0h à 23h
+    await user.selectOptions(within(sheet).getByRole("combobox"), "1");
+    await user.click(within(sheet).getByRole("button", { name: "Démarrer à 1h00" }));
+
+    expect(calls.map((c) => [c.method, c.url])).toEqual([
+      ["POST", "api/planning/choices"],
+      ["POST", "api/planning/run"],
+    ]);
+    expect(calls[0].body).toEqual({ device: "Sèche-linge", start_min: 60, day: "2026-10-18" });
+    expect(onChanged).toHaveBeenCalled();
+
+    await user.click(screen.getByRole("button", { name: "Prévu 16h → 17h : Sèche-linge, 1,00 kWh" }));
+    await user.click(screen.getByRole("button", { name: "Revenir au choix du calcul" }));
+    expect(calls[2].url).toBe("api/planning/choices/S%C3%A8che-linge?day=2026-10-18");
   });
 
   it("annule le départ choisi depuis la feuille (retour au choix du calcul)", async () => {
