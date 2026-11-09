@@ -165,7 +165,9 @@ def hourly_points(days: Sequence[Mapping[str, Any]], context: Context) -> list[d
         soc = battery.get("soc_horaire_kwh", {}) or {}
         production = state.get("production_solaire_horaire", {}) or {}
         baseline = state.get("consommation_baseline_horaire", {}) or {}
-        devices = planned_devices_hourly(state.get("planning", []), None, context)
+        devices = planned_devices_hourly(
+            state.get("planning", []), None, context, state.get("suite_veille")
+        )
         for h in range(24):
             kwh = _value(soc, h)
             points.append(

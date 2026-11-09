@@ -37,7 +37,8 @@ export function clock(minutes: number, language: Language): string {
 
 /** Heure fractionnaire : « 14h » pour une heure pile, « 14h35 » sinon. */
 export function hour(value: number, language: Language): string {
-  if (value % 1 === 0) return language === "fr" ? `${value}h` : `${value}:00`;
+  // Fin le lendemain (débordement après minuit) : « 1h », pas « 25h ».
+  if (value % 1 === 0) return language === "fr" ? `${value % 24}h` : `${value % 24}:00`;
   return clock(value * 60, language);
 }
 

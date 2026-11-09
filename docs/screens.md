@@ -20,13 +20,14 @@ What you need right now.
 
 ## Planning
 
-The plan in detail, for **Yesterday**, **Today**, **Tomorrow** and the **Week**.
+The plan in detail, for **Yesterday**, **Today**, **Tomorrow**, the following days (**D+2** to **D+6**) and the **Week**.
 
 ![Planning](images/en/planning-desktop-light.png)
 
 - At the top, the computation time, **Compute** (recalculate now) and **Refresh actual data**.
 - Banners for what matters: warnings, the battery at midnight, the forecast production compared with what was measured.
 - **The day as an agenda**: what happens and when.
+  - An appliance can start in the evening and finish the next day, when the night hours are cheaper (or the battery still covers them): its end time is the next day's, and the next day starts with the end of the cycle.
 - **Why this plan**: the explanation of each decision, in plain words.
   - Today, the other possible starts of each appliance can be chosen here too.
 - **Plan indicators** (cost, purchases, surplus, self-consumption…): for the whole day, measured for the hours already past, planned for the rest.
@@ -42,7 +43,8 @@ The figures and charts of the plan, with the same tabs as Planning.
 ![Charts](images/en/curves-desktop-light.png)
 
 - **A day**: summary cards (battery, grid, production, estimated against measured), the appliance schedule, the battery charge, the grid exchanges and the production and consumption curves, planned (dotted) and measured.
-- **Customize** chooses which cards appear and their order.
+  - Tap a planned appliance in the schedule to change its start: one of the other starts the plan offers, or a time of your choice, today, tomorrow or a following day. Cancelling the launch is for today only.
+- **Customize** chooses which cards appear and their order (the following days share Tomorrow's).
 - A measurement the home cannot reach (a meter counting thousands of kWh in one hour) is set aside: a gap in the curves, nothing in the totals, and a line above the cards with **See the data** (**My home › Data**). The line appears on **Today**, **Planning** and **Charts**, only while the viewed range covers it: on **Yesterday** for a measurement of the day before, on **Week** only while it is today's. The other measurements stay displayed. Correcting the measurement in **My home › Data** (**Estimate** or **Recompute**) fills the gap.
 - **Week**: a table with one row per day (weather, production, battery, purchases including peak hours, surplus, appliances); tap a day to unfold its details (appliances and their times, warnings, **See the detail**). On a phone, the table keeps day, production, battery and purchases, the rest is in the details. Then the week's charts.
 

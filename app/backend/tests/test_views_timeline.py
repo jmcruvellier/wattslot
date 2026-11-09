@@ -176,3 +176,21 @@ def test_a_battery_movement_of_a_few_wh_is_not_shown() -> None:
     timeline = build_timeline(state, None, 12.0, 10.0, 8.0, V1_CONTEXT)
 
     assert [(b.start_hour, b.action) for b in timeline.rows[0].planned] == [(11, "charge")]
+
+
+def test_a_cycle_carried_from_the_day_before_starts_the_timeline() -> None:
+    """Débordement après minuit : la fin du chauffe-eau d'hier (0 h-1 h) ouvre la frise, sur la
+    ligne de l'appareil s'il est aussi prévu aujourd'hui, sans action à lancer."""
+    state = state_of(STATES[0])
+    state["suite_veille"] = [
+        {"equipement": "Chauffe-eau", "fin_min": 60, "energie_kwh": 0.6, "horaire": {"0": 0.6}},
+        {"equipement": "Sèche-linge", "fin_min": 30, "energie_kwh": 0.2, "horaire": {"0": 0.2}},
+    ]
+    timeline = build_timeline(state, None, 12.0, 10.0, 8.0, V1_CONTEXT)
+
+    rows = {row.device: row for row in timeline.rows}
+    first = rows["Sèche-linge"].planned[0]
+    assert (first.start_hour, first.end_hour, first.carried) == (0, 0.5, True)
+    heater = rows["Chauffe-eau"].planned
+    assert heater[0].carried and heater[0].end_hour == 1.0
+    assert all(not bar.carried for bar in heater[1:])

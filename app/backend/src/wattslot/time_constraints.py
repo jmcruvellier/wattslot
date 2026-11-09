@@ -51,8 +51,17 @@ class TimeConstraint(BaseModel):
         return []
 
     def blocks(self, start_min: int, end_min: int) -> bool:
-        """L'intervalle ``[start_min, end_min)`` déborde sur une période interdite."""
-        return any(start_min < b_end and b_start < end_min for b_start, b_end in self.blocked())
+        """L'intervalle ``[start_min, end_min)`` déborde sur une période interdite ; au-delà de
+        minuit (``end_min`` > 24 h), sa part du lendemain est jugée sur la même journée type."""
+        spans = [(start_min, min(end_min, DAY_MIN))]
+        if end_min > DAY_MIN:
+            spans.append((max(start_min, DAY_MIN) - DAY_MIN, end_min - DAY_MIN))
+        return any(
+            low < b_end and b_start < high
+            for low, high in spans
+            if high > low
+            for b_start, b_end in self.blocked()
+        )
 
     def label(self) -> str:
         """Notation courte, sans langue, pour les avertissements : « 22h-7h », « ≥9h », « ≤18h »."""

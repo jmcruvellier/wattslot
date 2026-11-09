@@ -241,6 +241,38 @@ def test_a_start_chosen_for_tomorrow_moves_the_task_to_tomorrow(tmp_path: Path) 
     assert item["debut_min"] == 60
 
 
+def test_a_cycle_started_in_the_evening_ends_the_next_day(tmp_path: Path) -> None:
+    """Lave-linge lancé à 23 h (départ choisi) : il finit à 0 h 30 ; la vue Demain reçoit sa
+    fin comme consommation déjà décidée, et le jour suivant la garde après minuit."""
+    reader = reader_with_history()
+    ctx = context(tmp_path, reader)
+    store = PlanStore(ctx.database)
+    choices.choose(ctx.database, TODAY, "Lave-linge", 23 * 60, local(TODAY, 21))
+
+    report = asyncio.run(run(ctx, local(TODAY, 21, 5), manual=True))
+
+    assert report.errors == []
+    today = store.load("today")
+    assert today is not None
+    washer = next(i for i in today.content["planning"] if i["equipement"] == "Lave-linge")
+    assert (washer["debut_min"], washer["fin_min"]) == (23 * 60, 24 * 60 + 30)
+    tomorrow = store.load("tomorrow")
+    assert tomorrow is not None
+    carried = tomorrow.content["suite_veille"]
+    assert [(c["equipement"], c["fin_min"]) for c in carried] == [("Lave-linge", 30)]
+    assert carried[0]["energie_kwh"] > 0
+
+    asyncio.run(run(ctx, local(TODAY + timedelta(days=1), 0, 10)))
+    after = store.load("today")
+    assert after is not None and after.day == TODAY + timedelta(days=1)
+    assert [c["equipement"] for c in after.content["suite_veille"]] == ["Lave-linge"]
+    # Calcul suivant de la journée : la fin de la veille reste gardée.
+    asyncio.run(run(ctx, local(TODAY + timedelta(days=1), 1, 10)))
+    again = store.load("today")
+    assert again is not None
+    assert [c["equipement"] for c in again.content["suite_veille"]] == ["Lave-linge"]
+
+
 def test_a_plan_computed_during_the_history_import_is_provisional(tmp_path: Path) -> None:
     """Reprise de l'historique de HA en cours : le plan le note (plan provisoire), puis ne le
     note plus au calcul suivant, une fois la reprise finie (essai du 21/10/2026)."""

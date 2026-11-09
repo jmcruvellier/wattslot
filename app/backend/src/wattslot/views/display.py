@@ -103,11 +103,19 @@ def _bounds(item: Mapping[str, Any]) -> tuple[int, int, float]:
 
 
 def planned_devices_hourly(
-    planning: Sequence[dict[str, Any]], actual: Mapping[str, Any] | None, context: Context
+    planning: Sequence[dict[str, Any]],
+    actual: Mapping[str, Any] | None,
+    context: Context,
+    carried: Sequence[Mapping[str, Any]] | None = None,
 ) -> dict[int, float]:
     """kWh par heure des équipements prévus (batterie exclue), recalés sur leur cycle réel s'il
-    a commencé (``_equipements_planifies_horaire`` de la v1)."""
+    a commencé (``_equipements_planifies_horaire`` de la v1) ; avec les fins des cycles de la
+    veille (``carried``, débordement après minuit). Un cycle qui déborde ne compte que sa part
+    du jour."""
     by_hour: dict[int, float] = defaultdict(float)
+    for item in carried or []:
+        for h, kwh in (item.get("horaire") or {}).items():
+            by_hour[int(h)] += float(kwh)
     now = _now(actual)
     measured = (
         {
@@ -141,6 +149,9 @@ def planned_devices_hourly(
                 measured_hourly(realignment, segment, shape),
                 remaining_hourly(realignment, now, shape),
             )
+        elif end > 24 * 60:
+            whole = planned_hourly(PlannedCycle(start, end, energy, shape), days=2)
+            sources = ({h: kwh for h, kwh in whole.items() if h < 24},)
         else:
             sources = (planned_hourly(PlannedCycle(start, end, energy, shape)),)
         for source in sources:
@@ -273,7 +284,7 @@ def displayed_soc(
     production_by_hour = state.get("production_solaire_horaire", {})
     production = [round(_hour(production_by_hour, h), 3) for h in range(24)]
     baseline = {int(h): v for h, v in (state.get("consommation_baseline_horaire") or {}).items()}
-    planned = planned_devices_hourly(planning, actual, context)
+    planned = planned_devices_hourly(planning, actual, context, state.get("suite_veille"))
     resimulated = resimulated_soc(state, actual, production, baseline, planned, context)
     return SocCurve(resimulated if resimulated is not None else soc, production, baseline, planned)
 

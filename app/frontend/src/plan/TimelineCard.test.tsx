@@ -296,6 +296,33 @@ describe("frise des équipements", () => {
     expect(calls[2].url).toBe("api/planning/choices/S%C3%A8che-linge?day=2026-10-18");
   });
 
+  it("coupe à minuit un cycle qui finit le lendemain, et montre la suite de celui de la veille", async () => {
+    vi.setSystemTime(new Date("2026-10-17T12:00:00"));
+    const user = userEvent.setup();
+    const heater = {
+      device: "Chauffe-eau",
+      kind: "cycle",
+      planned: [
+        { start_hour: 0, end_hour: 1, energy_kwh: 0.6, action: null, mode: null, carried: true },
+        { start_hour: 22, end_hour: 25, energy_kwh: 3, action: null, mode: null },
+      ],
+      actual: [],
+    } as unknown as Timeline["rows"][number];
+    renderTimeline({ ...TODAY.timeline, rows: [heater] }, 14.5, {
+      choices: { "Chauffe-eau": { alternatives: [], chosen: false } },
+      onChanged: () => undefined,
+    });
+
+    const evening = screen.getByRole("button", { name: "Prévu 22h → 1h : Chauffe-eau, 3,00 kWh" });
+    // De 22 h à minuit : 2/24 de la piste (l'écriture du nombre varie selon jsdom).
+    expect(Number(/max\(3px, ([\d.]+)%\)/.exec(evening.style.width)?.[1])).toBeCloseTo(100 / 12, 3);
+    expect(evening).toHaveClass("tl-pickable");
+    const carried = screen.getByRole("button", { name: "Suite de la veille 0h → 1h : Chauffe-eau, 0,60 kWh" });
+    expect(carried).not.toHaveClass("tl-pickable");
+    await user.click(carried);
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
   it("annule le départ choisi depuis la feuille (retour au choix du calcul)", async () => {
     vi.setSystemTime(new Date("2026-10-17T12:00:00"));
     const calls = mockChoices();
