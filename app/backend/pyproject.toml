@@ -10,7 +10,7 @@ requires-python = ">=3.11"
 dependencies = [
     "fastapi==0.162.0",
     "highspy==1.15.1",  # moteur du calcul (décision 11), roues amd64 et arm64
-    "holidays==0.107",  # jours fériés par pays et région (tarifs : comptés comme un dimanche)
+    "holidays==0.108",  # jours fériés par pays et région (tarifs : comptés comme un dimanche)
     "mcp==2.3.0",  # serveur MCP pour l'Assist de HA (lot 6.1), SDK officiel
     "pyoxigraph==0.5.13",
     "tzdata==2026.6",  # fuseaux horaires : l'image Python « slim » n'en a pas
@@ -24,7 +24,7 @@ dev = [
     "mypy==2.4.1",
     "pyshacl==0.40.2",  # formes SHACL vérifiées en CI (lot 2b.4), jamais dans l'image
     "pytest==9.2.0",
-    "ruff==0.17.3",
+    "ruff==0.17.4",
 ]
 
 [tool.setuptools.packages.find]
