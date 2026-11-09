@@ -1,5 +1,5 @@
 // Vue du plan ouverte, commune aux sections Planning et Courbes : onglets Hier, Aujourd'hui,
-// Demain et Semaine, dernier onglet gardé dans le navigateur (partagé par les deux sections),
+// Demain, J+2 à J+6 et Semaine, dernier onglet gardé dans le navigateur (partagé par les deux sections),
 // actualisation quand un nouveau calcul arrive, et disposition des cartes de l'installation.
 
 import { useEffect, useState } from "react";
@@ -7,9 +7,10 @@ import { useEffect, useState } from "react";
 import { ApiError, getJson, putJson } from "../api";
 import { useI18n } from "../i18n/I18nProvider";
 import { type DashboardLayout, DEFAULT_LAYOUT } from "./layout";
-import type { DayView, Versions, ViewKind, WeekView } from "./types";
+import type { DayView, LaterKind, Versions, ViewKind, WeekView } from "./types";
 
-export const TABS: ViewKind[] = ["yesterday", "today", "tomorrow", "week"];
+export const LATER_TABS: LaterKind[] = ["d2", "d3", "d4", "d5", "d6"];
+export const TABS: ViewKind[] = ["yesterday", "today", "tomorrow", ...LATER_TABS, "week"];
 export const POLL_MS = 30_000;
 const LAYOUT_URL = "api/settings/dashboard";
 // Dernière vue ouverte : un confort propre au navigateur (point n° 4).

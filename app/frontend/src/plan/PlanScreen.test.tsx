@@ -136,6 +136,32 @@ describe("PlanScreen", () => {
     expect(await screen.findByText("Pas d'archive pour hier.")).toBeInTheDocument();
   });
 
+  it("ouvre les jours J+2 à J+6, entre Demain et Semaine", async () => {
+    const user = userEvent.setup();
+    const later: DayView = {
+      ...TODAY,
+      kind: "d3",
+      day: "2026-10-20",
+      actual_updated_at: null,
+      cards: null,
+      departure: { ...TODAY.departure!, source: "eve", badge: null, expected_kwh: null, gap_points: null },
+    };
+    const fetchMock = mockApi(() => ({ yesterday: null, today: 1, tomorrow: null, d3: 3, week: 2 }));
+    const base = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation(async (input, init) =>
+      String(input).startsWith("api/views/d3") ? Response.json(later) : base(input, init),
+    );
+    renderScreen();
+
+    const names = (await screen.findAllByRole("tab")).map((tab) => tab.textContent);
+    expect(names).toEqual(["Hier", "Aujourd'hui", "Demain", "J+2", "J+3", "J+4", "J+5", "J+6", "Semaine"]);
+    await user.click(screen.getByRole("tab", { name: "J+3" }));
+    expect(await screen.findByText(/SoC prévu à la fin de la veille/)).toBeInTheDocument();
+    expect(window.localStorage.getItem("plan.tab")).toBe("d3");
+    await user.click(screen.getByRole("tab", { name: "J+5" }));
+    expect(await screen.findByText(/Pas encore de plan pour cette vue/)).toBeInTheDocument();
+  });
+
   it("rouvre la dernière vue ouverte dans ce navigateur", async () => {
     const user = userEvent.setup();
     mockApi(() => ({ yesterday: null, today: 1, tomorrow: null, week: 2 }));

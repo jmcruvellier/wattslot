@@ -9,7 +9,14 @@ import { useEffect } from "react";
 import { useI18n } from "../i18n/I18nProvider";
 import DayCards from "./DayCards";
 import { leaveCurves, setCurvesAvailable, setCurvesEditing, useCurvesEditing } from "./curvesEdit";
-import { availableDayCards, availableIndicators, availableWeekCards, type CardId, type DayCardId } from "./layout";
+import {
+  availableDayCards,
+  availableIndicators,
+  availableWeekCards,
+  type CardId,
+  type DayCardId,
+  layoutOf,
+} from "./layout";
 import LayoutEditor from "./LayoutEditor";
 import DiscardedNote from "./DiscardedNote";
 import ProvisionalNote from "./ProvisionalNote";
@@ -75,7 +82,7 @@ export default function CurvesScreen() {
         /* « onChanged » : la frise du jour permet de changer un départ, la vue se relit. */
         <DayCards
           view={load.view}
-          layout={layout[load.view.kind]}
+          layout={layoutOf(layout, load.view.kind)}
           indicators={layout.indicators}
           available={curveCards(load.view)}
           onChanged={reload}

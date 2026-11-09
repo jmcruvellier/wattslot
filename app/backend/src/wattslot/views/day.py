@@ -40,7 +40,10 @@ from wattslot.views.display import (
 from wattslot.views.now import NextAction, Now
 from wattslot.views.timeline import Timeline, build_timeline
 
-Kind = Literal["yesterday", "today", "tomorrow"]
+# Jours de l'horizon après demain (J+2 à J+6) : affichés comme Demain, prévision seulement.
+LaterKind = Literal["d2", "d3", "d4", "d5", "d6"]
+LATER_KINDS: tuple[LaterKind, ...] = ("d2", "d3", "d4", "d5", "d6")
+Kind = Literal["yesterday", "today", "tomorrow", "d2", "d3", "d4", "d5", "d6"]
 
 
 class HourPoint(BaseModel):
@@ -216,7 +219,10 @@ def build_day(
     """Vue d'un plan gardé en base (format de la v1). Les données réelles du plan ne servent
     pas à la vue Demain ; ``today_estimate_kwh`` : production estimée d'aujourd'hui, comparée
     à celle de demain."""
-    actual = None if kind == "tomorrow" else state.get("donnees_reelles_cache") or None
+    # Demain et les jours suivants : prévision seulement, affichés de la même façon.
+    later = kind in LATER_KINDS
+    shown: Kind = "tomorrow" if later else kind
+    actual = None if shown == "tomorrow" else state.get("donnees_reelles_cache") or None
     planning = state.get("planning", [])
     battery = find_item(planning, BATTERY)
     curve = displayed_soc(state, actual, context)
@@ -270,16 +276,18 @@ def build_day(
     initial = battery.get("soc_initial_kwh", 0.0) if battery else 0.0
     if battery is None:
         start = None
-    elif kind == "tomorrow":
+    elif shown == "tomorrow":
         start = tomorrow_departure(state, capacity, initial, context)
+        if later:  # SoC prévu à la fin du jour précédent de l'horizon
+            start = start.model_copy(update={"source": "eve", "badge": None})
     else:
         start = departure(state, actual, capacity, initial, context)
     indicators, explained = explanations(state, lang)
-    if kind != "tomorrow" and indicators is not None:
+    if shown != "tomorrow" and indicators is not None:
         indicators = whole_day(indicators, state, actual, context)
     summary = day_summary(state, curve.soc_percent)
     cards = None
-    if kind != "tomorrow":
+    if kind == "yesterday" or kind == "today":
         cards = build_cards(
             state,
             actual,
@@ -312,16 +320,16 @@ def build_day(
         hours=hours,
         summary=DaySummary.model_validate(summary),
         initial_forecast=summary_from_v1(state.get("prevision_initiale"))
-        if kind != "tomorrow"
+        if shown != "tomorrow"
         else None,
         production_recalculated_kwh=recalculated_production(curve.production, actual),
         timeline=timeline,
         departure=start,
-        weather=weather(state, actual, curve.production, kind, today_estimate_kwh),
+        weather=weather(state, actual, curve.production, shown, today_estimate_kwh),
         solar=context.solar,
         history_pending=state.get("historique_en_reprise") or None,
-        notices=notices(state, kind, lang),
-        freshness=freshness(computed_at, kind, datetime.now(context.zone)),
+        notices=notices(state, shown, lang),
+        freshness=freshness(computed_at, shown, datetime.now(context.zone)),
         indicators=indicators,
         objective=context.objective,
         explanations=explained,

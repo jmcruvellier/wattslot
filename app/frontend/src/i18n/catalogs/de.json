@@ -126,6 +126,11 @@
       "yesterday": "Gestern",
       "today": "Heute",
       "tomorrow": "Morgen",
+      "d2": "T+2",
+      "d3": "T+3",
+      "d4": "T+4",
+      "d5": "T+5",
+      "d6": "T+6",
       "week": "Woche"
     },
     "loading": "Plan wird gelesen…",
@@ -214,6 +219,7 @@
         "plan": "Stand um Mitternacht: {kwh} kWh ({pct} %) laut Plan",
         "tonight": "Stand um Mitternacht: {kwh} kWh ({pct} %), für heute Mitternacht erwarteter Ladestand",
         "now": "Stand um Mitternacht: {kwh} kWh ({pct} %), aktueller Ladestand mangels Tagesplan",
+        "eve": "Stand um Mitternacht: {kwh} kWh ({pct} %), für das Ende des Vortags erwarteter Ladestand",
         "expected": "der Plan vom Vorabend ({time}) erwartete {kwh} kWh ({pct} %)"
       },
       "departure_badge": {

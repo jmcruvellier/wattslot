@@ -41,7 +41,8 @@ class Departure(BaseModel):
 
     soc_kwh: float
     soc_percent: float
-    source: Literal["measured", "plan", "tonight", "now"]  # Demain : ce soir ou maintenant
+    # Demain : ce soir ou maintenant ; jours suivants (« eve ») : fin du jour précédent prévue
+    source: Literal["measured", "plan", "tonight", "now", "eve"]
     expected_kwh: float | None = None  # prévu la veille au soir
     expected_percent: float | None = None
     expected_at: datetime | None = None

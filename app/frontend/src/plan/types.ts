@@ -1,7 +1,9 @@
 // Vues du plan servies par l'API (lot 5.1, backend : views/day.py, views/week.py et leurs
 // modules). Seuls les champs lus par l'interface sont décrits.
 
-export type DayKind = "yesterday" | "today" | "tomorrow";
+// J+2 à J+6 : jours de l'horizon après demain, affichés comme Demain (prévision seulement).
+export type LaterKind = "d2" | "d3" | "d4" | "d5" | "d6";
+export type DayKind = "yesterday" | "today" | "tomorrow" | LaterKind;
 export type ViewKind = DayKind | "week";
 
 export interface HourPoint {
@@ -77,7 +79,7 @@ export interface FullCharge {
 export interface Departure {
   soc_kwh: number;
   soc_percent: number;
-  source: "measured" | "plan" | "tonight" | "now";
+  source: "measured" | "plan" | "tonight" | "now" | "eve";
   expected_kwh: number | null;
   expected_percent: number | null;
   expected_at: string | null;
@@ -245,7 +247,7 @@ export interface PlannedDevice {
 
 export interface WeekDay {
   day: string;
-  detail_view: "today" | "tomorrow" | null;
+  detail_view: "today" | "tomorrow" | LaterKind | null;
   production_kwh: number;
   weather: "sunny" | "mixed" | "cloudy" | null;
   soc_start_percent: number | null;

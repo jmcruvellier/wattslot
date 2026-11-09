@@ -88,7 +88,7 @@ function WeekTable({ view, onOpen }: { view: WeekView; onOpen: (kind: DayKind) =
                       </span>
                       {day.notices.length > 0 && <Icon name="warning" size={16} />}
                     </button>
-                    {day.detail_view && <span className="week-tag">{t(`plan.tabs.${day.detail_view}`)}</span>}
+                    {(day.detail_view === "today" || day.detail_view === "tomorrow") && <span className="week-tag">{t(`plan.tabs.${day.detail_view}`)}</span>}
                   </th>
                   {withSolar && (
                     <td className="week-wide">
@@ -193,7 +193,7 @@ function WeekAgenda({ view, onOpen }: { view: WeekView; onOpen: (kind: DayKind) 
             <div className="week-row-head">
               <span className="week-row-day">
                 {name}
-                {day.detail_view && <span className="week-tag">{t(`plan.tabs.${day.detail_view}`)}</span>}
+                {(day.detail_view === "today" || day.detail_view === "tomorrow") && <span className="week-tag">{t(`plan.tabs.${day.detail_view}`)}</span>}
               </span>
               {view.solar !== false && (
                 <span className="week-row-sun">

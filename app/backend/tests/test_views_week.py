@@ -68,7 +68,7 @@ def test_today_is_realigned_on_the_actual_data_as_in_its_view() -> None:
 
     first = view.days[0]
     assert (first.day, first.detail_view) == (today["date_cible"], "today")
-    assert view.days[1].detail_view == "tomorrow" and view.days[2].detail_view is None
+    assert view.days[1].detail_view == "tomorrow" and view.days[2].detail_view == "d2"
     assert first.soc_end_percent == pytest.approx(round(expected_summary["soc_fin_pct"], 1))
     assert first.production_kwh == pytest.approx(expected_summary["production_kwh"], abs=1e-3)
     assert [p.soc_percent for p in view.points[:24]] == [p["pct"] for p in expected_points]
@@ -102,7 +102,7 @@ def test_the_v2_horizon_starts_after_tomorrow() -> None:
     view = week.build_week(horizon, tomorrow, today, CONTEXT)
 
     assert [d.day for d in view.days] == [today["date_cible"], *(d["date_cible"] for d in days)]
-    assert [d.detail_view for d in view.days[:3]] == ["today", "tomorrow", None]
+    assert [d.detail_view for d in view.days[:4]] == ["today", "tomorrow", "d2", "d3"]
     assert len(view.points) == 24 * 5 and view.now_index is not None
     without_tomorrow = week.build_week(horizon, None, today, CONTEXT)
     assert [d.day for d in without_tomorrow.days] == [d["date_cible"] for d in after]
@@ -192,6 +192,7 @@ def test_versions(tmp_path: Path) -> None:
             "yesterday": None,
             "today": None,
             "tomorrow": None,
+            **{kind: None for kind in ("d2", "d3", "d4", "d5", "d6")},
             "week": None,
         }
         store = PlanStore(open_database(tmp_path / "data"))
@@ -200,4 +201,5 @@ def test_versions(tmp_path: Path) -> None:
         found = api.get("/api/views/versions").json()
 
     assert found["today"] is not None and found["week"] >= found["today"]
+    assert found["d2"] == found["d6"] is not None  # jours suivants : l'heure de l'horizon
     assert found["yesterday"] is None

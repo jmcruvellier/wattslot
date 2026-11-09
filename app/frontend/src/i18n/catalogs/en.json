@@ -126,6 +126,11 @@
       "yesterday": "Yesterday",
       "today": "Today",
       "tomorrow": "Tomorrow",
+      "d2": "D+2",
+      "d3": "D+3",
+      "d4": "D+4",
+      "d5": "D+5",
+      "d6": "D+6",
       "week": "Week"
     },
     "loading": "Reading the plan…",
@@ -214,6 +219,7 @@
         "plan": "Start at midnight: {kwh} kWh ({pct}%) from the plan",
         "tonight": "Start at midnight: {kwh} kWh ({pct}%), SoC expected tonight at midnight",
         "now": "Start at midnight: {kwh} kWh ({pct}%), current SoC for lack of today's plan",
+        "eve": "Start at midnight: {kwh} kWh ({pct}%), SoC expected at the end of the previous day",
         "expected": "the plan of the evening before ({time}) expected {kwh} kWh ({pct}%)"
       },
       "departure_badge": {

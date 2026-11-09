@@ -126,6 +126,11 @@
       "yesterday": "Gisteren",
       "today": "Vandaag",
       "tomorrow": "Morgen",
+      "d2": "D+2",
+      "d3": "D+3",
+      "d4": "D+4",
+      "d5": "D+5",
+      "d6": "D+6",
       "week": "Week"
     },
     "loading": "Plan wordt gelezen…",
@@ -214,6 +219,7 @@
         "plan": "Stand om middernacht: {kwh} kWh ({pct} %) volgens het plan",
         "tonight": "Stand om middernacht: {kwh} kWh ({pct} %), laadniveau verwacht vannacht om middernacht",
         "now": "Stand om middernacht: {kwh} kWh ({pct} %), huidig laadniveau bij gebrek aan dagplan",
+        "eve": "Stand om middernacht: {kwh} kWh ({pct} %), laadniveau verwacht aan het einde van de vorige dag",
         "expected": "het plan van de vorige avond ({time}) verwachtte {kwh} kWh ({pct} %)"
       },
       "departure_badge": {
