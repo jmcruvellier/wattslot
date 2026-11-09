@@ -5,7 +5,7 @@
 #   docker build -t wattslot app
 
 # --- Interface : compilée en fichiers statiques -------------------------------------------
-FROM node:22.23.3-bookworm-slim AS frontend
+FROM node:22.23.4-bookworm-slim AS frontend
 WORKDIR /build
 # npm 10 (livré avec Node 22) échoue sur les dépendances de Vitest : voir app/README.md.
 RUN npm install -g npm@11.20.0
@@ -15,7 +15,7 @@ COPY frontend/ ./
 RUN npm run build
 
 # --- Application ---------------------------------------------------------------------------
-FROM python:3.12.15-slim-bookworm
+FROM python:3.12.16-slim-bookworm
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
