@@ -92,6 +92,29 @@ def test_a_launched_request_closes_the_next_day(tmp_path: Path) -> None:
     assert found is not None and found.status is Status.DONE
 
 
+def test_a_new_request_after_a_launch_opens_another_one(tmp_path: Path) -> None:
+    """Chauffe-eau lancé cette nuit, puis demandé pour demain : la demande lancée est faite et
+    une nouvelle est ouverte ; clore la première ne touche plus à celle de demain."""
+    database = open_database(tmp_path)
+    tonight = user_requests.ask(database, "washer", None, CREATED)
+    user_requests.mark_launched(database, [WASHER], {"lavelinge"}, TODAY)
+
+    tomorrow = user_requests.ask(database, "washer", TODAY + timedelta(days=1), NOW)
+    assert tomorrow.id != tonight.id and tomorrow.latest == TODAY + timedelta(days=1)
+    first = user_requests.get(database, tonight.id)
+    assert first is not None and first.status is Status.DONE
+    assert user_requests.close(database, tonight.id, Status.DONE, NOW) == first
+    assert [r.id for r in user_requests.open_requests(database)] == [tomorrow.id]
+
+    # Le lancement de cette nuit, encore vu aujourd'hui, ne compte pas pour la nouvelle demande.
+    assert user_requests.mark_launched(database, [WASHER], {"lavelinge"}, TODAY) == []
+    assert user_requests.settle(database, TODAY + timedelta(days=1), NOW) == []
+    assert [r.id for r in user_requests.open_requests(database)] == [tomorrow.id]
+    # Un lancement d'un autre jour compte.
+    later = TODAY + timedelta(days=1)
+    assert user_requests.mark_launched(database, [WASHER], {"lavelinge"}, later) == [tomorrow.id]
+
+
 def _input(tmp_path: Path, items: list[dict[str, Any]], with_requests: bool) -> PlanningInput:
     reader = Reader()
     for k in range(1, 15):

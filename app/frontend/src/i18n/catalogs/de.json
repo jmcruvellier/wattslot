@@ -397,7 +397,7 @@
     "device": "Gerät",
     "latest": "Spätestens am",
     "ask": "Anfragen",
-    "hint": "Ohne Datum: sobald die Sonne es erlaubt. Eine neue Anfrage für dasselbe Gerät ändert nur sein Datum.",
+    "hint": "Ohne Datum: sobald die Sonne es erlaubt. Eine neue Anfrage für dasselbe Gerät ändert nur sein Datum, außer sie wurde schon gestartet: dann wird eine neue Anfrage eröffnet.",
     "failed": "Die Anfrage konnte nicht gespeichert werden.",
     "error": "Die Anfragen können nicht gelesen werden.",
     "none": "Keine laufende Anfrage.",

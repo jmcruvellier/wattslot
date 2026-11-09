@@ -397,7 +397,7 @@
     "device": "Appareil",
     "latest": "Au plus tard le",
     "ask": "Demander",
-    "hint": "Sans date : dès que le soleil le permet. Une nouvelle demande pour le même appareil change seulement sa date.",
+    "hint": "Sans date : dès que le soleil le permet. Une nouvelle demande pour le même appareil change seulement sa date, sauf si elle est déjà lancée : une nouvelle demande est alors ouverte.",
     "failed": "La demande n'a pas pu être enregistrée.",
     "error": "Impossible de lire les demandes.",
     "none": "Aucune demande en cours.",

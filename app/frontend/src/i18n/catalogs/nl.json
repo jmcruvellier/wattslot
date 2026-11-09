@@ -397,7 +397,7 @@
     "device": "Apparaat",
     "latest": "Uiterlijk op",
     "ask": "Aanvragen",
-    "hint": "Zonder datum: zodra de zon het toelaat. Een nieuw verzoek voor hetzelfde apparaat wijzigt alleen de datum.",
+    "hint": "Zonder datum: zodra de zon het toelaat. Een nieuw verzoek voor hetzelfde apparaat wijzigt alleen de datum, tenzij het al gestart is: dan wordt een nieuw verzoek geopend.",
     "failed": "Het verzoek kon niet worden opgeslagen.",
     "error": "De verzoeken kunnen niet worden gelezen.",
     "none": "Geen lopend verzoek.",
