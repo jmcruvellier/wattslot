@@ -109,12 +109,37 @@ def test_removes_expired_raw_days_and_aggregates(tmp_path: Path) -> None:
     assert run.kept_days == [date(2026, 10, 11)]  # échue mais pas entièrement agrégée
     assert raw.days() == [date(2026, 10, d) for d in range(11, 16)]
     assert run.removed_aggregates == {QUARTER: 1, HOUR: 1}
+    assert run.compacted  # le graphe horaire de janvier 2025 est retiré
     assert _starts(graph, QUARTER) == ["2026-09-15T10:00:00Z", "2026-10-01T10:00:00Z"]
     assert _starts(graph, HOUR) == []
     assert f"{BASE}/graph/aggregates/{HOUR}/2025-01" not in graph.named_graphs()
     status = maintenance.status()
     assert status.last_run == run
     assert status.disk.raw_bytes > 0 and status.disk.graph_bytes > 0
+
+
+def test_compacts_only_when_a_monthly_graph_is_removed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Le compactage réécrit tout le magasin : pas pour une journée de quarts d'heure."""
+    maintenance, _, graph = _maintenance(tmp_path, NOW)
+    compactions: list[bool] = []
+    monkeypatch.setattr(graph, "optimize", lambda: compactions.append(True))
+    _aggregate(graph, QUARTER, datetime(2026, 9, 9, 10, tzinfo=UTC))  # échu, mois gardé
+    _aggregate(graph, QUARTER, datetime(2026, 9, 15, 10, tzinfo=UTC))
+
+    run = asyncio.run(maintenance.run(NOW))
+
+    assert run.removed_aggregates == {QUARTER: 1}
+    assert not run.compacted and compactions == []
+
+    _aggregate(graph, QUARTER, datetime(2026, 8, 20, 10, tzinfo=UTC))  # mois entièrement échu
+
+    run = asyncio.run(maintenance.run(NOW))
+
+    assert run.removed_aggregates == {QUARTER: 1}
+    assert run.compacted and compactions == [True]
+    assert f"{BASE}/graph/aggregates/{QUARTER}/2026-08" not in graph.named_graphs()
 
 
 def test_directory_size_ignores_files_removed_while_measuring(
