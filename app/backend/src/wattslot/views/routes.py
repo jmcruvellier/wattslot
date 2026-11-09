@@ -1,4 +1,4 @@
-"""Routes des vues (lot 5.1) : ``/api/views/{yesterday|today|tomorrow}``.
+"""Routes des vues (lot 5.1) : ``/api/views/{yesterday|today|tomorrow|d2…d6|week}``.
 
 Comme le dashboard de la v1, une vue ne déclenche jamais de calcul : elle lit le plan gardé en
 base, avec le contexte de la maison au moment de la lecture.
@@ -8,7 +8,7 @@ import asyncio
 from collections.abc import Mapping
 from dataclasses import replace
 from datetime import UTC, date, datetime, timedelta
-from typing import Any, Literal
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
@@ -23,14 +23,14 @@ from wattslot.planning.journal import cycle_appliances
 from wattslot.planning.sources import has_production, load_settings
 from wattslot.planning.store import PlanStore
 from wattslot.tariff import off_peak_ranges
-from wattslot.views.day import DayView, build_day
+from wattslot.views.day import LATER_KINDS, DayView, Kind, LaterKind, build_day
 from wattslot.views.display import Context, recalculated_production
 from wattslot.views.now import measure_now, next_action
 from wattslot.views.week import WeekView, build_week
 
 router = APIRouter()
 
-DayKind = Literal["yesterday", "today", "tomorrow"]
+DayKind = Kind
 
 
 def filtration_speeds(
@@ -100,11 +100,17 @@ def house_context(state: Any, day: date) -> Context:
 
 class Versions(BaseModel):
     """Heure (horodatage) du dernier calcul de chaque vue ; la page recharge la sienne quand
-    elle change. Semaine : la plus récente de l'horizon, du jour et de demain."""
+    elle change. Jours suivants (J+2 à J+6) : celle de l'horizon. Semaine : la plus récente de
+    l'horizon, du jour et de demain."""
 
     yesterday: float | None = None
     today: float | None = None
     tomorrow: float | None = None
+    d2: float | None = None
+    d3: float | None = None
+    d4: float | None = None
+    d5: float | None = None
+    d6: float | None = None
     week: float | None = None
 
 
@@ -118,6 +124,7 @@ def view_versions(request: Request) -> Versions:
         yesterday=stamps["yesterday"],
         today=stamps["today"],
         tomorrow=stamps["tomorrow"],
+        **{kind: stamps["horizon"] for kind in LATER_KINDS},
         week=max(week) if week else None,
     )
 
@@ -146,8 +153,33 @@ async def week_view_of(state: Any, lang: str = "fr") -> WeekView | None:
     )
 
 
+def later_day(state: Any, kind: LaterKind) -> tuple[date, dict[str, Any]] | None:
+    """Jour J+2 à J+6 de l'horizon gardé (date et plan, avec l'heure du calcul de l'horizon) ;
+    ``None`` si l'horizon manque ou s'est arrêté avant ce jour."""
+    horizon = PlanStore(state.database).load("horizon")
+    if horizon is None:
+        return None
+    # L'horizon est gardé sous la date de demain et ne contient que J+2…J+6.
+    wanted = horizon.day + timedelta(days=LATER_KINDS.index(kind) + 1)
+    for found in horizon.content.get("jours") or []:
+        day = found.get("date_cible")
+        day = day if isinstance(day, date) else date.fromisoformat(str(day))
+        if day == wanted:
+            execution = horizon.content.get("derniere_execution")
+            return day, {**found, "derniere_execution": execution} if execution else dict(found)
+    return None
+
+
 async def day_view_of(state: Any, kind: DayKind, lang: str = "fr") -> DayView | None:
     """Vue d'un jour, ``None`` sans plan (aussi pour le serveur MCP, lot 6.1)."""
+    if kind in LATER_KINDS:
+        found = later_day(state, kind)
+        if found is None:
+            return None
+        day, later = found
+        context = house_context(state, day)
+        view = await asyncio.to_thread(build_day, later, kind, context, language_of(lang))
+        return view
     plan = PlanStore(state.database).load(kind)
     if plan is None:
         return None

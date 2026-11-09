@@ -112,6 +112,12 @@ export function restore(layout: ViewLayout, id: CardId): ViewLayout {
   return { ...layout, hidden: layout.hidden.filter((hidden) => hidden !== id) };
 }
 
+/** Vue dont la disposition s'applique : J+2 à J+6 suivent celle de Demain. */
+export type LayoutKind = "yesterday" | "today" | "tomorrow" | "week";
+export function layoutKind(kind: ViewKind): LayoutKind {
+  return kind === "yesterday" || kind === "today" || kind === "tomorrow" || kind === "week" ? kind : "tomorrow";
+}
+
 export function layoutOf(layout: DashboardLayout, kind: ViewKind): ViewLayout {
-  return layout[kind];
+  return layout[layoutKind(kind)];
 }

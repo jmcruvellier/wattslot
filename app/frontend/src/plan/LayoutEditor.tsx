@@ -8,6 +8,8 @@ import {
   type DashboardLayout,
   hide,
   type IndicatorKey,
+  layoutKind,
+  layoutOf,
   move,
   restore,
   shownCards,
@@ -37,11 +39,11 @@ export default function LayoutEditor({
   onClose: () => void;
 }) {
   const { t } = useI18n();
-  const view = layout[kind];
+  const view = layoutOf(layout, kind);
   const shown = shownCards(view, available);
   const hidden = view.order.filter((id) => available.includes(id) && view.hidden.includes(id));
   const label = (id: CardId) => t(`plan.layout.${kind === "week" ? "week" : "day"}.${id}`);
-  const update = (next: typeof view) => onChange({ ...layout, [kind]: next });
+  const update = (next: typeof view) => onChange({ ...layout, [layoutKind(kind)]: next });
   const setIndicators = (next: DashboardLayout["indicators"]) => onChange({ ...layout, indicators: next });
 
   return (
@@ -49,7 +51,7 @@ export default function LayoutEditor({
       <h3>
         <Icon name="layout" size={20} /> {t("plan.layout.title")}
       </h3>
-      <p className="dim">{t("plan.layout.hint", { view: t(`plan.tabs.${kind}`) })}</p>
+      <p className="dim">{t("plan.layout.hint", { view: t(`plan.tabs.${layoutKind(kind)}`) })}</p>
       <ol className="layout-cards">
         {shown.map((id, index) => (
           <li key={id}>

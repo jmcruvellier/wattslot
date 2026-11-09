@@ -126,6 +126,11 @@
       "yesterday": "Hier",
       "today": "Aujourd'hui",
       "tomorrow": "Demain",
+      "d2": "J+2",
+      "d3": "J+3",
+      "d4": "J+4",
+      "d5": "J+5",
+      "d6": "J+6",
       "week": "Semaine"
     },
     "loading": "Lecture du plan…",
@@ -214,6 +219,7 @@
         "plan": "Départ à 0h : {kwh} kWh ({pct} %) d'après le plan",
         "tonight": "Départ à 0h : {kwh} kWh ({pct} %), SoC prévu ce soir à 24h",
         "now": "Départ à 0h : {kwh} kWh ({pct} %), SoC actuel faute de plan d'aujourd'hui",
+        "eve": "Départ à 0h : {kwh} kWh ({pct} %), SoC prévu à la fin de la veille",
         "expected": "le plan de la veille ({time}) prévoyait {kwh} kWh ({pct} %)"
       },
       "departure_badge": {

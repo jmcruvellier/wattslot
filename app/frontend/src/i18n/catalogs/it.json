@@ -126,6 +126,11 @@
       "yesterday": "Ieri",
       "today": "Oggi",
       "tomorrow": "Domani",
+      "d2": "G+2",
+      "d3": "G+3",
+      "d4": "G+4",
+      "d5": "G+5",
+      "d6": "G+6",
       "week": "Settimana"
     },
     "loading": "Lettura del piano…",
@@ -214,6 +219,7 @@
         "plan": "Partenza a mezzanotte: {kwh} kWh ({pct} %) secondo il piano",
         "tonight": "Partenza a mezzanotte: {kwh} kWh ({pct} %), livello previsto stanotte a mezzanotte",
         "now": "Partenza a mezzanotte: {kwh} kWh ({pct} %), livello attuale in mancanza del piano del giorno",
+        "eve": "Partenza a mezzanotte: {kwh} kWh ({pct} %), livello previsto alla fine del giorno prima",
         "expected": "il piano della sera prima ({time}) prevedeva {kwh} kWh ({pct} %)"
       },
       "departure_badge": {

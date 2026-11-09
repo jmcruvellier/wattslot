@@ -1730,11 +1730,15 @@ a.ui-setting-row {
   white-space: nowrap;
 }
 
+/* Neuf onglets (Hier … J+6, Semaine) : une seule ligne, qui défile sur un écran étroit. */
 .view-tabs[role="tablist"] {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(max-content, 1fr);
+  overflow-x: auto;
+  scrollbar-width: none;
   width: 100%;
-  max-width: 30rem;
+  max-width: 44rem;
   gap: 0.2rem;
   padding: 0.25rem;
   border-radius: 0.9rem;
@@ -1743,7 +1747,7 @@ a.ui-setting-row {
 
 .view-tabs button[role="tab"] {
   min-height: 2.5rem;
-  padding: 0.4rem 0.25rem;
+  padding: 0.4rem 0.6rem;
   font-size: 0.85rem;
   border: 0;
   border-radius: 0.7rem;

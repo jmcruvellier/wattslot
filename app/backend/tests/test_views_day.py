@@ -183,6 +183,29 @@ def test_route(tmp_path: Path) -> None:
     assert found["summary"]["production_kwh"] > 0
 
 
+def test_route_of_the_following_days(tmp_path: Path) -> None:
+    """J+2 à J+6 : jours de l'horizon (gardé sous la date de demain), affichés comme Demain."""
+    tomorrow = date(2026, 10, 13)
+    days = [
+        {**state_of(path), "date_cible": tomorrow + timedelta(days=i + 1)}
+        for i, path in enumerate(STATES[1:3])
+    ]
+    execution = {"heure_iso": "2026-10-12T21:00:00+02:00", "manuel": False}
+    horizon = {"jours": days, "avertissements": [], "derniere_execution": execution}
+    with TestClient(create_app(_settings(tmp_path))) as api:
+        assert api.get("/api/views/d2").status_code == 404
+        PlanStore(open_database(tmp_path / "data")).save("horizon", tomorrow, horizon, 1.0, False)
+        d2 = api.get("/api/views/d2").json()
+        d3 = api.get("/api/views/d3").json()
+        assert api.get("/api/views/d4").status_code == 404  # horizon arrêté avant
+        assert api.get("/api/views/d7").status_code == 422
+
+    assert d2["kind"] == "d2" and d2["day"] == "2026-10-14" and d3["day"] == "2026-10-15"
+    assert d2["actual_updated_at"] is None and d2["cards"] is None
+    assert d2["computed_at"] is not None
+    assert d2["departure"]["source"] == "eve" and d2["departure"]["badge"] is None
+
+
 def test_route_sets_aside_impossible_measurements(tmp_path: Path) -> None:
     """Qualité des données : un compteur coupé un instant (tout son index compté en une heure)
     ne cache plus les autres mesures ; l'heure est écartée des courbes et des totaux."""

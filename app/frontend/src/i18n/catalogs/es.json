@@ -126,6 +126,11 @@
       "yesterday": "Ayer",
       "today": "Hoy",
       "tomorrow": "Mañana",
+      "d2": "D+2",
+      "d3": "D+3",
+      "d4": "D+4",
+      "d5": "D+5",
+      "d6": "D+6",
       "week": "Semana"
     },
     "loading": "Leyendo el plan…",
@@ -214,6 +219,7 @@
         "plan": "Salida a medianoche: {kwh} kWh ({pct} %) según el plan",
         "tonight": "Salida a medianoche: {kwh} kWh ({pct} %), nivel previsto esta noche a medianoche",
         "now": "Salida a medianoche: {kwh} kWh ({pct} %), nivel actual a falta de plan del día",
+        "eve": "Salida a medianoche: {kwh} kWh ({pct} %), nivel previsto al final del día anterior",
         "expected": "el plan de la víspera ({time}) preveía {kwh} kWh ({pct} %)"
       },
       "departure_badge": {

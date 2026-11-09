@@ -31,9 +31,13 @@ class PlannedDevice(BaseModel):
     end_min: int
 
 
+DetailView = Literal["today", "tomorrow", "d2", "d3", "d4", "d5", "d6"]
+LATER_VIEWS: tuple[DetailView, ...] = ("d2", "d3", "d4", "d5", "d6")
+
+
 class WeekDay(BaseModel):
     day: date
-    detail_view: Literal["today", "tomorrow"] | None = None  # vue détaillée de ce jour
+    detail_view: DetailView | None = None  # vue détaillée de ce jour
     production_kwh: float
     weather: Literal["sunny", "mixed", "cloudy"] | None = None
     soc_start_percent: float | None = None
@@ -255,9 +259,9 @@ def build_week(
     if with_today and today_state:
         realign_today(today_state, summaries[0], points[:24], context)
     best = first.get("production_max_recente") or (today or {}).get("production_max_recente") or {}
-    views: list[Literal["today", "tomorrow"]] = (
-        (["today", "tomorrow"] if with_today else ["tomorrow"]) if horizon_days else []
-    )
+    # Aujourd'hui, demain puis J+2…J+6 : chaque jour de l'horizon a sa vue détaillée.
+    first_views: list[DetailView] = ["today", "tomorrow"] if with_today else ["tomorrow"]
+    views: list[DetailView] = [*first_views, *LATER_VIEWS] if horizon_days else []
     week_days = [
         WeekDay(
             day=s["date"],
