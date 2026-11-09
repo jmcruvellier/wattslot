@@ -279,7 +279,9 @@ def build_day(
     elif shown == "tomorrow":
         start = tomorrow_departure(state, capacity, initial, context)
         if later:  # SoC prévu à la fin du jour précédent de l'horizon
-            start = start.model_copy(update={"source": "eve", "badge": None})
+            # Pas de « dernière charge complète » : les jours de l'horizon n'en ont pas
+            # l'historique (« Aucune charge à 100 % depuis jours », priorité infondée).
+            start = start.model_copy(update={"source": "eve", "badge": None, "full_charge": None})
     else:
         start = departure(state, actual, capacity, initial, context)
     indicators, explained = explanations(state, lang)
