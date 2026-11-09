@@ -38,6 +38,8 @@ import json
 import os
 import re
 import sys
+import time
+import urllib.error
 import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
@@ -47,6 +49,11 @@ WEB = "https://github.com"
 USER_AGENT = "wattslot-download-stats"
 # Pages de versions lues au plus (50 versions par page) : les releases sont en tête.
 MAX_VERSION_PAGES = 10
+# Les pages des paquets sont lentes à générer : la première requête prend une dizaine de
+# secondes et finit souvent en 504, la suivante est servie en cache. Pauses avant chaque
+# nouvel essai, en secondes.
+RETRY_DELAYS = (5, 15, 30)
+WEB_TIMEOUT = 30
 
 # Au-delà de 1 000, GitHub abrège le compteur (« 1.04K ») et met la valeur exacte dans ``title``.
 _TOTAL = re.compile(
@@ -81,8 +88,18 @@ def api_get(path: str, token: str | None) -> object:
 def web_get(path: str) -> str:
     """Page publique de github.com, sans jeton."""
     req = urllib.request.Request(f"{WEB}{path}", headers={"User-Agent": USER_AGENT})
-    with urllib.request.urlopen(req) as resp:
-        return str(resp.read().decode("utf-8"))
+    for delay in (*RETRY_DELAYS, None):
+        try:
+            with urllib.request.urlopen(req, timeout=WEB_TIMEOUT) as resp:
+                return str(resp.read().decode("utf-8"))
+        except urllib.error.HTTPError as err:
+            if err.code < 500 or delay is None:
+                raise
+        except (urllib.error.URLError, TimeoutError):
+            if delay is None:
+                raise
+        time.sleep(delay)
+    raise AssertionError("inatteignable")
 
 
 def releases_with_assets(owner: str, repo: str, token: str | None) -> list[dict]:
@@ -134,9 +151,15 @@ def image_downloads(owner: str, package: str, wanted: set[str]) -> dict:
     total = package_total(web_get(f"/users/{owner}/packages/container/package/{package}"))
     by_tag: dict[str, int] = {}
     for page in range(1, MAX_VERSION_PAGES + 1):
-        versions = package_versions(
-            web_get(f"{base}/versions?filters%5Bversion_type%5D=tagged&page={page}")
-        )
+        try:
+            html = web_get(f"{base}/versions?filters%5Bversion_type%5D=tagged&page={page}")
+        except OSError as err:  # le total reste valable : on garde les versions déjà lues
+            print(
+                f"Avertissement : page {page} des versions de l'image indisponible ({err}).",
+                file=sys.stderr,
+            )
+            break
+        versions = package_versions(html)
         for version in versions:
             for tag in version["tags"]:
                 if tag in wanted:
@@ -209,6 +232,9 @@ def main() -> int:
         image = image_downloads(owner, args.package, {image_tag(r["tag_name"]) for r in releases})
     except (OSError, ValueError) as err:  # page indisponible ou balisage changé
         print(f"Avertissement : téléchargements de l'image indisponibles ({err}).", file=sys.stderr)
+        if args.history:  # relevé quotidien : pas de zéros dans l'historique, le job échoue
+            print("Erreur : relevé abandonné, rien n'est enregistré.", file=sys.stderr)
+            return 1
     per_release, asset_total, total = summarize(releases, image)
 
     result: dict = {

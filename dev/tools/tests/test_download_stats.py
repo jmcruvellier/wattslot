@@ -1,6 +1,10 @@
 """Statistiques de téléchargement (lot statistiques de diffusion) : lecture des pages publiques du
 paquet GHCR et addition par release. Les pages sont réduites au balisage que lit le script."""
 
+import io
+import urllib.error
+from email.message import Message
+
 import pytest
 
 from tools import download_stats as ds
@@ -88,6 +92,82 @@ def test_the_version_pages_stop_once_every_release_is_found(
 
     assert image == {"package": "ghcr.io/o/p", "total": 1234, "by_tag": {"0.9.5": 27, "0.9.4": 64}}
     assert len(fetched) == 3  # page du paquet, puis versions pages 1 et 2
+
+
+def test_a_later_version_page_in_error_keeps_the_total_and_the_versions_read(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def web_get(path: str) -> str:
+        if "/package/" in path:
+            return PACKAGE_PAGE
+        if path.endswith("page=1"):
+            return version_row(["0.9.5"], "27")
+        raise urllib.error.HTTPError(path, 504, "Gateway Time-out", Message(), None)
+
+    monkeypatch.setattr(ds, "web_get", web_get)
+
+    image = ds.image_downloads("o", "p", {"0.9.5", "0.9.4"})
+
+    assert image == {"package": "ghcr.io/o/p", "total": 1234, "by_tag": {"0.9.5": 27}}
+
+
+class FakeResponse(io.BytesIO):
+    def __enter__(self) -> "FakeResponse":
+        return self
+
+    def __exit__(self, *args: object) -> None:
+        self.close()
+
+
+def test_a_page_in_504_is_fetched_again(monkeypatch: pytest.MonkeyPatch) -> None:
+    answers: list[Exception | FakeResponse] = [
+        urllib.error.HTTPError("u", 504, "Gateway Time-out", Message(), None),
+        TimeoutError("lent"),
+        FakeResponse(b"page"),
+    ]
+
+    def urlopen(req: object, timeout: float) -> FakeResponse:
+        answer = answers.pop(0)
+        if isinstance(answer, Exception):
+            raise answer
+        return answer
+
+    monkeypatch.setattr(ds.urllib.request, "urlopen", urlopen)
+    monkeypatch.setattr(ds.time, "sleep", lambda _s: None)
+
+    assert ds.web_get("/x") == "page"
+    assert not answers
+
+
+def test_a_page_still_in_error_after_the_retries_is_reported(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls = []
+
+    def urlopen(req: object, timeout: float) -> FakeResponse:
+        calls.append(req)
+        raise urllib.error.HTTPError("u", 504, "Gateway Time-out", Message(), None)
+
+    monkeypatch.setattr(ds.urllib.request, "urlopen", urlopen)
+    monkeypatch.setattr(ds.time, "sleep", lambda _s: None)
+
+    with pytest.raises(urllib.error.HTTPError):
+        ds.web_get("/x")
+    assert len(calls) == len(ds.RETRY_DELAYS) + 1
+
+
+def test_a_missing_page_is_not_fetched_again(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls = []
+
+    def urlopen(req: object, timeout: float) -> FakeResponse:
+        calls.append(req)
+        raise urllib.error.HTTPError("u", 404, "Not Found", Message(), None)
+
+    monkeypatch.setattr(ds.urllib.request, "urlopen", urlopen)
+
+    with pytest.raises(urllib.error.HTTPError):
+        ds.web_get("/x")
+    assert len(calls) == 1
 
 
 def test_a_release_adds_its_image_and_its_assets() -> None:
