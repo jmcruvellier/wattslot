@@ -6,7 +6,9 @@
 // légende, le détail est dans l'info-bulle.
 // Sur la vue Aujourd'hui, le clic sur un bloc prévu d'un équipement — à venir, en cours ou
 // passé — ouvre la feuille des autres départs (OtherStarts) et du bouton « Annuler » : changer
-// de créneau, annuler la planification du jour ou y revenir, sans quitter l'écran.
+// de créneau, annuler la planification du jour ou y revenir, sans quitter l'écran. Sur Demain et
+// les jours suivants (`day`), la feuille propose les autres départs et une heure libre ; pas
+// d'annulation, qui ne vaut que pour aujourd'hui.
 
 import { useCallback, useEffect, useState } from "react";
 
@@ -62,11 +64,13 @@ export default function TimelineCard({
   readingHour,
   choices,
   onChanged,
+  day,
 }: {
   timeline: Timeline;
   readingHour: number | null;
   choices?: Record<string, StartChoice>;
   onChanged?: () => void;
+  day?: string; // jour d'un plan à venir ; aucun : aujourd'hui
 }) {
   const { language, t } = useI18n();
   const [tip, setTip] = useState<string | null>(null);
@@ -79,7 +83,7 @@ export default function TimelineCard({
   const [cancelling, setCancelling] = useState<"idle" | "running" | "failed">("idle");
   const [restoring, setRestoring] = useState<string | null>(null);
   const [restoreFailed, setRestoreFailed] = useState(false);
-  const nowMin = nowMinute();
+  const nowMin = day === undefined ? nowMinute() : -1;
 
   const describe = (row: TimelineRow, bar: Bar, actual: boolean) => {
     const what = bar.action
@@ -242,17 +246,23 @@ export default function TimelineCard({
               setPicked(null); // le plan recalcule, la frise va suivre
               onChanged?.();
             }}
+            day={day}
+            freeFrom={nowMin}
           />
-          <p className="other-starts-buttons">
-            <Button
-              icon="close"
-              disabled={cancelling === "running"}
-              onClick={() => void run(() => cancelTask(picked.device))}
-            >
-              {t("plan.timeline.cancel")}
-            </Button>
-          </p>
-          {cancelling === "failed" && <p role="alert">{t("plan.timeline.cancel_failed")}</p>}
+          {day === undefined && (
+            <p className="other-starts-buttons">
+              <Button
+                icon="close"
+                disabled={cancelling === "running"}
+                onClick={() => void run(() => cancelTask(picked.device))}
+              >
+                {t("plan.timeline.cancel")}
+              </Button>
+            </p>
+          )}
+          {day === undefined && cancelling === "failed" && (
+            <p role="alert">{t("plan.timeline.cancel_failed")}</p>
+          )}
         </Sheet>
       )}
     </article>

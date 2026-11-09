@@ -15,7 +15,8 @@ aujourd'hui et sa date limite :
 - **stabilité** : un jour déjà choisi n'est quitté que pour un score meilleur d'au moins
   ``STABILITY_MARGIN`` ;
 - **verrouillage** : une tâche lancée aujourd'hui (bloc gelé ou cycle réel reconnu), ou qui
-  dépend d'une tâche lancée, reste aujourd'hui.
+  dépend d'une tâche lancée, reste aujourd'hui ; une tâche dont l'utilisateur a choisi le départ
+  un jour donné (``choices.py``) reste ce jour-là.
 
 Un sèche-linge qui dépend d'un lave-linge en attente lui est lié : le couple est évalué
 ensemble et affecté au même jour. Le surplus est celui du jour avant la batterie, comme en v1.
@@ -186,12 +187,14 @@ def decide(
     locked: set[str],
     reference: Reference = REFERENCE,
     delays: Mapping[str, int] | None = None,
+    pinned: Mapping[str, date] | None = None,
 ) -> tuple[dict[str, Assignment], list[dict[str, Any]]]:
     """(affectations par uid, avertissements de report).
 
     ``cycles`` : (énergie, durée en minutes) par nom de tâche, pour celles qui ont un profil ;
     ``memory`` : affectations précédentes ; ``locked`` : clés des équipements lancés ;
-    ``delays`` : tolérance de report par nom de tâche (lot 3.5), sinon ``MAX_DELAY_DAYS``.
+    ``delays`` : tolérance de report par nom de tâche (lot 3.5), sinon ``MAX_DELAY_DAYS`` ;
+    ``pinned`` : jour du départ choisi par l'utilisateur, par nom de tâche.
     """
     assignments: dict[str, Assignment] = {}
     reports: list[dict[str, Any]] = []
@@ -217,8 +220,11 @@ def decide(
         is_locked = any(
             task_key(t.name) in locked or task_key(t.depends_on or "") in locked for t in group
         )
+        chosen_days = sorted((pinned or {})[t.name] for t in group if t.name in (pinned or {}))
         if is_locked or not scores:
             day = today  # lancé, ou aucun jour ne convient
+        elif chosen_days and chosen_days[0] >= today:
+            day = chosen_days[0]  # départ choisi ce jour-là
         else:
             day = max(scores, key=lambda d: (scores[d], -d.toordinal()))
             previous = memory.get(group[0].uid or "")

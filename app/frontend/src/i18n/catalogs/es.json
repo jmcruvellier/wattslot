@@ -392,6 +392,8 @@
       "others": "Otros inicios posibles:",
       "choose": "Elegir el inicio de las {time} ({cost}, {grid} kWh consumidos respecto al plan)",
       "revert": "Volver a la elección del cálculo",
+      "other_time": "Otra hora de inicio:",
+      "start_at": "Empezar a las {time}",
       "running": "Nuevo cálculo con este inicio…",
       "failed": "No se pudo cambiar el inicio."
     },

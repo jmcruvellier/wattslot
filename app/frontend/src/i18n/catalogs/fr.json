@@ -392,6 +392,8 @@
       "others": "Autres départs possibles :",
       "choose": "Choisir le départ de {time} ({cost}, {grid} kWh soutirés par rapport au plan)",
       "revert": "Revenir au choix du calcul",
+      "other_time": "Autre heure de départ :",
+      "start_at": "Démarrer à {time}",
       "running": "Nouveau calcul avec ce départ…",
       "failed": "Le départ n'a pas pu être changé."
     },

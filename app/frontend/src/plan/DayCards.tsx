@@ -38,6 +38,7 @@ function useRenderers(
   indicators: IndicatorLayout,
   timelineChoices?: Record<string, StartChoice>,
   onTimelineChanged?: () => void,
+  timelineDay?: string, // jour d'un plan à venir ; aucun : aujourd'hui
 ): Record<DayCardId, (view: DayView) => ReactNode> {
   const { t } = useI18n();
   return {
@@ -48,6 +49,7 @@ function useRenderers(
         readingHour={readingHour(view)}
         choices={timelineChoices}
         onChanged={onTimelineChanged}
+        day={timelineDay}
       />
     ),
     soc: (view) => (
@@ -85,10 +87,11 @@ export default function DayCards({
 }) {
   const render = useRenderers(
     indicators,
-    // La frise du jour seule propose les autres départs des blocs pas encore lancés : le choix
-    // enregistré (api/planning/choices) ne vaut que pour aujourd'hui.
-    view.kind === "today" && onChanged !== undefined ? startChoices(view) : undefined,
+    // La frise d'aujourd'hui, de demain et des jours suivants propose les autres départs des
+    // blocs pas encore lancés : le choix (api/planning/choices) vaut pour le jour affiché.
+    view.kind !== "yesterday" && onChanged !== undefined ? startChoices(view) : undefined,
     onChanged,
+    view.kind === "today" ? undefined : view.day,
   );
   // Le résumé est un groupe de cartes à lui seul : les autres cartes se rangent dans des grilles
   // avant ou après lui.

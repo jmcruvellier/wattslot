@@ -238,10 +238,13 @@ describe("CurvesScreen", () => {
     expect(JSON.parse(String(posts[0][1]?.body))).toEqual({ device: "Sèche-linge", start_min: 1140 });
     expect(screen.queryByRole("dialog")).toBeNull();
 
-    // Demain : le choix ne vaut que pour aujourd'hui, le bloc reste une info-bulle.
+    // Demain : la feuille s'ouvre aussi, le choix vaut pour le jour affiché ; pas d'annulation.
     await user.click(screen.getByRole("tab", { name: "Demain" }));
     await user.click(await screen.findByRole("button", { name: "Prévu 16h → 17h : Sèche-linge, 1,00 kWh" }));
-    expect(screen.getByRole("status")).toHaveTextContent("Prévu 16h → 17h : Sèche-linge, 1,00 kWh");
-    expect(screen.queryByRole("dialog")).toBeNull();
+    const tomorrowSheet = screen.getByRole("dialog");
+    expect(within(tomorrowSheet).queryByRole("button", { name: "Annuler le lancement" })).toBeNull();
+    await user.click(within(tomorrowSheet).getByRole("button", { name: /Choisir le départ de 19h00/ }));
+    const later = fetchMock.mock.calls.filter((call) => String(call[0]) === "api/planning/choices");
+    expect(JSON.parse(String(later[1][1]?.body))).toEqual({ device: "Sèche-linge", start_min: 1140, day: day.day });
   });
 });

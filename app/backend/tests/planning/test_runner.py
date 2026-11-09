@@ -220,6 +220,27 @@ def test_a_chosen_start_moves_a_planned_slot_already_in_the_past(tmp_path: Path)
     assert item["debut_min"] == chosen
 
 
+def test_a_start_chosen_for_tomorrow_moves_the_task_to_tomorrow(tmp_path: Path) -> None:
+    """Départ choisi pour demain à 1 h : la tâche quitte aujourd'hui et le plan de demain la
+    place à ce départ ; le calcul de l'horizon reçoit les choix de ses jours."""
+    reader = reader_with_history()
+    ctx = context(tmp_path, reader)
+    store = PlanStore(ctx.database)
+    tomorrow = TODAY + timedelta(days=1)
+    choices.choose(ctx.database, tomorrow, "Lave-linge", 60, local(TODAY, 9), today=TODAY)
+
+    report = asyncio.run(run(ctx, local(TODAY, 9, 20), manual=True))
+
+    assert report.errors == [] and store.assignments(TODAY)["ll"].day == tomorrow
+    today = store.load("today")
+    assert today is not None
+    assert "Lave-linge" not in {i["equipement"] for i in today.content["planning"]}
+    planned = store.load("tomorrow")
+    assert planned is not None
+    item = next(i for i in planned.content["planning"] if i["equipement"] == "Lave-linge")
+    assert item["debut_min"] == 60
+
+
 def test_a_plan_computed_during_the_history_import_is_provisional(tmp_path: Path) -> None:
     """Reprise de l'historique de HA en cours : le plan le note (plan provisoire), puis ne le
     note plus au calcul suivant, une fois la reprise finie (essai du 21/10/2026)."""

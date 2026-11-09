@@ -125,6 +125,29 @@ def test_same_as_v1(seed: int) -> None:
     assert reports == expected_reports
 
 
+def test_a_chosen_start_keeps_the_task_on_its_day() -> None:
+    """Départ choisi par l'utilisateur pour après-demain : la tâche y reste, quel que soit le
+    score des autres jours."""
+    washer = TaskRequest(name="Lave-linge", uid="ll", on_demand=True, needed_since=TODAY)
+    sunny = {h: 2.0 for h in range(10, 16)}
+    surplus = {TODAY + timedelta(days=k): sunny for k in range(3)}
+    cycles = {"Lave-linge": (1.0, 90.0)}
+    later = TODAY + timedelta(days=2)
+
+    free, _ = decide([washer], surplus, TODAY, 8, cycles, {}, set())
+    pinned, reports = decide(
+        [washer], surplus, TODAY, 8, cycles, {}, set(), pinned={"Lave-linge": later}
+    )
+
+    assert free["ll"].day == TODAY and pinned["ll"].day == later
+    assert reports[0]["params"]["equipement"] == "Lave-linge"
+    # Lancé aujourd'hui : le choix d'un autre jour ne compte plus.
+    locked, _ = decide(
+        [washer], surplus, TODAY, 8, cycles, {}, {"lavelinge"}, pinned={"Lave-linge": later}
+    )
+    assert locked["ll"].day == TODAY
+
+
 def test_task_request_reads_the_detected_need() -> None:
     task = TaskRequest("Lave-linge", needed_since=date(2026, 10, 10))
     assert task.needed_since == date(2026, 10, 10)

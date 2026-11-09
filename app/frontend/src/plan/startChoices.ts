@@ -1,7 +1,8 @@
 // Départs possibles et annulation de la planification, pour les équipements de la frise du jour
 // (TimelineCard) : la feuille au clic sur un bloc prévu propose les autres départs encore à venir
 // (comme « Prochaine action » et « Pourquoi ce plan », OtherStarts) et le bouton « Annuler ».
-// Le choix et l'annulation enregistrés ne valent que pour le jour.
+// Le choix vaut pour le jour du plan affiché (aujourd'hui, demain ou un jour suivant) ;
+// l'annulation, pour aujourd'hui seulement.
 
 import { minuteOfDay } from "../i18n/homeTime";
 import type { OtherStart } from "./OtherStarts";
@@ -24,7 +25,8 @@ function nowMinute(): number {
  * encore à venir lus dans les explications du plan ; appareil sans explication : la feuille
  * propose seulement d'annuler la planification. */
 export function startChoices(view: DayView): Record<string, StartChoice> {
-  const nowMin = nowMinute();
+  // Demain et les jours suivants : tous les départs proposés sont à venir.
+  const nowMin = view.kind === "today" ? nowMinute() : -1;
   const explained = new Map(view.explanations.map((item) => [item.device, item]));
   const choices: Record<string, StartChoice> = {};
   for (const row of view.timeline.rows) {
