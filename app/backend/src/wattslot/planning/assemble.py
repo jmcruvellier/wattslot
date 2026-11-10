@@ -195,7 +195,7 @@ async def build_input(
     tariff = config.tariff_of(configuration)
     context = tariff_context(tariff, states or [], today, zone) if needs_states(tariff) else None
     capacity, stored, soc = battery_state(model, states or [])
-    battery_settings = config.battery_of(configuration)
+    battery_settings = config.battery_of(configuration, model)
     charge_w, discharge_w = battery_settings.powers_w(capacity)
     efficiencies = past.battery_efficiencies(model, reader, today, zone)
     history = past.recent_history(model, reader, today, zone)
@@ -485,7 +485,7 @@ def configured(
         needs=needs,
         constraints=_constraints(data, model, effective, every),
         tariff=config.tariff_of(configuration),
-        battery=_with_settings(data.battery, config.battery_of(configuration)),
+        battery=_with_settings(data.battery, config.battery_of(configuration, model)),
     )
 
 

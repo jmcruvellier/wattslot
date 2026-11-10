@@ -184,5 +184,6 @@
   "problem.connection_error.unreachable": "Home Assistant antwoordt niet op het opgegeven adres: controleer of hij draait en of het adres klopt.",
   "problem.connection_error.token_refused": "Home Assistant weigert de toegangstoken: verbind de applicatie opnieuw (of controleer de token in het .env-bestand als de verbinding daar is ingesteld).",
   "problem.connection_error.unknown": "De verbinding met Home Assistant is mislukt.",
-  "problem.none": "Niets te melden: alles werkt."
+  "problem.none": "Niets te melden: alles werkt.",
+  "problem.configuration_issue.battery_not_used": "{device}: batterij-instellingen op een toestel dat geen batterij is."
 }

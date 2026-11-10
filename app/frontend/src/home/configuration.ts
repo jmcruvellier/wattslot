@@ -102,6 +102,7 @@ export interface DeviceSettings {
   planned: boolean;
   default: boolean;
   runtime?: RuntimeSettings | null; // durée de fonctionnement à placer ; null : défaut
+  battery?: BatterySettings | null; // batterie : ses propres réglages ; null : ceux de la maison
   panels?: SolarPanels | null; // installation solaire : panneaux pour la prévision Open-Meteo (lot 4.4)
   energy?: EnergyNeed | null; // besoin d'énergie ; null : traité comme un cycle à démarrer
   constraints?: TimeConstraint[]; // contraintes horaires (lot 3.5)
@@ -164,6 +165,7 @@ export interface BatterySettings {
   active_to_hour: number; // exclue
   full_charge_every_days: number | null; // null : jamais
   floor_ranges?: FloorRange[]; // plancher plus haut sur ces plages (lot 3.5)
+  all_phases?: boolean; // triphasé : compense le total des trois phases, pas sa seule phase
 }
 
 export interface FloorRange {

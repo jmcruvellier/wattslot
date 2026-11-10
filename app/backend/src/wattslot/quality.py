@@ -39,8 +39,7 @@ from pydantic import BaseModel
 from wattslot import configuration as configuration_module
 from wattslot import home_model
 from wattslot.aggregation import HOUR, PERIODS, QUARTER, Aggregate
-from wattslot.battery_settings import DEFAULT as DEFAULT_BATTERY
-from wattslot.configuration import Configuration
+from wattslot.configuration import Configuration, battery_of
 from wattslot.corrections import Correction, CorrectionStore, Kind, Method
 from wattslot.detection import DeviceKind, Role
 from wattslot.home_model import HomeModel
@@ -113,7 +112,7 @@ class Sensor:
 def sensors(home: HomeModel, saved: Configuration) -> list[Sensor]:
     """Compteurs d'énergie de la maison et leur limite physique par heure."""
     contract = (saved.tariff.contract_kva if saved.tariff else None) or DEFAULT_CONTRACT_KVA
-    battery = saved.battery or DEFAULT_BATTERY
+    battery = battery_of(saved, home)
     capacity = sum(d.capacity_kwh or 0.0 for d in home.devices if d.kind is DeviceKind.BATTERY)
     charge_w, discharge_w = battery.powers_w(capacity) if capacity > 0 else (0.0, 0.0)
     found: dict[str, Sensor] = {}
@@ -158,7 +157,7 @@ def house_limit_kwh(home: HomeModel, saved: Configuration) -> float:
         for array in settings.panels.arrays
     )
     capacity = sum(d.capacity_kwh or 0.0 for d in home.devices if d.kind is DeviceKind.BATTERY)
-    battery = saved.battery or DEFAULT_BATTERY
+    battery = battery_of(saved, home)
     discharge_w = battery.powers_w(capacity)[1] if capacity > 0 else 0.0
     return (contract + peak + discharge_w / 1000) * MARGIN
 

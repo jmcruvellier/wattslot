@@ -31,6 +31,7 @@ COVERED = {
     "observed_automation",
     "behavior_not_allowed",
     "runtime_not_used",
+    "battery_not_used",
     "panels_not_used",
     "need_not_used",
     "constraints_not_used",
@@ -117,6 +118,17 @@ CASES: dict[str, Callable[[], Configuration]] = {
     "pilotage pas encore disponible": lambda: changed("dryer", automation=Automation.CONTROL),
     "observé mais recommandé": lambda: changed("ev", behavior=Behavior.UNCONTROLLED),
     "durée pour un autre comportement": lambda: changed("pool", **OBSERVED),
+    "réglages de batterie pour un autre équipement": lambda: changed("pool", battery=BATTERY),
+    "batterie : ses propres plages vides": lambda: setting(
+        devices=[
+            *(d for d in EV.configuration.devices if d.key != "battery"),
+            DeviceSettings(
+                key="battery",
+                behavior=Behavior.STORAGE,
+                battery=BATTERY.model_copy(update={"active_from_hour": 9, "active_to_hour": 9}),
+            ),
+        ]
+    ),
     "panneaux sur un autre équipement": lambda: changed(
         "pool", panels=SolarPanels(arrays=[PanelArray(kwp=3)]), **OBSERVED
     ),

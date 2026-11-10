@@ -862,7 +862,8 @@
       "objective_co2_without_entity": "Ziel: CO₂ erfordert einen Sensor für die CO₂-Intensität des Netzes.",
       "import_format": "Diese Datei ist kein Export eines Zuhauses von WattSlot.",
       "import_version": "Nicht unterstützte Dateiversion: {reason}.",
-      "import_invalid": "Ungültige Datei ({field}): {reason}."
+      "import_invalid": "Ungültige Datei ({field}): {reason}.",
+      "battery_not_used": "{device}: Batterieeinstellungen an einem Gerät, das keine Batterie ist."
     },
     "import_rules": "Regeln der Home-Assistant-Aufgaben übernehmen",
     "rules": {
@@ -1026,7 +1027,14 @@
     "not_below": "nicht unter",
     "remove_range": "Entfernen",
     "add_range": "Zeitraum mit höherer Untergrenze hinzufügen",
-    "floor_hint": "Die Batterie geht nie darunter: eine Reserve für die Nacht oder einen Stromausfall."
+    "floor_hint": "Die Batterie geht nie darunter: eine Reserve für die Nacht oder einen Stromausfall.",
+    "own_title": "Einstellungen je Batterie",
+    "own_help": "Jede Batterie folgt den Einstellungen oben, außer Sie geben ihr eigene. Die Berechnung sieht Ihre Batterien weiterhin als eine: Leistungen addiert, Untergrenze nach der Kapazität jeder Batterie.",
+    "own_start": "Dieser Batterie eigene Einstellungen geben",
+    "own_intro": "Eigene Einstellungen dieser Batterie mit {capacity} kWh.",
+    "own_reset": "Zu den Einstellungen des Hauses zurückkehren",
+    "all_phases": "Die Batterie gleicht die Summe der drei Phasen aus",
+    "all_phases_hint": "Ankreuzen, wenn sie einem dreiphasigen Zähler folgt; sonst gleicht sie nur ihre eigene Phase aus. Die Planung berücksichtigt dies noch nicht."
   },
   "objective": {
     "title": "Ziel der Berechnung",
@@ -1602,7 +1610,8 @@
     "battery": {
       "title": "Batterie",
       "floor": "{kwh} kWh, nie unter {pct} %",
-      "full_charge": "mindestens alle {days} Tage voll"
+      "full_charge": "mindestens alle {days} Tage voll",
+      "own": "eigene Einstellungen für {count} Batterie(n)"
     },
     "placed": "Zum besten Zeitpunkt eingeplant",
     "followed": "Nur beobachtet",

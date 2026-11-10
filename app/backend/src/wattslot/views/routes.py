@@ -86,7 +86,7 @@ def house_context(state: Any, day: date) -> Context:
     context = Context(
         zone=state.raw.zone,
         off_peak=tuple(off_peak_ranges(configuration.tariff_of(saved), day)),
-        battery=configuration.battery_of(saved),
+        battery=configuration.battery_of(saved, home),
         appliances=tuple(
             a.name for a in cycle_appliances(home, saved) if a.key not in runtime_keys(home, saved)
         ),

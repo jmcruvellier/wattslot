@@ -2,7 +2,7 @@
 
 *[English version](../battery.md) · [Guide d'utilisation](README.md)*
 
-WattSlot ne pilote pas votre batterie : il simule son comportement (elle charge tout surplus et se décharge sur tout déficit, comme la plupart des batteries domestiques en autoconsommation) pour placer vos appareils là où ils sont le plus utiles. Plusieurs batteries sont vues comme une seule. Les réglages sont dans **Ma maison › L'essentiel › Batterie**.
+WattSlot ne pilote pas votre batterie : il simule son comportement (elle charge tout surplus et se décharge sur tout déficit, comme la plupart des batteries domestiques en autoconsommation) pour placer vos appareils là où ils sont le plus utiles. Plusieurs batteries sont vues comme une seule, chacune pouvant avoir ses propres réglages (voir [Plusieurs batteries](#plusieurs-batteries)). Les réglages sont dans **Ma maison › L'essentiel › Batterie**.
 
 ## Réglages
 
@@ -15,6 +15,20 @@ WattSlot ne pilote pas votre batterie : il simule son comportement (elle charge 
 | **Viser régulièrement une charge complète**, au moins tous les N jours | non | Les batteries au lithium recalent leur mesure de charge quand elles atteignent 100 % : le plan garde alors assez de surplus pour cela, et peut sauter quelques heures de piscine ces jours-là |
 
 La capacité vient de Home Assistant quand un capteur la donne, sinon de sa fiche dans **Ma maison › Appareils** (**Capteurs, nom et type**).
+
+## Plusieurs batteries
+
+Les réglages ci-dessus valent pour toutes vos batteries. Quand la maison en a plusieurs, la feuille **Batterie** liste chacune sous **Réglages par batterie** : **Donner ses propres réglages à cette batterie** lui ouvre les mêmes réglages, pour elle seule ; **Reprendre les réglages de la maison** les retire.
+
+Le calcul voit toujours vos batteries comme une seule :
+
+- les **puissances** s'additionnent (sans réglage, chacune compte pour la moitié de sa capacité par heure) ;
+- le **plancher** suit la capacité de chacune : 30 % d'une batterie de 2 kWh et 10 % d'une batterie de 6 kWh font 1,2 kWh gardés en réserve, heure par heure avec les plages ;
+- la **plage active** est celle où une batterie au moins fonctionne, et la **charge complète** suit la batterie qui la demande le plus souvent.
+
+C'est exact pour des batteries branchées au même endroit. Deux batteries qui ne voient pas le même surplus (une par phase en triphasé, par exemple) peuvent se remplir différemment : le plan est alors un peu optimiste.
+
+Dans une maison en **triphasé** (voir [Votre maison et ses règles](your-home.md#maisons-en-triphasé)), une case demande si **la batterie compense le total des trois phases** (elle suit un compteur triphasé) ou seulement sa phase. Le plan n'en tient pas encore compte.
 
 ## Ce que vous voyez
 
