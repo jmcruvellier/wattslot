@@ -35,7 +35,7 @@ from wattslot import configuration as config
 from wattslot.aggregation import CounterState
 from wattslot.configuration import Behavior, Configuration
 from wattslot.detection import DeviceKind, Role
-from wattslot.home_model import HomeModel, sensor_iri
+from wattslot.home_model import HomeModel, counted_sensors, sensor_iri
 from wattslot.planning.appliances import DEFAULT_RULES, RULES, SHORT_GAP_MIN, Observation
 from wattslot.planning.inputs import V1_POOL
 from wattslot.planning.journal import appliances, real_cycles
@@ -301,7 +301,7 @@ def _iris(model: HomeModel, roles: Iterable[Role]) -> dict[Role, list[str]]:
     wanted = set(roles)
     found: dict[Role, list[str]] = defaultdict(list)
     for device in model.devices:
-        for sensor in device.sensors:
+        for sensor in counted_sensors(device):
             if sensor.role in wanted:
                 found[sensor.role].append(sensor_iri(device.key, sensor.entity_id))
     return found

@@ -377,6 +377,46 @@ describe("maison en triphasé", () => {
     expect(body.devices).toEqual(HOME.devices); // les appareils repartent tels quels
   });
 
+  it("ajoute au réseau un capteur qui ne mesure qu'une phase", async () => {
+    const sent = mockApi(THREE_PHASE);
+    renderHome();
+    await openDevices();
+    await userEvent.click(screen.getByText("Réseau", { selector: "summary .ui-row-label" }));
+    await userEvent.click(screen.getByRole("button", { name: "Réseau" }));
+    const sheet = screen.getByRole("dialog", { name: "Réseau" });
+    // Le capteur déjà lié mesure le total tant qu'on ne dit pas autre chose.
+    expect(await within(sheet).findByLabelText("Ce que mesure sensor.linky_hc")).toHaveValue("");
+
+    await userEvent.click(within(sheet).getByRole("button", { name: "Ajouter un capteur de soutirage par phase" }));
+    // La première entité d'énergie de HA pas encore liée, sur la première phase sans capteur.
+    const added = within(sheet).getByLabelText("Ce que mesure sensor.washer_energy");
+    expect(added).toHaveValue("PhaseL1");
+    await userEvent.selectOptions(added, "Phase 3");
+    await userEvent.click(within(sheet).getByRole("button", { name: "Enregistrer les réglages" }));
+
+    expect(await screen.findByText("Réglages enregistrés.")).toBeInTheDocument();
+    const grid = (sent[0].body as HomeModel).devices.find((d) => d.key === "grid")!;
+    expect(grid.sensors.find((sensor) => sensor.entity_id === "sensor.washer_energy")).toEqual({
+      entity_id: "sensor.washer_energy",
+      role: "EnergyImported",
+      resets_daily: false,
+      phase: "PhaseL3",
+    });
+    expect(grid.sensors.find((sensor) => sensor.entity_id === "sensor.linky_hc")).not.toHaveProperty("phase");
+  });
+
+  it("ne demande pas ce que mesurent les capteurs du réseau en monophasé", async () => {
+    mockApi();
+    renderHome();
+    await openDevices();
+    await userEvent.click(screen.getByText("Réseau", { selector: "summary .ui-row-label" }));
+    await userEvent.click(screen.getByRole("button", { name: "Réseau" }));
+    const sheet = screen.getByRole("dialog", { name: "Réseau" });
+
+    expect(within(sheet).queryByLabelText("Ce que mesure sensor.linky_hc")).toBeNull();
+    expect(within(sheet).queryByRole("button", { name: "Ajouter un capteur de soutirage par phase" })).toBeNull();
+  });
+
   it("dit en une ligne comment la maison est raccordée", async () => {
     mockApi({ ...THREE_PHASE, meter_sums_phases: false });
     renderHome();

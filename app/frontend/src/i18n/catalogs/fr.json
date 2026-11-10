@@ -717,7 +717,12 @@
       "PhaseL3": "Phase 3",
       "ThreePhases": "Les trois phases (appareil triphasé)"
     },
-    "phase_hint": "La phase du disjoncteur qui alimente l'appareil."
+    "phase_hint": "La phase du disjoncteur qui alimente l'appareil.",
+    "sensor_phase": "Ce que mesure {entity}",
+    "sensor_phase_total": "Les trois phases (total)",
+    "add_phase_import": "Ajouter un capteur de soutirage par phase",
+    "add_phase_export": "Ajouter un capteur d'injection par phase",
+    "sensor_phase_hint": "Avec un capteur de soutirage pour chacune des trois phases (compteur triphasé, pinces sur chaque phase…), le planning connaît la consommation de chaque phase et la compte dans sa limite. Gardez le capteur du total s'il existe."
   },
   "graph": {
     "title": "Ma maison en graphe",

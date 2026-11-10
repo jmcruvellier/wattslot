@@ -58,6 +58,8 @@ export interface HomeSensor {
   entity_id: string;
   role: Role;
   resets_daily: boolean;
+  // Réseau en triphasé : le capteur ne mesure que cette phase ; absent ou null : le total.
+  phase?: Phase | null;
 }
 
 export interface HomeDevice {

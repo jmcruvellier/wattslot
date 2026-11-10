@@ -28,7 +28,7 @@ from zoneinfo import ZoneInfo
 
 from wattslot.aggregation import HOUR, Aggregate
 from wattslot.detection import DeviceKind, Role
-from wattslot.home_model import HomeModel
+from wattslot.home_model import LINES, HomeModel, Phase, Supply, counted_sensors, line_shares
 
 SAME_WEEKDAY_OCCURRENCES = 6
 SAFETY_WEEKS = 3  # marge contre les trous de données : fenêtre de 9 semaines (63 jours)
@@ -81,7 +81,7 @@ def sensors(
         sensor.entity_id
         for device in model.devices
         if allowed is None or device.kind in allowed
-        for sensor in device.sensors
+        for sensor in counted_sensors(device)
         if sensor.role in wanted
     ]
 
@@ -189,9 +189,6 @@ def baseline(
     def read(roles: Iterable[Role], kinds: Iterable[DeviceKind] | None = None) -> DaySeries:
         return series(reader, sensors(model, roles, kinds), start, end, zone)
 
-    produced = read([Role.ENERGY_PRODUCED])
-    imported, exported = read([Role.ENERGY_IMPORTED]), read([Role.ENERGY_EXPORTED])
-    charged, discharged = read([Role.ENERGY_CHARGED]), read([Role.ENERGY_DISCHARGED])
     appliances = (
         series(
             reader,
@@ -209,8 +206,37 @@ def baseline(
         if planned is not None
         else read([Role.ENERGY_CONSUMED], PLANNED_KINDS)
     )
-    has_battery = bool(sensors(model, [Role.ENERGY_CHARGED, Role.ENERGY_DISCHARGED]))
+    flows = _Flows(
+        produced=read([Role.ENERGY_PRODUCED]),
+        imported=read([Role.ENERGY_IMPORTED]),
+        exported=read([Role.ENERGY_EXPORTED]),
+        charged=read([Role.ENERGY_CHARGED]),
+        discharged=read([Role.ENERGY_DISCHARGED]),
+        appliances=appliances,
+        has_battery=bool(sensors(model, [Role.ENERGY_CHARGED, Role.ENERGY_DISCHARGED])),
+    )
+    return _typical(flows, target, occurrences)
 
+
+@dataclass(frozen=True)
+class _Flows:
+    """Énergies horaires dont se déduit la consommation de base, de la maison ou d'une phase."""
+
+    produced: DaySeries
+    imported: DaySeries
+    exported: DaySeries
+    charged: DaySeries
+    discharged: DaySeries
+    appliances: DaySeries  # équipements planifiés, retirés de la consommation de base
+    has_battery: bool
+
+
+def _typical(flows: _Flows, target: date, occurrences: int) -> dict[int, float]:
+    """Consommation de base typique par heure : bilan des flux, équipements planifiés retirés,
+    moyenne des mêmes jours de la semaine."""
+    produced, imported, exported = flows.produced, flows.imported, flows.exported
+    charged, discharged, appliances = flows.charged, flows.discharged, flows.appliances
+    has_battery = flows.has_battery
     available = set(imported) | set(exported)
     same_weekday = sorted(
         (d for d in available if d.weekday() == target.weekday() and d != target), reverse=True
@@ -238,6 +264,97 @@ def baseline(
         for hour, found in sorted(values.items())
         if len(found) >= MIN_DAYS_PER_HOUR
     }
+
+
+def _weighted(
+    reader: AggregateReader,
+    weights: dict[str, float],
+    start: datetime,
+    end: datetime,
+    zone: ZoneInfo,
+) -> DaySeries:
+    """Agrégats horaires des entités, chacune comptée pour sa part, par jour et heure locaux."""
+    found: dict[date, dict[int, float]] = defaultdict(lambda: defaultdict(float))
+    for entity_id, weight in weights.items():
+        for day, by_hour in series(reader, [entity_id], start, end, zone).items():
+            for hour, kwh in by_hour.items():
+                found[day][hour] += weight * kwh
+    return {day: dict(by_hour) for day, by_hour in found.items()}
+
+
+def baseline_by_phase(
+    model: HomeModel,
+    reader: AggregateReader,
+    target: date,
+    today: date,
+    zone: ZoneInfo,
+    occurrences: int = SAME_WEEKDAY_OCCURRENCES,
+    planned: Collection[str] | None = None,
+) -> dict[Phase, dict[int, float]]:
+    """Consommation de base typique de chaque phase, par heure locale (kWh), comme
+    ``baseline`` mais avec les seuls flux de la phase : capteurs du réseau qui la mesurent,
+    solaire, batteries et équipements planifiés qui y sont branchés (un tiers pour un
+    équipement triphasé).
+
+    Vide quand elle ne se mesure pas : maison en monophasé, une phase sans capteur de
+    soutirage, ou une installation solaire ou une batterie dont la phase n'est pas connue (sa
+    production ou sa décharge manquerait au bilan d'une phase)."""
+    if model.supply is not Supply.THREE:
+        return {}
+    grid = [
+        sensor
+        for device in model.devices
+        if device.kind is DeviceKind.GRID
+        for sensor in device.sensors
+        if sensor.phase in LINES
+    ]
+    measured = {s.phase for s in grid if s.role is Role.ENERGY_IMPORTED}
+    sources = {
+        Role.ENERGY_PRODUCED: DeviceKind.SOLAR,
+        Role.ENERGY_CHARGED: DeviceKind.BATTERY,
+        Role.ENERGY_DISCHARGED: DeviceKind.BATTERY,
+    }
+    unknown = any(
+        device.phase is None and any(sources.get(s.role) is device.kind for s in device.sensors)
+        for device in model.devices
+    )
+    if measured != set(LINES) or unknown:
+        return {}
+    start, end = window(today, (occurrences + SAFETY_WEEKS) * 7, zone)
+
+    def flow(line: Phase, role: Role, keys: Collection[str] | None = None) -> DaySeries:
+        """Énergie d'un rôle sur la phase ; ``keys`` : les seuls équipements de ces clés."""
+        weights: dict[str, float] = {}
+        for device in model.devices:
+            share = line_shares(device.phase).get(line, 0.0)
+            if share == 0 or (keys is not None and device.key not in keys):
+                continue
+            for sensor in device.sensors:
+                if sensor.role is role:
+                    weights[sensor.entity_id] = share
+        return _weighted(reader, weights, start, end, zone)
+
+    def of_grid(line: Phase, role: Role) -> DaySeries:
+        entities = [s.entity_id for s in grid if s.phase is line and s.role is role]
+        return series(reader, entities, start, end, zone)
+
+    if planned is None:
+        planned = [d.key for d in model.devices if d.kind in PLANNED_KINDS]
+    found: dict[Phase, dict[int, float]] = {}
+    for line in LINES:
+        charged = flow(line, Role.ENERGY_CHARGED)
+        discharged = flow(line, Role.ENERGY_DISCHARGED)
+        flows = _Flows(
+            produced=flow(line, Role.ENERGY_PRODUCED),
+            imported=of_grid(line, Role.ENERGY_IMPORTED),
+            exported=of_grid(line, Role.ENERGY_EXPORTED),
+            charged=charged,
+            discharged=discharged,
+            appliances=flow(line, Role.ENERGY_CONSUMED, planned),
+            has_battery=bool(charged or discharged),
+        )
+        found[line] = _typical(flows, target, occurrences)
+    return found
 
 
 def best_production(

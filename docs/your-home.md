@@ -63,7 +63,9 @@ In **Essentials › My grid connection**, say whether your home is **single-phas
 
 **Power limit of each phase.** With the **contract power** set in **My contract**, each phase gets a third of it (4 kVA per phase for 12 kVA). The plan then avoids running together, on one phase, appliances that would draw more than that: it moves one to another hour. A three-phase device counts for a third on each phase, and the production of the solar installations connected to the phase is deducted. A device whose phase is not set is not limited.
 
-This limit only counts the appliances the plan places: the rest of the consumption of each phase is not known yet. An appliance that exceeds its phase on its own stays placed, with a warning in the plan. The rest of the calculation (battery, surplus) does not tell the phases apart yet.
+**Consumption of each phase.** By default the limit only counts the appliances the plan places. To count the rest of the consumption of each phase too, open the sheet of your **grid connection** (**Devices** tab, **Sensors, name and type**) and add an **import sensor for each of the three phases** (three-phase meter, a clamp on each phase…), and the export sensors if you have them; for each one, choose the phase it measures. Keep the sensor of the total if there is one: phase sensors are never counted twice. The phase of every solar installation and battery must be set as well. WattSlot then learns the usual consumption of each phase from the history, like it does for the whole home.
+
+An appliance that exceeds its phase on its own stays placed, with a warning in the plan. The rest of the calculation (battery, surplus) does not tell the phases apart yet.
 
 ## Objective
 

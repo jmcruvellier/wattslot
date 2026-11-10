@@ -33,7 +33,7 @@ from wattslot.battery_settings import BatterySettings
 from wattslot.configuration import Behavior, Configuration, DeviceSettings
 from wattslot.detection import DeviceKind, Role, classify_appliance
 from wattslot.home_assistant import HomeAssistantClient
-from wattslot.home_model import HomeDevice, HomeModel, Phase, Supply
+from wattslot.home_model import HomeDevice, HomeModel, Phase, Supply, line_shares
 from wattslot.planning import past
 from wattslot.planning.appliances import DEFAULT_RULES, RULES
 from wattslot.planning.co2_sources import co2_context
@@ -55,7 +55,6 @@ from wattslot.planning.journal import (
     real_cycles,
 )
 from wattslot.planning.past import AggregateReader
-from wattslot.planning.problem import line_shares
 from wattslot.planning.reference import task_key
 from wattslot.planning.sources import Forecasts, PlanningSettings, has_production, read_tasks
 from wattslot.planning.tariff_sources import needs_states, tariff_context
@@ -206,6 +205,7 @@ async def build_input(
     )
     data = PlanningInput(
         day=day,
+        base_by_phase=past.baseline_by_phase(model, reader, day, today, zone, planned=planned),
         tariff=tariff,
         tariff_context=context or TariffContext(),
         first_hour=now.astimezone(zone).hour if day == today else 0,

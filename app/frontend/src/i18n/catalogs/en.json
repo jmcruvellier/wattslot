@@ -717,7 +717,12 @@
       "PhaseL3": "Phase 3",
       "ThreePhases": "All three phases (three-phase device)"
     },
-    "phase_hint": "The phase of the breaker that feeds the device."
+    "phase_hint": "The phase of the breaker that feeds the device.",
+    "sensor_phase": "What {entity} measures",
+    "sensor_phase_total": "All three phases (total)",
+    "add_phase_import": "Add an import sensor for one phase",
+    "add_phase_export": "Add an export sensor for one phase",
+    "sensor_phase_hint": "With an import sensor for each of the three phases (three-phase meter, a clamp on each phase…), the plan knows the consumption of each phase and counts it in its limit. Keep the total sensor if there is one."
   },
   "graph": {
     "title": "My home as a graph",

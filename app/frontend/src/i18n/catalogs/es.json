@@ -717,7 +717,12 @@
       "PhaseL3": "Fase 3",
       "ThreePhases": "Las tres fases (aparato trifásico)"
     },
-    "phase_hint": "La fase del interruptor que alimenta el aparato."
+    "phase_hint": "La fase del interruptor que alimenta el aparato.",
+    "sensor_phase": "Lo que mide {entity}",
+    "sensor_phase_total": "Las tres fases (total)",
+    "add_phase_import": "Añadir un sensor de consumo de red por fase",
+    "add_phase_export": "Añadir un sensor de vertido por fase",
+    "sensor_phase_hint": "Con un sensor de consumo de red para cada una de las tres fases (contador trifásico, una pinza en cada fase…), la planificación conoce el consumo de cada fase y lo cuenta en su límite. Conserve el sensor del total si existe."
   },
   "graph": {
     "title": "Mi casa en grafo",

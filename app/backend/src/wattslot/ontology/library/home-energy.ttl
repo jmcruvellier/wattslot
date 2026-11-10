@@ -154,6 +154,11 @@
     rdfs:domain <#Device> ;
     rdfs:range <#Room> ;
     rdfs:label "est situé dans"@fr, "located in"@en .
+<#measuresPhase> a owl:ObjectProperty ;
+    rdfs:domain <#Sensor> ;
+    rdfs:range <#PhaseConnection> ;
+    rdfs:label "ne mesure que la phase"@fr, "measures only phase"@en ;
+    rdfs:comment "Capteur du raccordement au réseau en triphasé qui ne mesure qu'une phase ; sans cette propriété, il mesure le total."@fr .
 <#phase> a owl:ObjectProperty ;
     rdfs:domain <#Device> ;
     rdfs:range <#PhaseConnection> ;

@@ -77,4 +77,9 @@
         sh:path <#haEntity> ; sh:datatype xsd:string ; sh:minCount 1 ; sh:maxCount 1 ;
         sh:pattern "^[a-z_]+\\.[a-z0-9_]+$" ;
         <#issueCode> "sensor_entity"
+    ] ;
+    sh:property [
+        sh:path <#measuresPhase> ; sh:maxCount 1 ;
+        sh:in ( <#PhaseL1> <#PhaseL2> <#PhaseL3> ) ;
+        <#issueCode> "sensor_phase"
     ] .

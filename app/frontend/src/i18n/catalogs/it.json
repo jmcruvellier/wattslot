@@ -717,7 +717,12 @@
       "PhaseL3": "Fase 3",
       "ThreePhases": "Le tre fasi (apparecchio trifase)"
     },
-    "phase_hint": "La fase dell'interruttore che alimenta l'apparecchio."
+    "phase_hint": "La fase dell'interruttore che alimenta l'apparecchio.",
+    "sensor_phase": "Che cosa misura {entity}",
+    "sensor_phase_total": "Le tre fasi (totale)",
+    "add_phase_import": "Aggiungere un sensore di prelievo per fase",
+    "add_phase_export": "Aggiungere un sensore di immissione per fase",
+    "sensor_phase_hint": "Con un sensore di prelievo per ciascuna delle tre fasi (contatore trifase, una pinza su ogni fase…), la pianificazione conosce il consumo di ogni fase e lo conta nel suo limite. Mantenere il sensore del totale, se esiste."
   },
   "graph": {
     "title": "La mia casa come grafo",

@@ -52,10 +52,26 @@ class Phase(StrEnum):
     ALL = "ThreePhases"
 
 
+LINES = (Phase.L1, Phase.L2, Phase.L3)  # les trois phases d'une maison en triphasé
+
+
+def line_shares(phase: Phase | None) -> dict[Phase, float]:
+    """Part de la puissance d'un équipement sur chaque phase : toute sur la sienne, un tiers sur
+    chacune pour un équipement triphasé, aucune si sa phase n'est pas connue."""
+    if phase is None:
+        return {}
+    if phase is Phase.ALL:
+        return dict.fromkeys(LINES, 1 / 3)
+    return {phase: 1.0}
+
+
 class HomeSensor(BaseModel):
     entity_id: str
     role: Role
     resets_daily: bool = False
+    # Raccordement au réseau en triphasé : le capteur ne mesure que cette phase (1, 2 ou 3) ;
+    # ``None`` : il mesure le total. Jamais enregistré ailleurs.
+    phase: Phase | None = None
 
 
 class HomeDevice(BaseModel):
@@ -109,6 +125,14 @@ EXPECTED_ROLES: dict[DeviceKind, tuple[Role, ...]] = {
     DeviceKind.POOL_PUMP: _APPLIANCE,
     DeviceKind.OTHER_LOAD: _APPLIANCE,
 }
+
+
+def counted_sensors(device: HomeDevice) -> list[HomeSensor]:
+    """Capteurs comptés dans les totaux de la maison : tous, sauf ceux qui ne mesurent qu'une
+    phase quand un capteur du même rôle mesure déjà le total (sinon le réseau serait compté
+    deux fois). Sans capteur du total, les capteurs par phase le font à eux trois."""
+    whole = {sensor.role for sensor in device.sensors if sensor.phase is None}
+    return [s for s in device.sensors if s.phase is None or s.role not in whole]
 
 
 def problems(model: HomeModel) -> list[tuple[str, str | None, dict[str, str]]]:
@@ -221,6 +245,8 @@ def to_triples(model: HomeModel) -> list[Triple]:
                     Literal(str(sensor.resets_daily).lower(), datatype=XSD_BOOLEAN),
                 ),
             ]
+            if sensor.phase in LINES and device.kind is DeviceKind.GRID:
+                triples.append(Triple(sensor_node, vocab("measuresPhase"), vocab(sensor.phase)))
     return triples
 
 
@@ -233,7 +259,8 @@ def load(graph: GraphStore) -> HomeModel:
         f"""
         PREFIX wattslot: <{VOCAB}>
         PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-        SELECT ?device ?key ?kind ?name ?capacity ?phase ?entity ?role ?daily ?own WHERE {{
+        SELECT ?device ?key ?kind ?name ?capacity ?phase ?entity ?role ?daily ?measured ?own
+        WHERE {{
           GRAPH <{GRAPH_HOME}> {{
             <{HOME}> wattslot:hasDevice ?device .
             ?device a ?kind ; rdfs:label ?name ; wattslot:key ?key .
@@ -245,6 +272,7 @@ def load(graph: GraphStore) -> HomeModel:
               ?device wattslot:hasSensor ?sensor .
               ?sensor wattslot:haEntity ?entity ; wattslot:role ?role ;
                 wattslot:resetsDaily ?daily .
+              OPTIONAL {{ ?sensor wattslot:measuresPhase ?measured }}
             }}
           }}
         }}
@@ -270,6 +298,7 @@ def load(graph: GraphStore) -> HomeModel:
                     entity_id=row["entity"],
                     role=Role(row["role"].removeprefix(VOCAB)),
                     resets_daily=row["daily"] == "true",
+                    phase=Phase(row["measured"].removeprefix(VOCAB)) if "measured" in row else None,
                 )
             )
     for device in devices.values():

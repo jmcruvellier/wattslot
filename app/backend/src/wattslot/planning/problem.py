@@ -26,7 +26,7 @@ from typing import Any
 
 from wattslot import currency
 from wattslot.battery_settings import floor_percent_at
-from wattslot.home_model import Phase
+from wattslot.home_model import LINES, Phase, line_shares
 from wattslot.planning.cycles import (
     DAY_MIN,
     PlannedCycle,
@@ -46,18 +46,6 @@ from wattslot.planning.plan import Reason
 from wattslot.planning.reference import REFERENCE, Reference, task_key
 from wattslot.runtime_settings import season
 from wattslot.time_constraints import TimeConstraint
-
-LINES = (Phase.L1, Phase.L2, Phase.L3)  # les trois phases d'une maison en triphasé
-
-
-def line_shares(phase: Phase | None) -> dict[Phase, float]:
-    """Part de la puissance d'un équipement sur chaque phase : toute sur la sienne, un tiers sur
-    chacune pour un équipement triphasé, aucune si sa phase n'est pas connue."""
-    if phase is None:
-        return {}
-    if phase is Phase.ALL:
-        return dict.fromkeys(LINES, 1 / 3)
-    return {phase: 1.0}
 
 
 @dataclass(frozen=True)
@@ -234,6 +222,9 @@ class Problem:
     phases: Mapping[str, Phase] = field(default_factory=dict)
     production_shares: Mapping[Phase, float] = field(default_factory=dict)
     fixed_by_phase: Mapping[Phase, Mapping[int, float]] = field(default_factory=dict)
+    # Consommation de base de chaque phase, par heure du jour (kWh) ; vide : pas mesurée,
+    # seuls les équipements placés comptent alors dans la limite.
+    base_by_phase: Mapping[Phase, Mapping[int, float]] = field(default_factory=dict)
 
     @property
     def hours(self) -> range:
@@ -726,6 +717,9 @@ def from_input(data: PlanningInput, reference: Reference = REFERENCE) -> Problem
         phases=dict(data.phases),
         production_shares=dict(data.production_shares),
         fixed_by_phase={line: dict(hourly) for line, hourly in fixed_phase.items()},
+        base_by_phase={line: dict(hourly) for line, hourly in data.base_by_phase.items()}
+        if data.three_phase
+        else {},
     )
 
 
