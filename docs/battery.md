@@ -2,7 +2,7 @@
 
 *[Version française](fr/battery.md) · [User guide](README.md)*
 
-WattSlot does not control your battery: it simulates how it behaves (it charges on any surplus and discharges on any deficit, like most home batteries in self-consumption mode) to place your appliances where they are most useful. Several batteries are seen as one. Settings are in **My home › Essentials › Battery**.
+WattSlot does not control your battery: it simulates how it behaves (it charges on any surplus and discharges on any deficit, like most home batteries in self-consumption mode) to place your appliances where they are most useful. Several batteries are seen as one, and each can have its own settings (see [Several batteries](#several-batteries)). Settings are in **My home › Essentials › Battery**.
 
 ## Settings
 
@@ -15,6 +15,20 @@ WattSlot does not control your battery: it simulates how it behaves (it charges 
 | **Aim for a full charge regularly**, at least every N days | off | Lithium batteries recalibrate their charge measure when they reach 100 %: the plan then keeps enough surplus for it, and may skip some pool hours on those days |
 
 The capacity comes from Home Assistant when a sensor gives it, otherwise from its sheet in **My home › Devices** (**Sensors, name and type**).
+
+## Several batteries
+
+The settings above apply to all your batteries. When the home has several, the **Battery** sheet lists each one under **Settings per battery**: **Give this battery its own settings** opens the same settings for that battery alone; **Go back to the home's settings** removes them.
+
+The calculation still sees your batteries as one:
+
+- the **powers** add up (with no setting, each counts for half its capacity per hour);
+- the **floor** follows each battery's capacity: 30 % of a 2 kWh battery and 10 % of a 6 kWh battery keep 1.2 kWh in reserve, hour by hour with the ranges;
+- the **active range** is when at least one battery runs, and the **full charge** follows the battery that asks for it most often.
+
+This is exact for batteries connected at the same place. Two batteries that do not see the same surplus (one per phase in a three-phase home, for instance) may fill differently: the plan is then slightly optimistic.
+
+In a **three-phase** home (see [Your home and its rules](your-home.md#three-phase-homes)), a box asks whether **the battery offsets the total of the three phases** (it follows a three-phase meter) or only its own phase. The plan does not use it yet.
 
 ## What you see
 

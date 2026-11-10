@@ -9,10 +9,10 @@ from tests.planning.test_assemble import MODEL
 from tests.planning.test_configured_run import plans
 from tests.v1_oracle import STATES, load
 from wattslot import configuration
-from wattslot.battery_settings import DEFAULT, BatterySettings, problems
-from wattslot.configuration import Configuration
+from wattslot.battery_settings import DEFAULT, BatterySettings, FloorRange, combine, problems
+from wattslot.configuration import Behavior, Configuration, DeviceSettings
 from wattslot.detection import DeviceKind
-from wattslot.home_model import HomeModel
+from wattslot.home_model import HomeDevice, HomeModel
 from wattslot.planning.assemble import configured
 from wattslot.planning.inputs import RecentHistory, from_v1
 from wattslot.planning.problem import from_input
@@ -79,3 +79,111 @@ def test_a_home_without_battery(tmp_path: Path) -> None:
     for plan in found:
         assert plan.battery is not None and plan.battery.movements == []
         assert plan.battery.start_kwh == 0 and plan.battery.end_kwh == 0
+
+
+# --- Réglages par batterie ---------------------------------------------------------------------
+
+EVENING = BatterySettings(
+    charge_max_w=800,
+    discharge_max_w=800,
+    floor_percent=30,
+    active_from_hour=6,
+    active_to_hour=20,
+    full_charge_every_days=14,
+    floor_ranges=[FloorRange(start_hour=18, end_hour=22, percent=50)],
+    all_phases=True,
+)
+TWO = HomeModel(
+    devices=[
+        HomeDevice(
+            key="small", kind=DeviceKind.BATTERY, name="Petite", sensors=[], capacity_kwh=2.0
+        ),
+        HomeDevice(
+            key="large", kind=DeviceKind.BATTERY, name="Grande", sensors=[], capacity_kwh=6.0
+        ),
+    ]
+)
+
+
+def storage(key: str, battery: BatterySettings | None = None) -> DeviceSettings:
+    return DeviceSettings(key=key, behavior=Behavior.STORAGE, battery=battery)
+
+
+def test_identical_settings_combine_to_themselves() -> None:
+    assert combine([(2.0, CUSTOM), (6.0, CUSTOM)]) == CUSTOM
+    assert combine([(5.12, DEFAULT)]) == DEFAULT
+    assert combine([]) == DEFAULT
+
+
+def test_combined_powers_add_up_and_floors_follow_the_capacities() -> None:
+    combined = combine([(2.0, EVENING), (6.0, DEFAULT)])
+
+    # 800 W réglés pour la petite, 0,5 C (3 kW) pour la grande.
+    assert (combined.charge_max_w, combined.discharge_max_w) == (3800, 3800)
+    # Plancher en énergie : 30 % de 2 kWh + 10 % de 6 kWh = 1,2 kWh, soit 15 % de 8 kWh.
+    assert combined.floor_percent == pytest.approx(15)
+    # De 18 h à 22 h, la petite garde 50 % : 1 kWh + 0,6 kWh = 1,6 kWh, soit 20 %.
+    assert [(r.start_hour, r.end_hour) for r in combined.floor_ranges] == [(18, 22)]
+    assert combined.floor_ranges[0].percent == pytest.approx(20)
+    # Plage où une batterie au moins fonctionne ; charge complète la plus fréquente.
+    assert (combined.active_from_hour, combined.active_to_hour) == (0, 24)
+    assert combined.full_charge_every_days == 7
+
+
+def test_own_settings_are_saved_and_read_back_per_battery(tmp_path: Path) -> None:
+    graph = GraphStore(tmp_path)
+    ranges = BatterySettings(floor_ranges=[FloorRange(start_hour=0, end_hour=6, percent=25)])
+    saved = Configuration(
+        battery=ranges, devices=[storage("large", CUSTOM), storage("small", EVENING)]
+    )
+
+    configuration.save(graph, saved)
+
+    assert configuration.load(graph) == saved
+
+
+def test_the_calculation_sees_the_batteries_combined() -> None:
+    house = Configuration(battery=CUSTOM)
+    own = Configuration(battery=CUSTOM, devices=[storage("small", EVENING), storage("large")])
+
+    assert configuration.battery_of(house, TWO) == CUSTOM
+    assert configuration.battery_of(own) == CUSTOM  # sans la maison : ses réglages
+    assert configuration.battery_of(own, TWO) == combine([(2.0, EVENING), (6.0, CUSTOM)])
+    # Une batterie sans capacité ne compte pas, comme au calcul.
+    unknown = TWO.model_copy(
+        update={
+            "devices": [TWO.devices[0].model_copy(update={"capacity_kwh": None}), TWO.devices[1]]
+        }
+    )
+    assert configuration.battery_of(own, unknown) == CUSTOM
+
+
+def test_own_settings_are_checked_like_the_home_ones() -> None:
+    empty = BatterySettings(active_from_hour=10, active_to_hour=10)
+    washer = HomeDevice(
+        key="washer", kind=DeviceKind.WASHING_MACHINE, name="Lave-linge", sensors=[]
+    )
+    home = HomeModel(devices=[*TWO.devices, washer])
+    saved = Configuration(
+        devices=[
+            storage("small", empty),
+            DeviceSettings(key="washer", behavior=Behavior.CYCLE, battery=CUSTOM),
+        ]
+    )
+
+    found = {(i.code, i.device) for i in configuration.validate(home, saved)}
+
+    assert found == {("battery_active_range_empty", "small"), ("battery_not_used", "washer")}
+
+
+def test_the_problem_follows_the_combined_settings() -> None:
+    state, _ = load(STATES[0])
+    data = from_v1(state)
+    data = replace(data, battery=replace(data.battery, schedules=()))
+    battery = next(d for d in MODEL.devices if d.kind is DeviceKind.BATTERY)
+    saved = Configuration(devices=[storage(battery.key, CUSTOM)])
+
+    found = from_input(configured(data, MODEL, saved)).battery
+
+    assert (found.charge_max_kw, found.discharge_max_kw) == (3.0, 1.5)
+    assert (found.active_from, found.active_to) == (8, 22)

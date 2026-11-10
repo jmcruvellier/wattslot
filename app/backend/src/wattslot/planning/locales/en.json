@@ -184,5 +184,6 @@
   "problem.connection_error.unreachable": "Home Assistant does not answer at the given address: check that it is running and that the address is correct.",
   "problem.connection_error.token_refused": "Home Assistant refuses the access token: connect the application again (or check the token in the .env file if the connection is set there).",
   "problem.connection_error.unknown": "The connection to Home Assistant failed.",
-  "problem.none": "Nothing to report: everything works."
+  "problem.none": "Nothing to report: everything works.",
+  "problem.configuration_issue.battery_not_used": "{device}: battery settings on a device that is not a battery."
 }

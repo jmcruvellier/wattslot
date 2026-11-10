@@ -1,5 +1,6 @@
 // Réglages de la batterie (lot 3.3) : puissances (0,5 C sans réglage), plancher, plage active et
-// charge complète périodique. Plusieurs batteries sont vues comme une seule par le calcul.
+// charge complète périodique. Plusieurs batteries sont vues comme une seule par le calcul ;
+// `own` : les réglages propres à l'une d'elles (BatteriesEditor).
 
 import Advanced, { Hint } from "../common/Advanced";
 import NumberInput from "../common/NumberInput";
@@ -51,9 +52,11 @@ function Hour({ label, value, from, to, onChange }: {
   );
 }
 
-export default function BatteryEditor({ battery, capacityKwh, onChange }: {
+export default function BatteryEditor({ battery, capacityKwh, own = false, threePhase = false, onChange }: {
   battery: BatterySettings | null;
   capacityKwh: number;
+  own?: boolean; // réglages propres à une batterie, à la place de ceux de la maison
+  threePhase?: boolean; // maison en triphasé : demande ce que la batterie compense
   onChange: (battery: BatterySettings | null) => void;
 }) {
   const { t } = useI18n();
@@ -63,7 +66,7 @@ export default function BatteryEditor({ battery, capacityKwh, onChange }: {
 
   return (
     <div>
-      <p>{t("battery.intro", { capacity: capacityKwh })}</p>
+      <p>{t(own ? "battery.own_intro" : "battery.intro", { capacity: capacityKwh })}</p>
       {battery === null && <p>{t("battery.defaults")}</p>}
       <p>
         <Power
@@ -94,6 +97,19 @@ export default function BatteryEditor({ battery, capacityKwh, onChange }: {
         </label>
         <Hint text={t("battery.floor_hint")} />
       </p>
+      {threePhase && (
+        <p>
+          <label>
+            <input
+              type="checkbox"
+              checked={settings.all_phases ?? false}
+              onChange={(event) => set({ all_phases: event.target.checked })}
+            />{" "}
+            {t("battery.all_phases")}
+          </label>
+          <Hint text={t("battery.all_phases_hint")} />
+        </p>
+      )}
       <Advanced
         modified={
           battery !== null &&
@@ -170,7 +186,7 @@ export default function BatteryEditor({ battery, capacityKwh, onChange }: {
       </Advanced>
       {battery !== null && (
         <button type="button" onClick={() => onChange(null)}>
-          {t("battery.reset")}
+          {t(own ? "battery.own_reset" : "battery.reset")}
         </button>
       )}
     </div>

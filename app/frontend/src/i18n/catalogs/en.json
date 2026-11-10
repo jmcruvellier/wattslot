@@ -862,7 +862,8 @@
       "objective_co2_without_entity": "Objective: CO₂ needs a grid carbon intensity sensor.",
       "import_format": "This file is not an WattSlot home export.",
       "import_version": "Unsupported file version: {reason}.",
-      "import_invalid": "Invalid file ({field}): {reason}."
+      "import_invalid": "Invalid file ({field}): {reason}.",
+      "battery_not_used": "{device}: battery settings on a device that is not a battery."
     },
     "import_rules": "Import the rules of the Home Assistant tasks",
     "rules": {
@@ -1026,7 +1027,14 @@
     "not_below": "not below",
     "remove_range": "Remove",
     "add_range": "Add a range with a higher floor",
-    "floor_hint": "The battery never goes below: a reserve for the night or a power cut."
+    "floor_hint": "The battery never goes below: a reserve for the night or a power cut.",
+    "own_title": "Settings per battery",
+    "own_help": "Each battery follows the settings above, unless you give it its own. The calculation still sees your batteries as one: powers added up, floor according to each one's capacity.",
+    "own_start": "Give this battery its own settings",
+    "own_intro": "Own settings of this {capacity} kWh battery.",
+    "own_reset": "Go back to the home's settings",
+    "all_phases": "The battery offsets the total of the three phases",
+    "all_phases_hint": "Tick if it follows a three-phase meter; otherwise it only offsets its own phase. The plan does not use it yet."
   },
   "objective": {
     "title": "Planning objective",
@@ -1602,7 +1610,8 @@
     "battery": {
       "title": "Battery",
       "floor": "{kwh} kWh, never below {pct}%",
-      "full_charge": "full at least every {days} days"
+      "full_charge": "full at least every {days} days",
+      "own": "own settings for {count} battery(ies)"
     },
     "placed": "Placed at the best time",
     "followed": "Monitored only",

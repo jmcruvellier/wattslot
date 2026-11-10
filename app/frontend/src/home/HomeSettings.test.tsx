@@ -287,7 +287,7 @@ describe("réglages de Ma maison", () => {
     renderHome();
 
     const sheet = await openSheet("L'essentiel", /^Batterie/, "Batterie");
-    const charge = within(sheet).getByLabelText(/Puissance de charge maximale/);
+    const charge = await within(sheet).findByLabelText(/Puissance de charge maximale/); // chargé à l'ouverture
     expect(charge).toHaveAttribute("placeholder", "2560"); // 0,5 C de 5,12 kWh
     expect(within(sheet).getByText(/Réglages par défaut : modifiez-les/)).toBeInTheDocument();
     await userEvent.type(charge, "2500");
@@ -309,6 +309,72 @@ describe("réglages de Ma maison", () => {
     });
   });
 
+  it("donne ses propres réglages à une batterie quand la maison en a plusieurs", async () => {
+    const battery = (key: string, name: string, capacity_kwh: number) =>
+      ({ key, kind: "Battery" as const, name, sensors: [], capacity_kwh });
+    const home: HomeModel = {
+      devices: [...HOME.devices, battery("garage", "Batterie du garage", 5), battery("cellar", "Batterie du cellier", 2)],
+    };
+    const storage = (key: string) =>
+      ({ key, behavior: "StorageBehavior" as const, automation: "RecommendAutomation" as const, planned: true, default: true });
+    const configuration = { ...CONFIGURATION, devices: [...CONFIGURATION.devices, storage("garage"), storage("cellar")] };
+    const [sent, put] = recording();
+    mockApi(put, { home, configuration });
+    renderHome();
+
+    const sheet = await openSheet("L'essentiel", /^Batterie/, "Batterie");
+    expect(await within(sheet).findByText(/comme une seule, de 7 kWh/)).toBeInTheDocument();
+    const cellar = within(sheet).getByRole("region", { name: "Batterie du cellier" });
+    await userEvent.click(within(cellar).getByRole("button", { name: "Donner ses propres réglages à cette batterie" }));
+    expect(within(cellar).getByText("Réglages propres à cette batterie de 2 kWh.")).toBeInTheDocument();
+    // Sa puissance par défaut suit sa capacité, pas celle de la maison.
+    expect(within(cellar).getByLabelText(/Puissance de charge maximale/)).toHaveAttribute("placeholder", "1000");
+    const floor = within(cellar).getByLabelText(/Ne jamais décharger en dessous de/);
+    await userEvent.clear(floor);
+    await userEvent.type(floor, "30");
+    await save(sheet);
+
+    await saved();
+    const devices = Object.fromEntries(sent[0].devices.map((d) => [d.key, d]));
+    expect(devices.cellar.battery?.floor_percent).toBe(30);
+    expect(devices.cellar.default).toBe(false);
+    expect(devices.garage.battery ?? null).toBeNull(); // suit toujours les réglages de la maison
+    expect(sent[0].battery ?? null).toBeNull();
+    expect(
+      await screen.findByRole("button", { name: /Batterie.*réglages propres pour 1 batterie\(s\)/ }),
+    ).toBeInTheDocument();
+  });
+
+  it("ne propose pas de réglages par batterie quand il n'y en a qu'une, ni la phase en monophasé", async () => {
+    const home: HomeModel = {
+      devices: [...HOME.devices, { key: "battery", kind: "Battery", name: "Batterie", sensors: [], capacity_kwh: 5 }],
+    };
+    mockApi(undefined, { home });
+    renderHome();
+
+    const sheet = await openSheet("L'essentiel", /^Batterie/, "Batterie");
+    await within(sheet).findByLabelText(/Puissance de charge maximale/);
+    expect(within(sheet).queryByText("Réglages par batterie")).toBeNull();
+    expect(within(sheet).queryByLabelText("La batterie compense le total des trois phases")).toBeNull();
+  });
+
+  it("demande en triphasé ce que la batterie compense", async () => {
+    const home: HomeModel = {
+      devices: [...HOME.devices, { key: "battery", kind: "Battery", name: "Batterie", sensors: [], capacity_kwh: 5 }],
+      supply: "ThreePhaseSupply",
+    };
+    const [sent, put] = recording();
+    mockApi(put, { home });
+    renderHome();
+
+    const sheet = await openSheet("L'essentiel", /^Batterie/, "Batterie");
+    await userEvent.click(await within(sheet).findByLabelText("La batterie compense le total des trois phases"));
+    await save(sheet);
+
+    await saved();
+    expect(sent[0].battery?.all_phases).toBe(true);
+  });
+
   it("règle une plage où le plancher de la batterie est plus haut", async () => {
     const home: HomeModel = {
       devices: [...HOME.devices, { key: "battery", kind: "Battery", name: "Batterie", sensors: [], capacity_kwh: 5 }],
@@ -318,7 +384,7 @@ describe("réglages de Ma maison", () => {
     renderHome();
 
     const sheet = await openSheet("L'essentiel", /^Batterie/, "Batterie");
-    await userEvent.click(within(sheet).getByRole("button", { name: "Ajouter une plage où le plancher est plus haut" }));
+    await userEvent.click(await within(sheet).findByRole("button", { name: "Ajouter une plage où le plancher est plus haut" }));
     const percent = within(sheet).getByRole("listitem", { name: "Plage de plancher 1" }).querySelector("input")!;
     await userEvent.tripleClick(percent);
     await userEvent.keyboard("30");

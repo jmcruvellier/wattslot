@@ -34,6 +34,8 @@ export function Essentials({ data, onOpen }: { data: HomeData; onOpen: (sheet: E
   const batteries = devices.filter((device) => device.kind === "Battery");
   const capacity = batteries.reduce((sum, device) => sum + (device.capacity_kwh ?? 0), 0);
   const battery = configuration.battery ?? DEFAULT_BATTERY;
+  // Batteries qui ont leurs propres réglages, à la place de ceux de la maison.
+  const own = configuration.devices.filter((s) => s.battery != null).length;
 
   const panelsText = () => {
     if (arrays.length === 0) return t("home_summary.panels.undescribed");
@@ -79,6 +81,7 @@ export function Essentials({ data, onOpen }: { data: HomeData; onOpen: (sheet: E
             battery.full_charge_every_days
               ? t("home_summary.battery.full_charge", { days: battery.full_charge_every_days })
               : null,
+            own > 0 ? t("home_summary.battery.own", { count: own }) : null,
           ]
             .filter(Boolean)
             .join(" · ")}

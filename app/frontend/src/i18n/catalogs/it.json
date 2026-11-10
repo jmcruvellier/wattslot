@@ -862,7 +862,8 @@
       "objective_co2_without_entity": "Obiettivo: la CO₂ richiede un sensore di intensità di carbonio della rete.",
       "import_format": "Questo file non è un'esportazione di casa di WattSlot.",
       "import_version": "Versione del file non supportata: {reason}.",
-      "import_invalid": "File non valido ({field}): {reason}."
+      "import_invalid": "File non valido ({field}): {reason}.",
+      "battery_not_used": "{device}: impostazioni della batteria su un apparecchio che non è una batteria."
     },
     "import_rules": "Importa le regole delle attività di Home Assistant",
     "rules": {
@@ -1026,7 +1027,14 @@
     "not_below": "non sotto",
     "remove_range": "Rimuovi",
     "add_range": "Aggiungi una fascia con minimo più alto",
-    "floor_hint": "La batteria non scende mai sotto: una riserva per la notte o per un'interruzione di corrente."
+    "floor_hint": "La batteria non scende mai sotto: una riserva per la notte o per un'interruzione di corrente.",
+    "own_title": "Impostazioni per batteria",
+    "own_help": "Ogni batteria segue le impostazioni qui sopra, a meno che non le si diano le sue. Il calcolo vede sempre le batterie come una sola: potenze sommate, soglia minima secondo la capacità di ciascuna.",
+    "own_start": "Dare a questa batteria le sue impostazioni",
+    "own_intro": "Impostazioni proprie di questa batteria da {capacity} kWh.",
+    "own_reset": "Tornare alle impostazioni della casa",
+    "all_phases": "La batteria compensa il totale delle tre fasi",
+    "all_phases_hint": "Selezionare se segue un contatore trifase; altrimenti compensa solo la sua fase. La pianificazione non ne tiene ancora conto."
   },
   "objective": {
     "title": "Obiettivo del calcolo",
@@ -1602,7 +1610,8 @@
     "battery": {
       "title": "Batteria",
       "floor": "{kwh} kWh, mai sotto il {pct}%",
-      "full_charge": "piena almeno ogni {days} giorni"
+      "full_charge": "piena almeno ogni {days} giorni",
+      "own": "impostazioni proprie per {count} batteria/e"
     },
     "placed": "Collocati nel momento migliore",
     "followed": "Solo seguiti",

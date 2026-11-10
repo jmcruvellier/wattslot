@@ -148,6 +148,7 @@ def test_configuration_api(tmp_path: Path) -> None:
             "after": None,
             "max_delay_days": None,
             "recurrence": None,
+            "battery": None,
         }
         assert api.get("/api/configuration").json() == saved
 

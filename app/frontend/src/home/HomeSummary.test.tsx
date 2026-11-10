@@ -178,7 +178,8 @@ describe("Ma maison en onglets", () => {
 
     await userEvent.click(screen.getByRole("button", { name: /Batterie/ }));
     const sheet = screen.getByRole("dialog", { name: "Batterie" });
-    expect(within(sheet).getByLabelText(/Ne jamais décharger en dessous de/)).toHaveValue("12");
+    // L'éditeur de la batterie est chargé à l'ouverture de la feuille.
+    expect(await within(sheet).findByLabelText(/Ne jamais décharger en dessous de/)).toHaveValue("12");
     await userEvent.click(within(sheet).getByRole("button", { name: "Fermer" }));
     expect(screen.queryByRole("dialog")).toBeNull();
   });

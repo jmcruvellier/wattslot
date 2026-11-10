@@ -747,7 +747,7 @@ def get_home(state: Any) -> dict[str, Any]:
     home = home_model.load(state.graph)
     saved = configuration.load(state.graph)
     settings = {d.key: d for d in configuration.effective(home, saved).devices}
-    battery = configuration.battery_of(saved)
+    battery = configuration.battery_of(saved, home)
     tariff = configuration.tariff_of(saved)
     lang = language(state)
     texts = catalog(lang)

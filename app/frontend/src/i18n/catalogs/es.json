@@ -862,7 +862,8 @@
       "objective_co2_without_entity": "Objetivo: el CO₂ necesita un sensor de intensidad de carbono de la red.",
       "import_format": "Este archivo no es una exportación de casa de WattSlot.",
       "import_version": "Versión de archivo no compatible: {reason}.",
-      "import_invalid": "Archivo no válido ({field}): {reason}."
+      "import_invalid": "Archivo no válido ({field}): {reason}.",
+      "battery_not_used": "{device}: ajustes de batería en un equipo que no es una batería."
     },
     "import_rules": "Importar las reglas de las tareas de Home Assistant",
     "rules": {
@@ -1026,7 +1027,14 @@
     "not_below": "no por debajo de",
     "remove_range": "Quitar",
     "add_range": "Añadir una franja con mínimo más alto",
-    "floor_hint": "La batería nunca baja de ahí: una reserva para la noche o un corte de luz."
+    "floor_hint": "La batería nunca baja de ahí: una reserva para la noche o un corte de luz.",
+    "own_title": "Ajustes por batería",
+    "own_help": "Cada batería sigue los ajustes de arriba, salvo que le dé los suyos. El cálculo sigue viendo sus baterías como una sola: potencias sumadas, mínimo según la capacidad de cada una.",
+    "own_start": "Dar a esta batería sus propios ajustes",
+    "own_intro": "Ajustes propios de esta batería de {capacity} kWh.",
+    "own_reset": "Volver a los ajustes de la casa",
+    "all_phases": "La batería compensa el total de las tres fases",
+    "all_phases_hint": "Márquelo si sigue un contador trifásico; si no, solo compensa su fase. La planificación aún no lo tiene en cuenta."
   },
   "objective": {
     "title": "Objetivo del cálculo",
@@ -1602,7 +1610,8 @@
     "battery": {
       "title": "Batería",
       "floor": "{kwh} kWh, nunca por debajo del {pct} %",
-      "full_charge": "llena al menos cada {days} días"
+      "full_charge": "llena al menos cada {days} días",
+      "own": "ajustes propios para {count} batería(s)"
     },
     "placed": "Situados en el mejor momento",
     "followed": "Solo seguidos",

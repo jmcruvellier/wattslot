@@ -22,6 +22,7 @@ from pyoxigraph import Literal, NamedNode, Triple
 
 from wattslot.battery_settings import DEFAULT as DEFAULT_BATTERY
 from wattslot.battery_settings import BatterySettings
+from wattslot.battery_settings import combine as combine_batteries
 from wattslot.battery_settings import load as load_battery
 from wattslot.battery_settings import problems as battery_problems
 from wattslot.battery_settings import to_triples as battery_triples
@@ -124,13 +125,17 @@ class DeviceSettings(BaseModel):
     max_delay_days: int | None = Field(default=None, ge=0, le=14)
     # Cycle à démarrer (lot 3.5) : récurrence ; les tâches récurrentes de HA sont alors ignorées.
     recurrence: Recurrence | None = None
+    # Batterie : ses propres réglages ; aucun : ceux de la maison (``Configuration.battery``).
+    battery: BatterySettings | None = None
 
 
 class Configuration(BaseModel):
     version: int = VERSION
     devices: list[DeviceSettings] = []
     tariff: Tariff | None = None  # aucun : tarif par défaut (``tariff.DEFAULT``)
-    battery: BatterySettings | None = None  # aucun : réglages par défaut (lot 3.3)
+    # Réglages de la batterie (lot 3.3) : ceux de toutes les batteries qui n'ont pas les
+    # leurs (``DeviceSettings.battery``) ; aucun : réglages par défaut.
+    battery: BatterySettings | None = None
     # Objectif du calcul (lot 3.6) ; aucun : le réglage du calcul (coût par défaut).
     objective: ObjectiveSettings | None = None
 
@@ -187,11 +192,24 @@ def keys_with(
     }
 
 
-def battery_of(configuration: Configuration | None) -> BatterySettings:
-    """Réglages de la batterie, ou ceux par défaut s'ils ne sont pas configurés."""
-    if configuration is None or configuration.battery is None:
+def battery_of(
+    configuration: Configuration | None, home: HomeModel | None = None
+) -> BatterySettings:
+    """Réglages de la batterie que voit le calcul : ceux de la maison (par défaut s'ils ne sont
+    pas configurés), ou, avec ``home``, ceux de ses batteries réunis quand certaines ont les
+    leurs (``battery_settings.combine``)."""
+    if configuration is None:
         return DEFAULT_BATTERY
-    return configuration.battery
+    house = configuration.battery or DEFAULT_BATTERY
+    own = {d.key: d.battery for d in configuration.devices if d.battery is not None}
+    if home is None or not own:
+        return house
+    parts = [
+        (device.capacity_kwh, own.get(device.key, house))
+        for device in home.devices
+        if device.kind is DeviceKind.BATTERY and device.capacity_kwh
+    ]
+    return combine_batteries(parts) if parts else house
 
 
 def tariff_of(configuration: Configuration | None) -> Tariff:
@@ -273,6 +291,13 @@ def validate(home: HomeModel, configuration: Configuration) -> list[Issue]:
             ]
         if settings.max_delay_days is not None and settings.behavior is not Behavior.CYCLE:
             issues.append(Issue(code="delay_not_used", device=settings.key))
+        if settings.battery is not None:
+            if settings.behavior is not Behavior.STORAGE:
+                issues.append(Issue(code="battery_not_used", device=settings.key))
+            issues += [
+                Issue(code=code, device=settings.key, params=params)
+                for code, params in battery_problems(settings.battery)
+            ]
         if settings.runtime is not None:
             if settings.behavior is not Behavior.RUNTIME:
                 issues.append(Issue(code="runtime_not_used", device=settings.key))
@@ -338,6 +363,8 @@ def to_triples(configuration: Configuration) -> list[Triple]:
         ]
         if settings.runtime is not None:
             triples += runtime_triples(node, settings.runtime)
+        if settings.battery is not None:
+            triples += battery_triples(node, settings.battery, own=True)
         if settings.panels is not None:
             triples += panels_triples(node, settings.panels)
         if settings.energy is not None:
@@ -397,6 +424,9 @@ def load(graph: GraphStore) -> Configuration:
             after=row.get("after"),
             recurrence=load_recurrence(graph, GRAPH_CONFIGURATION, row["settings"], VOCAB),
             max_delay_days=int(row["delay"]) if "delay" in row else None,
+            battery=load_battery(
+                graph, GRAPH_CONFIGURATION, NamedNode(row["settings"]), VOCAB, own=True
+            ),
         )
         for row in graph.select(
             f"""

@@ -184,5 +184,6 @@
   "problem.connection_error.unreachable": "Home Assistant ne répond pas à l'adresse indiquée : vérifiez qu'il fonctionne et que l'adresse est correcte.",
   "problem.connection_error.token_refused": "Home Assistant refuse le jeton d'accès : reconnectez l'application (ou vérifiez le jeton dans le fichier .env si la connexion y est réglée).",
   "problem.connection_error.unknown": "La connexion à Home Assistant a échoué.",
-  "problem.none": "Rien à signaler : tout fonctionne."
+  "problem.none": "Rien à signaler : tout fonctionne.",
+  "problem.configuration_issue.battery_not_used": "{device} : réglages de batterie pour un équipement qui n'en est pas une."
 }

@@ -862,7 +862,8 @@
       "objective_co2_without_entity": "Doel: CO₂ vereist een sensor voor de koolstofintensiteit van het net.",
       "import_format": "Dit bestand is geen export van een huis van WattSlot.",
       "import_version": "Niet-ondersteunde bestandsversie: {reason}.",
-      "import_invalid": "Ongeldig bestand ({field}): {reason}."
+      "import_invalid": "Ongeldig bestand ({field}): {reason}.",
+      "battery_not_used": "{device}: batterij-instellingen op een toestel dat geen batterij is."
     },
     "import_rules": "De regels van de Home Assistant-taken overnemen",
     "rules": {
@@ -1026,7 +1027,14 @@
     "not_below": "niet onder",
     "remove_range": "Verwijderen",
     "add_range": "Een periode met hogere ondergrens toevoegen",
-    "floor_hint": "De batterij gaat er nooit onder: een reserve voor de nacht of een stroomstoring."
+    "floor_hint": "De batterij gaat er nooit onder: een reserve voor de nacht of een stroomstoring.",
+    "own_title": "Instellingen per batterij",
+    "own_help": "Elke batterij volgt de instellingen hierboven, tenzij u ze eigen instellingen geeft. De berekening ziet uw batterijen nog steeds als één: vermogens opgeteld, ondergrens volgens de capaciteit van elke batterij.",
+    "own_start": "Deze batterij eigen instellingen geven",
+    "own_intro": "Eigen instellingen van deze batterij van {capacity} kWh.",
+    "own_reset": "Terug naar de instellingen van het huis",
+    "all_phases": "De batterij compenseert het totaal van de drie fasen",
+    "all_phases_hint": "Vink aan als ze een driefasige meter volgt; anders compenseert ze alleen haar eigen fase. De planning houdt er nog geen rekening mee."
   },
   "objective": {
     "title": "Doel van de berekening",
@@ -1602,7 +1610,8 @@
     "battery": {
       "title": "Batterij",
       "floor": "{kwh} kWh, nooit onder {pct}%",
-      "full_charge": "minstens elke {days} dagen vol"
+      "full_charge": "minstens elke {days} dagen vol",
+      "own": "eigen instellingen voor {count} batterij(en)"
     },
     "placed": "Op het beste moment ingepland",
     "followed": "Alleen gevolgd",

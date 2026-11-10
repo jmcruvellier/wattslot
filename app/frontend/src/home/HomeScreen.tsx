@@ -7,7 +7,6 @@ import Sheet from "../ui/Sheet";
 import StateMessage from "../ui/StateMessage";
 import Button from "../ui/Button";
 import AddDevice from "./AddDevice";
-import BatteryEditor from "./BatteryEditor";
 import type { Configuration, DeviceSettings as DeviceSettingsType, TaskRules } from "./configuration";
 import DeviceSheet from "./DeviceSheet";
 import { buildDraft, loadHome, toModel, type DraftDevice, type LoadResult } from "./draft";
@@ -28,6 +27,8 @@ const HomeGraph = lazy(() => import("./HomeGraph"));
 const DataTab = lazy(() => import("./DataTab"));
 // Feuille « Mon raccordement », rarement ouverte : chargée à son ouverture.
 const SupplySheet = lazy(() => import("./SupplySheet"));
+// Feuille « Batterie » : chargée à son ouverture.
+const BatteriesEditor = lazy(() => import("./BatteriesEditor"));
 
 // Onglet ouvert de la page principale, gardé dans le navigateur comme celui de Planning.
 export { TAB_KEY } from "./tab";
@@ -409,15 +410,18 @@ function HomeSheet({
           <TariffEditor tariff={draft.tariff ?? null} onChange={(tariff) => change({ ...draft, tariff })} />
         </div>
       ));
-    case "battery": {
+    case "battery":
       // Batteries de la maison, vues comme une seule par le calcul.
-      const capacity = devices.filter((d) => d.kind === "Battery").reduce((sum, d) => sum + (d.capacity_kwh ?? 0), 0);
       return sheet(t("battery.title"), (draft, change) => (
-        <div className="expert-form">
-          <BatteryEditor battery={draft.battery ?? null} capacityKwh={capacity} onChange={(battery) => change({ ...draft, battery })} />
-        </div>
+        <Suspense fallback={null}>
+          <BatteriesEditor
+            draft={draft}
+            devices={devices}
+            threePhase={data.supply === "ThreePhaseSupply"}
+            onChange={change}
+          />
+        </Suspense>
       ));
-    }
     case "solar":
       // Une installation ou plusieurs : les panneaux de chacune.
       return sheet(t("home_summary.panels.title"), (draft, change) => (

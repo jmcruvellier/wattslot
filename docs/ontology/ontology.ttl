@@ -239,6 +239,11 @@ wattslot:activeToHour a owl:DatatypeProperty ;
 	rdfs:domain wattslot:BatterySettings ;
 	rdfs:label "active range end (excluded)"@en , "fin de la plage active (exclue)"@fr ;
 	rdfs:range xsd:integer .
+wattslot:allPhases a owl:DatatypeProperty ;
+	rdfs:comment "Maison en triphasé : la batterie suit un compteur triphasé plutôt que sa seule phase."@fr ;
+	rdfs:domain wattslot:BatterySettings ;
+	rdfs:label "compense le total des trois phases"@fr , "offsets the total of the three phases"@en ;
+	rdfs:range xsd:boolean .
 wattslot:arrayIndex a owl:DatatypeProperty ;
 	rdfs:domain wattslot:PanelArray ;
 	rdfs:label "array index"@en , "rang du champ"@fr ;
@@ -398,6 +403,7 @@ wattslot:hard a owl:DatatypeProperty ;
 	rdfs:label "dure (jamais violée)"@fr , "hard (never violated)"@en ;
 	rdfs:range xsd:boolean .
 wattslot:hasBatterySettings a owl:ObjectProperty ;
+	rdfs:comment "Réglages de toutes les batteries de la maison qui n'ont pas les leurs."@fr ;
 	rdfs:domain wattslot:Configuration ;
 	rdfs:label "a pour réglages de batterie"@fr , "has battery settings"@en ;
 	rdfs:range wattslot:BatterySettings .
@@ -429,6 +435,11 @@ wattslot:hasObjective a owl:ObjectProperty ;
 	rdfs:domain wattslot:Configuration ;
 	rdfs:label "a pour objectif"@fr , "has objective"@en ;
 	rdfs:range wattslot:Objective .
+wattslot:hasOwnBatterySettings a owl:ObjectProperty ;
+	rdfs:comment "Réglages d'une batterie, à la place de ceux de la maison."@fr ;
+	rdfs:domain wattslot:DeviceSettings ;
+	rdfs:label "a pour réglages propres de batterie"@fr , "has own battery settings"@en ;
+	rdfs:range wattslot:BatterySettings .
 wattslot:hasPanelArray a owl:ObjectProperty ;
 	rdfs:domain wattslot:SolarPanels ;
 	rdfs:label "a pour champ"@fr , "has array"@en ;

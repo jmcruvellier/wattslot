@@ -165,7 +165,15 @@
     rdfs:label "Réglages de la batterie"@fr, "Battery settings"@en .
 <#hasBatterySettings> a owl:ObjectProperty ; rdfs:domain <#Configuration> ;
     rdfs:range <#BatterySettings> ;
-    rdfs:label "a pour réglages de batterie"@fr, "has battery settings"@en .
+    rdfs:label "a pour réglages de batterie"@fr, "has battery settings"@en ;
+    rdfs:comment "Réglages de toutes les batteries de la maison qui n'ont pas les leurs."@fr .
+<#hasOwnBatterySettings> a owl:ObjectProperty ; rdfs:domain <#DeviceSettings> ;
+    rdfs:range <#BatterySettings> ;
+    rdfs:label "a pour réglages propres de batterie"@fr, "has own battery settings"@en ;
+    rdfs:comment "Réglages d'une batterie, à la place de ceux de la maison."@fr .
+<#allPhases> a owl:DatatypeProperty ; rdfs:domain <#BatterySettings> ; rdfs:range xsd:boolean ;
+    rdfs:label "compense le total des trois phases"@fr, "offsets the total of the three phases"@en ;
+    rdfs:comment "Maison en triphasé : la batterie suit un compteur triphasé plutôt que sa seule phase."@fr .
 <#chargeMaxW> a owl:DatatypeProperty ; rdfs:domain <#BatterySettings> ; rdfs:range xsd:double ;
     rdfs:label "puissance de charge maximale (W)"@fr, "maximum charge power (W)"@en .
 <#dischargeMaxW> a owl:DatatypeProperty ; rdfs:domain <#BatterySettings> ; rdfs:range xsd:double ;

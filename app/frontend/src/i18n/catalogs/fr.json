@@ -862,7 +862,8 @@
       "objective_co2_without_entity": "Objectif : le CO₂ demande un capteur d'intensité carbone du réseau.",
       "import_format": "Ce fichier n'est pas un export de la maison d'WattSlot.",
       "import_version": "Version du fichier non prise en charge : {reason}.",
-      "import_invalid": "Fichier invalide ({field}) : {reason}."
+      "import_invalid": "Fichier invalide ({field}) : {reason}.",
+      "battery_not_used": "{device} : réglages de batterie pour un équipement qui n'en est pas une."
     },
     "import_rules": "Reprendre les règles des tâches de Home Assistant",
     "rules": {
@@ -1026,7 +1027,14 @@
     "not_below": "pas en dessous de",
     "remove_range": "Retirer",
     "add_range": "Ajouter une plage où le plancher est plus haut",
-    "floor_hint": "La batterie ne descend jamais en dessous : une réserve pour la nuit ou une coupure."
+    "floor_hint": "La batterie ne descend jamais en dessous : une réserve pour la nuit ou une coupure.",
+    "own_title": "Réglages par batterie",
+    "own_help": "Chaque batterie suit les réglages ci-dessus, sauf si vous lui donnez les siens. Le calcul voit toujours vos batteries comme une seule : puissances additionnées, plancher selon la capacité de chacune.",
+    "own_start": "Donner ses propres réglages à cette batterie",
+    "own_intro": "Réglages propres à cette batterie de {capacity} kWh.",
+    "own_reset": "Reprendre les réglages de la maison",
+    "all_phases": "La batterie compense le total des trois phases",
+    "all_phases_hint": "Cochez si elle suit un compteur triphasé ; sinon elle ne compense que sa phase. Le planning n'en tient pas encore compte."
   },
   "objective": {
     "title": "Objectif du calcul",
@@ -1602,7 +1610,8 @@
     "battery": {
       "title": "Batterie",
       "floor": "{kwh} kWh, jamais sous {pct} %",
-      "full_charge": "pleine au moins tous les {days} jours"
+      "full_charge": "pleine au moins tous les {days} jours",
+      "own": "réglages propres pour {count} batterie(s)"
     },
     "placed": "Placés au meilleur moment",
     "followed": "Suivis seulement",

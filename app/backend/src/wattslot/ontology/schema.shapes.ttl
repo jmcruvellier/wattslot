@@ -101,6 +101,9 @@
 <#RuntimeUsedShape> a sh:NodeShape ;
     sh:targetSubjectsOf <#hasRuntimeSettings> ;
     sh:property [ sh:path <#behavior> ; sh:hasValue <#RuntimeBehavior> ; <#issueCode> "runtime_not_used" ] .
+<#BatteryUsedShape> a sh:NodeShape ;
+    sh:targetSubjectsOf <#hasOwnBatterySettings> ;
+    sh:property [ sh:path <#behavior> ; sh:hasValue <#StorageBehavior> ; <#issueCode> "battery_not_used" ] .
 <#PanelsUsedShape> a sh:NodeShape ;
     sh:targetSubjectsOf <#hasSolarPanels> ;
     sh:property [

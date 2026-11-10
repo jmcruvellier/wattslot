@@ -184,5 +184,6 @@
   "problem.connection_error.unreachable": "Home Assistant antwortet unter der angegebenen Adresse nicht: Prüfen Sie, ob er läuft und ob die Adresse stimmt.",
   "problem.connection_error.token_refused": "Home Assistant lehnt das Zugriffstoken ab: Verbinden Sie die Anwendung erneut (oder prüfen Sie das Token in der .env-Datei, wenn die Verbindung dort festgelegt ist).",
   "problem.connection_error.unknown": "Die Verbindung zu Home Assistant ist fehlgeschlagen.",
-  "problem.none": "Nichts zu melden: Alles funktioniert."
+  "problem.none": "Nichts zu melden: Alles funktioniert.",
+  "problem.configuration_issue.battery_not_used": "{device}: Batterieeinstellungen an einem Gerät, das keine Batterie ist."
 }
