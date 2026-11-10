@@ -381,9 +381,15 @@ def _save_home(graph: GraphStore, model: home_model.HomeModel) -> None:
 
 
 def _keep_types(model: home_model.HomeModel, saved: home_model.HomeModel) -> home_model.HomeModel:
-    """Garde les types propres enregistrés quand la requête ne les porte pas (lot 2t.1)."""
-    if "types" not in model.model_fields_set:
-        model = model.model_copy(update={"types": saved.types})
+    """Garde ce qui est enregistré quand la requête ne le porte pas : types propres (lot 2t.1),
+    alimentation de la maison et phase des équipements."""
+    kept = {
+        name: getattr(saved, name)
+        for name in ("types", "supply", "meter_sums_phases")
+        if name not in model.model_fields_set
+    }
+    if kept:
+        model = model.model_copy(update=kept)
     before = {d.key: d for d in saved.devices}
     devices = []
     for device in model.devices:
@@ -394,6 +400,8 @@ def _keep_types(model: home_model.HomeModel, saved: home_model.HomeModel) -> hom
             and old.kind is device.kind
         ):
             device = device.model_copy(update={"custom_type": old.custom_type})
+        if "phase" not in device.model_fields_set and old is not None:
+            device = device.model_copy(update={"phase": old.phase})
         devices.append(device)
     return model.model_copy(update={"devices": devices})
 

@@ -138,6 +138,15 @@ wattslot:OtherLoad a owl:Class ;
 	rdfs:subClassOf wattslot:Appliance .
 wattslot:PanelArray a owl:Class ;
 	rdfs:label "Champ de panneaux"@fr , "Panel array"@en .
+wattslot:PhaseConnection a owl:Class ;
+	rdfs:comment "Phase d'une maison en triphasé sur laquelle un équipement est branché, ou les trois."@fr ;
+	rdfs:label "Branchement sur les phases"@fr , "Phase connection"@en .
+wattslot:PhaseL1 a wattslot:PhaseConnection ;
+	rdfs:label "Phase 1"@en , "Phase 1"@fr .
+wattslot:PhaseL2 a wattslot:PhaseConnection ;
+	rdfs:label "Phase 2"@en , "Phase 2"@fr .
+wattslot:PhaseL3 a wattslot:PhaseConnection ;
+	rdfs:label "Phase 3"@en , "Phase 3"@fr .
 wattslot:PoolPump a owl:Class ;
 	rdfs:label "Filtration de piscine"@fr , "Pool pump"@en ;
 	rdfs:subClassOf wattslot:Appliance .
@@ -173,6 +182,8 @@ wattslot:RuntimeSettings a owl:Class ;
 wattslot:Sensor a owl:Class ;
 	rdfs:label "Capteur"@fr , "Sensor"@en ;
 	rdfs:subClassOf sosa:Sensor .
+wattslot:SinglePhaseSupply a wattslot:Supply ;
+	rdfs:label "Monophasé"@fr , "Single-phase"@en .
 wattslot:SingleTariff a owl:Class ;
 	rdfs:label "Prix unique"@fr , "Single price"@en ;
 	rdfs:subClassOf wattslot:Tariff .
@@ -190,11 +201,17 @@ wattslot:StateOfCharge a wattslot:Role ;
 	wattslot:quantity wattslot:ChargeLevel .
 wattslot:StorageBehavior a wattslot:Behavior ;
 	rdfs:label "Stockage"@fr , "Storage"@en .
+wattslot:Supply a owl:Class ;
+	rdfs:label "Alimentation par le réseau"@fr , "Grid supply"@en .
 wattslot:Tariff a owl:Class ;
 	rdfs:label "Electricity tariff"@en , "Tarif de l'électricité"@fr .
 wattslot:Temperature a owl:Class ;
 	rdfs:label "Temperature"@en , "Température"@fr ;
 	rdfs:subClassOf wattslot:Quantity .
+wattslot:ThreePhaseSupply a wattslot:Supply ;
+	rdfs:label "Three-phase"@en , "Triphasé"@fr .
+wattslot:ThreePhases a wattslot:PhaseConnection ;
+	rdfs:label "All three phases"@en , "Les trois phases"@fr .
 wattslot:TimeConstraint a owl:Class ;
 	rdfs:label "Contrainte horaire"@fr , "Time constraint"@en .
 wattslot:TimeOfUseTariff a owl:Class ;
@@ -498,6 +515,11 @@ wattslot:mean a owl:DatatypeProperty ;
 	rdfs:domain wattslot:Aggregate ;
 	rdfs:label "moyenne pondérée par la durée"@fr , "time-weighted mean"@en ;
 	rdfs:range xsd:double .
+wattslot:meterSumsPhases a owl:DatatypeProperty ;
+	rdfs:comment "L'injection sur une phase compense le soutirage sur une autre ; sinon chaque phase est comptée à part."@fr ;
+	rdfs:domain wattslot:Home ;
+	rdfs:label "le compteur additionne les phases"@fr , "the meter sums the phases"@en ;
+	rdfs:range xsd:boolean .
 wattslot:minimumHours a owl:ObjectProperty ;
 	rdfs:domain wattslot:RuntimeSettings ;
 	rdfs:label "heures minimales par saison"@fr , "minimum hours per season"@en .
@@ -528,6 +550,10 @@ wattslot:period a owl:DatatypeProperty ;
 	rdfs:domain wattslot:Aggregate ;
 	rdfs:label "period (ISO 8601 duration)"@en , "période (durée ISO 8601)"@fr ;
 	rdfs:range xsd:string .
+wattslot:phase a owl:ObjectProperty ;
+	rdfs:domain wattslot:Device ;
+	rdfs:label "branché sur"@fr , "connected to phase"@en ;
+	rdfs:range wattslot:PhaseConnection .
 wattslot:planned a owl:DatatypeProperty ;
 	rdfs:domain wattslot:DeviceSettings ;
 	rdfs:label "planned by the engine"@en , "pris en compte par le calcul"@fr ;
@@ -603,6 +629,10 @@ wattslot:subscriptionEurMonth a owl:DatatypeProperty ;
 	rdfs:domain wattslot:Tariff ;
 	rdfs:label "abonnement mensuel (€)"@fr , "monthly subscription (€)"@en ;
 	rdfs:range xsd:double .
+wattslot:supply a owl:ObjectProperty ;
+	rdfs:domain wattslot:Home ;
+	rdfs:label "alimentation"@fr , "supply"@en ;
+	rdfs:range wattslot:Supply .
 wattslot:tiltDegrees a owl:DatatypeProperty ;
 	rdfs:domain wattslot:PanelArray ;
 	rdfs:label "inclinaison (°)"@fr , "tilt (°)"@en ;
@@ -621,7 +651,7 @@ wattslot:weekday a owl:DatatypeProperty ;
 <https://w3id.org/wattslot/ontology/library/home-energy> a owl:Ontology ;
 	rdfs:label "Home energy"@en , "Énergie domestique"@fr ;
 	owl:imports sosa: , ssn: , saref: , s4ener: ;
-	owl:versionInfo "0.2" .
+	owl:versionInfo "0.3" .
 <https://w3id.org/wattslot/ontology/schema> a owl:Ontology ;
 	rdfs:label "Schéma de WattSlot"@fr , "WattSlot schema"@en ;
 	owl:imports <https://w3id.org/wattslot/ontology/library/home-energy> ;

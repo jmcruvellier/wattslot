@@ -105,12 +105,36 @@ describe("toModel", () => {
           key: "battery-1",
           kind: "Battery",
           custom_type: null,
+          phase: null,
           name: "Battery",
           capacity_kwh: 5,
           sensors: [{ entity_id: "sensor.battery_soc", role: "StateOfCharge", resets_daily: false }],
         },
       ],
     });
+  });
+});
+
+describe("phase", () => {
+  const saved: HomeModel = {
+    devices: [
+      { key: "battery-1", kind: "Battery", name: "Battery", capacity_kwh: 5, phase: "PhaseL2", sensors: [] },
+      { key: "grid", kind: "GridConnection", name: "Grid", capacity_kwh: null, phase: "PhaseL1", sensors: [] },
+    ],
+  };
+
+  it("garde la phase enregistrée, sauf celle du raccordement au réseau", () => {
+    const draft = buildDraft(PROPOSALS, saved);
+
+    expect(draft.find((d) => d.key === "battery-1")?.phase).toBe("PhaseL2");
+    const phases = Object.fromEntries(toModel(draft).devices.map((d) => [d.key, d.phase]));
+    expect(phases).toEqual({ "battery-1": "PhaseL2", grid: null });
+  });
+
+  it("garde la phase choisie quand les propositions sont relues", () => {
+    const edited = buildDraft(PROPOSALS, saved).map((d) => ({ ...d, phase: "PhaseL3" as const }));
+
+    expect(mergeDraft(edited, buildDraft(PROPOSALS, saved)).every((d) => d.phase === "PhaseL3")).toBe(true);
   });
 });
 

@@ -5,6 +5,7 @@ Enregistré en RDF dans le graphe de la maison (décision 12), avec la biblioth�
 vivent que dans le magasin de l'installation, jamais dans le dépôt (décision 2).
 """
 
+from enum import StrEnum
 from importlib import resources
 
 from pydantic import BaseModel
@@ -34,6 +35,23 @@ def vocab(name: str) -> NamedNode:
     return NamedNode(f"{VOCAB}{name}")
 
 
+class Supply(StrEnum):
+    """Alimentation de la maison par le réseau."""
+
+    SINGLE = "SinglePhaseSupply"
+    THREE = "ThreePhaseSupply"
+
+
+class Phase(StrEnum):
+    """Branchement d'un équipement dans une maison en triphasé : une phase, ou les trois
+    (équipement triphasé, réparti à parts égales)."""
+
+    L1 = "PhaseL1"
+    L2 = "PhaseL2"
+    L3 = "PhaseL3"
+    ALL = "ThreePhases"
+
+
 class HomeSensor(BaseModel):
     entity_id: str
     role: Role
@@ -49,6 +67,9 @@ class HomeDevice(BaseModel):
     # Type propre (clé d'un ``HomeModel.types``), sous-type de ``kind`` ; ``kind`` reste le type
     # de la bibliothèque, celui que lit le calcul.
     custom_type: str | None = None
+    # Branchement en triphasé ; ``None`` : inconnu. Sans objet pour le raccordement au réseau
+    # (jamais enregistré) et dans une maison en monophasé, où il est gardé sans être lu.
+    phase: Phase | None = None
 
 
 class DeviceType(BaseModel):
@@ -63,6 +84,10 @@ class DeviceType(BaseModel):
 class HomeModel(BaseModel):
     devices: list[HomeDevice] = []
     types: list[DeviceType] = []  # types propres à l'installation
+    supply: Supply = Supply.SINGLE
+    # Le compteur compte la somme des trois phases : l'injection sur l'une compense le soutirage
+    # sur une autre. Sinon, chaque phase est comptée à part. Lu en triphasé seulement.
+    meter_sums_phases: bool = True
 
 
 # Types de la bibliothèque qui peuvent avoir des sous-types propres : tous sauf le raccordement
@@ -146,7 +171,15 @@ def _type_iri(key: str) -> NamedNode:
 
 
 def to_triples(model: HomeModel) -> list[Triple]:
-    triples = [Triple(HOME_IRI, RDF_TYPE, vocab("Home"))]
+    triples = [
+        Triple(HOME_IRI, RDF_TYPE, vocab("Home")),
+        Triple(HOME_IRI, vocab("supply"), vocab(model.supply)),
+        Triple(
+            HOME_IRI,
+            vocab("meterSumsPhases"),
+            Literal(str(model.meter_sums_phases).lower(), datatype=XSD_BOOLEAN),
+        ),
+    ]
     for device_type in model.types:
         type_iri = _type_iri(device_type.key)
         triples += [
@@ -165,6 +198,8 @@ def to_triples(model: HomeModel) -> list[Triple]:
         ]
         if device.custom_type is not None:
             triples.append(Triple(device_iri, RDF_TYPE, _type_iri(device.custom_type)))
+        if device.phase is not None and device.kind is not DeviceKind.GRID:
+            triples.append(Triple(device_iri, vocab("phase"), vocab(device.phase)))
         if device.capacity_kwh is not None:
             triples.append(
                 Triple(
@@ -198,13 +233,14 @@ def load(graph: GraphStore) -> HomeModel:
         f"""
         PREFIX wattslot: <{VOCAB}>
         PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-        SELECT ?device ?key ?kind ?name ?capacity ?entity ?role ?daily ?own WHERE {{
+        SELECT ?device ?key ?kind ?name ?capacity ?phase ?entity ?role ?daily ?own WHERE {{
           GRAPH <{GRAPH_HOME}> {{
             <{HOME}> wattslot:hasDevice ?device .
             ?device a ?kind ; rdfs:label ?name ; wattslot:key ?key .
             FILTER (STRSTARTS(STR(?kind), "{VOCAB}"))
             OPTIONAL {{ ?device a ?type . ?type wattslot:typeKey ?own }}
             OPTIONAL {{ ?device wattslot:capacityKwh ?capacity }}
+            OPTIONAL {{ ?device wattslot:phase ?phase }}
             OPTIONAL {{
               ?device wattslot:hasSensor ?sensor .
               ?sensor wattslot:haEntity ?entity ; wattslot:role ?role ;
@@ -226,6 +262,7 @@ def load(graph: GraphStore) -> HomeModel:
                 sensors=[],
                 capacity_kwh=float(capacity) if capacity else None,
                 custom_type=row.get("own"),
+                phase=Phase(row["phase"].removeprefix(VOCAB)) if "phase" in row else None,
             )
         if "entity" in row:
             devices[key].sensors.append(
@@ -237,9 +274,33 @@ def load(graph: GraphStore) -> HomeModel:
             )
     for device in devices.values():
         device.sensors.sort(key=lambda s: (s.role, s.entity_id))
+    supply, meter_sums_phases = _supply(graph)
     return HomeModel(
-        devices=sorted(devices.values(), key=lambda d: (d.kind, d.key)), types=_types(graph)
+        devices=sorted(devices.values(), key=lambda d: (d.kind, d.key)),
+        types=_types(graph),
+        supply=supply,
+        meter_sums_phases=meter_sums_phases,
     )
+
+
+def _supply(graph: GraphStore) -> tuple[Supply, bool]:
+    """(alimentation, compteur qui additionne les phases) ; monophasé pour une maison
+    enregistrée avant ces réglages."""
+    rows = graph.select(
+        f"""
+        PREFIX wattslot: <{VOCAB}>
+        SELECT ?supply ?sums WHERE {{
+          GRAPH <{GRAPH_HOME}> {{
+            OPTIONAL {{ <{HOME}> wattslot:supply ?supply }}
+            OPTIONAL {{ <{HOME}> wattslot:meterSumsPhases ?sums }}
+          }}
+        }}
+        """
+    )
+    for row in rows:
+        supply = Supply(row["supply"].removeprefix(VOCAB)) if "supply" in row else Supply.SINGLE
+        return supply, row.get("sums", "true") == "true"
+    return Supply.SINGLE, True
 
 
 def _types(graph: GraphStore) -> list[DeviceType]:

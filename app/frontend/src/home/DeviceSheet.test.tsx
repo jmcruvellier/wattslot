@@ -317,3 +317,72 @@ describe("fiche d'un appareil", () => {
     expect(screen.queryByRole("button", { name: "Prise 3" })).toBeNull();
   });
 });
+
+describe("maison en triphasé", () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+    vi.spyOn(navigator, "languages", "get").mockReturnValue(["fr-FR"]);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  const THREE_PHASE: HomeModel = { ...HOME, supply: "ThreePhaseSupply", meter_sums_phases: true };
+
+  it("ne demande pas de phase dans une maison en monophasé", async () => {
+    mockApi();
+    renderHome();
+    await openDevices();
+    await userEvent.click(await screen.findByRole("button", { name: /^Lave-linge/ }));
+
+    expect(within(screen.getByRole("dialog", { name: "Lave-linge" })).queryByLabelText("Branché sur")).toBeNull();
+  });
+
+  it("enregistre la phase d'un appareil, pas celle du raccordement au réseau", async () => {
+    const sent = mockApi(THREE_PHASE);
+    renderHome();
+    await openDevices();
+    await userEvent.click(await screen.findByRole("button", { name: /^Lave-linge/ }));
+    const sheet = screen.getByRole("dialog", { name: "Lave-linge" });
+    await userEvent.click(within(sheet).getByText("Capteurs, nom et type"));
+    const phase = within(sheet).getByLabelText("Branché sur");
+    expect(phase).toHaveValue(""); // inconnue tant qu'elle n'est pas réglée
+
+    await userEvent.selectOptions(phase, "Phase 2");
+    await userEvent.click(within(sheet).getByRole("button", { name: "Enregistrer les réglages" }));
+
+    expect(await screen.findByText("Réglages enregistrés.")).toBeInTheDocument();
+    const devices = (sent[0].body as HomeModel).devices;
+    expect(devices.find((d) => d.key === "washer")?.phase).toBe("PhaseL2");
+    expect(devices.find((d) => d.key === "grid")?.phase).toBeNull();
+  });
+
+  it("règle l'alimentation et le compteur depuis « L'essentiel »", async () => {
+    const sent = mockApi();
+    renderHome();
+    await userEvent.click(await screen.findByRole("button", { name: /^Mon raccordement.*Monophasé/ }));
+    const sheet = await screen.findByRole("dialog", { name: "Raccordement au réseau" }); // chargée à la demande
+    expect(within(sheet).queryByLabelText("Mon compteur additionne les trois phases")).toBeNull();
+
+    await userEvent.selectOptions(within(sheet).getByLabelText("Alimentation"), "Triphasé");
+    await userEvent.click(within(sheet).getByLabelText("Mon compteur additionne les trois phases"));
+    await userEvent.click(within(sheet).getByRole("button", { name: "Enregistrer les réglages" }));
+
+    expect(await screen.findByText("Réglages enregistrés.")).toBeInTheDocument();
+    expect(sent.map((s) => s.url)).toEqual(["api/home"]);
+    const body = sent[0].body as HomeModel;
+    expect(body.supply).toBe("ThreePhaseSupply");
+    expect(body.meter_sums_phases).toBe(false);
+    expect(body.devices).toEqual(HOME.devices); // les appareils repartent tels quels
+  });
+
+  it("dit en une ligne comment la maison est raccordée", async () => {
+    mockApi({ ...THREE_PHASE, meter_sums_phases: false });
+    renderHome();
+
+    expect(
+      await screen.findByRole("button", { name: /^Mon raccordement.*Triphasé, chaque phase comptée à part/ }),
+    ).toBeInTheDocument();
+  });
+});

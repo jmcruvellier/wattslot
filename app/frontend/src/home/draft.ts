@@ -12,6 +12,7 @@ import type {
   HomeProposal,
   Issue,
   LibraryType,
+  Phase,
   SensorProposal,
 } from "./types";
 
@@ -39,6 +40,7 @@ export interface DraftDevice {
   name: string;
   capacityKwh: number | null;
   capacitySource: string | null; // entité HA dont la capacité proposée a été lue
+  phase?: Phase | null; // branchement en triphasé ; absent ou null : inconnu
   sensors: DraftSensor[];
   issues: Issue[];
 }
@@ -76,6 +78,7 @@ export function buildDraft(proposals: DeviceProposal[], saved: HomeModel): Draft
       name: existing?.name ?? proposal.name,
       capacityKwh: existing?.capacity_kwh ?? proposal.capacity_kwh,
       capacitySource: proposal.capacity_source ?? null,
+      phase: existing?.phase ?? null,
       sensors: draftSensors(proposal, existing),
       issues: proposal.issues,
     };
@@ -92,6 +95,7 @@ export function buildDraft(proposals: DeviceProposal[], saved: HomeModel): Draft
       name: device.name,
       capacityKwh: device.capacity_kwh,
       capacitySource: null,
+      phase: device.phase ?? null,
       sensors: device.sensors.map((sensor) => ({
         ...sensor,
         name: null,
@@ -121,6 +125,7 @@ export function mergeDraft(previous: DraftDevice[], next: DraftDevice[]): DraftD
       customType: old.customType,
       name: old.name,
       capacityKwh: old.capacityKwh,
+      phase: old.phase,
       sensors: device.sensors.map((sensor) => ({
         ...sensor,
         included: oldSensors.get(sensorKey(sensor)) ?? sensor.included,
@@ -139,6 +144,8 @@ export function toModel(draft: DraftDevice[]): HomeModel {
         custom_type: device.customType,
         name: device.name.trim() || device.key,
         capacity_kwh: device.kind === "Battery" ? device.capacityKwh : null,
+        // Le raccordement au réseau porte les trois phases : il n'en a pas une à lui.
+        phase: device.kind === "GridConnection" ? null : (device.phase ?? null),
         sensors: device.sensors
           .filter((sensor) => sensor.included)
           .map(({ entity_id, role, resets_daily }) => ({ entity_id, role, resets_daily })),

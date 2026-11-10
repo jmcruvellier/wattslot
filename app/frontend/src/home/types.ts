@@ -67,7 +67,13 @@ export interface HomeDevice {
   sensors: HomeSensor[];
   capacity_kwh: number | null;
   custom_type?: string | null; // type propre (lot 2t.1), sous-type de kind
+  phase?: Phase | null; // branchement en triphasé ; null : inconnu
 }
+
+// Alimentation de la maison et branchement d'un équipement (backend : home_model.Supply, Phase).
+export type Supply = "SinglePhaseSupply" | "ThreePhaseSupply";
+export const PHASES = ["PhaseL1", "PhaseL2", "PhaseL3", "ThreePhases"] as const;
+export type Phase = (typeof PHASES)[number];
 
 // Type d'équipement propre à l'installation (backend : home_model.DeviceType).
 export interface DeviceType {
@@ -79,6 +85,9 @@ export interface DeviceType {
 export interface HomeModel {
   devices: HomeDevice[];
   types?: DeviceType[];
+  // Absents d'une requête : le serveur garde ceux qui sont enregistrés.
+  supply?: Supply;
+  meter_sums_phases?: boolean; // le compteur additionne les trois phases
 }
 
 // Capteur de HA qu'on peut lier à un appareil (backend : detection.EntityChoice).

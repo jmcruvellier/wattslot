@@ -40,7 +40,24 @@
         sh:path <#key> ; sh:datatype xsd:string ; sh:minCount 1 ; sh:maxCount 1 ;
         <#issueCode> "device_key"
     ] ;
+    sh:property [
+        sh:path <#phase> ; sh:maxCount 1 ;
+        sh:in ( <#PhaseL1> <#PhaseL2> <#PhaseL3> <#ThreePhases> ) ;
+        <#issueCode> "device_phase"
+    ] ;
     sh:property [ sh:path <#hasSensor> ; sh:nodeKind sh:IRI ; <#issueCode> "sensor_type" ] .
+
+<#HomeShape> a sh:NodeShape ;
+    sh:targetSubjectsOf <#hasDevice> ;
+    sh:property [
+        sh:path <#supply> ; sh:maxCount 1 ;
+        sh:in ( <#SinglePhaseSupply> <#ThreePhaseSupply> ) ;
+        <#issueCode> "home_supply"
+    ] ;
+    sh:property [
+        sh:path <#meterSumsPhases> ; sh:datatype xsd:boolean ; sh:maxCount 1 ;
+        <#issueCode> "home_meter"
+    ] .
 
 <#BatteryShape> a sh:NodeShape ;
     sh:targetClass <#Battery> ;

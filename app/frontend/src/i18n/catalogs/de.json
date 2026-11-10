@@ -708,7 +708,16 @@
       "remove": "Aus meinem Zuhause entfernen",
       "remove_confirm": "Entfernen bestätigen",
       "remove_hint": "Das Gerät wird nicht mehr erfasst oder eingeplant. Home Assistant schlägt es weiter vor, solange sein Sensor existiert."
-    }
+    },
+    "phase": "Angeschlossen an",
+    "phases": {
+      "unknown": "Ich weiß es nicht",
+      "PhaseL1": "Phase 1",
+      "PhaseL2": "Phase 2",
+      "PhaseL3": "Phase 3",
+      "ThreePhases": "Alle drei Phasen (dreiphasiges Gerät)"
+    },
+    "phase_hint": "Die Phase der Sicherung, die das Gerät versorgt."
   },
   "graph": {
     "title": "Mein Zuhause als Graph",
@@ -1630,7 +1639,13 @@
     "installation_help": "Eingestellt unter Das Wichtigste; hier ihre Sensoren",
     "proposed": "Von Home Assistant vorgeschlagen",
     "proposed_help": "Noch nicht erfasst: zum Hinzufügen antippen",
-    "search": "Gerät suchen"
+    "search": "Gerät suchen",
+    "supply": {
+      "title": "Mein Netzanschluss",
+      "single": "Einphasig",
+      "three_summed": "Dreiphasig, der Zähler saldiert die Phasen",
+      "three_separate": "Dreiphasig, jede Phase einzeln gezählt"
+    }
   },
   "settings_home": {
     "notifications_none": "Keine aktiv",
@@ -1754,5 +1769,17 @@
       "failed": "Die Prüfung ist fehlgeschlagen."
     },
     "related": "Mit der Viertelstunde {period}: {value}"
+  },
+  "supply": {
+    "title": "Netzanschluss",
+    "kind": "Versorgung",
+    "kinds": {
+      "SinglePhaseSupply": "Einphasig",
+      "ThreePhaseSupply": "Dreiphasig"
+    },
+    "kind_hint": "Im Zweifel: ein vierpoliger Hauptschalter oder ein „dreiphasiger“ Vertrag auf der Rechnung.",
+    "meter_sums": "Mein Zähler saldiert die drei Phasen",
+    "meter_sums_hint": "Was ich auf einer Phase einspeise, gleicht aus, was ich auf einer anderen beziehe. So arbeiten die meisten intelligenten Zähler; abwählen, wenn jede Phase einzeln gezählt wird.",
+    "phases_hint": "Geben Sie danach die Phase jedes Geräts, jeder Batterie und jeder Solaranlage in ihrem Blatt an (Reiter Geräte). Die Planung berücksichtigt sie noch nicht: Diese Einstellungen bereiten die Berechnung je Phase vor."
   }
 }

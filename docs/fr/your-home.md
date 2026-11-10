@@ -2,7 +2,7 @@
 
 *[English version](../your-home.md) · [Guide d'utilisation](README.md)*
 
-Tout se trouve dans **Ma maison** : les règles de chaque appareil dans l'onglet **Appareils**, votre priorité, votre contrat, vos panneaux et votre batterie dans **L'essentiel**. Un modèle prêt à l'emploi règle presque tout d'un coup ; ajustez ensuite ce qui diffère chez vous.
+Tout se trouve dans **Ma maison** : les règles de chaque appareil dans l'onglet **Appareils**, votre priorité, votre contrat, votre raccordement, vos panneaux et votre batterie dans **L'essentiel**. Un modèle prêt à l'emploi règle presque tout d'un coup ; ajustez ensuite ce qui diffère chez vous.
 
 ## Ce que WattSlot fait de chaque équipement
 
@@ -53,6 +53,15 @@ Une contrainte est stricte par défaut. Cochez **Souple** pour qu'elle soit resp
 ## Panneaux
 
 Seulement si le tableau Énergie de Home Assistant n'a pas de prévision solaire : décrivez chaque **champ** (un par orientation) avec sa **puissance crête** (kWc, sur la facture de l'installateur), son **inclinaison** et son **orientation**, plus la puissance maximale de l'onduleur s'il plafonne la production. WattSlot calcule alors une prévision avec Open-Meteo, à l'emplacement (arrondi) de votre Home Assistant. Une intégration de prévision dans Home Assistant (Forecast.Solar, Solcast…) est en général plus juste.
+
+## Maisons en triphasé
+
+Dans **L'essentiel › Mon raccordement**, indiquez si votre maison est en **monophasé** (par défaut) ou en **triphasé**. En triphasé :
+
+- **Mon compteur additionne les trois phases** (coché par défaut) : ce que vous injectez sur une phase compense ce que vous soutirez sur une autre, comme le font la plupart des compteurs communicants. Décochez si chaque phase est comptée à part.
+- La fiche de chaque appareil demande alors sur quelle phase il est **branché** : phase 1, 2 ou 3, les trois phases pour un appareil triphasé (borne de recharge, pompe à chaleur…), ou *Je ne sais pas*. Cela vaut aussi pour chaque batterie et chaque installation solaire.
+
+Le plan ne tient pas encore compte de ces réglages : ils préparent un calcul phase par phase (limite de puissance de chaque phase, batterie qui ne sert que sa phase).
 
 ## Objectif
 

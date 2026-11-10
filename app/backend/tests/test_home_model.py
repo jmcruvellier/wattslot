@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 from wattslot import home_model
 from wattslot.detection import DeviceKind, Role
 from wattslot.main import create_app
-from wattslot.ontology import GRAPH_LIBRARY, VOCAB
+from wattslot.ontology import GRAPH_HOME, GRAPH_LIBRARY, VOCAB
 from wattslot.runtime import RunMode, Settings
 from wattslot.storage.graph import GraphStore
 
@@ -75,7 +75,12 @@ def _client(tmp_path: Path) -> TestClient:
 
 def test_home_api_saves_and_returns_the_model(tmp_path: Path) -> None:
     with _client(tmp_path) as client:
-        assert client.get("/api/home").json() == {"devices": [], "types": []}
+        assert client.get("/api/home").json() == {
+            "devices": [],
+            "types": [],
+            "supply": "SinglePhaseSupply",
+            "meter_sums_phases": True,
+        }
 
         response = client.put("/api/home", json=MODEL.model_dump(mode="json"))
 
@@ -120,3 +125,66 @@ def test_home_features_say_what_the_home_has(tmp_path: Path) -> None:
     assert full == {"solar": True, "battery": True, "appliances": 0}
     assert solar == {"solar": True, "battery": False, "appliances": 0}
     assert appliance["appliances"] == 1
+
+
+THREE_PHASE = MODEL.model_copy(
+    update={
+        "supply": home_model.Supply.THREE,
+        "meter_sums_phases": False,
+        "devices": [
+            MODEL.devices[0].model_copy(update={"phase": home_model.Phase.L2}),
+            MODEL.devices[1].model_copy(update={"phase": home_model.Phase.ALL}),
+        ],
+    }
+)
+
+
+def test_supply_and_phases_round_trip_through_rdf(tmp_path: Path) -> None:
+    graph = GraphStore(tmp_path)
+
+    home_model.save(graph, THREE_PHASE)
+
+    assert home_model.load(graph) == THREE_PHASE
+
+
+def test_a_home_saved_before_phases_is_single_phase(tmp_path: Path) -> None:
+    """Graphe d'avant ces réglages : ni alimentation ni phase, lu en monophasé."""
+    graph = GraphStore(tmp_path)
+    old = [
+        t
+        for t in home_model.to_triples(MODEL)
+        if t.predicate.value not in (f"{VOCAB}supply", f"{VOCAB}meterSumsPhases")
+    ]
+    graph.replace_graph(GRAPH_HOME, old)
+
+    assert home_model.load(graph) == MODEL
+
+
+def test_the_grid_connection_has_no_phase(tmp_path: Path) -> None:
+    graph = GraphStore(tmp_path)
+    grid = home_model.HomeDevice(
+        key="grid", kind=DeviceKind.GRID, name="Réseau", sensors=[], phase=home_model.Phase.L1
+    )
+
+    home_model.save(graph, home_model.HomeModel(devices=[grid], supply=home_model.Supply.THREE))
+
+    assert home_model.load(graph).devices[0].phase is None
+
+
+def test_home_api_keeps_supply_and_phases_a_request_does_not_carry(tmp_path: Path) -> None:
+    """Une interface d'avant ces réglages enregistre la maison sans eux : ils sont gardés."""
+    without = MODEL.model_dump(mode="json", exclude={"supply", "meter_sums_phases"})
+    for device in without["devices"]:
+        del device["phase"]
+    with _client(tmp_path) as client:
+        client.put("/api/home", json=THREE_PHASE.model_dump(mode="json"))
+
+        client.put("/api/home", json=without)
+        kept = home_model.HomeModel(**client.get("/api/home").json())
+        cleared = THREE_PHASE.model_dump(mode="json")
+        cleared["devices"][0]["phase"] = None
+        client.put("/api/home", json=cleared)
+        after = home_model.HomeModel(**client.get("/api/home").json())
+
+    assert kept == THREE_PHASE
+    assert after.devices[0].phase is None
