@@ -7,7 +7,7 @@ from datetime import date
 from wattslot.configuration import Behavior, Configuration, DeviceSettings
 from wattslot.detection import DeviceKind
 from wattslot.energy_need import EnergyNeed
-from wattslot.home_model import HomeDevice, HomeModel, Phase, Supply
+from wattslot.home_model import HomeDevice, HomeModel, Phase, Supply, line_shares
 from wattslot.planning.assemble import configured
 from wattslot.planning.engine import phase_excess, plan_day
 from wattslot.planning.inputs import Battery, PlanningInput, TaskRequest
@@ -17,7 +17,6 @@ from wattslot.planning.problem import (
     Problem,
     Task,
     from_input,
-    line_shares,
 )
 from wattslot.tariff import Tariff
 

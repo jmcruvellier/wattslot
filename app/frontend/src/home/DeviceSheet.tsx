@@ -14,9 +14,12 @@ import Button from "../ui/Button";
 import Sheet from "../ui/Sheet";
 import { automationFor, BEHAVIORS, type Configuration, type ConfigurationIssue, type DeviceSettings as Settings } from "./configuration";
 import DeviceSettings from "./DeviceSettings";
-import { kindChoice, toModel, type DraftDevice } from "./draft";
+import { kindChoice, toModel, type DraftDevice, type DraftSensor } from "./draft";
 import { ConfigurationIssues } from "./SettingsSheet";
 import { DEVICE_KINDS, PHASES, type DeviceKind, type DeviceType, type EntityChoice, type Issue, type Phase } from "./types";
+
+// Phases que mesure un capteur du réseau (pas « les trois phases » : c'est le total).
+const LINES = PHASES.filter((phase) => phase !== "ThreePhases");
 
 type SaveState =
   | { status: "idle" | "saving" | "failed" | "confirm_remove" }
@@ -102,6 +105,33 @@ export default function DeviceSheet({
   };
 
   const issues: Issue[] = [...draft.issues, ...draft.sensors.flatMap((sensor) => sensor.issues)];
+  // Réseau en triphasé : chaque capteur mesure le total ou une seule phase.
+  const byPhase = threePhase && draft.kind === "GridConnection";
+  const setSensor = (index: number, change: Partial<DraftSensor>) =>
+    edit({ sensors: draft.sensors.map((s, i) => (i === index ? { ...s, ...change } : s)) });
+  // Capteur par phase à ajouter : la première entité de HA qui convient et n'est pas déjà liée.
+  const addPhaseSensor = (role: "EnergyImported" | "EnergyExported") => {
+    const used = new Set(draft.sensors.filter((s) => s.role === role).map((s) => s.entity_id));
+    const entity = (choices ?? []).find((e) => e.roles.includes(role) && !used.has(e.entity_id));
+    if (!entity) return;
+    const measured = new Set(draft.sensors.filter((s) => s.role === role).map((s) => s.phase));
+    edit({
+      sensors: [
+        ...draft.sensors,
+        {
+          entity_id: entity.entity_id,
+          role,
+          name: entity.name,
+          unit: entity.unit,
+          resets_daily: entity.resets_daily,
+          excluded: false,
+          issues: [],
+          included: true,
+          phase: LINES.find((line) => !measured.has(line)) ?? "PhaseL1",
+        },
+      ],
+    });
+  };
 
   return (
     <Sheet open wide title={draft.name.trim() || device.name} onClose={onClose}>
@@ -237,11 +267,39 @@ export default function DeviceSheet({
                   )}
                   {sensor.unit && <span className="dim">({sensor.unit})</span>}
                 </span>
+                {byPhase && (sensor.role === "EnergyImported" || sensor.role === "EnergyExported") && (
+                  <>
+                    {" "}
+                    <select
+                      value={sensor.phase ?? ""}
+                      aria-label={t("home.sensor_phase", { entity: sensor.entity_id })}
+                      onChange={(event) => setSensor(index, { phase: (event.target.value || null) as Phase | null })}
+                    >
+                      <option value="">{t("home.sensor_phase_total")}</option>
+                      {LINES.map((line) => (
+                        <option key={line} value={line}>
+                          {t(`home.phases.${line}`)}
+                        </option>
+                      ))}
+                    </select>
+                  </>
+                )}
                 {sensor.resets_daily && ` — ${t("home.resets_daily")}`}
               </li>
             );
           })}
         </ul>
+        {byPhase && choices && (
+          <p>
+            <Button variant="quiet" onClick={() => addPhaseSensor("EnergyImported")}>
+              {t("home.add_phase_import")}
+            </Button>{" "}
+            <Button variant="quiet" onClick={() => addPhaseSensor("EnergyExported")}>
+              {t("home.add_phase_export")}
+            </Button>
+            <Hint text={t("home.sensor_phase_hint")} />
+          </p>
+        )}
         {included && (
           <p>
             <Button

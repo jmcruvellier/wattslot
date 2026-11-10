@@ -717,7 +717,12 @@
       "PhaseL3": "Fase 3",
       "ThreePhases": "De drie fasen (driefasig toestel)"
     },
-    "phase_hint": "De fase van de automaat die het toestel voedt."
+    "phase_hint": "De fase van de automaat die het toestel voedt.",
+    "sensor_phase": "Wat {entity} meet",
+    "sensor_phase_total": "De drie fasen (totaal)",
+    "add_phase_import": "Afnamesensor voor één fase toevoegen",
+    "add_phase_export": "Injectiesensor voor één fase toevoegen",
+    "sensor_phase_hint": "Met een afnamesensor voor elk van de drie fasen (driefasige meter, een stroomklem per fase…) kent de planning het verbruik van elke fase en telt ze het mee in haar limiet. Behoud de totaalsensor als die er is."
   },
   "graph": {
     "title": "Mijn huis als graaf",

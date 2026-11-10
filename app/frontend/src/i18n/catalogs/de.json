@@ -717,7 +717,12 @@
       "PhaseL3": "Phase 3",
       "ThreePhases": "Alle drei Phasen (dreiphasiges Gerät)"
     },
-    "phase_hint": "Die Phase der Sicherung, die das Gerät versorgt."
+    "phase_hint": "Die Phase der Sicherung, die das Gerät versorgt.",
+    "sensor_phase": "Was {entity} misst",
+    "sensor_phase_total": "Alle drei Phasen (Summe)",
+    "add_phase_import": "Bezugssensor für eine Phase hinzufügen",
+    "add_phase_export": "Einspeisesensor für eine Phase hinzufügen",
+    "sensor_phase_hint": "Mit einem Bezugssensor für jede der drei Phasen (dreiphasiger Zähler, eine Stromzange je Phase…) kennt die Planung den Verbrauch jeder Phase und rechnet ihn in ihre Grenze ein. Behalten Sie den Summensensor, falls vorhanden."
   },
   "graph": {
     "title": "Mein Zuhause als Graph",

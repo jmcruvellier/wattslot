@@ -226,7 +226,12 @@ def corrected_actual(
     if not isinstance(actual, Mapping) or not isinstance(day, str | date):
         return dict(content)
     day = date.fromisoformat(day) if isinstance(day, str) else day
-    roles = {sensor.entity_id: sensor.role for device in home.devices for sensor in device.sensors}
+    # Un capteur qui ne mesure qu'une phase, à côté du total, n'entre pas dans les courbes.
+    roles = {
+        sensor.entity_id: sensor.role
+        for device in home.devices
+        for sensor in home_model.counted_sensors(device)
+    }
     # Corrections de ce jour, heure par heure : (série du rôle, poids dans la consommation,
     # valeur corrigée, décalage demandé).
     by_hour: dict[int, list[tuple[str | None, float, float | None, float]]] = {}

@@ -204,6 +204,8 @@ class PlanningInput:
     three_phase: bool = False
     phases: Mapping[str, Phase] = field(default_factory=dict)
     production_shares: Mapping[Phase, float] = field(default_factory=dict)
+    # Consommation de base de chaque phase, par heure (kWh) ; vide : pas mesurée.
+    base_by_phase: Mapping[Phase, Mapping[int, float]] = field(default_factory=dict)
 
 
 def _date(value: Any) -> date | None:

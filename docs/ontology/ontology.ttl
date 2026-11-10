@@ -526,6 +526,11 @@ wattslot:mean a owl:DatatypeProperty ;
 	rdfs:domain wattslot:Aggregate ;
 	rdfs:label "moyenne pondérée par la durée"@fr , "time-weighted mean"@en ;
 	rdfs:range xsd:double .
+wattslot:measuresPhase a owl:ObjectProperty ;
+	rdfs:comment "Capteur du raccordement au réseau en triphasé qui ne mesure qu'une phase ; sans cette propriété, il mesure le total."@fr ;
+	rdfs:domain wattslot:Sensor ;
+	rdfs:label "measures only phase"@en , "ne mesure que la phase"@fr ;
+	rdfs:range wattslot:PhaseConnection .
 wattslot:meterSumsPhases a owl:DatatypeProperty ;
 	rdfs:comment "L'injection sur une phase compense le soutirage sur une autre ; sinon chaque phase est comptée à part."@fr ;
 	rdfs:domain wattslot:Home ;

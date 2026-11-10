@@ -162,7 +162,7 @@ def measure_now(state: Any, moment: datetime, context: Context, lang: Language) 
     devices = home_model.load(state.graph).devices
     solar = not devices or any(device.kind is DeviceKind.SOLAR for device in devices)
     for device in devices:
-        for sensor in device.sensors:
+        for sensor in home_model.counted_sensors(device):
             key = FLOWS.get(sensor.role)
             if key is None:
                 continue

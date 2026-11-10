@@ -30,6 +30,7 @@ export function slug(text: string): string {
 
 export interface DraftSensor extends SensorProposal {
   included: boolean;
+  phase?: Phase | null; // réseau en triphasé : la seule phase mesurée ; sinon le total
 }
 
 export interface DraftDevice {
@@ -53,11 +54,18 @@ const sensorKey = (sensor: { entity_id: string; role: string }) =>
  * sinon, tous sauf ceux que l'application propose d'exclure (un coût déclaré comme compteur).
  */
 function draftSensors(proposal: DeviceProposal, existing: HomeDevice | undefined): DraftSensor[] {
-  const saved = existing ? new Set(existing.sensors.map(sensorKey)) : null;
-  return proposal.sensors.map((sensor) => ({
+  const saved = existing ? new Map(existing.sensors.map((sensor) => [sensorKey(sensor), sensor])) : null;
+  const proposed = proposal.sensors.map((sensor) => ({
     ...sensor,
     included: saved ? saved.has(sensorKey(sensor)) : !sensor.excluded,
+    phase: saved?.get(sensorKey(sensor))?.phase ?? null,
   }));
+  // Capteurs par phase ajoutés à la main : jamais proposés par HA, gardés avec l'équipement.
+  const known = new Set(proposal.sensors.map(sensorKey));
+  const added = (existing?.sensors ?? [])
+    .filter((sensor) => sensor.phase != null && !known.has(sensorKey(sensor)))
+    .map((sensor) => ({ ...sensor, name: null, unit: null, excluded: false, issues: [], included: true }));
+  return [...proposed, ...added];
 }
 
 /**
@@ -118,6 +126,7 @@ export function mergeDraft(previous: DraftDevice[], next: DraftDevice[]): DraftD
     const old = byKey.get(device.key);
     if (!old) return device;
     const oldSensors = new Map(old.sensors.map((sensor) => [sensorKey(sensor), sensor.included]));
+    const oldPhases = new Map(old.sensors.map((sensor) => [sensorKey(sensor), sensor.phase]));
     return {
       ...device,
       included: old.included,
@@ -129,6 +138,7 @@ export function mergeDraft(previous: DraftDevice[], next: DraftDevice[]): DraftD
       sensors: device.sensors.map((sensor) => ({
         ...sensor,
         included: oldSensors.get(sensorKey(sensor)) ?? sensor.included,
+        phase: oldPhases.has(sensorKey(sensor)) ? oldPhases.get(sensorKey(sensor)) : sensor.phase,
       })),
     };
   });
@@ -148,7 +158,13 @@ export function toModel(draft: DraftDevice[]): HomeModel {
         phase: device.kind === "GridConnection" ? null : (device.phase ?? null),
         sensors: device.sensors
           .filter((sensor) => sensor.included)
-          .map(({ entity_id, role, resets_daily }) => ({ entity_id, role, resets_daily })),
+          .map(({ entity_id, role, resets_daily, phase }) => ({
+            entity_id,
+            role,
+            resets_daily,
+            // Seuls les capteurs du raccordement au réseau mesurent une phase.
+            ...(device.kind === "GridConnection" && phase ? { phase } : {}),
+          })),
       })),
   };
 }

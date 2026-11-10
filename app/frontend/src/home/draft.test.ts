@@ -138,6 +138,46 @@ describe("phase", () => {
   });
 });
 
+describe("capteurs par phase du réseau", () => {
+  const grid = (sensors: HomeModel["devices"][number]["sensors"]): HomeModel => ({
+    devices: [{ key: "grid", kind: "GridConnection", name: "Grid", capacity_kwh: null, sensors }],
+  });
+  const proposal: DeviceProposal = {
+    key: "grid",
+    kind: "GridConnection",
+    name: "Grid",
+    capacity_kwh: null,
+    issues: [],
+    sensors: [
+      { entity_id: "sensor.import", role: "EnergyImported", name: null, unit: "kWh", resets_daily: false, excluded: false, issues: [] },
+    ],
+  };
+
+  it("garde les capteurs par phase ajoutés à la main, que HA ne propose pas", () => {
+    const saved = grid([
+      { entity_id: "sensor.import", role: "EnergyImported", resets_daily: false },
+      { entity_id: "sensor.import_l2", role: "EnergyImported", resets_daily: false, phase: "PhaseL2" },
+    ]);
+
+    const model = toModel(buildDraft([proposal], saved));
+
+    expect(model.devices[0].sensors).toEqual([
+      { entity_id: "sensor.import", role: "EnergyImported", resets_daily: false },
+      { entity_id: "sensor.import_l2", role: "EnergyImported", resets_daily: false, phase: "PhaseL2" },
+    ]);
+  });
+
+  it("n'enregistre pas de phase pour le capteur d'un autre équipement", () => {
+    const draft = buildDraft([proposal], grid([])).map((d) => ({
+      ...d,
+      kind: "OtherLoad" as const,
+      sensors: d.sensors.map((sensor) => ({ ...sensor, included: true, phase: "PhaseL1" as const })),
+    }));
+
+    expect(toModel(draft).devices[0].sensors[0]).not.toHaveProperty("phase");
+  });
+});
+
 describe("capteurs", () => {
   const withCost: DeviceProposal = {
     key: "grid",

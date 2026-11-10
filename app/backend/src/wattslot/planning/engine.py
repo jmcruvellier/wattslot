@@ -33,7 +33,7 @@ from typing import Any
 
 import highspy
 
-from wattslot.home_model import Phase
+from wattslot.home_model import LINES, Phase, line_shares
 from wattslot.objective_settings import Weights
 from wattslot.planning.explain import explain
 from wattslot.planning.plan import (
@@ -46,7 +46,7 @@ from wattslot.planning.plan import (
 )
 from wattslot.planning.plan import Movement as PlannedMovement
 from wattslot.planning.plan import Plan as DayPlan
-from wattslot.planning.problem import LINES, Problem, Task, line_shares
+from wattslot.planning.problem import Problem, Task
 from wattslot.planning.simulation import BatteryRun, simulate
 from wattslot.time_constraints import labels
 
@@ -63,8 +63,9 @@ SOFT_PENALTY = 1.0  # contrainte souple violée, par heure (ou par créneau d'un
 CONTRACT_PENALTY = 1000.0
 # Par kWh que les équipements placés tirent ensemble sur une phase au-delà de sa part de la
 # puissance souscrite (triphasé) : plus que tout écart de prix ou contrainte souple, moins qu'une
-# tâche non placée. La consommation de base de la phase n'est pas encore connue : un équipement
-# qui dépasse seul reste placé, deux équipements de la même phase sont écartés l'un de l'autre.
+# tâche non placée. La consommation de base de la phase n'est pas toujours connue : un
+# équipement qui dépasse seul reste placé, deux équipements de la même phase sont écartés l'un
+# de l'autre.
 PHASE_PENALTY = 10.0
 # Puissance supposée sans puissance souscrite saisie, pour le seul contrôle des données
 # impossibles : 36 kVA, le plus fort contrat résidentiel en France (lot 7.3).
@@ -275,6 +276,7 @@ def solve(problem: Problem, objective: Goal = Objective.COST, time_limit_s: floa
     limited = problem.phase_limit_kwh is not None
     phase_load: dict[tuple[Phase, int], Any] = {
         (line, hour): problem.fixed_by_phase.get(line, {}).get(hour, 0.0)
+        + problem.base_by_phase.get(line, {}).get(hour % 24, 0.0)
         for line in (LINES if limited else ())
         for hour in hours + later
     }
@@ -523,17 +525,22 @@ def load_kwh(problem: Problem, plan: Plan) -> dict[int, float]:
 
 def phase_excess(problem: Problem, plan: Plan) -> dict[Phase, list[int]]:
     """Triphasé : heures du jour où les équipements placés (et les cycles déjà décidés) tirent
-    ensemble, sur une phase, plus que sa part de la puissance souscrite, la production branchée
-    sur cette phase déduite. Phases sans dépassement absentes."""
+    ensemble, sur une phase, plus que sa part de la puissance souscrite, avec la consommation
+    de base de la phase si elle est mesurée, la production branchée sur cette phase déduite.
+    Seules les heures où un équipement placé ou décidé tourne sur la phase : la consommation de
+    base seule n'est pas l'affaire du plan. Phases sans dépassement absentes."""
     if problem.phase_limit_kwh is None:
         return {}
     drawn: dict[Phase, dict[int, float]] = {
         line: defaultdict(float, problem.fixed_by_phase.get(line, {})) for line in LINES
     }
+    busy = {line: {hour for hour, kwh in drawn[line].items() if kwh > 0} for line in LINES}
 
     def on_phase(name: str, hour: int, kwh: float) -> None:
         for line, share in line_shares(problem.phases.get(name)).items():
             drawn[line][hour] += share * kwh
+            if kwh > 0:
+                busy[line].add(hour)
 
     by_name = {task.name: task for task in problem.tasks}
     for name, start in plan.starts.items():
@@ -551,7 +558,10 @@ def phase_excess(problem: Problem, plan: Plan) -> dict[Phase, list[int]]:
         over = [
             hour
             for hour in problem.hours
-            if drawn[line][hour] - share * max(0.0, problem.production_kwh.get(hour, 0.0))
+            if hour in busy[line]
+            and drawn[line][hour]
+            + problem.base_by_phase.get(line, {}).get(hour, 0.0)
+            - share * max(0.0, problem.production_kwh.get(hour, 0.0))
             > problem.phase_limit_kwh + 0.001
         ]
         if over:

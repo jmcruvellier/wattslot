@@ -552,7 +552,7 @@ def measured_energy(state: Any, day: date) -> dict[str, Any] | None:
     totals: dict[str, float] = {}
     devices: dict[str, float] = {}
     for device in home_model.load(state.graph).devices:
-        for sensor in device.sensors:
+        for sensor in home_model.counted_sensors(device):
             if sensor.role not in TOTALS and sensor.role is not Role.ENERGY_CONSUMED:
                 continue
             values = [
