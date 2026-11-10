@@ -11,6 +11,12 @@
 
 Dans le fuseau de HA. Un calcul à la fois (verrou partagé avec ``POST /api/planning/run``) ;
 sans HA connecté, le tour est sauté et noté. Un échec est noté et n'arrête pas la boucle.
+
+Un calcul interrompu par une coupure de la connexion à HA (HA ralenti par une autre charge de
+l'hôte, redémarré…) est **refait quelques minutes plus tard** (``CONNECTION_RETRIES_S``), une
+fois la connexion rétablie, au lieu d'attendre l'heure suivante (rapport du 10/11/2026). Un
+calcul réussi lancé à la main (``record_success``) compte comme un calcul du planificateur :
+l'état de l'application n'affiche plus l'erreur ni le plan ancien.
 """
 
 import asyncio
@@ -21,7 +27,9 @@ from datetime import UTC, date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from pydantic import BaseModel
+from websockets.exceptions import ConnectionClosed
 
+from wattslot.home_assistant import NotConnectedError
 from wattslot.planning.rollover import next_rollover, seconds_until
 from wattslot.planning.runner import RunReport
 from wattslot.planning.sources import ForecastUnavailable
@@ -46,6 +54,21 @@ class SchedulerStatus(BaseModel):
 
 # Pas de relecture à moins de 5 min du calcul horaire : il relit lui-même le réel.
 ACTUAL_GUARD_MINUTES = 5
+# Nouveaux essais d'un calcul interrompu par une coupure de la connexion à HA (secondes après
+# l'échec précédent) : HA se reconnecte d'ordinaire en quelques secondes ; avant l'heure
+# suivante.
+CONNECTION_RETRIES_S: tuple[float, ...] = (60.0, 300.0)
+CONNECTION = "connection"  # ``last_error_code`` d'un calcul interrompu par une coupure
+
+
+def lost_connection(error: BaseException) -> bool:
+    """L'erreur vient d'une coupure de la connexion à HA (elle-même ou sa cause)."""
+    found: BaseException | None = error
+    while found is not None:
+        if isinstance(found, NotConnectedError | ConnectionClosed | ConnectionError):
+            return True
+        found = found.__cause__ or found.__context__
+    return False
 
 
 def next_hourly(now: datetime, minute: int, zone: ZoneInfo) -> datetime:
@@ -139,6 +162,16 @@ class PlanningScheduler:
                 await asyncio.sleep(wait)
             if enabled:
                 await self.tick(datetime.now(UTC), is_rollover)
+                await self.retry_after_lost_connection()
+
+    async def retry_after_lost_connection(self) -> None:
+        """Refait un calcul interrompu par une coupure de la connexion, jusqu'à deux fois."""
+        for delay in CONNECTION_RETRIES_S:
+            if self._status.last_error_code != CONNECTION:
+                return
+            logger.info("Calcul interrompu par une coupure : nouvel essai dans %s s", delay)
+            await asyncio.sleep(delay)
+            await self.tick(datetime.now(UTC))
 
     async def _actual_loop(self) -> None:
         while True:
@@ -192,11 +225,15 @@ class PlanningScheduler:
                 logger.exception("Calcul planifié impossible")
                 self._status.last_run_at = now
                 self._status.last_error = f"{type(exc).__name__}: {exc}"
-                self._status.last_error_code = "internal"
+                self._status.last_error_code = CONNECTION if lost_connection(exc) else "internal"
                 return None
+        self.record_success(now, report)
+        return report
+
+    def record_success(self, now: datetime, report: RunReport) -> None:
+        """Calcul réussi, planifié ou lancé à la main : dernière réussite, erreurs du rapport."""
         self._status.last_run_at = now
         self._status.last_success_at = now
         self._status.last_report = report
         self._status.last_error = "; ".join(report.errors) or None
         self._status.last_error_code = "internal" if report.errors else None
-        return report
