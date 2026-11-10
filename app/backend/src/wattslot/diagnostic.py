@@ -6,9 +6,7 @@ la mémoire du processus, les octets qu'il a écrits sur disque (usure du SSD) e
 configuration détectées dans le tableau Énergie (lot 1.1).
 """
 
-import sys
 from datetime import UTC, datetime
-from pathlib import Path
 
 from pydantic import BaseModel
 
@@ -18,7 +16,12 @@ from wattslot.home_assistant import ConnectionState, HomeAssistantClient
 from wattslot.ingestion import IngestionStatus, Ingestor, silent_entities
 from wattslot.maintenance import Maintenance, MaintenanceStatus
 from wattslot.planning.scheduler import PlanningScheduler, SchedulerStatus
-from wattslot.resources import ResourceMonitor, Resources, memory_bytes
+from wattslot.resources import (
+    ResourceMonitor,
+    Resources,
+    disk_written_bytes,
+    memory_bytes,
+)
 from wattslot.storage.raw import RawStores
 
 STARTED_AT = datetime.now(UTC)  # chargement du module, au démarrage de l'application
@@ -44,24 +47,6 @@ class Diagnostic(BaseModel):
     planning: SchedulerStatus | None = None
     issues: list[DeviceIssue] | None = None  # None : HA non connecté, anomalies inconnues
     resources: Resources | None = None  # processeur, mémoire et disque
-
-
-def written_from(proc_io: str) -> int | None:
-    """Octets écrits sur disque (``write_bytes``) dans le contenu de ``/proc/self/io``."""
-    for line in proc_io.splitlines():
-        if line.startswith("write_bytes:"):
-            return int(line.split()[1])
-    return None
-
-
-def disk_written_bytes() -> int | None:
-    """Octets écrits sur disque par le processus depuis son démarrage ; inconnus hors de Linux."""
-    if not sys.platform.startswith("linux"):
-        return None
-    try:
-        return written_from(Path("/proc/self/io").read_text())
-    except OSError:
-        return None
 
 
 def configuration_issues(client: HomeAssistantClient | None) -> list[DeviceIssue] | None:

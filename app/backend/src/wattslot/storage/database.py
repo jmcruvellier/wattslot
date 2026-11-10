@@ -217,6 +217,10 @@ MIGRATIONS: tuple[str, ...] = (
         disk_used_max INTEGER
     )
     """,
+    # 21 et 22 : octets écrits sur disque par minute et par heure (usure d'une carte SD ou d'un
+    # SSD, effet des compactages du graphe).
+    "ALTER TABLE resource_minutes ADD COLUMN written_bytes INTEGER",
+    "ALTER TABLE resource_hours ADD COLUMN written_bytes INTEGER",
 )
 
 

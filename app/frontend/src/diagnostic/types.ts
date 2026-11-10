@@ -106,6 +106,7 @@ export interface Resources {
   disk_alert_used_bytes?: number | null; // le même seuil en espace occupé : au-delà
   disk_alert_data_bytes?: number | null; // en taille des données : au-delà
   measured_s: number; // durée couverte par les relevés
+  written_day_bytes?: number | null; // écrit sur disque pendant les dernières 24 h (Linux)
 }
 
 export interface ResourcePoint {
@@ -114,6 +115,7 @@ export interface ResourcePoint {
   memory_bytes: number | null;
   disk_free_bytes: number | null;
   disk_used_bytes?: number | null; // dossier des données, dernière mesure (toutes les 10 min)
+  written_bytes?: number | null; // octets écrits sur disque pendant la minute
 }
 
 export interface Diagnostic {

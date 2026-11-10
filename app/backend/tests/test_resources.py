@@ -284,3 +284,46 @@ def test_hours_route(tmp_path: Path) -> None:
     with TestClient(create_app(_settings(tmp_path))) as client:
         assert client.get("/api/diagnostic/resources/hours").json() == []
         assert client.get("/api/diagnostic/resources/hours?days=31").status_code == 422
+
+
+def test_bytes_written_each_minute_and_each_hour(tmp_path: Path) -> None:
+    """Octets écrits sur disque (compteur de /proc/self/io) : par minute, une différence entre
+    deux relevés, inconnue si le compteur manque ou recule ; par heure, leur somme."""
+    start = datetime(2026, 11, 10, 9, 58, tzinfo=UTC)
+    written = [1000, 4000, None, 9000, 2000]  # compteur absent, puis qui recule
+    samples = [
+        Sample(60 * i, 0, None, None, start + timedelta(minutes=i), written=w)
+        for i, w in enumerate(written)
+    ]
+    points = history(samples)
+    assert [p.written_bytes for p in points] == [None, 3000, None, None, None]
+
+    store = ResourceStore(open_database(tmp_path))
+    for point, value in zip(points, [None, 3000, 500, 7000, None], strict=True):
+        store.save(point.model_copy(update={"written_bytes": value}))
+    assert [p.written_bytes for p in store.minutes(start)] == [None, 3000, 500, 7000, None]
+    hours = store.hours(start - timedelta(hours=1))
+    assert [(h.hour.hour, h.written_bytes) for h in hours] == [(9, 3000), (10, 7500)]
+
+
+def test_snapshot_sums_the_bytes_written_over_a_day(tmp_path: Path) -> None:
+    database = open_database(tmp_path)
+    first = ResourceMonitor(tmp_path, database)
+    start = first._samples[0]
+    assert start.time is not None
+    before = start.time - timedelta(minutes=10)
+    store = ResourceStore(database)
+    store.save(ResourcePoint(time=before, written_bytes=2 * 10**6))  # avant le redémarrage
+    store.save(ResourcePoint(time=start.time - timedelta(hours=25), written_bytes=10**9))
+
+    second = ResourceMonitor(tmp_path, database)
+    now = second._samples[0]
+    second.record(
+        Sample(now.at + 60, now.cpu_s, None, time=now.time, written=(now.written or 0) + 5000)
+    )
+    found = second.snapshot()
+
+    if now.written is None:  # hors de Linux : seulement la minute gardée
+        assert found.written_day_bytes == 2 * 10**6
+    else:
+        assert found.written_day_bytes == 2 * 10**6 + 5000
