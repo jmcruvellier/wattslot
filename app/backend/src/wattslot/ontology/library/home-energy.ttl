@@ -21,7 +21,7 @@
 <ontology/library/home-energy> a owl:Ontology ;
     rdfs:label "Énergie domestique"@fr, "Home energy"@en ;
     owl:imports s4ener:, saref:, sosa:, ssn: ;
-    owl:versionInfo "0.2" .
+    owl:versionInfo "0.3" .
 
 # --- Classes -------------------------------------------------------------------------------------
 
@@ -95,6 +95,9 @@
 <#OtherLoad> a owl:Class ;
     rdfs:subClassOf <#Appliance> ;
     rdfs:label "Autre consommation"@fr, "Other consumption"@en .
+<#PhaseConnection> a owl:Class ;
+    rdfs:label "Branchement sur les phases"@fr, "Phase connection"@en ;
+    rdfs:comment "Phase d'une maison en triphasé sur laquelle un équipement est branché, ou les trois."@fr .
 <#PoolPump> a owl:Class ;
     rdfs:subClassOf <#Appliance> ;
     rdfs:label "Filtration de piscine"@fr, "Pool pump"@en .
@@ -118,6 +121,8 @@
 <#SolarInstallation> a owl:Class ;
     rdfs:subClassOf <#Device> ;
     rdfs:label "Production solaire"@fr, "Solar production"@en .
+<#Supply> a owl:Class ;
+    rdfs:label "Alimentation par le réseau"@fr, "Grid supply"@en .
 <#Temperature> a owl:Class ;
     rdfs:subClassOf <#Quantity> ;
     rdfs:label "Température"@fr, "Temperature"@en .
@@ -149,10 +154,18 @@
     rdfs:domain <#Device> ;
     rdfs:range <#Room> ;
     rdfs:label "est situé dans"@fr, "located in"@en .
+<#phase> a owl:ObjectProperty ;
+    rdfs:domain <#Device> ;
+    rdfs:range <#PhaseConnection> ;
+    rdfs:label "branché sur"@fr, "connected to phase"@en .
 <#role> a owl:ObjectProperty ;
     rdfs:domain <#Sensor> ;
     rdfs:range <#Role> ;
     rdfs:label "rôle"@fr, "role"@en .
+<#supply> a owl:ObjectProperty ;
+    rdfs:domain <#Home> ;
+    rdfs:range <#Supply> ;
+    rdfs:label "alimentation"@fr, "supply"@en .
 
 # --- Propriétés de données -----------------------------------------------------------------------
 
@@ -184,6 +197,11 @@
     rdfs:domain <#Aggregate> ;
     rdfs:range xsd:double ;
     rdfs:label "moyenne pondérée par la durée"@fr, "time-weighted mean"@en .
+<#meterSumsPhases> a owl:DatatypeProperty ;
+    rdfs:domain <#Home> ;
+    rdfs:range xsd:boolean ;
+    rdfs:label "le compteur additionne les phases"@fr, "the meter sums the phases"@en ;
+    rdfs:comment "L'injection sur une phase compense le soutirage sur une autre ; sinon chaque phase est comptée à part."@fr .
 <#period> a owl:DatatypeProperty ;
     rdfs:domain <#Aggregate> ;
     rdfs:range xsd:string ;
@@ -226,12 +244,24 @@
 <#EnergyProduced> a <#Role> ;
     rdfs:label "Énergie produite"@fr, "Energy produced"@en ;
     <#quantity> <#Energy> .
+<#PhaseL1> a <#PhaseConnection> ;
+    rdfs:label "Phase 1"@fr, "Phase 1"@en .
+<#PhaseL2> a <#PhaseConnection> ;
+    rdfs:label "Phase 2"@fr, "Phase 2"@en .
+<#PhaseL3> a <#PhaseConnection> ;
+    rdfs:label "Phase 3"@fr, "Phase 3"@en .
 <#PowerConsumed> a <#Role> ;
     rdfs:label "Puissance consommée"@fr, "Power consumed"@en ;
     <#quantity> <#Power> .
 <#PowerProduced> a <#Role> ;
     rdfs:label "Puissance produite"@fr, "Power produced"@en ;
     <#quantity> <#Power> .
+<#SinglePhaseSupply> a <#Supply> ;
+    rdfs:label "Monophasé"@fr, "Single-phase"@en .
 <#StateOfCharge> a <#Role> ;
     rdfs:label "État de charge"@fr, "State of charge"@en ;
     <#quantity> <#ChargeLevel> .
+<#ThreePhaseSupply> a <#Supply> ;
+    rdfs:label "Triphasé"@fr, "Three-phase"@en .
+<#ThreePhases> a <#PhaseConnection> ;
+    rdfs:label "Les trois phases"@fr, "All three phases"@en .

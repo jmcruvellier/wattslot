@@ -160,6 +160,7 @@ describe("HomeScreen", () => {
           key: "Dryer-plug",
           kind: "Dryer",
           custom_type: null,
+          phase: null,
           name: "Sèche-linge du cellier",
           capacity_kwh: null,
           sensors: [

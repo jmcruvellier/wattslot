@@ -708,7 +708,16 @@
       "remove": "Retirer de ma maison",
       "remove_confirm": "Confirmer le retrait",
       "remove_hint": "L'appareil ne sera plus suivi ni placé. Home Assistant le proposera encore tant que son capteur existe."
-    }
+    },
+    "phase": "Branché sur",
+    "phases": {
+      "unknown": "Je ne sais pas",
+      "PhaseL1": "Phase 1",
+      "PhaseL2": "Phase 2",
+      "PhaseL3": "Phase 3",
+      "ThreePhases": "Les trois phases (appareil triphasé)"
+    },
+    "phase_hint": "La phase du disjoncteur qui alimente l'appareil."
   },
   "graph": {
     "title": "Ma maison en graphe",
@@ -1630,7 +1639,13 @@
     "installation_help": "Réglés dans L'essentiel ; ici, leurs capteurs",
     "proposed": "Proposés par Home Assistant",
     "proposed_help": "Pas encore suivis : touchez-en un pour l'ajouter",
-    "search": "Rechercher un appareil"
+    "search": "Rechercher un appareil",
+    "supply": {
+      "title": "Mon raccordement",
+      "single": "Monophasé",
+      "three_summed": "Triphasé, le compteur additionne les phases",
+      "three_separate": "Triphasé, chaque phase comptée à part"
+    }
   },
   "settings_home": {
     "notifications_none": "Aucune active",
@@ -1754,5 +1769,17 @@
       "failed": "L'analyse a échoué."
     },
     "related": "Avec le quart d'heure {period} : {value}"
+  },
+  "supply": {
+    "title": "Raccordement au réseau",
+    "kind": "Alimentation",
+    "kinds": {
+      "SinglePhaseSupply": "Monophasé",
+      "ThreePhaseSupply": "Triphasé"
+    },
+    "kind_hint": "En cas de doute : un disjoncteur général à quatre pôles ou un contrat « triphasé » sur la facture.",
+    "meter_sums": "Mon compteur additionne les trois phases",
+    "meter_sums_hint": "Ce que j'injecte sur une phase compense ce que je soutire sur une autre. C'est le cas de la plupart des compteurs communicants ; décochez si chaque phase est comptée à part.",
+    "phases_hint": "Indiquez ensuite la phase de chaque appareil, batterie et installation solaire dans sa fiche (onglet Appareils). Le planning n'en tient pas encore compte : ces réglages préparent le calcul par phase."
   }
 }

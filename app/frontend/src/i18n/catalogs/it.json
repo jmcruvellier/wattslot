@@ -708,7 +708,16 @@
       "remove": "Rimuovi dalla mia casa",
       "remove_confirm": "Conferma la rimozione",
       "remove_hint": "L'apparecchio non sarà più seguito né collocato. Home Assistant continuerà a proporlo finché esiste il suo sensore."
-    }
+    },
+    "phase": "Collegato a",
+    "phases": {
+      "unknown": "Non lo so",
+      "PhaseL1": "Fase 1",
+      "PhaseL2": "Fase 2",
+      "PhaseL3": "Fase 3",
+      "ThreePhases": "Le tre fasi (apparecchio trifase)"
+    },
+    "phase_hint": "La fase dell'interruttore che alimenta l'apparecchio."
   },
   "graph": {
     "title": "La mia casa come grafo",
@@ -1630,7 +1639,13 @@
     "installation_help": "Impostati in L'essenziale; qui i loro sensori",
     "proposed": "Proposti da Home Assistant",
     "proposed_help": "Non ancora seguiti: toccane uno per aggiungerlo",
-    "search": "Cerca un apparecchio"
+    "search": "Cerca un apparecchio",
+    "supply": {
+      "title": "Il mio allacciamento",
+      "single": "Monofase",
+      "three_summed": "Trifase, il contatore somma le fasi",
+      "three_separate": "Trifase, ogni fase contata a parte"
+    }
   },
   "settings_home": {
     "notifications_none": "Nessuna attiva",
@@ -1754,5 +1769,17 @@
       "failed": "L'analisi non è riuscita."
     },
     "related": "Con il quarto d'ora {period}: {value}"
+  },
+  "supply": {
+    "title": "Allacciamento alla rete",
+    "kind": "Alimentazione",
+    "kinds": {
+      "SinglePhaseSupply": "Monofase",
+      "ThreePhaseSupply": "Trifase"
+    },
+    "kind_hint": "In caso di dubbio: un interruttore generale a quattro poli o un contratto «trifase» in bolletta.",
+    "meter_sums": "Il mio contatore somma le tre fasi",
+    "meter_sums_hint": "Ciò che immetto su una fase compensa ciò che prelevo su un'altra. È così per la maggior parte dei contatori intelligenti; deselezionare se ogni fase è contata a parte.",
+    "phases_hint": "Indicare poi la fase di ogni apparecchio, batteria e impianto solare nella sua scheda (scheda Apparecchi). La pianificazione non ne tiene ancora conto: queste impostazioni preparano il calcolo per fase."
   }
 }

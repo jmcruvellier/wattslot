@@ -2,7 +2,7 @@
 
 *[Version française](fr/your-home.md) · [User guide](README.md)*
 
-Everything here is in **My home**: the rules of each appliance in the **Devices** tab, your priority, contract, panels and battery in **Essentials**. A ready-made template sets most of it in one go; then adjust what differs in your home.
+Everything here is in **My home**: the rules of each appliance in the **Devices** tab, your priority, contract, grid connection, panels and battery in **Essentials**. A ready-made template sets most of it in one go; then adjust what differs in your home.
 
 ## What WattSlot does with each device
 
@@ -53,6 +53,15 @@ A constraint is strict by default. Tick **Soft** to have it met if possible: oth
 ## Panels
 
 Needed only if Home Assistant's Energy dashboard has no solar forecast: describe each **array** (one per orientation) with its **peak power** (kWp, on the installer's invoice), its **tilt** and its **orientation**, plus the inverter's maximum power if it caps the production. WattSlot then computes a forecast with Open-Meteo, at your Home Assistant's location (rounded). A forecast integration in Home Assistant (Forecast.Solar, Solcast…) is usually more accurate.
+
+## Three-phase homes
+
+In **Essentials › My grid connection**, say whether your home is **single-phase** (the default) or **three-phase**. In a three-phase home:
+
+- **My meter sums the three phases** (ticked by default): what you export on one phase offsets what you import on another, as most smart meters do. Untick it if each phase is metered separately.
+- Each device's sheet then asks which phase it is **connected to**: phase 1, 2 or 3, all three phases for a three-phase device (car charger, heat pump…), or *I don't know*. This also applies to each battery and each solar installation.
+
+The plan does not use these settings yet: they prepare a calculation phase by phase (power limit of each phase, battery that only serves its own phase).
 
 ## Objective
 

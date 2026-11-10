@@ -26,6 +26,8 @@ import type { HomeModel } from "./types";
 const HomeGraph = lazy(() => import("./HomeGraph"));
 // Onglet « Données » (qualité des données), chargé à son ouverture.
 const DataTab = lazy(() => import("./DataTab"));
+// Feuille « Mon raccordement », rarement ouverte : chargée à son ouverture.
+const SupplySheet = lazy(() => import("./SupplySheet"));
 
 // Onglet ouvert de la page principale, gardé dans le navigateur comme celui de Planning.
 export { TAB_KEY } from "./tab";
@@ -69,7 +71,7 @@ type MainLoad = { status: "loading" } | { status: "error" } | ({ status: "ready"
 // Feuille ouverte : un réglage de « L'essentiel », la fiche d'un appareil ou l'ajout d'un appareil.
 type Open = { kind: Essential } | { kind: "device"; key: string } | { kind: "add" };
 
-const ESSENTIALS: readonly string[] = ["objective", "tariff", "solar", "battery"];
+const ESSENTIALS: readonly string[] = ["objective", "tariff", "supply", "solar", "battery"];
 
 // Ancre d'un lien : la feuille qu'elle ouvre, et son onglet.
 function anchorSheet(anchor: string): [Tab, Open | null] | null {
@@ -121,7 +123,13 @@ function HomeMain({
       getJson<Configuration>("api/configuration", controller.signal),
     ])
       .then(([home, configuration]) => {
-        setLoad({ status: "ready", devices: home.devices, configuration });
+        setLoad({
+          status: "ready",
+          devices: home.devices,
+          configuration,
+          supply: home.supply,
+          meterSumsPhases: home.meter_sums_phases,
+        });
         // Maison pas encore enregistrée : on commence par ses appareils.
         if (home.devices.length === 0) setTab("devices");
       })
@@ -159,7 +167,14 @@ function HomeMain({
   }, [anchor, handled, onAnchor]);
 
   const data: HomeData | null =
-    load.status === "ready" ? { devices: load.devices, configuration: load.configuration } : null;
+    load.status === "ready"
+      ? {
+          devices: load.devices,
+          configuration: load.configuration,
+          supply: load.supply,
+          meterSumsPhases: load.meterSumsPhases,
+        }
+      : null;
   const names = new Map(data?.devices.map((device) => [device.key, device.name]));
   const firstSave = data !== null && data.devices.length === 0;
   // Appareils de la fiche : propositions de HA fusionnées avec la maison, sinon la maison seule.
@@ -285,8 +300,13 @@ function HomeMain({
           </>
         )}
       </section>
-      {open && data && open.kind !== "device" && open.kind !== "add" && (
-        <HomeSheet open={open} data={data} names={names} onClose={() => setOpen(null)} onSaved={onSettingsSaved} />
+      {open?.kind === "supply" && data && (
+        <Suspense fallback={null}>
+          <SupplySheet data={data} onClose={() => setOpen(null)} onSaved={reload} />
+        </Suspense>
+      )}
+      {open && data && open.kind !== "device" && open.kind !== "add" && open.kind !== "supply" && (
+        <HomeSheet open={{ kind: open.kind }} data={data} names={names} onClose={() => setOpen(null)} onSaved={onSettingsSaved} />
       )}
       {open && data && device && (
         <DeviceSheet
@@ -296,6 +316,7 @@ function HomeMain({
           configuration={data.configuration}
           types={found?.ok ? found.types : []}
           names={names}
+          threePhase={data.supply === "ThreePhaseSupply"}
           onClose={() => setOpen(null)}
           onSaved={reload}
         />
@@ -354,7 +375,7 @@ function HomeSheet({
   onClose,
   onSaved,
 }: {
-  open: { kind: Essential };
+  open: { kind: Exclude<Essential, "supply"> };
   data: HomeData;
   names: Map<string, string>;
   onClose: () => void;

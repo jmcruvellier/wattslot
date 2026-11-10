@@ -708,7 +708,16 @@
       "remove": "Remove from my home",
       "remove_confirm": "Confirm removal",
       "remove_hint": "The device will no longer be followed or placed. Home Assistant will still suggest it while its sensor exists."
-    }
+    },
+    "phase": "Connected to",
+    "phases": {
+      "unknown": "I don't know",
+      "PhaseL1": "Phase 1",
+      "PhaseL2": "Phase 2",
+      "PhaseL3": "Phase 3",
+      "ThreePhases": "All three phases (three-phase device)"
+    },
+    "phase_hint": "The phase of the breaker that feeds the device."
   },
   "graph": {
     "title": "My home as a graph",
@@ -1630,7 +1639,13 @@
     "installation_help": "Set in Essentials; their sensors here",
     "proposed": "Suggested by Home Assistant",
     "proposed_help": "Not followed yet: tap one to add it",
-    "search": "Search a device"
+    "search": "Search a device",
+    "supply": {
+      "title": "My grid connection",
+      "single": "Single-phase",
+      "three_summed": "Three-phase, the meter sums the phases",
+      "three_separate": "Three-phase, each phase metered separately"
+    }
   },
   "settings_home": {
     "notifications_none": "None active",
@@ -1754,5 +1769,17 @@
       "failed": "The check failed."
     },
     "related": "With the quarter hour {period}: {value}"
+  },
+  "supply": {
+    "title": "Grid connection",
+    "kind": "Supply",
+    "kinds": {
+      "SinglePhaseSupply": "Single-phase",
+      "ThreePhaseSupply": "Three-phase"
+    },
+    "kind_hint": "If in doubt: a four-pole main breaker, or a \"three-phase\" contract on your bill.",
+    "meter_sums": "My meter sums the three phases",
+    "meter_sums_hint": "What I export on one phase offsets what I import on another. This is how most smart meters work; untick if each phase is metered separately.",
+    "phases_hint": "Then set the phase of each appliance, battery and solar installation in its sheet (Devices tab). The plan does not use it yet: these settings prepare the per-phase calculation."
   }
 }

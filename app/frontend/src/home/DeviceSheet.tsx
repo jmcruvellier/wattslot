@@ -16,7 +16,7 @@ import { automationFor, BEHAVIORS, type Configuration, type ConfigurationIssue, 
 import DeviceSettings from "./DeviceSettings";
 import { kindChoice, toModel, type DraftDevice } from "./draft";
 import { ConfigurationIssues } from "./SettingsSheet";
-import { DEVICE_KINDS, type DeviceKind, type DeviceType, type EntityChoice, type Issue } from "./types";
+import { DEVICE_KINDS, PHASES, type DeviceKind, type DeviceType, type EntityChoice, type Issue, type Phase } from "./types";
 
 type SaveState =
   | { status: "idle" | "saving" | "failed" | "confirm_remove" }
@@ -41,6 +41,7 @@ export default function DeviceSheet({
   configuration,
   types,
   names,
+  threePhase = false,
   onClose,
   onSaved,
 }: {
@@ -49,6 +50,7 @@ export default function DeviceSheet({
   configuration: Configuration;
   types: DeviceType[];
   names: Map<string, string>;
+  threePhase?: boolean; // maison en triphasé : la fiche demande la phase de l'appareil
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -147,6 +149,25 @@ export default function DeviceSheet({
           </select>
         </label>
         <Hint text={t("home.kind_hint")} />
+        {threePhase && draft.kind !== "GridConnection" && (
+          <>
+            <label>
+              {t("home.phase")}{" "}
+              <select
+                value={draft.phase ?? ""}
+                onChange={(event) => edit({ phase: (event.target.value || null) as Phase | null })}
+              >
+                <option value="">{t("home.phases.unknown")}</option>
+                {PHASES.map((phase) => (
+                  <option key={phase} value={phase}>
+                    {t(`home.phases.${phase}`)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <Hint text={t("home.phase_hint")} />
+          </>
+        )}
         {draft.kind === "Battery" && (
           <label>
             {t("home.capacity")}{" "}

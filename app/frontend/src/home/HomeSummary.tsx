@@ -12,14 +12,16 @@ import Icon from "../ui/Icon";
 import SettingRow, { SettingList } from "../ui/SettingRow";
 import { DEFAULT_BATTERY, type Configuration } from "./configuration";
 import { deviceText, direction, list, PLACED, tariffText } from "./summaryText";
-import type { HomeDevice } from "./types";
+import type { HomeDevice, Supply } from "./types";
 
 // Feuilles de « L'essentiel » ; un appareil s'ouvre par sa clé.
-export type Essential = "objective" | "tariff" | "solar" | "battery";
+export type Essential = "objective" | "tariff" | "supply" | "solar" | "battery";
 
 export interface HomeData {
   devices: HomeDevice[];
   configuration: Configuration;
+  supply?: Supply; // absent : monophasé
+  meterSumsPhases?: boolean;
 }
 
 export function Essentials({ data, onOpen }: { data: HomeData; onOpen: (sheet: Essential) => void }) {
@@ -51,6 +53,17 @@ export function Essentials({ data, onOpen }: { data: HomeData; onOpen: (sheet: E
         label={t("home_summary.contract.title")}
         description={tariffText(configuration.tariff, t, language, currency)}
         onOpen={() => onOpen("tariff")}
+      />
+      <SettingRow
+        label={t("home_summary.supply.title")}
+        description={t(
+          data.supply !== "ThreePhaseSupply"
+            ? "home_summary.supply.single"
+            : data.meterSumsPhases === false
+              ? "home_summary.supply.three_separate"
+              : "home_summary.supply.three_summed",
+        )}
+        onOpen={() => onOpen("supply")}
       />
       {solar.length > 0 && (
         <SettingRow label={t("home_summary.panels.title")} description={panelsText()} onOpen={() => onOpen("solar")} />

@@ -708,7 +708,16 @@
       "remove": "Quitar de mi casa",
       "remove_confirm": "Confirmar la retirada",
       "remove_hint": "El aparato ya no se seguirá ni se colocará. Home Assistant lo seguirá proponiendo mientras exista su sensor."
-    }
+    },
+    "phase": "Conectado a",
+    "phases": {
+      "unknown": "No lo sé",
+      "PhaseL1": "Fase 1",
+      "PhaseL2": "Fase 2",
+      "PhaseL3": "Fase 3",
+      "ThreePhases": "Las tres fases (aparato trifásico)"
+    },
+    "phase_hint": "La fase del interruptor que alimenta el aparato."
   },
   "graph": {
     "title": "Mi casa en grafo",
@@ -1630,7 +1639,13 @@
     "installation_help": "Se ajustan en Lo esencial; aquí, sus sensores",
     "proposed": "Propuestos por Home Assistant",
     "proposed_help": "Aún no seguidos: toque uno para añadirlo",
-    "search": "Buscar un aparato"
+    "search": "Buscar un aparato",
+    "supply": {
+      "title": "Mi conexión a la red",
+      "single": "Monofásica",
+      "three_summed": "Trifásica, el contador suma las fases",
+      "three_separate": "Trifásica, cada fase contada por separado"
+    }
   },
   "settings_home": {
     "notifications_none": "Ninguna activa",
@@ -1754,5 +1769,17 @@
       "failed": "El análisis ha fallado."
     },
     "related": "Con el cuarto de hora {period}: {value}"
+  },
+  "supply": {
+    "title": "Conexión a la red",
+    "kind": "Suministro",
+    "kinds": {
+      "SinglePhaseSupply": "Monofásico",
+      "ThreePhaseSupply": "Trifásico"
+    },
+    "kind_hint": "En caso de duda: un interruptor general de cuatro polos o un contrato «trifásico» en la factura.",
+    "meter_sums": "Mi contador suma las tres fases",
+    "meter_sums_hint": "Lo que vierto en una fase compensa lo que consumo de la red en otra. Así funcionan la mayoría de los contadores inteligentes; desmárquelo si cada fase se cuenta por separado.",
+    "phases_hint": "Indique después la fase de cada aparato, batería e instalación solar en su ficha (pestaña Aparatos). La planificación aún no la tiene en cuenta: estos ajustes preparan el cálculo por fase."
   }
 }
