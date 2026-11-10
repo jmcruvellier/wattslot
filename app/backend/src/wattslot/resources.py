@@ -1,6 +1,8 @@
 """Ressources de l'application : processeur, mémoire et disque (État de l'application).
 
-Un relevé par minute : le temps processeur du processus, sa mémoire résidente et l'espace libre.
+Un relevé par minute : le temps processeur du processus, sa mémoire résidente, l'espace libre
+et les octets qu'il a écrits sur disque (Linux, ``/proc/self/io`` : base, graphe et ses
+compactages, journaux), pour suivre l'usure d'une carte SD ou d'un SSD.
 Chaque minute écoulée est aussi gardée en base (``resource_minutes``, 24 heures) avec un résumé
 par heure (``resource_hours``, 30 jours) : les courbes et les pics survivent à un redémarrage, et
 les seuils des alertes se règlent sur plusieurs jours de mesures.
@@ -20,6 +22,7 @@ import logging
 import os
 import shutil
 import sqlite3
+import sys
 import time
 from collections import deque
 from dataclasses import dataclass
@@ -68,6 +71,32 @@ class Sample:
     disk_free: int | None = None  # espace libre du disque des données
     time: datetime | None = None  # heure du relevé (courbes)
     disk_used: int | None = None  # dossier des données, mesuré toutes les 10 minutes seulement
+    written: int | None = None  # octets écrits sur disque par le processus depuis son démarrage
+
+
+def written_from(proc_io: str) -> int | None:
+    """Octets écrits sur disque (``write_bytes``) dans le contenu de ``/proc/self/io``."""
+    for line in proc_io.splitlines():
+        if line.startswith("write_bytes:"):
+            return int(line.split()[1])
+    return None
+
+
+def disk_written_bytes() -> int | None:
+    """Octets écrits sur disque par le processus depuis son démarrage ; inconnus hors de Linux."""
+    if not sys.platform.startswith("linux"):
+        return None
+    try:
+        return written_from(Path("/proc/self/io").read_text())
+    except OSError:
+        return None
+
+
+def written_between(older: Sample, newer: Sample) -> int | None:
+    """Octets écrits entre deux relevés ; inconnus si l'un manque ou si le compteur recule."""
+    if older.written is None or newer.written is None or newer.written < older.written:
+        return None
+    return newer.written - older.written
 
 
 class Resources(BaseModel):
@@ -93,6 +122,8 @@ class Resources(BaseModel):
     disk_alert_used_bytes: int | None = None
     disk_alert_data_bytes: int | None = None
     measured_s: int = 0  # durée couverte par les relevés (moins de 24 h après un démarrage)
+    # Octets écrits sur disque pendant les dernières 24 h (minutes relevées) ; aucun hors de Linux.
+    written_day_bytes: int | None = None
 
 
 def memory_alert(resources: Resources) -> int | None:
@@ -278,6 +309,7 @@ class ResourcePoint(BaseModel):
     memory_bytes: int | None = None
     disk_free_bytes: int | None = None
     disk_used_bytes: int | None = None  # dernière mesure du dossier des données
+    written_bytes: int | None = None  # octets écrits sur disque pendant la minute
 
 
 def history(samples: list[Sample]) -> list[ResourcePoint]:
@@ -297,6 +329,7 @@ def history(samples: list[Sample]) -> list[ResourcePoint]:
                     memory_bytes=sample.memory,
                     disk_free_bytes=sample.disk_free,
                     disk_used_bytes=used,
+                    written_bytes=written_between(previous, sample) if previous else None,
                 )
             )
         previous = sample
@@ -315,6 +348,7 @@ class ResourceHour(BaseModel):
     memory_max: int | None = None
     disk_free_min: int | None = None
     disk_used_max: int | None = None  # dossier des données, plus haute mesure de l'heure
+    written_bytes: int | None = None  # octets écrits sur disque pendant l'heure (minutes relevées)
 
 
 def _text(moment: datetime) -> str:
@@ -337,29 +371,33 @@ class ResourceStore:
         hour = moment.replace(minute=0, second=0, microsecond=0)
         with self._database:
             self._database.execute(
-                "INSERT INTO resource_minutes VALUES (?, ?, ?, ?, ?) "
+                "INSERT INTO resource_minutes (time, cpu_percent, memory_bytes, "
+                "disk_free_bytes, disk_used_bytes, written_bytes) VALUES (?, ?, ?, ?, ?, ?) "
                 "ON CONFLICT(time) DO UPDATE SET cpu_percent = excluded.cpu_percent, "
                 "memory_bytes = excluded.memory_bytes, disk_free_bytes = excluded.disk_free_bytes, "
-                "disk_used_bytes = excluded.disk_used_bytes",
+                "disk_used_bytes = excluded.disk_used_bytes, "
+                "written_bytes = excluded.written_bytes",
                 (
                     _text(moment),
                     point.cpu_percent,
                     point.memory_bytes,
                     point.disk_free_bytes,
                     point.disk_used_bytes,
+                    point.written_bytes,
                 ),
             )
             self._database.execute(
-                "INSERT INTO resource_hours "
+                "INSERT INTO resource_hours (hour, samples, cpu_avg, cpu_max, memory_min, "
+                "memory_avg, memory_max, disk_free_min, disk_used_max, written_bytes) "
                 "SELECT ?, COUNT(*), AVG(cpu_percent), MAX(cpu_percent), MIN(memory_bytes), "
                 "CAST(AVG(memory_bytes) AS INTEGER), MAX(memory_bytes), MIN(disk_free_bytes), "
-                "MAX(disk_used_bytes) "
+                "MAX(disk_used_bytes), SUM(written_bytes) "
                 "FROM resource_minutes WHERE time >= ? AND time < ? "
                 "ON CONFLICT(hour) DO UPDATE SET samples = excluded.samples, "
                 "cpu_avg = excluded.cpu_avg, cpu_max = excluded.cpu_max, "
                 "memory_min = excluded.memory_min, memory_avg = excluded.memory_avg, "
                 "memory_max = excluded.memory_max, disk_free_min = excluded.disk_free_min, "
-                "disk_used_max = excluded.disk_used_max",
+                "disk_used_max = excluded.disk_used_max, written_bytes = excluded.written_bytes",
                 (_text(hour), _text(hour), _text(hour + timedelta(hours=1))),
             )
             self._database.execute(
@@ -372,8 +410,8 @@ class ResourceStore:
 
     def minutes(self, since: datetime) -> list[ResourcePoint]:
         rows = self._database.execute(
-            "SELECT time, cpu_percent, memory_bytes, disk_free_bytes, disk_used_bytes "
-            "FROM resource_minutes WHERE time >= ? ORDER BY time",
+            "SELECT time, cpu_percent, memory_bytes, disk_free_bytes, disk_used_bytes, "
+            "written_bytes FROM resource_minutes WHERE time >= ? ORDER BY time",
             (_text(since),),
         ).fetchall()
         return [
@@ -383,6 +421,7 @@ class ResourceStore:
                 memory_bytes=row[2],
                 disk_free_bytes=row[3],
                 disk_used_bytes=row[4],
+                written_bytes=row[5],
             )
             for row in rows
         ]
@@ -390,7 +429,8 @@ class ResourceStore:
     def hours(self, since: datetime) -> list[ResourceHour]:
         rows = self._database.execute(
             "SELECT hour, samples, cpu_avg, cpu_max, memory_min, memory_avg, memory_max, "
-            "disk_free_min, disk_used_max FROM resource_hours WHERE hour >= ? ORDER BY hour",
+            "disk_free_min, disk_used_max, written_bytes FROM resource_hours "
+            "WHERE hour >= ? ORDER BY hour",
             (_text(since),),
         ).fetchall()
         return [
@@ -404,6 +444,7 @@ class ResourceStore:
                 memory_max=row[6],
                 disk_free_min=row[7],
                 disk_used_max=row[8],
+                written_bytes=row[9],
             )
             for row in rows
         ]
@@ -424,6 +465,7 @@ def _sample(data_dir: Path | None = None, disk_used: int | None = None) -> Sampl
         disk_free=_free(data_dir) if data_dir is not None else None,
         time=datetime.now(UTC),
         disk_used=disk_used,
+        written=disk_written_bytes(),
     )
 
 
@@ -513,6 +555,14 @@ class ResourceMonitor:
             found.cpu_peak_percent = max(cpus, default=None)
             found.memory_peak_bytes = max(memories, default=None)
             found.measured_s = round((moment - kept[0].time).total_seconds())
+        # Écritures des dernières 24 h : minutes d'avant le démarrage et relevés depuis.
+        since = moment - timedelta(seconds=HISTORY_S)
+        written = [
+            p.written_bytes
+            for p in [*kept, *history(list(self._samples))]
+            if p.written_bytes is not None and p.time >= since
+        ]
+        found.written_day_bytes = sum(written) if written else None
         found.cpu_cores = cpu_cores()
         found.memory_limit_bytes, found.memory_limit_source = memory_limit()
         found.disk_used_bytes = directory_size(self._data_dir)

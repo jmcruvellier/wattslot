@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 
 from tests.fake_home_assistant import ENERGY_PREFERENCES
 from tests.test_health import _settings
-from wattslot.diagnostic import configuration_issues, written_from
+from wattslot.diagnostic import configuration_issues
 from wattslot.home_assistant import (
     ConnectionState,
     HomeAssistantClient,
@@ -17,7 +17,7 @@ from wattslot.home_assistant import (
     HomeSnapshot,
 )
 from wattslot.main import create_app
-from wattslot.resources import resident_bytes
+from wattslot.resources import resident_bytes, written_from
 from wattslot.storage.raw import RawStores, Reading
 
 

@@ -1,5 +1,5 @@
 // Ressources de l'application (État de l'application) : processeur, mémoire, espace occupé du
-// disque et données de l'application, lus par
+// disque, données de l'application et écritures sur disque (Linux seulement), lus par
 // /api/diagnostic/resources toutes les 30 secondes. Les alertes (disque, mémoire, calcul lent)
 // sont des problèmes du diagnostic, en tête de page. Chaque ligne se déplie sur sa courbe des
 // dernières 24 h (/api/diagnostic/resources/history), lue seulement quand une ligne est ouverte.
@@ -14,7 +14,7 @@ import { formatNumber, formatPercent } from "./format";
 import ResourceChart, { type ChartPoint } from "./ResourceChart";
 import type { ResourcePoint, Resources } from "./types";
 
-type Kind = "cpu" | "memory" | "disk" | "data";
+type Kind = "cpu" | "memory" | "disk" | "data" | "written";
 
 const REFRESH_MS = 30_000;
 // En deçà, les pics ne couvrent pas encore une journée : « depuis le démarrage ».
@@ -153,6 +153,17 @@ export default function ResourcesSection() {
           value={bytes(r.disk_used_bytes)}
           description={t("diagnostic.resources.disk_used_help")}
         />
+        {/* Écritures sur disque (usure d'une carte SD ou d'un SSD) : inconnues hors de Linux. */}
+        {r.written_day_bytes != null && (
+          <Row
+            kind="written"
+            onToggle={toggle}
+            chart={chart(t("diagnostic.resources.written"), null, (p) => p.written_bytes ?? null, bytes)}
+            label={t("diagnostic.resources.written")}
+            value={bytes(r.written_day_bytes)}
+            description={t(r.measured_s >= DAY_S ? "diagnostic.resources.written_day" : "diagnostic.resources.written_start")}
+          />
+        )}
       </>
     );
   }

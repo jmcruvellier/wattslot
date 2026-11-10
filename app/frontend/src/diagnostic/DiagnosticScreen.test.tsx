@@ -109,13 +109,14 @@ const HISTORY: ResourcePoint[] = [0, 1, 2].map((minute) => ({
   memory_bytes: 180_000_000 + minute * 1_000_000,
   disk_free_bytes: 20_000_000_000,
   disk_used_bytes: 1_250_000_000,
+  written_bytes: minute === 0 ? null : 4_000_000,
 }));
 
-function mockApi(diagnostic: Diagnostic, problems: Problem[] = []) {
+function mockApi(diagnostic: Diagnostic, problems: Problem[] = [], resources: Resources = RESOURCES) {
   return vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
     const url = String(input);
     if (url === "api/diagnostic") return Response.json(diagnostic);
-    if (url === "api/diagnostic/resources") return Response.json(RESOURCES);
+    if (url === "api/diagnostic/resources") return Response.json(resources);
     if (url === "api/diagnostic/resources/history") return Response.json(HISTORY);
     if (url === "api/diagnostic/problems") return Response.json(problems);
     if (url === "api/diagnostic/report") return Response.json({ format: "wattslot/report", problems: [] });
@@ -203,6 +204,26 @@ describe("DiagnosticScreen", () => {
     expect(screen.getByText("Free: 20 GB of 32 GB")).toBeInTheDocument();
     expect(screen.getByText("1.3 GB")).toBeInTheDocument();
     expect(screen.getByText(/^Data folder, measured every 10 minutes; threshold:/)).toBeInTheDocument();
+  });
+
+  it("montre les écritures sur disque, et leur courbe par minute", async () => {
+    const user = userEvent.setup();
+    mockApi(HEALTHY, [], { ...RESOURCES, written_day_bytes: 850_000_000 });
+
+    renderScreen();
+
+    expect(await screen.findByText("Disk writes")).toBeInTheDocument();
+    expect(screen.getByText("850 MB")).toBeInTheDocument();
+    expect(screen.getByText("Written since startup; chart: bytes written per minute")).toBeInTheDocument();
+    await user.click(screen.getByText("Disk writes"));
+    expect(await screen.findByRole("img", { name: "Disk writes over the last 24 hours" })).toBeInTheDocument();
+  });
+
+  it("sans écritures connues (hors de Linux), pas de ligne d'écritures", async () => {
+    mockApi(HEALTHY);
+    renderScreen();
+    expect(await screen.findByText("2.5%")).toBeInTheDocument();
+    expect(screen.queryByText("Disk writes")).toBeNull();
   });
 
   it("déplie la courbe d'une ressource", async () => {
