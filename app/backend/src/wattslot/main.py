@@ -1112,11 +1112,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
         async with state.planning_lock:
             try:
-                return await run(context, datetime.now(UTC), manual=True)
+                now = datetime.now(UTC)
+                report = await run(context, now, manual=True)
             except ForecastUnavailable as exc:
                 raise HTTPException(
                     status_code=409, detail=f"Aucune prévision solaire pour le {exc}"
                 ) from exc
+        _record_manual(state, now, report)
+        return report
+
+    def _record_manual(state: Any, now: datetime, report: RunReport) -> None:
+        """Calcul réussi lancé à la main : l'état de l'application le compte comme un calcul
+        du planificateur (plus d'erreur ni de plan ancien affichés)."""
+        scheduler: PlanningScheduler | None = getattr(state, "scheduler", None)
+        if scheduler is not None:
+            scheduler.record_success(now, report)
 
     @app.post("/api/planning/actual")
     async def planning_actual(request: Request) -> dict[str, Any]:
@@ -1149,11 +1159,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 data_dir=settings.data_dir,
             )
             try:
-                await run(context, now, manual=True)
+                report = await run(context, now, manual=True)
             except ForecastUnavailable as exc:
                 raise HTTPException(
                     status_code=409, detail=f"Aucune prévision solaire pour le {exc}"
                 ) from exc
+        _record_manual(state, now, report)
         plan = stored_plan(state.database, "today")
         return (plan or {}).get("donnees_reelles_cache") or {}
 

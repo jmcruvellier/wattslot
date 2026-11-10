@@ -5,9 +5,14 @@ from datetime import UTC, date, datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+import pytest
+
+from wattslot.home_assistant import NotConnectedError
+from wattslot.planning import scheduler as scheduler_module
 from wattslot.planning.runner import RunReport
 from wattslot.planning.scheduler import (
     PlanningScheduler,
+    lost_connection,
     near_hourly,
     next_actual,
     next_hourly,
@@ -66,9 +71,13 @@ class Fake:
         self.errors: list[str] = []
         self.refreshed: list[datetime] = []
         self.refresh_fails = False
+        self.cut = 0  # calculs suivants interrompus par une coupure de la connexion
 
     async def run(self, now: datetime) -> RunReport:
         self.calls.append(now)
+        if self.cut:
+            self.cut -= 1
+            raise NotConnectedError("connexion perdue")
         if self.fail:
             raise RuntimeError("Home Assistant non connecté")
         if self.no_forecast:
@@ -119,6 +128,57 @@ def test_tick_records_the_report_and_errors() -> None:
     fake.fail, fake.no_forecast = False, True
     asyncio.run(scheduler.tick(later))
     assert scheduler.status().last_error_code == "no_forecast"
+
+
+def test_a_run_cut_by_a_lost_connection_is_retried(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Rapport du 10/11/2026 : HA ralenti par une autre charge de l'hôte, la connexion tombe en
+    plein calcul ; il est refait quelques minutes plus tard au lieu d'attendre l'heure suivante."""
+    monkeypatch.setattr(scheduler_module, "CONNECTION_RETRIES_S", (0.0, 0.0))
+    fake = Fake()
+    scheduler = fake.scheduler()
+    now = paris(2026, 11, 10, 5, 59).astimezone(UTC)
+
+    async def hourly() -> None:
+        await scheduler.tick(now)
+        await scheduler.retry_after_lost_connection()
+
+    fake.cut = 1
+    asyncio.run(hourly())
+    status = scheduler.status()
+    assert len(fake.calls) == 2 and status.last_error is None and status.last_success_at
+
+    fake.calls, fake.cut = [], 5  # coupures répétées : deux nouveaux essais, pas plus
+    asyncio.run(hourly())
+    assert len(fake.calls) == 3 and scheduler.status().last_error_code == "connection"
+
+    fake.calls, fake.cut, fake.fail = [], 0, True  # autre erreur : pas de nouvel essai
+    asyncio.run(hourly())
+    assert len(fake.calls) == 1 and scheduler.status().last_error_code == "internal"
+
+
+def test_lost_connection_is_recognised_through_its_cause() -> None:
+    try:
+        try:
+            raise NotConnectedError("connexion perdue")
+        except NotConnectedError as cause:
+            raise RuntimeError("lecture des tâches impossible") from cause
+    except RuntimeError as wrapped:
+        assert lost_connection(wrapped)
+    assert not lost_connection(ValueError("autre"))
+
+
+def test_a_manual_run_clears_the_error_of_the_scheduler() -> None:
+    fake = Fake()
+    scheduler = fake.scheduler()
+    fake.fail = True
+    asyncio.run(scheduler.tick(paris(2026, 11, 10, 6, 59).astimezone(UTC)))
+    assert scheduler.status().last_error is not None
+
+    manual = paris(2026, 11, 10, 7, 12).astimezone(UTC)
+    scheduler.record_success(manual, report(date(2026, 11, 10)))
+
+    status = scheduler.status()
+    assert status.last_error is None and status.last_success_at == manual
 
 
 def test_rollover_runs_only_when_the_day_is_not_computed_yet() -> None:
