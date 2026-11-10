@@ -16,6 +16,7 @@ précédent de la journée (lot 2.3, exécution planifiée).
 """
 
 import sqlite3
+from collections import defaultdict
 from collections.abc import Mapping, Sequence
 from dataclasses import replace
 from datetime import UTC, date, datetime, time, timedelta
@@ -32,7 +33,7 @@ from wattslot.battery_settings import BatterySettings
 from wattslot.configuration import Behavior, Configuration, DeviceSettings
 from wattslot.detection import DeviceKind, Role, classify_appliance
 from wattslot.home_assistant import HomeAssistantClient
-from wattslot.home_model import HomeDevice, HomeModel
+from wattslot.home_model import HomeDevice, HomeModel, Phase, Supply
 from wattslot.planning import past
 from wattslot.planning.appliances import DEFAULT_RULES, RULES
 from wattslot.planning.co2_sources import co2_context
@@ -54,6 +55,7 @@ from wattslot.planning.journal import (
     real_cycles,
 )
 from wattslot.planning.past import AggregateReader
+from wattslot.planning.problem import line_shares
 from wattslot.planning.reference import task_key
 from wattslot.planning.sources import Forecasts, PlanningSettings, has_production, read_tasks
 from wattslot.planning.tariff_sources import needs_states, tariff_context
@@ -484,6 +486,9 @@ def configured(
         runtimes=runtimes,
         needs=needs,
         constraints=_constraints(data, model, effective, every),
+        three_phase=model.supply is Supply.THREE,
+        phases=_phases(data, model, every),
+        production_shares=_production_shares(model),
         tariff=config.tariff_of(configuration),
         battery=_with_settings(data.battery, config.battery_of(configuration, model)),
     )
@@ -594,6 +599,33 @@ def _constraints(
             if appliance is not None and appliance.key == device.key:
                 found[task.name] = constraints
     return found
+
+
+def _phases(data: PlanningInput, model: HomeModel, every: Sequence[Any]) -> dict[str, Phase]:
+    """Phase de chaque élément du plan, par nom (comme les contraintes horaires) : tâches de
+    l'équipement, son besoin d'énergie ou sa durée à placer (au nom de l'équipement)."""
+    found: dict[str, Phase] = {}
+    for device in model.devices:
+        if device.phase is None:
+            continue
+        found[device.name] = device.phase
+        for task in [*data.due_tasks, *data.waiting_tasks]:
+            appliance = appliance_for(task, every)
+            if appliance is not None and appliance.key == device.key:
+                found[task.name] = device.phase
+    return found
+
+
+def _production_shares(model: HomeModel) -> dict[Phase, float]:
+    """Part de la production branchée sur chaque phase : les installations solaires comptées à
+    parts égales, une installation triphasée pour un tiers sur chaque phase. Celles dont la
+    phase n'est pas connue ne sont comptées sur aucune (prudent : rien n'est déduit)."""
+    solar = [device for device in model.devices if device.kind is DeviceKind.SOLAR]
+    shares: dict[Phase, float] = defaultdict(float)
+    for device in solar:
+        for line, share in line_shares(device.phase).items():
+            shares[line] += share / len(solar)
+    return dict(shares)
 
 
 DEFAULT_SPEED_KW = 0.5  # vitesse non réglée et jamais mesurée

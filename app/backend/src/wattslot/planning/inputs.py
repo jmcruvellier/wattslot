@@ -9,6 +9,7 @@ from dataclasses import dataclass, field, replace
 from datetime import date, datetime
 from typing import Any
 
+from wattslot.home_model import Phase
 from wattslot.planning.co2_sources import Co2Context
 from wattslot.planning.cycles import Segment, Shape
 from wattslot.planning.plan import POOL, Reason
@@ -198,6 +199,11 @@ class PlanningInput:
     # commencés la veille, reprises comme consommation déjà décidée.
     next_day: NextDay | None = None
     carried: tuple[CarriedCycle, ...] = ()
+    # Maison en triphasé (limite de puissance par phase) : phase de chaque élément du plan, par
+    # nom (tâche, besoin, durée) ; part de la production branchée sur chaque phase.
+    three_phase: bool = False
+    phases: Mapping[str, Phase] = field(default_factory=dict)
+    production_shares: Mapping[Phase, float] = field(default_factory=dict)
 
 
 def _date(value: Any) -> date | None:

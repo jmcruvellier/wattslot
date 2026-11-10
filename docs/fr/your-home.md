@@ -61,7 +61,9 @@ Dans **L'essentiel › Mon raccordement**, indiquez si votre maison est en **mon
 - **Mon compteur additionne les trois phases** (coché par défaut) : ce que vous injectez sur une phase compense ce que vous soutirez sur une autre, comme le font la plupart des compteurs communicants. Décochez si chaque phase est comptée à part.
 - La fiche de chaque appareil demande alors sur quelle phase il est **branché** : phase 1, 2 ou 3, les trois phases pour un appareil triphasé (borne de recharge, pompe à chaleur…), ou *Je ne sais pas*. Cela vaut aussi pour chaque batterie et chaque installation solaire.
 
-Le plan ne tient pas encore compte de ces réglages : ils préparent un calcul phase par phase (limite de puissance de chaque phase, batterie qui ne sert que sa phase).
+**Limite de puissance de chaque phase.** Avec la **puissance souscrite** réglée dans **Mon contrat**, chaque phase en reçoit un tiers (4 kVA par phase pour 12 kVA). Le plan évite alors de faire tourner ensemble, sur une même phase, des appareils qui tireraient davantage : il en déplace un à une autre heure. Un appareil triphasé compte pour un tiers sur chaque phase, et la production des installations solaires branchées sur la phase est déduite. Un appareil dont la phase n'est pas renseignée n'est pas limité.
+
+Cette limite ne compte que les appareils que le plan place : le reste de la consommation de chaque phase n'est pas encore connu. Un appareil qui dépasse sa phase à lui seul reste placé, avec un avertissement dans le plan. Le reste du calcul (batterie, surplus) ne distingue pas encore les phases.
 
 ## Objectif
 
