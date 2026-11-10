@@ -24,6 +24,7 @@ de ``simulation.py``) : mouvements, SoC heure par heure et résidu réseau en vi
 
 import math
 import time
+from collections import defaultdict
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field, replace
 from datetime import date
@@ -32,6 +33,7 @@ from typing import Any
 
 import highspy
 
+from wattslot.home_model import Phase
 from wattslot.objective_settings import Weights
 from wattslot.planning.explain import explain
 from wattslot.planning.plan import (
@@ -44,7 +46,7 @@ from wattslot.planning.plan import (
 )
 from wattslot.planning.plan import Movement as PlannedMovement
 from wattslot.planning.plan import Plan as DayPlan
-from wattslot.planning.problem import Problem, Task
+from wattslot.planning.problem import LINES, Problem, Task, line_shares
 from wattslot.planning.simulation import BatteryRun, simulate
 from wattslot.time_constraints import labels
 
@@ -59,6 +61,11 @@ SOFT_PENALTY = 1.0  # contrainte souple violée, par heure (ou par créneau d'un
 # Par kWh soutiré au-delà de la puissance souscrite (lot 7.3) : plus qu'une tâche non placée,
 # le disjoncteur coupant toute la maison ; souple, le problème reste toujours soluble.
 CONTRACT_PENALTY = 1000.0
+# Par kWh que les équipements placés tirent ensemble sur une phase au-delà de sa part de la
+# puissance souscrite (triphasé) : plus que tout écart de prix ou contrainte souple, moins qu'une
+# tâche non placée. La consommation de base de la phase n'est pas encore connue : un équipement
+# qui dépasse seul reste placé, deux équipements de la même phase sont écartés l'un de l'autre.
+PHASE_PENALTY = 10.0
 # Puissance supposée sans puissance souscrite saisie, pour le seul contrôle des données
 # impossibles : 36 kVA, le plus fort contrat résidentiel en France (lot 7.3).
 DEFAULT_CONTRACT_KWH = 36.0
@@ -264,11 +271,27 @@ def solve(problem: Problem, objective: Goal = Objective.COST, time_limit_s: floa
     later = list(night.problem_hours) if night else []
     for hour in later:  # prolongement : parts du lendemain des cycles gelés ou lancés
         load[hour] = night.fixed_kwh.get(hour - 24, 0.0) if night else 0.0
+    # Triphasé : ce que les équipements placés tirent sur chaque phase, heure par heure.
+    limited = problem.phase_limit_kwh is not None
+    phase_load: dict[tuple[Phase, int], Any] = {
+        (line, hour): problem.fixed_by_phase.get(line, {}).get(hour, 0.0)
+        for line in (LINES if limited else ())
+        for hour in hours + later
+    }
+    decided: set[tuple[Phase, int]] = set()  # heures d'une phase où quelque chose se décide
+
+    def on_phase(name: str, hour: int, kwh: Any) -> None:
+        for line, share in line_shares(problem.phases.get(name)).items():
+            if (line, hour) in phase_load:
+                phase_load[line, hour] = phase_load[line, hour] + share * kwh
+                decided.add((line, hour))
+
     for task in problem.tasks:
         for start, x in choices[task.name].items():
             for hour, kwh in task.hourly_kwh(start).items():
                 if hour in load and kwh:
                     load[hour] = load[hour] + kwh * x
+                    on_phase(task.name, hour, kwh * x)
 
     # --- Durées à placer (filtration…) : arrêt ou une vitesse, heure par heure ---------------
     shortfalls: list[Any] = []
@@ -300,7 +323,9 @@ def solve(problem: Problem, objective: Goal = Objective.COST, time_limit_s: floa
             h.addConstr(started >= on - previous)
             starts.append(started)
             previous = on
-            load[hour] = load[hour] + sum(kw * speeds[mode][hour] for mode, kw in runtime.speeds)
+            drawn = sum(kw * speeds[mode][hour] for mode, kw in runtime.speeds)
+            load[hour] = load[hour] + drawn
+            on_phase(runtime.name, hour, drawn)
             violated = problem.soft_violated(runtime.name, hour * 60, hour * 60 + 60)
             if violated:
                 penalties.append(len(violated) * on)
@@ -332,11 +357,21 @@ def solve(problem: Problem, objective: Goal = Objective.COST, time_limit_s: floa
         h.addConstr(sum(delivered.values()) + short >= need.energy_kwh)
         for hour, kwh in delivered.items():
             load[hour] = load[hour] + kwh
+            on_phase(need.name, hour, kwh)
             violated = problem.soft_violated(need.name, hour * 60, hour * 60 + 60)
             if violated:
                 penalties.append(len(violated) / need.max_kw * kwh)
         deliveries[need.name] = delivered
         shortfalls.append(short)
+
+    # --- Triphasé : limite de puissance de chaque phase, souple -------------------------------
+    over_phase: list[Any] = []
+    production = _extended(problem.production_kwh, night.production_kwh if night else None)
+    for line, hour in sorted(decided, key=lambda key: (key[1], key[0])):
+        over = var()
+        solar = problem.production_shares.get(line, 0.0) * max(0.0, production.get(hour, 0.0))
+        h.addConstr(phase_load[line, hour] - solar <= problem.phase_limit_kwh + over)
+        over_phase.append(over)
 
     # --- Batterie (comportement glouton) et réseau ---------------------------------------
     battery = problem.battery
@@ -428,6 +463,7 @@ def solve(problem: Problem, objective: Goal = Objective.COST, time_limit_s: floa
         + SKIP_PENALTY * sum(shortfalls)  # par kWh manquant : seulement s'il ne tient plus
         + SOFT_PENALTY * sum(penalties)
         + CONTRACT_PENALTY * sum(over_contract)
+        + PHASE_PENALTY * sum(over_phase)
         + battery_cost(problem, objective) * sum(throughput)
     )
     status = h.getModelStatus()
@@ -483,6 +519,44 @@ def load_kwh(problem: Problem, plan: Plan) -> dict[int, float]:
             if hour in load:
                 load[hour] += kwh
     return load
+
+
+def phase_excess(problem: Problem, plan: Plan) -> dict[Phase, list[int]]:
+    """Triphasé : heures du jour où les équipements placés (et les cycles déjà décidés) tirent
+    ensemble, sur une phase, plus que sa part de la puissance souscrite, la production branchée
+    sur cette phase déduite. Phases sans dépassement absentes."""
+    if problem.phase_limit_kwh is None:
+        return {}
+    drawn: dict[Phase, dict[int, float]] = {
+        line: defaultdict(float, problem.fixed_by_phase.get(line, {})) for line in LINES
+    }
+
+    def on_phase(name: str, hour: int, kwh: float) -> None:
+        for line, share in line_shares(problem.phases.get(name)).items():
+            drawn[line][hour] += share * kwh
+
+    by_name = {task.name: task for task in problem.tasks}
+    for name, start in plan.starts.items():
+        for hour, kwh in by_name[name].hourly_kwh(start).items():
+            on_phase(name, hour, kwh)
+    for runtime in problem.runtimes:
+        for hour, mode in plan.runtimes.get(runtime.name, {}).items():
+            on_phase(runtime.name, hour, runtime.kw(mode))
+    for name, delivered in plan.needs.items():
+        for hour, kwh in delivered.items():
+            on_phase(name, hour, kwh)
+    found: dict[Phase, list[int]] = {}
+    for line in LINES:
+        share = problem.production_shares.get(line, 0.0)
+        over = [
+            hour
+            for hour in problem.hours
+            if drawn[line][hour] - share * max(0.0, problem.production_kwh.get(hour, 0.0))
+            > problem.phase_limit_kwh + 0.001
+        ]
+        if over:
+            found[line] = over
+    return found
 
 
 def simulate_plan(problem: Problem, plan: Plan) -> BatteryRun:
@@ -770,6 +844,17 @@ def day_plan(problem: Problem, plan: Plan, run: BatteryRun) -> DayPlan:
                 "params": {
                     "kva": f"{problem.contract_kwh:g}",
                     "heures": ", ".join(str(hour) for hour in over),
+                },
+            }
+        )
+    for line, phase_hours in phase_excess(problem, plan).items():
+        warnings.append(
+            {
+                "code": "phase_depassee",
+                "params": {
+                    "phase": str(LINES.index(line) + 1),
+                    "kva": f"{problem.phase_limit_kwh:g}",
+                    "heures": ", ".join(str(hour) for hour in phase_hours),
                 },
             }
         )

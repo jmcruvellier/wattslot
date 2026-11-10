@@ -1789,6 +1789,6 @@
     "kind_hint": "En caso de duda: un interruptor general de cuatro polos o un contrato «trifásico» en la factura.",
     "meter_sums": "Mi contador suma las tres fases",
     "meter_sums_hint": "Lo que vierto en una fase compensa lo que consumo de la red en otra. Así funcionan la mayoría de los contadores inteligentes; desmárquelo si cada fase se cuenta por separado.",
-    "phases_hint": "Indique después la fase de cada aparato, batería e instalación solar en su ficha (pestaña Aparatos). La planificación aún no la tiene en cuenta: estos ajustes preparan el cálculo por fase."
+    "phases_hint": "Indique después la fase de cada aparato, batería e instalación solar en su ficha (pestaña Aparatos). Con la potencia contratada de su tarifa, la planificación evita entonces que funcionen juntos, en una misma fase, más de lo que esta puede suministrar. El resto del cálculo aún no distingue las fases."
   }
 }

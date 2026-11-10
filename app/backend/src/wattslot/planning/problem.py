@@ -26,6 +26,7 @@ from typing import Any
 
 from wattslot import currency
 from wattslot.battery_settings import floor_percent_at
+from wattslot.home_model import Phase
 from wattslot.planning.cycles import (
     DAY_MIN,
     PlannedCycle,
@@ -45,6 +46,18 @@ from wattslot.planning.plan import Reason
 from wattslot.planning.reference import REFERENCE, Reference, task_key
 from wattslot.runtime_settings import season
 from wattslot.time_constraints import TimeConstraint
+
+LINES = (Phase.L1, Phase.L2, Phase.L3)  # les trois phases d'une maison en triphasé
+
+
+def line_shares(phase: Phase | None) -> dict[Phase, float]:
+    """Part de la puissance d'un équipement sur chaque phase : toute sur la sienne, un tiers sur
+    chacune pour un équipement triphasé, aucune si sa phase n'est pas connue."""
+    if phase is None:
+        return {}
+    if phase is Phase.ALL:
+        return dict.fromkeys(LINES, 1 / 3)
+    return {phase: 1.0}
 
 
 @dataclass(frozen=True)
@@ -212,6 +225,15 @@ class Problem:
     # l'échelle de l'euro dans l'objectif, où pénalités et départages sont réglés en euros.
     price_scale: float = 1.0
     overnight: Overnight | None = None  # calcul prolongé après minuit (débordement)
+    # Maison en triphasé : ce que les équipements placés peuvent tirer ensemble sur une phase en
+    # une heure (kWh : un tiers de la puissance souscrite), ``None`` hors triphasé ou sans
+    # contrat ; phase de chaque élément du plan, par nom ; part de la production sur chaque
+    # phase ; consommation déjà décidée (cycles gelés ou lancés) par phase, les heures du
+    # prolongement numérotées 24, 25…
+    phase_limit_kwh: float | None = None
+    phases: Mapping[str, Phase] = field(default_factory=dict)
+    production_shares: Mapping[Phase, float] = field(default_factory=dict)
+    fixed_by_phase: Mapping[Phase, Mapping[int, float]] = field(default_factory=dict)
 
     @property
     def hours(self) -> range:
@@ -429,10 +451,18 @@ def from_input(data: PlanningInput, reference: Reference = REFERENCE) -> Problem
     fixed: dict[int, float] = defaultdict(float)
     tail: dict[int, float] = defaultdict(float)  # cycles fixés : part du lendemain
     ends: dict[str, int] = {}
+    fixed_phase: dict[Phase, dict[int, float]] = {line: defaultdict(float) for line in LINES}
+
+    def on_phase(name: str, hour: int, kwh: float) -> None:
+        """Compte une consommation déjà décidée sur la phase de son équipement."""
+        for line, share in line_shares(data.phases.get(name)).items():
+            fixed_phase[line][hour] += kwh * share
+
     for carried in data.carried:  # fin d'un cycle commencé la veille avant minuit
         for hour, kwh in carried.hourly_kwh.items():
             if hour >= first_hour:
                 fixed[hour] += kwh
+                on_phase(carried.name, hour, kwh)
         key = task_key(carried.name)
         ends[key] = max(ends.get(key, 0), carried.end_min)
 
@@ -468,12 +498,14 @@ def from_input(data: PlanningInput, reference: Reference = REFERENCE) -> Problem
         remaining = dict(remaining_hourly(result, now, shape))
         for hour, kwh in after_midnight(remaining_hourly(result, now, shape, days=2)).items():
             tail[hour] += kwh
+            on_phase(name, 24 + hour, kwh)
         segment = recognized_segment(segs, energy_kwh)
         measured = measured_hourly(result, segment, shape) if segment else {}
         remaining[first_hour] = remaining.get(first_hour, 0.0) + measured.get(first_hour, 0.0)
         for hour, kwh in remaining.items():
             if hour >= first_hour:
                 fixed[hour] += kwh
+                on_phase(name, hour, kwh)
         ends[task_key(name)] = free_from_minute(result)
         launched_end_hours[name] = free_from_hour(result)
         # Fin réelle, après minuit pour un cycle lancé le soir qui déborde.
@@ -491,10 +523,12 @@ def from_input(data: PlanningInput, reference: Reference = REFERENCE) -> Problem
             for hour, kwh in planned_hourly(cycle).items():
                 if hour >= first_hour:
                     fixed[hour] += kwh
+                    on_phase(item.name, hour, kwh)
             if item.end_min is not None and item.end_min > DAY_MIN:
                 whole = PlannedCycle(cycle.start_min, item.end_min, item.energy_kwh, item.shape)
                 for hour, kwh in after_midnight(planned_hourly(whole, days=2)).items():
                     tail[hour] += kwh
+                    on_phase(item.name, 24 + hour, kwh)
             continue
         # Bloc gelé dont le cycle réel a démarré : recalé à chaque calcul (démarrage réel, fin
         # repoussée tant qu'il tourne), le plan fusionné prend ce bloc plutôt que l'ancien.
@@ -686,6 +720,12 @@ def from_input(data: PlanningInput, reference: Reference = REFERENCE) -> Problem
         price_scale=currency.scale(),
         co2_g_kwh=data.co2.hourly(day),
         overnight=overnight,
+        phase_limit_kwh=data.tariff.contract_kva / 3
+        if data.three_phase and data.tariff.contract_kva is not None
+        else None,
+        phases=dict(data.phases),
+        production_shares=dict(data.production_shares),
+        fixed_by_phase={line: dict(hourly) for line, hourly in fixed_phase.items()},
     )
 
 

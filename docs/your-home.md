@@ -61,7 +61,9 @@ In **Essentials › My grid connection**, say whether your home is **single-phas
 - **My meter sums the three phases** (ticked by default): what you export on one phase offsets what you import on another, as most smart meters do. Untick it if each phase is metered separately.
 - Each device's sheet then asks which phase it is **connected to**: phase 1, 2 or 3, all three phases for a three-phase device (car charger, heat pump…), or *I don't know*. This also applies to each battery and each solar installation.
 
-The plan does not use these settings yet: they prepare a calculation phase by phase (power limit of each phase, battery that only serves its own phase).
+**Power limit of each phase.** With the **contract power** set in **My contract**, each phase gets a third of it (4 kVA per phase for 12 kVA). The plan then avoids running together, on one phase, appliances that would draw more than that: it moves one to another hour. A three-phase device counts for a third on each phase, and the production of the solar installations connected to the phase is deducted. A device whose phase is not set is not limited.
+
+This limit only counts the appliances the plan places: the rest of the consumption of each phase is not known yet. An appliance that exceeds its phase on its own stays placed, with a warning in the plan. The rest of the calculation (battery, surplus) does not tell the phases apart yet.
 
 ## Objective
 

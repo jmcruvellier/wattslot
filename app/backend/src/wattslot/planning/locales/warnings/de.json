@@ -23,6 +23,7 @@
     "tache_reportee": "{equipement} auf {jour} verschoben: {pct_jour} % durch Solarstrom gedeckt, gegenüber {pct_auj} % heute.",
     "tache_reportee_sans_creneau": "{equipement} auf {jour} verschoben: heute nicht mehr genug Zeit für einen vollen Zyklus.",
     "puissance_souscrite_depassee": "Geplanter Netzbezug über der vertraglichen Leistung ({kva} kVA) um {heures} Uhr: Grundverbrauch und Geräte übersteigen den Vertrag, auch nach Verschieben der Geräte. Die Hauptsicherung kann auslösen.",
+    "phase_depassee": "Phase {phase}: Die darauf geplanten Geräte beziehen zusammen mehr als ihren Anteil an der vertraglichen Leistung ({kva} kVA je Phase) um {heures} Uhr, auch nach dem Verschieben. Die Sicherung kann auslösen; schließen Sie nach Möglichkeit ein Gerät an eine andere Phase an.",
     "donnees_impossibles": "Prognosen vor dem {jour} beendet: Der um {heure} erwartete Verbrauch ({kwh} kWh) übersteigt, was Ihr Haus in einer Stunde beziehen kann ({limite} kWh). Er stammt von einem Sprung des Sensors „{capteur}“ ({entite}) am {jour_source} um {heure_source}: {kwh_source} kWh in einer Stunde gezählt, vermutlich ein Sensorausfall. Die Prognosen dieses Wochentags bleiben bis zum {jour_fin} verfälscht.",
     "donnees_impossibles_sans_origine": "Prognosen vor dem {jour} beendet: Der um {heure} erwartete Verbrauch ({kwh} kWh) übersteigt, was Ihr Haus in einer Stunde beziehen kann ({limite} kWh). Vermutlich verfälscht ein Zählersprung den Grundverbrauch: Prüfen Sie den Verlauf Ihrer Energiezähler in Home Assistant."
   },

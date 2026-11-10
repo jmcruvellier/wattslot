@@ -1789,6 +1789,6 @@
     "kind_hint": "In caso di dubbio: un interruttore generale a quattro poli o un contratto «trifase» in bolletta.",
     "meter_sums": "Il mio contatore somma le tre fasi",
     "meter_sums_hint": "Ciò che immetto su una fase compensa ciò che prelevo su un'altra. È così per la maggior parte dei contatori intelligenti; deselezionare se ogni fase è contata a parte.",
-    "phases_hint": "Indicare poi la fase di ogni apparecchio, batteria e impianto solare nella sua scheda (scheda Apparecchi). La pianificazione non ne tiene ancora conto: queste impostazioni preparano il calcolo per fase."
+    "phases_hint": "Indicare poi la fase di ogni apparecchio, batteria e impianto solare nella sua scheda (scheda Apparecchi). Con la potenza impegnata del contratto, la pianificazione evita allora di far funzionare insieme, su una stessa fase, più di quanto essa possa fornire. Il resto del calcolo non distingue ancora le fasi."
   }
 }

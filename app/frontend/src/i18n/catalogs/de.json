@@ -1789,6 +1789,6 @@
     "kind_hint": "Im Zweifel: ein vierpoliger Hauptschalter oder ein „dreiphasiger“ Vertrag auf der Rechnung.",
     "meter_sums": "Mein Zähler saldiert die drei Phasen",
     "meter_sums_hint": "Was ich auf einer Phase einspeise, gleicht aus, was ich auf einer anderen beziehe. So arbeiten die meisten intelligenten Zähler; abwählen, wenn jede Phase einzeln gezählt wird.",
-    "phases_hint": "Geben Sie danach die Phase jedes Geräts, jeder Batterie und jeder Solaranlage in ihrem Blatt an (Reiter Geräte). Die Planung berücksichtigt sie noch nicht: Diese Einstellungen bereiten die Berechnung je Phase vor."
+    "phases_hint": "Geben Sie danach die Phase jedes Geräts, jeder Batterie und jeder Solaranlage in ihrem Blatt an (Reiter Geräte). Mit der vertraglichen Leistung Ihres Tarifs vermeidet die Planung dann, auf einer Phase gleichzeitig mehr laufen zu lassen, als sie liefern kann. Der Rest der Berechnung unterscheidet die Phasen noch nicht."
   }
 }
