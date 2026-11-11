@@ -4,9 +4,11 @@ Chaque nuit (``MAINTENANCE_AT``, heure locale de la maison), ou à la demande :
 
 1. **Brut** : suppression des journées échues, dossier par dossier (exigence
    mesurée sur un N150, lot 0.5). Une journée n'est supprimée qu'une fois entièrement agrégée.
-2. **Agrégats** : suppression des périodes échues, capteur par capteur et graphe par graphe, avec
-   un ``flush`` après chaque suppression (règles de mémoire : jamais de transaction de plusieurs
-   millions de triplets). Un graphe mensuel vidé est retiré.
+2. **Agrégats** : suppression des périodes échues, capteur par capteur et graphe par graphe (règles
+   de mémoire : jamais de transaction de plusieurs millions de triplets), avec un seul ``flush``
+   par graphe : un ``flush`` par capteur crée autant de petits fichiers que RocksDB recompacte
+   (2,8 Go écrits chaque nuit pour une journée supprimée, rapport du 11/11/2026 ; 14 fois moins
+   avec un seul ``flush`` sur un magasin de 2 Go). Un graphe mensuel vidé est retiré.
 3. **Compactage** du magasin principal (``optimize``), seulement si un graphe mensuel a été
    retiré (une fois par mois avec les réglages par défaut). Le compactage réécrit tout le magasin
    (3,5 Go écrits chaque nuit pour un magasin de 3,4 Go, rapport du 09/11/2026) ; les petites
@@ -259,8 +261,10 @@ class Maintenance:
                     removed += int(row["n"])
                 self._graph.update(
                     f"DELETE {{ GRAPH <{graph}> {{ ?a ?p ?o }} }} "
-                    f"WHERE {{ GRAPH <{graph}> {{ {expired} ?a ?p ?o }} }}"
+                    f"WHERE {{ GRAPH <{graph}> {{ {expired} ?a ?p ?o }} }}",
+                    flush=False,
                 )
+            self._graph.flush()
             if not any(
                 True
                 for _ in self._graph.select(

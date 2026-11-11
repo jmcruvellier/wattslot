@@ -100,10 +100,12 @@ class GraphStore:
         for solution in solutions:
             yield {name: solution[name].value for name in names if solution[name] is not None}
 
-    def update(self, sparql: str) -> None:
-        """Mise à jour SPARQL (une transaction : à garder petite), suivie d'un ``flush``."""
+    def update(self, sparql: str, flush: bool = True) -> None:
+        """Mise à jour SPARQL (une transaction : à garder petite), suivie d'un ``flush`` ;
+        ``flush=False`` : série de mises à jour, à l'appelant d'appeler ``flush`` à la fin."""
         self._store.update(sparql)
-        self._store.flush()
+        if flush:
+            self._store.flush()
 
     def named_graphs(self, prefix: str = "") -> list[str]:
         return sorted(g.value for g in self._store.named_graphs() if g.value.startswith(prefix))
