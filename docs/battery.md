@@ -26,9 +26,16 @@ The calculation still sees your batteries as one:
 - the **floor** follows each battery's capacity: 30 % of a 2 kWh battery and 10 % of a 6 kWh battery keep 1.2 kWh in reserve, hour by hour with the ranges;
 - the **active range** is when at least one battery runs, and the **full charge** follows the battery that asks for it most often.
 
-This is exact for batteries connected at the same place. Two batteries that do not see the same surplus (one per phase in a three-phase home, for instance) may fill differently: the plan is then slightly optimistic.
+This is exact for batteries connected at the same place.
 
-In a **three-phase** home (see [Your home and its rules](your-home.md#three-phase-homes)), a box asks whether **the battery offsets the total of the three phases** (it follows a three-phase meter) or only its own phase. The plan does not use it yet.
+In a **three-phase** home (see [Your home and its rules](your-home.md#three-phase-homes)), a box asks whether **the battery offsets the total of the three phases** (it follows a three-phase meter) or only its own phase. A battery that only offsets its own phase charges on the surplus of that phase and covers its deficit only: a washing machine on phase 1 is not covered by a battery on phase 2. The plan calculates it that way when:
+
+- the battery's **phase** is set in its sheet, and the box is unticked;
+- the **consumption of each phase** is measured (an import sensor for each phase on the grid connection, and the phase of every solar installation and battery).
+
+Batteries on the same phase are seen as one, with their own content; the batteries that offset the total come after them. Otherwise, all batteries are calculated on the total of the home, as before.
+
+The curves and the **Today** screen still show all your batteries together. Beyond today, the plan only knows their total content and shares it between them according to their capacity.
 
 ## What you see
 

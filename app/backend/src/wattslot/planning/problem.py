@@ -41,7 +41,7 @@ from wattslot.planning.cycles import (
     recognized_segment,
     remaining_hourly,
 )
-from wattslot.planning.inputs import FrozenCycle, PlanningInput, Runtime
+from wattslot.planning.inputs import Battery, FrozenCycle, PlanningInput, Runtime
 from wattslot.planning.plan import Reason
 from wattslot.planning.reference import REFERENCE, Reference, task_key
 from wattslot.runtime_settings import season
@@ -225,6 +225,20 @@ class Problem:
     # Consommation de base de chaque phase, par heure du jour (kWh) ; vide : pas mesurée,
     # seuls les équipements placés comptent alors dans la limite.
     base_by_phase: Mapping[Phase, Mapping[int, float]] = field(default_factory=dict)
+    # Batteries qui ne compensent que leur phase, regroupées par phase : chacune charge sur le
+    # surplus de sa phase et se décharge sur son déficit. ``shared_battery`` : celles qui
+    # compensent le total (capacité nulle s'il n'y en a pas), après elles. Vide : ``battery``
+    # compense le total, comme en monophasé ; ``battery`` reste l'ensemble des batteries.
+    line_batteries: Mapping[Phase, BatteryModel] = field(default_factory=dict)
+    shared_battery: BatteryModel | None = None
+
+    @property
+    def total_battery(self) -> BatteryModel:
+        """Batterie qui compense le total de la maison : toutes, ou celles qui restent une
+        fois retirées celles qui ne compensent que leur phase."""
+        if self.line_batteries and self.shared_battery is not None:
+            return self.shared_battery
+        return self.battery
 
     @property
     def hours(self) -> range:
@@ -656,29 +670,24 @@ def from_input(data: PlanningInput, reference: Reference = REFERENCE) -> Problem
                 skipped=skipped,
             )
         )
-    battery = data.battery
-    measured_ok = (
-        battery.charge_efficiency_percent is not None
-        and battery.discharge_efficiency_percent is not None
-    )
-    per_direction = (battery.round_trip_percent / 100) ** 0.5 if battery.round_trip_percent else 1.0
     active_from, active_to = _active_range(data, reference)
-    return Problem(
-        day=day,
-        first_hour=first_hour,
-        net_kwh=dict(data.net_kwh),
-        production_kwh=dict(data.production_kwh),
-        fixed_kwh={hour: fixed.get(hour, 0.0) for hour in range(24)},
-        tasks=tasks,
-        launched=launched,
-        battery=BatteryModel(
+
+    def model_of(battery: Battery, active: tuple[int, int]) -> BatteryModel:
+        measured_ok = (
+            battery.charge_efficiency_percent is not None
+            and battery.discharge_efficiency_percent is not None
+        )
+        per_direction = (
+            (battery.round_trip_percent / 100) ** 0.5 if battery.round_trip_percent else 1.0
+        )
+        return BatteryModel(
             capacity_kwh=battery.capacity_kwh,
             stored_kwh=battery.stored_kwh,
             soc_percent=battery.soc_percent,
             charge_max_kw=battery.charge_max_w / 1000,
             discharge_max_kw=battery.discharge_max_w / 1000,
-            active_from=active_from,
-            active_to=active_to,
+            active_from=active[0],
+            active_to=active[1],
             charge_efficiency=(battery.charge_efficiency_percent or 0) / 100 or per_direction
             if measured_ok
             else per_direction,
@@ -697,7 +706,29 @@ def from_input(data: PlanningInput, reference: Reference = REFERENCE) -> Problem
                 for hour in range(24)
                 if battery.floor_ranges
             },
-        ),
+        )
+
+    def own_range(battery: Battery) -> tuple[int, int]:
+        return battery.active_from_hour, battery.active_to_hour
+
+    by_phase = data.three_phase and bool(data.line_batteries)
+    return Problem(
+        day=day,
+        first_hour=first_hour,
+        net_kwh=dict(data.net_kwh),
+        production_kwh=dict(data.production_kwh),
+        fixed_kwh={hour: fixed.get(hour, 0.0) for hour in range(24)},
+        tasks=tasks,
+        launched=launched,
+        battery=model_of(data.battery, (active_from, active_to)),
+        line_batteries={
+            line: model_of(group, own_range(group)) for line, group in data.line_batteries.items()
+        }
+        if by_phase
+        else {},
+        shared_battery=model_of(data.shared_battery, own_range(data.shared_battery))
+        if by_phase and data.shared_battery is not None
+        else None,
         runtimes=runtimes,
         needs=_needs(data, warnings),
         constraints={name: tuple(found) for name, found in data.constraints.items() if found},

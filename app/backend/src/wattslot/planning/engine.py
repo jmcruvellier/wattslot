@@ -46,8 +46,8 @@ from wattslot.planning.plan import (
 )
 from wattslot.planning.plan import Movement as PlannedMovement
 from wattslot.planning.plan import Plan as DayPlan
-from wattslot.planning.problem import Problem, Task
-from wattslot.planning.simulation import BatteryRun, simulate
+from wattslot.planning.problem import BatteryModel, Problem, Task
+from wattslot.planning.simulation import BatteryRun, Movement, simulate
 from wattslot.time_constraints import labels
 
 IMPORT_TIE_EUR = 0.001  # coût d'abord : à coût égal, soutirer moins
@@ -273,11 +273,14 @@ def solve(problem: Problem, objective: Goal = Objective.COST, time_limit_s: floa
     for hour in later:  # prolongement : parts du lendemain des cycles gelés ou lancés
         load[hour] = night.fixed_kwh.get(hour - 24, 0.0) if night else 0.0
     # Triphasé : ce que les équipements placés tirent sur chaque phase, heure par heure.
+    # Suivi pour la limite de puissance par phase, et pour les batteries qui ne compensent
+    # que leur phase.
     limited = problem.phase_limit_kwh is not None
+    tracked = limited or bool(problem.line_batteries)
     phase_load: dict[tuple[Phase, int], Any] = {
         (line, hour): problem.fixed_by_phase.get(line, {}).get(hour, 0.0)
         + problem.base_by_phase.get(line, {}).get(hour % 24, 0.0)
-        for line in (LINES if limited else ())
+        for line in (LINES if tracked else ())
         for hour in hours + later
     }
     decided: set[tuple[Phase, int]] = set()  # heures d'une phase où quelque chose se décide
@@ -369,18 +372,74 @@ def solve(problem: Problem, objective: Goal = Objective.COST, time_limit_s: floa
     # --- Triphasé : limite de puissance de chaque phase, souple -------------------------------
     over_phase: list[Any] = []
     production = _extended(problem.production_kwh, night.production_kwh if night else None)
-    for line, hour in sorted(decided, key=lambda key: (key[1], key[0])):
+    for line, hour in sorted(decided if limited else (), key=lambda key: (key[1], key[0])):
         over = var()
         solar = problem.production_shares.get(line, 0.0) * max(0.0, production.get(hour, 0.0))
         h.addConstr(phase_load[line, hour] - solar <= problem.phase_limit_kwh + over)
         over_phase.append(over)
 
     # --- Batterie (comportement glouton) et réseau ---------------------------------------
-    battery = problem.battery
-    soc_previous: Any = battery.stored_kwh
-    imports, exports, full_hours = {}, {}, []
-    over_contract: list[Any] = []  # soutirage au-delà de la puissance souscrite (lot 7.3)
+    full_hours: list[Any] = []
     throughput: list[Any] = []  # énergie qui passe par la batterie (ménagement)
+
+    def battery_hour(
+        battery: BatteryModel, stored: Any, hour: int, drawn: Any, injected: Any, floor: float
+    ) -> tuple[Any, Any]:
+        """Une heure d'une batterie qui compense ce qui est soutiré (``drawn``) et injecté
+        (``injected``) là où elle est branchée : le réseau, ou sa seule phase. Renvoie son
+        contenu en fin d'heure et ce qu'elle échange côté maison (positif : charge)."""
+        charge = var(0, battery.charge_max_kw)
+        discharge = var(0, battery.discharge_max_kw)
+        throughput.append(charge + discharge)
+        charging = var(0, 1, True)
+        h.addConstr(charge <= battery.charge_max_kw * charging)
+        h.addConstr(discharge <= battery.discharge_max_kw * (1 - charging))
+        h.addConstr(drawn <= BIG_KWH * (1 - charging))
+        h.addConstr(injected <= BIG_KWH * charging)
+        soc = var(0, battery.capacity_kwh)
+        h.addConstr(
+            soc
+            == stored
+            + battery.charge_efficiency * charge
+            - (1 / battery.discharge_efficiency) * discharge
+        )
+        # Plancher : la batterie n'y descend pas. Déjà dessous (départ bas, ou plage plus
+        # haute qui commence), elle cesse de se décharger, comme dans la simulation, au lieu
+        # de rendre le problème impossible. Batterie sous le plancher sans décharger en
+        # heure de déficit : seulement si le contenu était déjà au plancher ou dessous (le
+        # soutirage exige sinon la pleine puissance de décharge, ci-dessous).
+        if floor > 0:
+            below = var(0, 1, True)
+            h.addConstr(soc >= floor - floor * below)
+            h.addConstr(discharge <= battery.discharge_max_kw * (1 - below))
+        # Injection seulement batterie à pleine puissance ou pleine ; soutirage seulement
+        # à pleine puissance de décharge ou au plancher.
+        charge_max, at_cap = var(0, 1, True), var(0, 1, True)
+        h.addConstr(injected <= BIG_KWH * (charge_max + at_cap))
+        h.addConstr(charge >= battery.charge_max_kw * charge_max)
+        h.addConstr(soc >= battery.capacity_kwh * at_cap)
+        discharge_max, at_floor = var(0, 1, True), var(0, 1, True)
+        h.addConstr(drawn <= BIG_KWH * (discharge_max + at_floor))
+        h.addConstr(discharge >= battery.discharge_max_kw * discharge_max)
+        h.addConstr(soc <= floor + battery.capacity_kwh * (1 - at_floor))
+        if hour < 24:  # batterie pleine dans la journée seulement
+            full = var(0, 1, True)
+            h.addConstr(soc >= battery.full_kwh * full)
+            full_hours.append(full)
+        return soc, charge - discharge
+
+    def active(battery: BatteryModel, clock: int) -> bool:
+        return battery.active_from <= clock < battery.active_to and battery.capacity_kwh > 0
+
+    # Batteries qui ne compensent que leur phase : chaque groupe voit le bilan de sa phase.
+    # Celle qui compense le total (toutes, hors triphasé) passe après elles.
+    battery = problem.total_battery
+    soc_previous: Any = battery.stored_kwh
+    line_stored: dict[Phase, Any] = {
+        line: group.stored_kwh for line, group in problem.line_batteries.items()
+    }
+    imports, exports = {}, {}
+    over_contract: list[Any] = []  # soutirage au-delà de la puissance souscrite (lot 7.3)
     net = _extended(problem.net_kwh, night.net_kwh if night else None)
     for hour in hours + later:
         imports[hour], exports[hour] = var(), var()
@@ -390,52 +449,27 @@ def solve(problem: Problem, objective: Goal = Objective.COST, time_limit_s: floa
             over_contract.append(over)
         balance = net.get(hour, 0.0) - load[hour]
         clock = hour % 24  # heure du lendemain dans le prolongement
-        if battery.active_from <= clock < battery.active_to and battery.capacity_kwh > 0:
-            charge = var(0, battery.charge_max_kw)
-            discharge = var(0, battery.discharge_max_kw)
-            throughput.append(charge + discharge)
-            charging = var(0, 1, True)
-            h.addConstr(charge <= battery.charge_max_kw * charging)
-            h.addConstr(discharge <= battery.discharge_max_kw * (1 - charging))
-            h.addConstr(imports[hour] <= BIG_KWH * (1 - charging))
-            h.addConstr(exports[hour] <= BIG_KWH * charging)
-            soc = var(0, battery.capacity_kwh)
-            h.addConstr(
-                soc
-                == soc_previous
-                + battery.charge_efficiency * charge
-                - (1 / battery.discharge_efficiency) * discharge
+        for line, group in problem.line_batteries.items():
+            if not active(group, clock):
+                continue
+            drawn, injected = var(), var()  # échanges de la phase, après sa batterie
+            solar = problem.production_shares.get(line, 0.0) * max(0.0, production.get(hour, 0.0))
+            line_stored[line], exchanged = battery_hour(
+                group, line_stored[line], hour, drawn, injected, group.floor_at(clock)
             )
-            # Plancher : la batterie n'y descend pas. Déjà dessous (départ bas, ou plage plus
-            # haute qui commence), elle cesse de se décharger, comme dans la simulation, au lieu
-            # de rendre le problème impossible. Batterie sous le plancher sans décharger en
-            # heure de déficit : seulement si le contenu était déjà au plancher ou dessous (le
-            # soutirage exige sinon la pleine puissance de décharge, ci-dessous).
-            floor = (
-                night.floor_kwh.get(clock, battery.floor_kwh)
-                if night and hour >= 24
-                else battery.floor_at(hour)
+            h.addConstr(solar - phase_load[line, hour] - exchanged == injected - drawn)
+            balance = balance - exchanged
+        if active(battery, clock):
+            if problem.line_batteries:
+                floor = battery.floor_at(clock)
+            elif night and hour >= 24:
+                floor = night.floor_kwh.get(clock, battery.floor_kwh)
+            else:
+                floor = battery.floor_at(hour)
+            soc_previous, exchanged = battery_hour(
+                battery, soc_previous, hour, imports[hour], exports[hour], floor
             )
-            if floor > 0:
-                below = var(0, 1, True)
-                h.addConstr(soc >= floor - floor * below)
-                h.addConstr(discharge <= battery.discharge_max_kw * (1 - below))
-            # Injection seulement batterie à pleine puissance ou pleine ; soutirage seulement
-            # à pleine puissance de décharge ou au plancher.
-            charge_max, at_cap = var(0, 1, True), var(0, 1, True)
-            h.addConstr(exports[hour] <= BIG_KWH * (charge_max + at_cap))
-            h.addConstr(charge >= battery.charge_max_kw * charge_max)
-            h.addConstr(soc >= battery.capacity_kwh * at_cap)
-            discharge_max, at_floor = var(0, 1, True), var(0, 1, True)
-            h.addConstr(imports[hour] <= BIG_KWH * (discharge_max + at_floor))
-            h.addConstr(discharge >= battery.discharge_max_kw * discharge_max)
-            h.addConstr(soc <= floor + battery.capacity_kwh * (1 - at_floor))
-            if hour < 24:  # batterie pleine dans la journée seulement
-                full = var(0, 1, True)
-                h.addConstr(soc >= battery.full_kwh * full)
-                full_hours.append(full)
-            soc_previous = soc
-            balance = balance - charge + discharge
+            balance = balance - exchanged
         else:
             # Soutirer et injecter la même heure : exclu (les heures de batterie l'excluent déjà
             # par ``charging``). Sinon, un prix de soutirage négatif ou une revente plus chère que
@@ -459,7 +493,7 @@ def solve(problem: Problem, objective: Goal = Objective.COST, time_limit_s: floa
             weight[hour] * imports[hour] + export_cost[hour] * exports[hour]
             for hour in hours + later
         )
-        - stored_value * soc_previous
+        - stored_value * (soc_previous + sum(line_stored.values()))
         - bonus * full_day
         + SKIP_PENALTY * sum(skips.values())
         + SKIP_PENALTY * sum(shortfalls)  # par kWh manquant : seulement s'il ne tient plus
@@ -531,6 +565,29 @@ def phase_excess(problem: Problem, plan: Plan) -> dict[Phase, list[int]]:
     base seule n'est pas l'affaire du plan. Phases sans dépassement absentes."""
     if problem.phase_limit_kwh is None:
         return {}
+    drawn, busy = _phase_drawn(problem, plan)
+    found: dict[Phase, list[int]] = {}
+    for line in LINES:
+        share = problem.production_shares.get(line, 0.0)
+        over = [
+            hour
+            for hour in problem.hours
+            if hour in busy[line]
+            and drawn[line][hour]
+            + problem.base_by_phase.get(line, {}).get(hour, 0.0)
+            - share * max(0.0, problem.production_kwh.get(hour, 0.0))
+            > problem.phase_limit_kwh + 0.001
+        ]
+        if over:
+            found[line] = over
+    return found
+
+
+def _phase_drawn(
+    problem: Problem, plan: Plan
+) -> tuple[dict[Phase, dict[int, float]], dict[Phase, set[int]]]:
+    """(ce que les équipements placés et les cycles déjà décidés tirent sur chaque phase, par
+    heure ; heures où l'un d'eux tourne sur la phase). Sans la consommation de base."""
     drawn: dict[Phase, dict[int, float]] = {
         line: defaultdict(float, problem.fixed_by_phase.get(line, {})) for line in LINES
     }
@@ -552,28 +609,55 @@ def phase_excess(problem: Problem, plan: Plan) -> dict[Phase, list[int]]:
     for name, delivered in plan.needs.items():
         for hour, kwh in delivered.items():
             on_phase(name, hour, kwh)
-    found: dict[Phase, list[int]] = {}
-    for line in LINES:
-        share = problem.production_shares.get(line, 0.0)
-        over = [
-            hour
-            for hour in problem.hours
-            if hour in busy[line]
-            and drawn[line][hour]
-            + problem.base_by_phase.get(line, {}).get(hour, 0.0)
-            - share * max(0.0, problem.production_kwh.get(hour, 0.0))
-            > problem.phase_limit_kwh + 0.001
-        ]
-        if over:
-            found[line] = over
-    return found
+    return drawn, busy
 
 
 def simulate_plan(problem: Problem, plan: Plan) -> BatteryRun:
+    """Batterie simulée sur le plan. Avec des batteries qui ne compensent que leur phase :
+    chaque groupe sur le bilan de sa phase (production de la phase, moins sa consommation de
+    base et ses équipements), puis celle qui compense le total sur ce qui reste ; le résultat
+    réunit les groupes (``BatteryRun.lines`` garde chacun)."""
     load = load_kwh(problem, plan)
-    battery = problem.battery
+    net = {hour: problem.net_kwh.get(hour, 0.0) - load[hour] for hour in problem.hours}
+    if not problem.line_batteries:
+        return _simulate(problem.battery, net, problem.first_hour)
+    drawn, _ = _phase_drawn(problem, plan)
+    lines: dict[Phase, BatteryRun] = {}
+    exchanged: dict[int, float] = defaultdict(float)  # côté maison, positif : charge
+    for line, group in problem.line_batteries.items():
+        share = problem.production_shares.get(line, 0.0)
+        line_net = {
+            hour: share * max(0.0, problem.production_kwh.get(hour, 0.0))
+            - drawn[line][hour]
+            - problem.base_by_phase.get(line, {}).get(hour, 0.0)
+            for hour in problem.hours
+        }
+        lines[line] = _simulate(group, line_net, problem.first_hour)
+        for hour in problem.hours:
+            taken = line_net[hour] - lines[line].residual_kwh[hour]
+            exchanged[hour] += taken
+            net[hour] -= taken
+    shared = _simulate(problem.total_battery, net, problem.first_hour)
+    for hour in problem.hours:
+        exchanged[hour] += net[hour] - shared.residual_kwh[hour]
+    runs = [shared, *lines.values()]
+    return BatteryRun(
+        # Une charge et une décharge de la même heure, sur deux phases, se compensent ici.
+        movements=[
+            Movement(hour, "charge" if kwh > 0 else "decharge", round(abs(kwh), 3))
+            for hour, kwh in sorted(exchanged.items())
+            if round(abs(kwh), 3) > 0
+        ],
+        end_kwh=sum(run.end_kwh for run in runs),
+        soc_kwh={hour: sum(run.soc_kwh[hour] for run in runs) for hour in shared.soc_kwh},
+        residual_kwh=shared.residual_kwh,
+        lines=lines,
+    )
+
+
+def _simulate(battery: BatteryModel, net: Mapping[int, float], first_hour: int) -> BatteryRun:
     return simulate(
-        {hour: problem.net_kwh.get(hour, 0.0) - load[hour] for hour in problem.hours},
+        net,
         battery.stored_kwh,
         battery.capacity_kwh,
         battery.charge_max_kw,
@@ -583,7 +667,7 @@ def simulate_plan(problem: Problem, plan: Plan) -> BatteryRun:
         battery.charge_efficiency,
         battery.discharge_efficiency,
         battery.floor_kwh,
-        first_hour=problem.first_hour,
+        first_hour=first_hour,
         floor_by_hour=battery.floor_by_hour,
         elapsed=battery.hour_elapsed,
         elapsed_change_kwh=battery.hour_change_kwh,

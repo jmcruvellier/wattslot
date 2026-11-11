@@ -13,8 +13,8 @@ plancher « se déchargeait » à chaque heure, et le plan additionnait ces déc
 """
 
 from collections.abc import Mapping
-from dataclasses import dataclass
-from typing import Literal
+from dataclasses import dataclass, field
+from typing import Any, Literal
 
 
 @dataclass(frozen=True)
@@ -30,6 +30,9 @@ class BatteryRun:
     end_kwh: float
     soc_kwh: dict[int, float]  # contenu stocké à la fin de chaque heure simulée
     residual_kwh: dict[int, float]  # échange avec le réseau : positif injection, négatif soutirage
+    # Batteries qui ne compensent que leur phase : la simulation de chaque groupe, par phase
+    # (``residual_kwh`` : échange de la phase après sa batterie). Vide sinon.
+    lines: Mapping[Any, "BatteryRun"] = field(default_factory=dict)
 
 
 def _measured(change_kwh: float, charge_efficiency: float, discharge_efficiency: float) -> float:

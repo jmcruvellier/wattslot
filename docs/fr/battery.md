@@ -26,9 +26,16 @@ Le calcul voit toujours vos batteries comme une seule :
 - le **plancher** suit la capacité de chacune : 30 % d'une batterie de 2 kWh et 10 % d'une batterie de 6 kWh font 1,2 kWh gardés en réserve, heure par heure avec les plages ;
 - la **plage active** est celle où une batterie au moins fonctionne, et la **charge complète** suit la batterie qui la demande le plus souvent.
 
-C'est exact pour des batteries branchées au même endroit. Deux batteries qui ne voient pas le même surplus (une par phase en triphasé, par exemple) peuvent se remplir différemment : le plan est alors un peu optimiste.
+C'est exact pour des batteries branchées au même endroit.
 
-Dans une maison en **triphasé** (voir [Votre maison et ses règles](your-home.md#maisons-en-triphasé)), une case demande si **la batterie compense le total des trois phases** (elle suit un compteur triphasé) ou seulement sa phase. Le plan n'en tient pas encore compte.
+Dans une maison en **triphasé** (voir [Votre maison et ses règles](your-home.md#maisons-en-triphasé)), une case demande si **la batterie compense le total des trois phases** (elle suit un compteur triphasé) ou seulement sa phase. Une batterie qui ne compense que sa phase charge sur le surplus de cette phase et ne couvre que son déficit : un lave-linge sur la phase 1 n'est pas couvert par une batterie de la phase 2. Le plan la calcule ainsi quand :
+
+- la **phase** de la batterie est renseignée dans sa fiche, et la case est décochée ;
+- la **consommation de chaque phase** est mesurée (un capteur de soutirage par phase sur le raccordement au réseau, et la phase de chaque installation solaire et de chaque batterie).
+
+Les batteries d'une même phase sont vues comme une seule, avec leur propre contenu ; celles qui compensent le total passent après elles. Sinon, toutes les batteries sont calculées sur le total de la maison, comme avant.
+
+Les courbes et l'écran **Aujourd'hui** montrent toujours toutes vos batteries ensemble. Au-delà d'aujourd'hui, le plan ne connaît que leur contenu total et le répartit entre elles selon leur capacité.
 
 ## Ce que vous voyez
 

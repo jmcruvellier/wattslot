@@ -1039,7 +1039,7 @@
     "own_intro": "Ajustes propios de esta batería de {capacity} kWh.",
     "own_reset": "Volver a los ajustes de la casa",
     "all_phases": "La batería compensa el total de las tres fases",
-    "all_phases_hint": "Márquelo si sigue un contador trifásico; si no, solo compensa su fase. La planificación aún no lo tiene en cuenta."
+    "all_phases_hint": "Márquelo si sigue un contador trifásico. Si no, solo compensa su fase: la planificación la hace cargar entonces solo con el excedente de esa fase y cubrir solo su déficit, en cuanto se mide el consumo de cada fase (sensores por fase de la conexión a la red)."
   },
   "objective": {
     "title": "Objetivo del cálculo",
@@ -1794,6 +1794,6 @@
     "kind_hint": "En caso de duda: un interruptor general de cuatro polos o un contrato «trifásico» en la factura.",
     "meter_sums": "Mi contador suma las tres fases",
     "meter_sums_hint": "Lo que vierto en una fase compensa lo que consumo de la red en otra. Así funcionan la mayoría de los contadores inteligentes; desmárquelo si cada fase se cuenta por separado.",
-    "phases_hint": "Indique después la fase de cada aparato, batería e instalación solar en su ficha (pestaña Aparatos). Con la potencia contratada de su tarifa, la planificación evita entonces que funcionen juntos, en una misma fase, más de lo que esta puede suministrar. El resto del cálculo aún no distingue las fases."
+    "phases_hint": "Indique después la fase de cada aparato, batería e instalación solar en su ficha (pestaña Aparatos). Con la potencia contratada de su tarifa, la planificación evita entonces que funcionen juntos, en una misma fase, más de lo que esta puede suministrar. Una batería que solo compensa su fase se calcula en esa fase en cuanto se mide el consumo de cada fase."
   }
 }

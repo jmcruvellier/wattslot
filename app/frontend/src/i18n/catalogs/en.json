@@ -1039,7 +1039,7 @@
     "own_intro": "Own settings of this {capacity} kWh battery.",
     "own_reset": "Go back to the home's settings",
     "all_phases": "The battery offsets the total of the three phases",
-    "all_phases_hint": "Tick if it follows a three-phase meter; otherwise it only offsets its own phase. The plan does not use it yet."
+    "all_phases_hint": "Tick if it follows a three-phase meter. Otherwise it only offsets its own phase: the plan then has it charge on the surplus of that phase only and cover its deficit only, once the consumption of each phase is measured (phase sensors of the grid connection)."
   },
   "objective": {
     "title": "Planning objective",
@@ -1794,6 +1794,6 @@
     "kind_hint": "If in doubt: a four-pole main breaker, or a \"three-phase\" contract on your bill.",
     "meter_sums": "My meter sums the three phases",
     "meter_sums_hint": "What I export on one phase offsets what I import on another. This is how most smart meters work; untick if each phase is metered separately.",
-    "phases_hint": "Then set the phase of each appliance, battery and solar installation in its sheet (Devices tab). With the contract power of your tariff, the plan then avoids running together, on one phase, more than it can supply. The rest of the calculation does not tell the phases apart yet."
+    "phases_hint": "Then set the phase of each appliance, battery and solar installation in its sheet (Devices tab). With the contract power of your tariff, the plan then avoids running together, on one phase, more than it can supply. A battery that only offsets its own phase is calculated on that phase once the consumption of each phase is measured."
   }
 }

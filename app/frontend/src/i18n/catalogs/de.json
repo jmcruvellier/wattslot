@@ -1039,7 +1039,7 @@
     "own_intro": "Eigene Einstellungen dieser Batterie mit {capacity} kWh.",
     "own_reset": "Zu den Einstellungen des Hauses zurückkehren",
     "all_phases": "Die Batterie gleicht die Summe der drei Phasen aus",
-    "all_phases_hint": "Ankreuzen, wenn sie einem dreiphasigen Zähler folgt; sonst gleicht sie nur ihre eigene Phase aus. Die Planung berücksichtigt dies noch nicht."
+    "all_phases_hint": "Ankreuzen, wenn sie einem dreiphasigen Zähler folgt. Sonst gleicht sie nur ihre eigene Phase aus: Die Planung lässt sie dann nur aus dem Überschuss dieser Phase laden und nur deren Defizit decken, sobald der Verbrauch jeder Phase gemessen wird (Phasensensoren des Netzanschlusses)."
   },
   "objective": {
     "title": "Ziel der Berechnung",
@@ -1794,6 +1794,6 @@
     "kind_hint": "Im Zweifel: ein vierpoliger Hauptschalter oder ein „dreiphasiger“ Vertrag auf der Rechnung.",
     "meter_sums": "Mein Zähler saldiert die drei Phasen",
     "meter_sums_hint": "Was ich auf einer Phase einspeise, gleicht aus, was ich auf einer anderen beziehe. So arbeiten die meisten intelligenten Zähler; abwählen, wenn jede Phase einzeln gezählt wird.",
-    "phases_hint": "Geben Sie danach die Phase jedes Geräts, jeder Batterie und jeder Solaranlage in ihrem Blatt an (Reiter Geräte). Mit der vertraglichen Leistung Ihres Tarifs vermeidet die Planung dann, auf einer Phase gleichzeitig mehr laufen zu lassen, als sie liefern kann. Der Rest der Berechnung unterscheidet die Phasen noch nicht."
+    "phases_hint": "Geben Sie danach die Phase jedes Geräts, jeder Batterie und jeder Solaranlage in ihrem Blatt an (Reiter Geräte). Mit der vertraglichen Leistung Ihres Tarifs vermeidet die Planung dann, auf einer Phase gleichzeitig mehr laufen zu lassen, als sie liefern kann. Eine Batterie, die nur ihre eigene Phase ausgleicht, wird auf dieser Phase berechnet, sobald der Verbrauch jeder Phase gemessen wird."
   }
 }
