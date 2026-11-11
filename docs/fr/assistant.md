@@ -42,7 +42,7 @@ La carte de discussion de l'écran **Assistant** propose des questions, par thè
 
 ## Ce que l'assistant peut faire, et ne fait pas
 
-- **Il lit** : le plan d'un jour, son coût et ses explications, la semaine, les mesures, la prévision, le tarif, vos demandes, votre maison et ses problèmes.
+- **Il lit** : le plan d'un jour, son coût et ses explications, la semaine, les mesures, la prévision, le tarif, vos demandes, votre maison et ses problèmes. Avec plusieurs batteries, il connaît la charge et la réserve de chacune ; dans une maison en triphasé, la phase de chaque appareil placé et de chaque batterie, ce que compte votre compteur et la limite de chaque phase.
 - **Il fait une seule chose de lui-même** : déposer une demande (*« Lance le lave-vaisselle au meilleur moment avant demain soir »*), après vous l'avoir confirmée. WattSlot l'impose : le premier appel rend seulement la question à vous poser, et la demande n'est déposée que si l'assistant rappelle pour confirmer, dans les dix minutes qui suivent cette question.
 - **Il ne fait jamais** de calcul, ne change aucun réglage et ne pilote aucun appareil.
 
