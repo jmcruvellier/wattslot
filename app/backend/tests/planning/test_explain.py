@@ -149,3 +149,16 @@ def test_the_far_horizon_days_are_not_explained() -> None:
     day = plan_day(from_input(from_v1(state)), explained=False).day
 
     assert all(item.explanation is None for item in day.items)
+
+
+def test_the_hours_after_midnight_of_a_night_cycle_are_not_solar() -> None:
+    """Chauffe-eau de 22 h à 1 h 15 : rien ne vient du soleil. Les heures d'après minuit (24,
+    25), absentes de la consommation du jour, passaient pour couvertes en entier."""
+    state, _ = load(STATES[11])
+    problem = from_input(from_v1(state))
+    consumption = load_kwh(problem, plan_day(problem).plan)
+    assert problem.net_kwh[22] <= 0 and problem.net_kwh[23] <= 0  # la nuit : aucun surplus
+
+    night_cycle = {22: 0.8, 23: 0.8, 24: 0.6, 25: 0.2}
+
+    assert solar_percent(night_cycle, problem, consumption) == 0
