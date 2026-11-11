@@ -337,9 +337,9 @@
     "quality": {
       "title": "Qualité des prévisions",
       "badge": {
-        "good": "Prévisions fiables",
-        "fair": "Prévisions moyennes",
-        "poor": "Prévisions incertaines"
+        "good": "Fiable",
+        "fair": "Moyenne",
+        "poor": "Incertaine"
       },
       "open": "Qualité des prévisions : {badge}. Afficher le détail",
       "score": "Note : {score} sur 100",

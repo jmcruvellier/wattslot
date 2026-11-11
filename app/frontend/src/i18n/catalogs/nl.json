@@ -337,9 +337,9 @@
     "quality": {
       "title": "Kwaliteit van de voorspellingen",
       "badge": {
-        "good": "Betrouwbare voorspellingen",
-        "fair": "Redelijke voorspellingen",
-        "poor": "Onzekere voorspellingen"
+        "good": "Betrouwbaar",
+        "fair": "Redelijk",
+        "poor": "Onzeker"
       },
       "open": "Kwaliteit van de voorspellingen: {badge}. Details tonen",
       "score": "Score: {score} van 100",

@@ -337,9 +337,9 @@
     "quality": {
       "title": "Forecast quality",
       "badge": {
-        "good": "Reliable forecasts",
-        "fair": "Fair forecasts",
-        "poor": "Uncertain forecasts"
+        "good": "Reliable",
+        "fair": "Fair",
+        "poor": "Uncertain"
       },
       "open": "Forecast quality: {badge}. Show details",
       "score": "Score: {score} out of 100",
