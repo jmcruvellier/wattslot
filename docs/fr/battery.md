@@ -35,7 +35,7 @@ Dans une maison en **triphasé** (voir [Votre maison et ses règles](your-home.m
 
 Les batteries d'une même phase sont vues comme une seule, avec leur propre contenu ; celles qui compensent le total passent après elles. Sinon, toutes les batteries sont calculées sur le total de la maison, comme avant.
 
-Les courbes et l'écran **Aujourd'hui** montrent toujours toutes vos batteries ensemble. Au-delà d'aujourd'hui, le plan ne connaît que leur contenu total et le répartit entre elles selon leur capacité.
+Les courbes et l'écran **Aujourd'hui** montrent toutes vos batteries ensemble, telles que le plan les a calculées phase par phase. Au-delà d'aujourd'hui, le plan ne connaît que leur contenu total et le répartit entre elles selon leur capacité.
 
 ## Ce que vous voyez
 

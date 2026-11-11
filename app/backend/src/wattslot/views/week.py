@@ -20,6 +20,7 @@ from wattslot.views.display import (
     Context,
     displayed_soc,
     find_item,
+    grid_exchange,
     planned_devices_hourly,
     recalculated_production,
 )
@@ -134,7 +135,7 @@ def day_summary(state: Mapping[str, Any], context: Context) -> dict[str, Any]:
     def percent(kwh: float | None) -> float | None:
         return kwh / capacity * 100 if capacity and kwh is not None else None
 
-    residual = state.get("residu_reseau_horaire", {}) or {}
+    imports, exports = grid_exchange(state)
     soc_by_hour = battery.get("soc_horaire_kwh", {}) or {}
     return {
         "date": state["date_cible"],
@@ -142,11 +143,9 @@ def day_summary(state: Mapping[str, Any], context: Context) -> dict[str, Any]:
         "soc_debut_pct": percent(battery.get("soc_initial_kwh")),
         "soc_fin_pct": percent(battery.get("soc_final_kwh")),
         "soc_max_pct": percent(max(soc_by_hour.values())) if soc_by_hour else None,
-        "soutirage_kwh": -sum(v for v in residual.values() if v < 0),
-        "soutirage_hp_kwh": -sum(
-            v for h, v in residual.items() if v < 0 and not _off_peak(int(h), context)
-        ),
-        "injection_kwh": sum(v for v in residual.values() if v > 0),
+        "soutirage_kwh": sum(imports.values()),
+        "soutirage_hp_kwh": sum(v for h, v in imports.items() if not _off_peak(h, context)),
+        "injection_kwh": sum(exports.values()),
         "equipements": sorted(
             (i for i in planning if "debut_min" in i and "fin_min" in i),
             key=lambda i: i["debut_min"],

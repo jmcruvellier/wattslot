@@ -69,7 +69,9 @@ Un appareil qui dépasse sa phase à lui seul reste placé, avec un avertissemen
 
 **Batteries.** Dès que la consommation de chaque phase est mesurée, une batterie qui ne compense que sa phase est calculée sur cette phase : voir [Batterie](battery.md#plusieurs-batteries).
 
-**Un compteur qui compte chaque phase à part.** Avec **Mon compteur additionne les trois phases** décoché, et dès que la consommation de chaque phase est mesurée, le coût est compté phase par phase : ce qu'une phase injecte ne compense plus ce qu'une autre soutire. Le plan place alors un appareil sous le surplus de sa propre phase, et le coût, l'énergie achetée et l'énergie vendue du plan sont ceux que le compteur facture. Ce qui n'est sur aucune phase (un appareil ou une installation solaire dont la phase n'est pas renseignée, une batterie qui compense le total) est réparti à parts égales entre les trois. Les courbes montrent toujours l'échange de toute la maison.
+**Un compteur qui compte chaque phase à part.** Avec **Mon compteur additionne les trois phases** décoché, et dès que la consommation de chaque phase est mesurée, le coût est compté phase par phase : ce qu'une phase injecte ne compense plus ce qu'une autre soutire. Le plan place alors un appareil sous le surplus de sa propre phase, et le coût, l'énergie achetée et l'énergie vendue du plan sont ceux que le compteur facture. Ce qui n'est sur aucune phase (un appareil ou une installation solaire dont la phase n'est pas renseignée, une batterie qui compense le total) est réparti à parts égales entre les trois. Les courbes montrent alors, heure par heure, ce que les trois phases achètent et vendent ensemble : une heure peut avoir les deux.
+
+**Ce que vous voyez.** Quand le plan est calculé par phase (batteries qui ne compensent que leur phase, ou compteur qui compte chaque phase à part), **Planning** montre une carte **Par phase** : ce que chaque phase achète et vend au réseau sur la journée, prévu et, avec des capteurs par phase sur le raccordement au réseau, mesuré jusqu'ici. La courbe de la batterie est alors celle du plan.
 
 ## Objectif
 

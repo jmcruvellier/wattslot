@@ -640,8 +640,8 @@ def simulate_plan(problem: Problem, plan: Plan) -> BatteryRun:
     """Batterie simulée sur le plan. Avec des batteries qui ne compensent que leur phase :
     chaque groupe sur le bilan de sa phase (production de la phase, moins sa consommation de
     base et ses équipements), puis celle qui compense le total sur ce qui reste ; le résultat
-    réunit les groupes (``BatteryRun.lines`` garde chacun). Avec un compteur qui compte chaque
-    phase à part : l'échange de chaque phase (``BatteryRun.phase_residual_kwh``)."""
+    réunit les groupes (``BatteryRun.lines`` garde chacun). Dès que le calcul distingue les
+    phases : l'échange de chaque phase (``BatteryRun.phase_residual_kwh``)."""
     load = load_kwh(problem, plan)
     net = {hour: problem.net_kwh.get(hour, 0.0) - load[hour] for hour in problem.hours}
     if not problem.line_batteries and not problem.separate_phases:
@@ -677,7 +677,7 @@ def simulate_plan(problem: Problem, plan: Plan) -> BatteryRun:
             + (shared.residual_kwh[hour] - sum(line_residual[n][hour] for n in LINES)) / 3
             for hour in problem.hours
         }
-        for line in (LINES if problem.separate_phases else ())
+        for line in LINES
     }
     if not lines:
         return replace(shared, phase_residual_kwh=by_phase)
@@ -996,11 +996,23 @@ def day_plan(problem: Problem, plan: Plan, run: BatteryRun) -> DayPlan:
                 },
             }
         )
+    # Calcul par phase : ce que les écrans doivent en savoir, absent sinon.
+    by_phase: dict[str, Any] = {}
+    if run.phase_residual_kwh:
+        by_phase["phase_residual_kwh"] = {
+            str(LINES.index(line) + 1): {h: round(kwh, 3) for h, kwh in hourly.items()}
+            for line, hourly in run.phase_residual_kwh.items()
+        }
+    if problem.separate_phases:
+        by_phase["separate_phases"] = True
+    if problem.line_batteries:
+        by_phase["phase_batteries"] = True
     return DayPlan(
         items=items,
         warnings=warnings,
         residual_kwh=dict(run.residual_kwh),
         indicators=indicators(problem, run),
+        **by_phase,
     )
 
 
@@ -1018,7 +1030,11 @@ def indicators(problem: Problem, run: BatteryRun) -> Indicators:
     part, soutirage et injection sont ceux de chaque phase, additionnés : ce que le compteur
     facture."""
     # Sans compteur par phase : un seul échange, celui de la maison.
-    counted = list(run.phase_residual_kwh.values()) or [run.residual_kwh]
+    counted = (
+        list(run.phase_residual_kwh.values())
+        if problem.separate_phases and run.phase_residual_kwh
+        else [run.residual_kwh]
+    )
     imported = {h: sum(max(0.0, -phase[h]) for phase in counted) for h in run.residual_kwh}
     exported = {h: sum(max(0.0, phase[h]) for phase in counted) for h in run.residual_kwh}
     price, export_price = problem.prices_eur_kwh, problem.export_prices_eur_kwh

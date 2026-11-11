@@ -209,7 +209,17 @@ export interface NextAction {
   chosen?: boolean;
 }
 
+// Échanges d'une phase avec le réseau sur la journée (backend : views.day.PhaseDay).
+export interface PhaseDay {
+  phase: number; // 1, 2 ou 3
+  import_kwh: number;
+  export_kwh: number;
+  import_actual_kwh?: number | null; // mesuré jusqu'ici par les capteurs de la phase
+  export_actual_kwh?: number | null;
+}
+
 export interface DayView {
+  phases?: PhaseDay[]; // triphasé, plan calculé par phase
   kind: DayKind;
   day: string;
   computed_at: string | null;
