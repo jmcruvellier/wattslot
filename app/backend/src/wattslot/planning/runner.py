@@ -50,7 +50,13 @@ from wattslot.planning.engine import (
     plan_day,
 )
 from wattslot.planning.horizon import HORIZON_DAYS, DayForecast, compute_horizon, end_soc_kwh
-from wattslot.planning.inputs import FrozenCycle, NextDay, PlanningInput, RecentHistory
+from wattslot.planning.inputs import (
+    FrozenCycle,
+    NextDay,
+    PlanningInput,
+    RecentHistory,
+    with_battery,
+)
 from wattslot.planning.journal import CycleJournal, cycle_appliances
 from wattslot.planning.merge import BATTERY, POOL, merge_plans, pool_modes, soc_at_hour_start
 from wattslot.planning.past import AggregateReader
@@ -264,8 +270,7 @@ def with_past(
             history or RecentHistory(days=past.RECENT_DAYS), last_full_charge=data.day
         )
     return replace(
-        data,
-        battery=battery,
+        with_battery(data, battery),
         # Un départ choisi pour aujourd'hui n'est pas gelé par un créneau passé du plan
         # précédent : la tâche est replacée à ce départ (tant qu'il est encore à venir).
         frozen=tuple(
@@ -635,11 +640,14 @@ async def run(ctx: Context, now: datetime, manual: bool = False) -> RunReport:
         )
         capacity = data_t.battery.capacity_kwh
         data_t = replace(
-            data_t,
-            battery=replace(
-                data_t.battery,
-                stored_kwh=start_kwh,
-                soc_percent=round(start_kwh / capacity * 100, 1) if capacity > 0 else 0.0,
+            with_battery(
+                data_t,
+                replace(
+                    data_t.battery,
+                    stored_kwh=start_kwh,
+                    soc_percent=round(start_kwh / capacity * 100, 1) if capacity > 0 else 0.0,
+                ),
+                spread=True,
             ),
             assignments=data.assignments,
             chosen_starts=choices.load(ctx.database, tomorrow),

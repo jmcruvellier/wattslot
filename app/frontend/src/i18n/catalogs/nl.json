@@ -1039,7 +1039,7 @@
     "own_intro": "Eigen instellingen van deze batterij van {capacity} kWh.",
     "own_reset": "Terug naar de instellingen van het huis",
     "all_phases": "De batterij compenseert het totaal van de drie fasen",
-    "all_phases_hint": "Vink aan als ze een driefasige meter volgt; anders compenseert ze alleen haar eigen fase. De planning houdt er nog geen rekening mee."
+    "all_phases_hint": "Vink aan als ze een driefasige meter volgt. Anders compenseert ze alleen haar eigen fase: de planning laat ze dan alleen laden op het overschot van die fase en alleen het tekort ervan dekken, zodra het verbruik van elke fase gemeten wordt (fasesensoren van de netaansluiting)."
   },
   "objective": {
     "title": "Doel van de berekening",
@@ -1794,6 +1794,6 @@
     "kind_hint": "Bij twijfel: een vierpolige hoofdschakelaar of een 'driefasig' contract op de factuur.",
     "meter_sums": "Mijn meter saldeert de drie fasen",
     "meter_sums_hint": "Wat ik op de ene fase injecteer, compenseert wat ik op een andere afneem. Zo werken de meeste slimme meters; vink uit als elke fase apart wordt geteld.",
-    "phases_hint": "Geef daarna de fase op van elk toestel, elke batterij en elke zonne-installatie in de bijbehorende fiche (tabblad Apparaten). Met het gecontracteerde vermogen van uw tarief vermijdt de planning dan dat op één fase samen meer draait dan ze kan leveren. De rest van de berekening onderscheidt de fasen nog niet."
+    "phases_hint": "Geef daarna de fase op van elk toestel, elke batterij en elke zonne-installatie in de bijbehorende fiche (tabblad Apparaten). Met het gecontracteerde vermogen van uw tarief vermijdt de planning dan dat op één fase samen meer draait dan ze kan leveren. Een batterij die alleen haar eigen fase compenseert, wordt op die fase berekend zodra het verbruik van elke fase gemeten wordt."
   }
 }

@@ -206,6 +206,12 @@ class PlanningInput:
     production_shares: Mapping[Phase, float] = field(default_factory=dict)
     # Consommation de base de chaque phase, par heure (kWh) ; vide : pas mesurée.
     base_by_phase: Mapping[Phase, Mapping[int, float]] = field(default_factory=dict)
+    # Batteries qui ne compensent que leur phase, regroupées par phase (triphasé, consommation
+    # de base par phase mesurée) ; ``shared_battery`` : celles qui compensent le total, de
+    # capacité nulle s'il n'y en a pas. Vide : toutes les batteries compensent le total, comme
+    # ``battery``, qui reste dans tous les cas l'ensemble des batteries de la maison.
+    line_batteries: Mapping[Phase, Battery] = field(default_factory=dict)
+    shared_battery: Battery | None = None
 
 
 def _date(value: Any) -> date | None:
@@ -365,4 +371,28 @@ def from_v1(state: Mapping[str, Any]) -> PlanningInput:
         measured_production_kwh=state.get("production_reelle_cumul_kwh"),
         measured_at_hour=state.get("heure_releve"),
         forecast_warnings=tuple(state.get("avertissements_prevision") or []),
+    )
+
+
+def with_battery(data: PlanningInput, battery: Battery, spread: bool = False) -> PlanningInput:
+    """Entrée dont l'ensemble des batteries est ``battery`` ; ses groupes par phase suivent,
+    chacun selon sa part de la capacité : l'heure en cours (part écoulée, variation mesurée),
+    et, avec ``spread``, le contenu stocké (jour suivant : on ne connaît que le total)."""
+
+    def follow(group: Battery) -> Battery:
+        share = group.capacity_kwh / battery.capacity_kwh if battery.capacity_kwh > 0 else 0.0
+        stored = battery.stored_kwh * share if spread else group.stored_kwh
+        return replace(
+            group,
+            stored_kwh=stored,
+            soc_percent=stored / group.capacity_kwh * 100 if group.capacity_kwh > 0 else 0.0,
+            hour_elapsed=battery.hour_elapsed,
+            hour_change_kwh=battery.hour_change_kwh * share,
+        )
+
+    return replace(
+        data,
+        battery=battery,
+        line_batteries={line: follow(group) for line, group in data.line_batteries.items()},
+        shared_battery=follow(data.shared_battery) if data.shared_battery is not None else None,
     )

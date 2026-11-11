@@ -29,11 +29,11 @@ from pydantic import BaseModel
 from wattslot import configuration as config
 from wattslot import user_requests
 from wattslot.aggregation import QUARTER
-from wattslot.battery_settings import BatterySettings
+from wattslot.battery_settings import BatterySettings, combine
 from wattslot.configuration import Behavior, Configuration, DeviceSettings
 from wattslot.detection import DeviceKind, Role, classify_appliance
 from wattslot.home_assistant import HomeAssistantClient
-from wattslot.home_model import HomeDevice, HomeModel, Phase, Supply, line_shares
+from wattslot.home_model import LINES, HomeDevice, HomeModel, Phase, Supply, line_shares
 from wattslot.planning import past
 from wattslot.planning.appliances import DEFAULT_RULES, RULES
 from wattslot.planning.co2_sources import co2_context
@@ -105,6 +105,52 @@ def battery_state(model: HomeModel, states: Sequence[dict[str, Any]]) -> tuple[f
             stored += soc * device.capacity_kwh / 100
             break
     return capacity, stored, (stored / capacity * 100 if capacity > 0 else 0.0)
+
+
+def battery_groups(
+    whole: Battery,
+    model: HomeModel,
+    states: Sequence[dict[str, Any]],
+    configuration: Configuration,
+) -> tuple[dict[Phase, Battery], Battery]:
+    """(batteries qui ne compensent que leur phase, regroupées par phase ; batteries qui
+    compensent le total), d'après ``whole``, l'ensemble des batteries de la maison.
+
+    Une batterie ne compense que sa phase dans une maison en triphasé, quand elle est branchée
+    sur une phase et que ses réglages ne disent pas qu'elle compense le total. Chaque groupe a
+    la capacité et le contenu de ses batteries, et leurs réglages réunis
+    (``battery_settings.combine``) ; rendements mesurés : ceux de l'ensemble. Sans batterie
+    par phase : aucun groupe."""
+    house = config.battery_of(configuration)
+    own = {d.key: d.battery for d in configuration.devices if d.battery is not None}
+    parts: dict[Phase | None, list[tuple[float, float, BatterySettings]]] = defaultdict(list)
+    for device in model.devices:
+        if device.kind is not DeviceKind.BATTERY or not device.capacity_kwh:
+            continue
+        capacity, stored, _ = battery_state(HomeModel(devices=[device]), states)
+        if capacity <= 0:
+            continue  # état de charge illisible : pas comptée, comme dans l'ensemble
+        settings = own.get(device.key, house)
+        alone = model.supply is Supply.THREE and device.phase in LINES and not settings.all_phases
+        parts[device.phase if alone else None].append((capacity, stored, settings))
+
+    def group(found: list[tuple[float, float, BatterySettings]]) -> Battery:
+        capacity = sum(c for c, _, _ in found)
+        stored = sum(s for _, s, _ in found)
+        settings = combine([(c, s) for c, _, s in found])
+        return _with_settings(
+            replace(
+                whole,
+                capacity_kwh=capacity,
+                stored_kwh=stored,
+                soc_percent=round(stored / capacity * 100, 1) if capacity > 0 else 0.0,
+                schedules=(),
+            ),
+            settings,
+        )
+
+    lines = {line: group(found) for line, found in parts.items() if line is not None}
+    return (lines, group(parts[None])) if lines else ({}, whole)
 
 
 def measured_production(
@@ -247,6 +293,11 @@ async def build_input(
     )
     if configuration is None:
         return data
+    lines, shared = battery_groups(data.battery, model, states or [], configuration)
+    # Batteries par phase : seulement si la consommation de base de chaque phase est connue
+    # à toute heure (sinon une heure sans mesure passerait pour un surplus de la phase).
+    if lines and all(len(data.base_by_phase.get(line, {})) == 24 for line in LINES):
+        data = replace(data, line_batteries=lines, shared_battery=shared)
     objective = configuration.objective
     data = replace(
         data,

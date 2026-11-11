@@ -65,7 +65,9 @@ Dans **L'essentiel › Mon raccordement**, indiquez si votre maison est en **mon
 
 **Consommation de chaque phase.** Par défaut, la limite ne compte que les appareils que le plan place. Pour compter aussi le reste de la consommation de chaque phase, ouvrez la fiche de votre **raccordement au réseau** (onglet **Appareils**, **Capteurs, nom et type**) et ajoutez un **capteur de soutirage pour chacune des trois phases** (compteur triphasé, pince sur chaque phase…), et ceux d'injection si vous en avez ; pour chacun, choisissez la phase qu'il mesure. Gardez le capteur du total s'il existe : les capteurs par phase ne sont jamais comptés deux fois. La phase de chaque installation solaire et de chaque batterie doit aussi être renseignée. WattSlot apprend alors la consommation habituelle de chaque phase dans l'historique, comme il le fait pour toute la maison.
 
-Un appareil qui dépasse sa phase à lui seul reste placé, avec un avertissement dans le plan. Le reste du calcul (batterie, surplus) ne distingue pas encore les phases.
+Un appareil qui dépasse sa phase à lui seul reste placé, avec un avertissement dans le plan.
+
+**Batteries.** Dès que la consommation de chaque phase est mesurée, une batterie qui ne compense que sa phase est calculée sur cette phase : voir [Batterie](battery.md#plusieurs-batteries). Le coût reste compté sur le total des trois phases, comme le fait un compteur qui les additionne.
 
 ## Objectif
 

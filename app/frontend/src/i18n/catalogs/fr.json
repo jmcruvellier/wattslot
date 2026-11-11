@@ -1039,7 +1039,7 @@
     "own_intro": "Réglages propres à cette batterie de {capacity} kWh.",
     "own_reset": "Reprendre les réglages de la maison",
     "all_phases": "La batterie compense le total des trois phases",
-    "all_phases_hint": "Cochez si elle suit un compteur triphasé ; sinon elle ne compense que sa phase. Le planning n'en tient pas encore compte."
+    "all_phases_hint": "Cochez si elle suit un compteur triphasé. Sinon elle ne compense que sa phase : le planning la fait alors charger sur le seul surplus de cette phase et couvrir son seul déficit, dès que la consommation de chaque phase est mesurée (capteurs par phase du réseau)."
   },
   "objective": {
     "title": "Objectif du calcul",
@@ -1794,6 +1794,6 @@
     "kind_hint": "En cas de doute : un disjoncteur général à quatre pôles ou un contrat « triphasé » sur la facture.",
     "meter_sums": "Mon compteur additionne les trois phases",
     "meter_sums_hint": "Ce que j'injecte sur une phase compense ce que je soutire sur une autre. C'est le cas de la plupart des compteurs communicants ; décochez si chaque phase est comptée à part.",
-    "phases_hint": "Indiquez ensuite la phase de chaque appareil, batterie et installation solaire dans sa fiche (onglet Appareils). Avec la puissance souscrite de votre contrat, le planning évite alors de faire tourner ensemble, sur une même phase, plus qu'elle ne peut fournir. Le reste du calcul ne distingue pas encore les phases."
+    "phases_hint": "Indiquez ensuite la phase de chaque appareil, batterie et installation solaire dans sa fiche (onglet Appareils). Avec la puissance souscrite de votre contrat, le planning évite alors de faire tourner ensemble, sur une même phase, plus qu'elle ne peut fournir. Une batterie qui ne compense que sa phase est calculée sur cette phase dès que la consommation de chaque phase est mesurée."
   }
 }

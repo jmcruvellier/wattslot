@@ -65,7 +65,9 @@ In **Essentials › My grid connection**, say whether your home is **single-phas
 
 **Consumption of each phase.** By default the limit only counts the appliances the plan places. To count the rest of the consumption of each phase too, open the sheet of your **grid connection** (**Devices** tab, **Sensors, name and type**) and add an **import sensor for each of the three phases** (three-phase meter, a clamp on each phase…), and the export sensors if you have them; for each one, choose the phase it measures. Keep the sensor of the total if there is one: phase sensors are never counted twice. The phase of every solar installation and battery must be set as well. WattSlot then learns the usual consumption of each phase from the history, like it does for the whole home.
 
-An appliance that exceeds its phase on its own stays placed, with a warning in the plan. The rest of the calculation (battery, surplus) does not tell the phases apart yet.
+An appliance that exceeds its phase on its own stays placed, with a warning in the plan.
+
+**Batteries.** Once the consumption of each phase is measured, a battery that only offsets its own phase is calculated on that phase: see [Battery](battery.md#several-batteries). The cost is still counted on the total of the three phases, as a meter that sums them does.
 
 ## Objective
 

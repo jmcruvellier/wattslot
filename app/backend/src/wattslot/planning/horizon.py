@@ -33,7 +33,7 @@ from wattslot.planning.engine import (
     Result,
     plan_day,
 )
-from wattslot.planning.inputs import CarriedCycle, PlanningInput
+from wattslot.planning.inputs import CarriedCycle, PlanningInput, with_battery
 from wattslot.planning.problem import from_input
 from wattslot.planning.recurrence import tasks_of_day
 
@@ -94,7 +94,7 @@ def next_day_input(
     tasks, unsupported = tasks_of_day(list(first.due_tasks), day)
     assignments = first.assignments or {}
     capacity = first.battery.capacity_kwh
-    return PlanningInput(
+    data = PlanningInput(
         day=day,
         first_hour=0,
         net_kwh={h: forecast.net_kwh.get(h, 0.0) for h in range(24)},
@@ -123,12 +123,22 @@ def next_day_input(
         cycle_profiles=first.cycle_profiles,
         daily_profiles=first.daily_profiles,
         profile_status=first.profile_status,
+        # Triphasé : phases, et consommation de base par phase du premier jour (celle du
+        # même jour de la semaine n'est pas relue pour les jours suivants).
+        three_phase=first.three_phase,
+        phases=first.phases,
+        production_shares=first.production_shares,
+        base_by_phase=first.base_by_phase,
+        line_batteries=first.line_batteries,
+        shared_battery=first.shared_battery,
         forecast_warnings=tuple(forecast.warnings)
         + tuple(
             {"code": "regle_recurrence_non_geree", "params": {"equipement": name}}
             for name in dict.fromkeys(unsupported)
         ),
     )
+    # Les groupes de batteries par phase repartent du même total, réparti selon leur capacité.
+    return with_battery(data, data.battery, spread=True)
 
 
 async def compute_horizon(
