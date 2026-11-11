@@ -396,3 +396,21 @@ def test_today_view_carries_now_and_next_action_other_days_do_not(tmp_path: Path
     assert found["now"]["sentence"] is None  # sans Home Assistant, pas de flux
     assert "next_action" in found
     assert other["now"] is None and other["next_action"] is None
+
+
+def test_a_single_phase_home_does_not_say_the_phase_of_its_batteries(tmp_path: Path) -> None:
+    """Une maison repassée en monophasé garde les phases saisies, sans les afficher."""
+    graph = _two_batteries(tmp_path)
+    home_model.save(graph, home_model.load(graph).model_copy(update={"supply": Supply.SINGLE}))
+    until = datetime(2026, 10, 15, 10, 0, tzinfo=UTC)
+    state = SimpleNamespace(
+        aggregator=QuarterAggregator(until, {"sensor.import": 0.05}),
+        ingestor=_levels(small=40.0, large=80.0),
+        graph=graph,
+    )
+
+    found = measure_now(state, NOON, CONTEXT, "fr")
+
+    assert len(found.batteries) == 2
+    assert [battery.phase for battery in found.batteries] == [None, None]
+    assert found.soc_percent == 70
