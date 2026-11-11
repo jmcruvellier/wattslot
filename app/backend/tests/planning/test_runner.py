@@ -114,7 +114,12 @@ def test_the_reasons_of_the_previous_plan_are_kept_without_launched() -> None:
     launched = {"code": "launched", "params": {"time": "09h59"}}
     old = {
         "planning": [
-            {"equipement": "Lave-linge", "heure_debut": 10, "explication": {"raisons": [solar]}},
+            {
+                "equipement": "Lave-linge",
+                "heure_debut": 10,
+                # « Heure gardée » ne suit pas un appareil une fois lancé.
+                "explication": {"raisons": [{"code": "announced_kept"}, solar]},
+            },
             {
                 "equipement": "Sèche-linge",
                 "heure_debut": 12,

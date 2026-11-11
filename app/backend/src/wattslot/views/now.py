@@ -168,9 +168,11 @@ def measure_now(state: Any, moment: datetime, context: Context, lang: Language) 
     """Le moment d'après le dernier quart d'heure clos ; ``state`` : l'état de l'application."""
     local = moment.astimezone(context.zone)
     graph = getattr(state, "graph", None)
-    devices = home_model.load(graph).devices if graph is not None else []
+    home = home_model.load(graph) if graph is not None else None
+    devices = home.devices if home is not None else []
     levels = _levels(state)
-    batteries = _batteries(levels, devices)
+    three_phase = home is not None and home.supply is home_model.Supply.THREE
+    batteries = _batteries(levels, devices, three_phase)
     found = Now(
         off_peak=context.off_peak_hours()[local.hour],
         soc_percent=_soc(batteries, levels),
@@ -247,9 +249,13 @@ def _levels(state: Any) -> list[tuple[str | None, float]]:
 
 
 def _batteries(
-    levels: list[tuple[str | None, float]], devices: list[home_model.HomeDevice]
+    levels: list[tuple[str | None, float]],
+    devices: list[home_model.HomeDevice],
+    three_phase: bool = False,
 ) -> list[BatteryNow]:
-    """Chaque batterie de la maison à son dernier relevé d'état de charge."""
+    """Chaque batterie de la maison à son dernier relevé d'état de charge. Sa phase n'est dite
+    que pour une maison en triphasé : une maison repassée en monophasé garde les phases
+    saisies, sans les afficher."""
     by_entity = dict(levels)
     found = []
     for device in devices:
@@ -265,7 +271,7 @@ def _batteries(
                 key=device.key,
                 name=device.name,
                 capacity_kwh=capacity,
-                phase=device.phase,
+                phase=device.phase if three_phase else None,
                 soc_percent=round(soc, 1) if soc is not None else None,
                 stored_kwh=round(soc * capacity / 100, 2) if soc is not None and capacity else None,
             )

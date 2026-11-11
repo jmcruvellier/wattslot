@@ -345,8 +345,9 @@ describe("maison en triphasé", () => {
     await openDevices();
     await userEvent.click(await screen.findByRole("button", { name: /^Lave-linge/ }));
     const sheet = screen.getByRole("dialog", { name: "Lave-linge" });
-    await userEvent.click(within(sheet).getByText("Capteurs, nom et type"));
+    // Demandée en clair, hors de la section repliée « Capteurs, nom et type ».
     const phase = within(sheet).getByLabelText("Branché sur");
+    expect(phase.closest("details")).toBeNull();
     expect(phase).toHaveValue(""); // inconnue tant qu'elle n'est pas réglée
 
     await userEvent.selectOptions(phase, "Phase 2");

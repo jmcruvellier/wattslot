@@ -107,6 +107,9 @@ export default function DeviceSheet({
   const issues: Issue[] = [...draft.issues, ...draft.sensors.flatMap((sensor) => sensor.issues)];
   // Réseau en triphasé : chaque capteur mesure le total ou une seule phase.
   const byPhase = threePhase && draft.kind === "GridConnection";
+  // Sa fiche s'ouvre sur ses capteurs tant qu'aucun ne mesure une phase : la mise en route y mène
+  // pour les ajouter. Jugé à l'ouverture, pour ne pas la replier pendant la saisie.
+  const [phaseMeters] = useState(byPhase && !device.sensors.some((sensor) => sensor.phase));
   const setSensor = (index: number, change: Partial<DraftSensor>) =>
     edit({ sensors: draft.sensors.map((s, i) => (i === index ? { ...s, ...change } : s)) });
   // Capteur par phase à ajouter : la première entité de HA qui convient et n'est pas déjà liée.
@@ -151,7 +154,28 @@ export default function DeviceSheet({
           }}
         />
       )}
-      <details className="expert-form home-fiche-details" open={!included || sensorIssues}>
+      {/* Maison en triphasé : la phase est demandée en clair, hors de la section repliée (la mise
+          en route mène ici pour la régler). */}
+      {threePhase && draft.kind !== "GridConnection" && (
+        <div className="expert-form">
+          <label>
+            {t("home.phase")}{" "}
+            <select
+              value={draft.phase ?? ""}
+              onChange={(event) => edit({ phase: (event.target.value || null) as Phase | null })}
+            >
+              <option value="">{t("home.phases.unknown")}</option>
+              {PHASES.map((phase) => (
+                <option key={phase} value={phase}>
+                  {t(`home.phases.${phase}`)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <Hint text={t("home.phase_hint")} />
+        </div>
+      )}
+      <details className="expert-form home-fiche-details" open={!included || sensorIssues || phaseMeters}>
         <summary>{t("home.fiche.details")}</summary>
         <label>
           {t("home.name")} <input value={draft.name} onChange={(event) => edit({ name: event.target.value })} />
@@ -179,25 +203,6 @@ export default function DeviceSheet({
           </select>
         </label>
         <Hint text={t("home.kind_hint")} />
-        {threePhase && draft.kind !== "GridConnection" && (
-          <>
-            <label>
-              {t("home.phase")}{" "}
-              <select
-                value={draft.phase ?? ""}
-                onChange={(event) => edit({ phase: (event.target.value || null) as Phase | null })}
-              >
-                <option value="">{t("home.phases.unknown")}</option>
-                {PHASES.map((phase) => (
-                  <option key={phase} value={phase}>
-                    {t(`home.phases.${phase}`)}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <Hint text={t("home.phase_hint")} />
-          </>
-        )}
         {draft.kind === "Battery" && (
           <label>
             {t("home.capacity")}{" "}

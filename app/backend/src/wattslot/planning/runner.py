@@ -204,12 +204,16 @@ def announced_starts(old: Mapping[str, Any] | None) -> dict[str, int]:
 
 def planned_reasons(old: Plan | None) -> dict[str, tuple[Reason, ...]]:
     """Raisons du placement de chaque appareil dans le plan précédent de la journée, sans
-    « lancé » : d'un recalcul à l'autre, un cycle lancé garde celles de son placement."""
+    « lancé » : d'un recalcul à l'autre, un cycle lancé garde celles de son placement. Sans
+    « heure gardée » non plus : elle parle d'un choix entre deux départs, qui n'a plus lieu
+    d'être une fois l'appareil lancé."""
     found: dict[str, tuple[Reason, ...]] = {}
     for slot in old.slots if old else []:
         if slot.explanation is None:
             continue
-        reasons = tuple(r for r in slot.explanation.reasons if r.code != "launched")
+        reasons = tuple(
+            r for r in slot.explanation.reasons if r.code not in ("launched", "announced_kept")
+        )
         if reasons:
             found[slot.device] = reasons
     return found
