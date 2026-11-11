@@ -334,6 +334,56 @@
       "chosen": "Highlighted indicator chosen in “Customize”.",
       "subscription_part": "including subscription {amount}"
     },
+    "quality": {
+      "title": "Forecast quality",
+      "badge": {
+        "good": "Reliable forecasts",
+        "fair": "Fair forecasts",
+        "poor": "Uncertain forecasts"
+      },
+      "open": "Forecast quality: {badge}. Show details",
+      "score": "Score: {score} out of 100",
+      "summary": {
+        "good": "The calculation had complete data: forecast production and consumption should be close to reality.",
+        "fair": "The calculation had data with some gaps: take the forecast values as rough figures.",
+        "poor": "The calculation had incomplete or unreliable data: forecast values may differ a lot from reality."
+      },
+      "levels": {
+        "good": "Good",
+        "fair": "Fair",
+        "poor": "Poor"
+      },
+      "factors": {
+        "consumption_history": {
+          "same": "Usual consumption: average of the last {days} same weekdays ({target} expected).",
+          "all": "Usual consumption: fewer than {target} same weekdays in the history, average of every available day ({days} days).",
+          "none": "Usual consumption: not enough readings yet to estimate it.",
+          "missing": "{hours} hours out of 24 without enough readings (fewer than 3 days): their consumption counts as zero."
+        },
+        "consumption_regularity": {
+          "text": "Regularity: consumption varies by about {percent}% from one day to the next.",
+          "good": "It is easy to forecast.",
+          "fair": "Day-to-day differences are possible.",
+          "poor": "A day can be very different from the average."
+        },
+        "solar_source": {
+          "dedicated": "Solar forecast: read from Home Assistant (Energy dashboard or forecast entities).",
+          "fallback": "Solar forecast: estimated with Open-Meteo from the panel description, less accurate than a forecast integration."
+        },
+        "weather_horizon": {
+          "today": "Weather: same-day forecast, the most reliable.",
+          "tomorrow": "Weather: one-day forecast, usually reliable.",
+          "later": "Weather: {days}-day forecast, less reliable than one day ahead.",
+          "far": "Weather: {days}-day forecast, often far from reality."
+        },
+        "cycle_profiles": {
+          "good": "Appliance cycles: energy and duration learnt from measured cycles.",
+          "missing": "Appliance cycles: not enough measured cycles yet for {devices}."
+        },
+        "history_import": "Home Assistant history still being imported: usual consumption is incomplete, the plan is provisional."
+      },
+      "how": "The score combines these criteria from the data of the latest plan calculation; the weakest come first."
+    },
     "explanations": {
       "title": "Why this plan",
       "recommendation": "Recommendation text"

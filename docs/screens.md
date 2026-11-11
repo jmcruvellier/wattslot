@@ -31,6 +31,7 @@ The plan in detail, for **Yesterday**, **Today**, **Tomorrow**, the following da
 - **Why this plan**: the explanation of each decision, in plain words.
   - Today, the other possible starts of each appliance can be chosen here too.
 - **Plan indicators** (cost, purchases, surplus, self-consumption…): for the whole day, measured for the hours already past, planned for the rest.
+  - In its corner, the **forecast quality** (reliable, fair or uncertain) tells how far to trust the planned production and consumption, from the data the calculation had: days of history behind the usual consumption, its regularity, the source of the solar forecast, how many days ahead the weather is forecast. Tap it for the reason behind each criterion.
 - **My requests** (under each tab): the appliances you asked for, with or without a deadline, to mark done or cancel.
 - **Week**: the coming days as an agenda, one line per day with what is planned; tap a day to open it.
 

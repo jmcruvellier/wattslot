@@ -248,3 +248,40 @@ describe("CurvesScreen", () => {
     expect(JSON.parse(String(later[1][1]?.body))).toEqual({ device: "Sèche-linge", start_min: 1140, day: day.day });
   });
 });
+
+describe("CurvesScreen, dernière vue gardée", () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+    vi.spyOn(navigator, "languages", "get").mockReturnValue(["fr-FR"]);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("affiche la dernière vue lue tant que la relecture n'a pas répondu (calcul en cours)", async () => {
+    let todayCalls = 0;
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const url = String(input);
+      if (url === "api/views/versions") return Response.json({ yesterday: null, today: 1, tomorrow: null, week: null });
+      if (url === "api/settings/dashboard") return Response.json(DEFAULT_LAYOUT);
+      if (url.startsWith("api/views/today")) {
+        todayCalls += 1;
+        // Deuxième lecture : le serveur calcule et ne répond pas encore.
+        if (todayCalls > 1) return new Promise<Response>(() => undefined);
+        return Response.json(TODAY);
+      }
+      return Response.json({ detail: "no_plan" }, { status: 404 });
+    });
+    renderScreen();
+    expect(await screen.findByText("graphique 24 heures, relevé 14.5")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("tab", { name: "Demain" }));
+    expect(await screen.findByText(/Pas encore de plan pour cette vue/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("tab", { name: "Aujourd'hui" }));
+
+    expect(screen.getByText("graphique 24 heures, relevé 14.5")).toBeInTheDocument();
+    expect(screen.queryByText("Lecture du plan…")).toBeNull();
+    expect(todayCalls).toBeGreaterThan(1); // la relecture est bien partie
+  });
+});

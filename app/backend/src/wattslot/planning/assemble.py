@@ -206,7 +206,8 @@ async def build_input(
         if configuration is not None
         else None
     )
-    baseline = past.baseline(model, reader, day, today, zone, planned=planned)
+    detail = past.baseline_detail(model, reader, day, today, zone, planned=planned)
+    baseline = detail.kwh
     production = {h: forecast.get(h, 0.0) for h in range(24)}
     net = {h: production[h] - baseline.get(h, 0.0) for h in range(24)}
 
@@ -295,6 +296,7 @@ async def build_input(
         measured_production_kwh=produced,
         measured_at_hour=at_hour,
         forecast_warnings=tuple(warnings),
+        baseline_quality=detail.quality,
     )
     if configuration is None:
         return data

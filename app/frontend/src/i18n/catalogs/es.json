@@ -334,6 +334,56 @@
       "chosen": "Indicador destacado elegido en «Personalizar».",
       "subscription_part": "incluido término fijo {amount}"
     },
+    "quality": {
+      "title": "Calidad de las previsiones",
+      "badge": {
+        "good": "Previsiones fiables",
+        "fair": "Previsiones regulares",
+        "poor": "Previsiones inciertas"
+      },
+      "open": "Calidad de las previsiones: {badge}. Mostrar el detalle",
+      "score": "Nota: {score} sobre 100",
+      "summary": {
+        "good": "El cálculo disponía de datos completos: la producción y el consumo previstos deberían acercarse a la realidad.",
+        "fair": "El cálculo disponía de datos con algunas lagunas: tome los valores previstos como órdenes de magnitud.",
+        "poor": "El cálculo disponía de datos incompletos o poco seguros: los valores previstos pueden alejarse mucho de la realidad."
+      },
+      "levels": {
+        "good": "Bueno",
+        "fair": "Regular",
+        "poor": "Débil"
+      },
+      "factors": {
+        "consumption_history": {
+          "same": "Consumo habitual: media de los últimos {days} mismos días de la semana ({target} esperados).",
+          "all": "Consumo habitual: menos de {target} mismos días de la semana en el historial, media de todos los días disponibles ({days} días).",
+          "none": "Consumo habitual: todavía no hay suficientes lecturas para estimarlo.",
+          "missing": "{hours} horas de 24 sin suficientes lecturas (menos de 3 días): su consumo cuenta como cero."
+        },
+        "consumption_regularity": {
+          "text": "Regularidad: el consumo varía alrededor de un {percent} % de un día a otro.",
+          "good": "Se prevé bien.",
+          "fair": "Son posibles diferencias de un día a otro.",
+          "poor": "Un día puede ser muy distinto de la media."
+        },
+        "solar_source": {
+          "dedicated": "Previsión solar: leída en Home Assistant (panel de Energía o entidades de previsión).",
+          "fallback": "Previsión solar: estimada con Open-Meteo a partir de la descripción de los paneles, menos precisa que una integración de previsión."
+        },
+        "weather_horizon": {
+          "today": "Tiempo: previsión del mismo día, la más segura.",
+          "tomorrow": "Tiempo: previsión a un día, en general fiable.",
+          "later": "Tiempo: previsión a {days} días, menos segura que a un día.",
+          "far": "Tiempo: previsión a {days} días, a menudo lejos de la realidad."
+        },
+        "cycle_profiles": {
+          "good": "Ciclos de los aparatos: energía y duración aprendidas de los ciclos medidos.",
+          "missing": "Ciclos de los aparatos: todavía no hay suficientes ciclos medidos para {devices}."
+        },
+        "history_import": "Historial de Home Assistant todavía en recuperación: el consumo habitual está incompleto, el plan es provisional."
+      },
+      "how": "La nota combina estos criterios a partir de los datos del último cálculo del plan; los más débiles van primero."
+    },
     "explanations": {
       "title": "Por qué este plan",
       "recommendation": "Texto de la recomendación"

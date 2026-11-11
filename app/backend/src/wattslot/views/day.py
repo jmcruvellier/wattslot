@@ -11,6 +11,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel
 
+from wattslot.planning.forecast_quality import ForecastQuality, assess
 from wattslot.planning.recommendation import recommendation
 from wattslot.views.banners import (
     Departure,
@@ -46,6 +47,13 @@ from wattslot.views.timeline import Timeline, build_timeline
 LaterKind = Literal["d2", "d3", "d4", "d5", "d6"]
 LATER_KINDS: tuple[LaterKind, ...] = ("d2", "d3", "d4", "d5", "d6")
 Kind = Literal["yesterday", "today", "tomorrow", "d2", "d3", "d4", "d5", "d6"]
+# Jours d'avance de la prévision de chaque vue (qualité des prévisions).
+DAYS_AHEAD: dict[str, int] = {
+    "yesterday": -1,
+    "today": 0,
+    "tomorrow": 1,
+    **{kind: int(kind[1:]) for kind in LATER_KINDS},
+}
 
 
 class HourPoint(BaseModel):
@@ -171,6 +179,8 @@ class DayView(BaseModel):
     notices: list[Notice] = []
     freshness: Freshness | None = None
     indicators: Indicators | None = None
+    # Qualité des prévisions, d'après les données du calcul ; aucune : plan d'avant ce critère.
+    forecast_quality: ForecastQuality | None = None
     objective: str = "cost"  # objectif du calcul : indicateur mis en avant
     explanations: list[DeviceExplanation] = []
     recommendation: str | None = None  # texte du plan, dans la langue demandée
@@ -371,6 +381,7 @@ def build_day(
         notices=notices(state, shown, lang),
         freshness=freshness(computed_at, shown, datetime.now(context.zone)),
         indicators=indicators,
+        forecast_quality=assess(state, DAYS_AHEAD[kind], context.solar),
         objective=context.objective,
         explanations=explained,
         recommendation=recommendation(as_stored(state), lang) if state.get("planning") else None,

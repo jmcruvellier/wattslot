@@ -14,7 +14,7 @@ from wattslot.energy_need import EnergyNeed, problems
 from wattslot.home_model import HomeDevice, HomeModel, HomeSensor
 from wattslot.planning.assemble import configured
 from wattslot.planning.engine import plan_day
-from wattslot.planning.horizon import next_day_input
+from wattslot.planning.horizon import DayForecast, next_day_input
 from wattslot.planning.inputs import Need, PlanningInput, from_v1
 from wattslot.planning.plan import Slot
 from wattslot.planning.problem import from_input
@@ -134,7 +134,7 @@ def test_configured_needs_daily_or_asked_by_a_task() -> None:
 
 def test_only_daily_needs_go_on_to_the_next_days() -> None:
     data = replace(state(), needs=(CAR, replace(CAR, name="Ballon", daily=False)))
-    forecast = type("F", (), {"net_kwh": {}, "production_kwh": {}, "warnings": []})()
+    forecast = DayForecast(net_kwh={}, production_kwh={})
 
     following = next_day_input(data, data.day, forecast, 1.0)
 

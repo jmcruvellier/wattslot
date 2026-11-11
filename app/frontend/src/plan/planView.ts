@@ -1,6 +1,8 @@
 // Vue du plan ouverte, commune aux sections Planning et Courbes : onglets Hier, Aujourd'hui,
 // Demain, J+2 à J+6 et Semaine, dernier onglet gardé dans le navigateur (partagé par les deux sections),
 // actualisation quand un nouveau calcul arrive, et disposition des cartes de l'installation.
+// Dernière vue lue de chaque onglet gardée en mémoire : en changeant d'onglet ou de section, et
+// pendant un calcul, elle reste affichée jusqu'à ce que la relecture réponde.
 
 import { useEffect, useState } from "react";
 
@@ -40,6 +42,22 @@ export type Load =
   | { status: "day"; view: DayView }
   | { status: "week"; view: WeekView };
 
+type Shown = Extract<Load, { status: "day" | "week" }>;
+
+// Dernières vues lues, par onglet et par langue, le temps de la page.
+const lastViews = new Map<string, Shown>();
+const viewKey = (tab: ViewKind, language: string) => `${tab}|${language}`;
+
+/** Vue gardée de ``tab`` dans ``language``, sinon le chargement. */
+function lastLoad(tab: ViewKind, language: string): Load {
+  return lastViews.get(viewKey(tab, language)) ?? { status: "loading" };
+}
+
+/** Oublie les vues gardées (tests). */
+export function forgetPlanViews(): void {
+  lastViews.clear();
+}
+
 /** « Calculer » ou « Rafraîchir » a réussi (barre de titre) : les vues et les indicateurs se
  * relisent tout de suite, sans attendre leur prochain passage (30 s ou 1 min). */
 export const RUN_EVENT = "wattslot:run";
@@ -48,7 +66,7 @@ export const RUN_EVENT = "wattslot:run";
 export function usePlanView() {
   const { language } = useI18n();
   const [tab, setTab] = useState<ViewKind>(savedTab);
-  const [load, setLoad] = useState<Load>({ status: "loading" });
+  const [load, setLoad] = useState<Load>(() => lastLoad(savedTab(), language));
   const [version, setVersion] = useState<number | null>(null);
   const [count, setCount] = useState(0); // après « Calculer » ou « Réessayer »
   // « Calculer » ou « Rafraîchir » réussi dans la barre de titre : relecture immédiate.
@@ -78,19 +96,30 @@ export function usePlanView() {
   useEffect(() => {
     const controller = new AbortController();
     const url = `api/views/${tab}?lang=${language}`;
+    const key = viewKey(tab, language);
     getJson<DayView | WeekView>(url, controller.signal)
-      .then((view) =>
-        setLoad(tab === "week" ? { status: "week", view: view as WeekView } : { status: "day", view: view as DayView }),
-      )
+      .then((view) => {
+        const shown: Shown =
+          tab === "week" ? { status: "week", view: view as WeekView } : { status: "day", view: view as DayView };
+        lastViews.set(key, shown);
+        setLoad(shown);
+      })
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
-        setLoad({ status: error instanceof ApiError && error.status === 404 ? "missing" : "error" });
+        if (error instanceof ApiError && error.status === 404) {
+          lastViews.delete(key);
+          setLoad({ status: "missing" });
+          return;
+        }
+        // Serveur occupé ou injoignable : la dernière vue lue reste affichée, sinon l'erreur.
+        const kept = lastViews.get(key);
+        setLoad(kept ?? { status: "error" });
       });
     return () => controller.abort();
   }, [tab, version, language, count]);
 
   const open = (kind: ViewKind) => {
-    setLoad({ status: "loading" });
+    setLoad(lastLoad(kind, language));
     setTab(kind);
     rememberTab(kind);
   };

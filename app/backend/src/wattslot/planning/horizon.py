@@ -18,6 +18,7 @@ calculé, avec un avertissement : les jours suivants dépendent de son SoC. Un p
 déclare impossible est passé à ``on_no_plan`` pour être capturé (``capture.py``, lot 7.3).
 """
 
+import asyncio
 import time
 from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass, field, replace
@@ -33,6 +34,7 @@ from wattslot.planning.engine import (
     Result,
     plan_day,
 )
+from wattslot.planning.forecast_quality import BaselineQuality
 from wattslot.planning.inputs import CarriedCycle, PlanningInput, with_battery
 from wattslot.planning.problem import from_input
 from wattslot.planning.recurrence import tasks_of_day
@@ -47,6 +49,7 @@ class DayForecast:
     net_kwh: Mapping[int, float]
     production_kwh: Mapping[int, float]
     warnings: tuple[dict[str, Any], ...] = ()
+    baseline_quality: BaselineQuality | None = None  # qualité des prévisions
 
 
 ForecastOf = Callable[[date], Awaitable[DayForecast]]
@@ -132,6 +135,7 @@ def next_day_input(
         base_by_phase=first.base_by_phase,
         line_batteries=first.line_batteries,
         shared_battery=first.shared_battery,
+        baseline_quality=forecast.baseline_quality,
         forecast_warnings=tuple(forecast.warnings)
         + tuple(
             {"code": "regle_recurrence_non_geree", "params": {"equipement": name}}
@@ -190,7 +194,8 @@ async def compute_horizon(
             await following(day + timedelta(days=1)),
         )
         try:
-            result = plan_day(from_input(data), objective, explained=False)
+            # Solveur hors de la boucle : le serveur répond pendant le calcul (``runner.run``).
+            result = await asyncio.to_thread(plan_day, from_input(data), objective, False)
         except Exception as exc:  # noqa: BLE001 — l'horizon s'arrête au dernier jour calculé
             if isinstance(exc, NoPlanError) and on_no_plan is not None:
                 on_no_plan(exc)

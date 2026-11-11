@@ -1,5 +1,6 @@
 // Graphiques des vues de jour (lots 5.2 et 5.3) et de la semaine (lot 5.4), chargés à la demande (Recharts, point n° 2 de la
-// phase 5) : prévu en pointillés, réel en trait plein, ligne du dernier relevé, heures creuses en
+// phase 5) : prévu en pointillés, réel en trait plein (légendes comprises : icône « plainline »,
+// qui reprend le pointillé de la courbe), ligne du dernier relevé, heures creuses en
 // bandes de fond — les conventions du dashboard de la v1.
 
 import { useEffect, useState } from "react";
@@ -99,10 +100,10 @@ export function EnergyChart({ hours, readingHour }: ChartProps) {
           <YAxis tick={TICK} stroke="var(--text-dim)" tickFormatter={axisTick("kWh")} width="auto" />
           <Tooltip contentStyle={TOOLTIP} labelFormatter={(x) => instantLabel(Number(x), lang)} formatter={(v) => `${kwh(Number(v))} kWh`} />
           {legends && <Legend wrapperStyle={LEGEND} />}
-          <Line connectNulls type="monotone" dataKey="production" name={t("plan.series.production")} stroke="var(--production)" strokeDasharray="5 4" dot={false} />
-          <Line type="monotone" dataKey="productionActual" name={t("plan.series.production_actual")} stroke="var(--production)" dot={false} />
-          <Line connectNulls type="monotone" dataKey="consumption" name={t("plan.series.consumption")} stroke="var(--consumption)" strokeDasharray="5 4" dot={false} />
-          <Line type="monotone" dataKey="consumptionActual" name={t("plan.series.consumption_actual")} stroke="var(--consumption)" dot={false} />
+          <Line connectNulls legendType="plainline" type="monotone" dataKey="production" name={t("plan.series.production")} stroke="var(--production)" strokeDasharray="5 4" dot={false} />
+          <Line legendType="plainline" type="monotone" dataKey="productionActual" name={t("plan.series.production_actual")} stroke="var(--production)" dot={false} />
+          <Line connectNulls legendType="plainline" type="monotone" dataKey="consumption" name={t("plan.series.consumption")} stroke="var(--consumption)" strokeDasharray="5 4" dot={false} />
+          <Line legendType="plainline" type="monotone" dataKey="consumptionActual" name={t("plan.series.consumption_actual")} stroke="var(--consumption)" dot={false} />
           {readingHour !== null && <ReferenceLine x={readingHour} stroke="var(--text-dim)" />}
         </LineChart>
       </ResponsiveContainer>
@@ -126,8 +127,8 @@ export function SocChart({ hours, readingHour, floor, midnight }: ChartProps & {
           <YAxis tick={TICK} stroke="var(--text-dim)" tickFormatter={axisTick("%")} domain={[0, 100]} width="auto" />
           <Tooltip contentStyle={TOOLTIP} labelFormatter={(x) => instantLabel(Number(x), lang)} formatter={(v) => `${percent(Number(v))} %`} />
           {legends && <Legend wrapperStyle={LEGEND} />}
-          <Line connectNulls type="monotone" dataKey="soc" name={t("plan.series.soc")} stroke="var(--battery)" strokeDasharray="5 4" dot={false} />
-          <Line type="monotone" dataKey="socActual" name={t("plan.series.soc_actual")} stroke="var(--battery)" dot={false} />
+          <Line connectNulls legendType="plainline" type="monotone" dataKey="soc" name={t("plan.series.soc")} stroke="var(--battery)" strokeDasharray="5 4" dot={false} />
+          <Line legendType="plainline" type="monotone" dataKey="socActual" name={t("plan.series.soc_actual")} stroke="var(--battery)" dot={false} />
           {floor !== null && (
             <ReferenceLine y={floor} stroke="var(--discharge)" strokeDasharray="3 3" label={{ ...FLOOR_LABEL, value: t("plan.series.floor", { pct: floor }) }} />
           )}
@@ -166,7 +167,7 @@ export function GridChart({ hours, readingHour }: ChartProps) {
             ))}
           </Bar>
           <Bar dataKey="exportActual" name={t("plan.series.export_actual")} stackId="actual" fill="var(--grid-export)" />
-          <Line type="monotone" dataKey="net" name={t("plan.series.grid")} stroke="var(--text-dim)" strokeDasharray="5 4" dot={false} />
+          <Line legendType="plainline" type="monotone" dataKey="net" name={t("plan.series.grid")} stroke="var(--text-dim)" strokeDasharray="5 4" dot={false} />
           <ReferenceLine y={0} stroke="var(--border)" />
           {readingHour !== null && <ReferenceLine x={readingHour} stroke="var(--text-dim)" />}
         </ComposedChart>
