@@ -66,12 +66,21 @@ def test_problem_is_the_problem_of_v1(path: Path) -> None:
     state, _ = load(path)
     expected = v1("prototype.problem", state)
 
-    problem = from_input(from_v1(state))
+    data = from_v1(state)
+    problem = from_input(data)
 
     assert problem.first_hour == expected["first_hour"]
     for hour in range(24):
         assert problem.fixed_kwh[hour] == pytest.approx(expected["fixed_kwh"][hour], abs=1e-9)
     ours = [{f: getattr(t, f) for f in FIELDS} for t in problem.tasks]
+    # Écart voulu à la v1 : le départ au plus tôt est l'instant du calcul, pas le début de
+    # l'heure en cours (un calcul de 7 h 59 ne place plus un départ à 7 h 00). Ramené ici au
+    # début de l'heure pour comparer le reste du problème.
+    now = data.real_updated_at
+    if now is not None and now.hour == problem.first_hour:
+        for ours_task in ours:
+            if ours_task["earliest_min"] == now.hour * 60 + now.minute:
+                ours_task["earliest_min"] = now.hour * 60
     assert _tasks(ours) == _tasks(expected["tasks"])
     battery, expected_battery = problem.battery, expected["battery"]
     assert (battery.active_from, battery.active_to) == (
@@ -88,8 +97,12 @@ def test_problem_is_the_problem_of_v1(path: Path) -> None:
     )
     for task in problem.tasks:
         oracle = next(t for t in expected["tasks"] if t["name"] == task.name)
-        assert set(task.candidates()) <= set(oracle["hourly"])
-        for start in task.candidates():
+        # Même écart : le départ « tout de suite » n'existe pas en v1, qui avait à sa place le
+        # début de l'heure en cours.
+        run_min = now.hour * 60 + now.minute if now is not None else None
+        candidates = [s for s in task.candidates() if s != run_min or s in oracle["hourly"]]
+        assert set(candidates) <= set(oracle["hourly"])
+        for start in candidates:
             assert task.hourly_kwh(start) == pytest.approx(oracle["hourly"][start], abs=1e-9)
 
 
