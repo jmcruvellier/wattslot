@@ -49,14 +49,22 @@ Score = Callable[[Indicators], float]
 
 def solar_percent(hourly: Mapping[int, float], problem: Problem, load: Mapping[int, float]) -> int:
     """Part de l'énergie de l'élément couverte par le surplus solaire de ses heures, avant la
-    batterie, sa propre consommation mise à part."""
+    batterie, sa propre consommation mise à part. Les heures d'après minuit d'un cycle qui
+    déborde (24, 25…) se lisent dans la prévision du lendemain ; ``load`` ne les connaît pas,
+    et comptées sans autre consommation ni production, elles passaient pour couvertes en entier
+    (« 30 % du surplus solaire » pour un chauffe-eau lancé à 22 h)."""
     total = sum(hourly.values())
     if total <= 0:
         return 0
+    night = problem.overnight
     covered = 0.0
     for hour, kwh in hourly.items():
-        surplus = problem.net_kwh.get(hour, 0.0) - (load.get(hour, 0.0) - kwh)
-        covered += min(kwh, max(0.0, surplus))
+        if hour < 24:
+            net = problem.net_kwh.get(hour, 0.0)
+        else:
+            net = night.net_kwh.get(hour - 24, 0.0) if night is not None else 0.0
+        others = max(0.0, load.get(hour, kwh) - kwh)
+        covered += min(kwh, max(0.0, net - others))
     return round(100 * covered / total)
 
 
