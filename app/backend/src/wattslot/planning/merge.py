@@ -156,6 +156,7 @@ def merge_planning(
     active_tasks: set[str] | None = None,
     real_segments: Mapping[str, list[Segment]] | None = None,
     chosen: set[str] | None = None,
+    unfollowed: frozenset[str] = frozenset(),
 ) -> list[dict[str, Any]]:
     """Équipements du plan fusionné.
 
@@ -199,12 +200,15 @@ def merge_planning(
             and old_item["heure_debut"] < first_hour
             and still_active
             and (chosen is None or name not in chosen)
+            and name not in unfollowed
             and not _launched(new_by_name.get(name))
         ):
             merged.append(old_item)  # commencé ou décidé dans le passé : gelé
         elif name in new_by_name:
             merged.append(new_by_name[name])
-        elif old_item and still_active:
+        elif old_item and still_active and name not in unfollowed:
+            # Une recommandation non suivie qui ne tient plus aujourd'hui n'est pas gardée
+            # à son ancienne heure : l'appareil n'a pas tourné.
             merged.append(old_item)
         # sinon : tâche annulée dans HA, et plus proposée par le nouveau calcul
     return merged
@@ -223,6 +227,7 @@ def merge_plans(
     first_hour: int,
     real_segments: Mapping[str, list[Segment]] | None = None,
     chosen: set[str] | None = None,
+    unfollowed: frozenset[str] = frozenset(),
 ) -> Plan:
     """Plan complet de la journée : passé de ``old``, futur de ``new``. ``chosen`` : noms des
     équipements dont l'utilisateur a choisi le départ aujourd'hui — leur ancien créneau passé
@@ -244,7 +249,13 @@ def merge_plans(
         t["summary"] for t in new.get("taches_en_attente", [])
     }
     merged["planning"] = merge_planning(
-        old.get("planning", []), new.get("planning", []), first_hour, active, real_segments, chosen
+        old.get("planning", []),
+        new.get("planning", []),
+        first_hour,
+        active,
+        real_segments,
+        chosen,
+        unfollowed,
     )
     placed = {item["equipement"] for item in merged["planning"]}
     merged["avertissements"] = _deduplicated(

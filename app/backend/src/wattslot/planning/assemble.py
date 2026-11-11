@@ -236,6 +236,13 @@ async def build_input(
                 profile.energy_kwh, profile.duration_min, profile.shape
             )
 
+    measured = frozenset(
+        task.name
+        for task in [*due, *waiting]
+        if (found := appliance_for(task, candidates)) is not None
+        and found.power
+        and found.kind in RULES
+    )
     real: dict[str, Any] = {}
     if day == today:
         by_device = real_cycles(model, raw, now, configuration)
@@ -285,6 +292,7 @@ async def build_input(
         daily_profiles={},
         profile_status=status,
         real_segments=real,
+        measured=measured,
         real_updated_at=now.astimezone(zone) if day == today else None,
         history=RecentHistory(
             last_full_charge=history.last_full_charge,

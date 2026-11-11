@@ -631,6 +631,7 @@ async def run(ctx: Context, now: datetime, manual: bool = False) -> RunReport:
         {k: list(v) for k, v in data.real_segments.items()},
         # Départs choisis et blocs gelés libérés : le nouveau créneau l'emporte sur l'ancien.
         chosen=set(data.chosen_starts) | problem.released,
+        unfollowed=problem.unfollowed,
     )
     merged["donnees_reelles_cache"] = _actual(ctx, today, now)
     execution = {"heure_iso": now.astimezone(zone).isoformat(), "manuel": manual}
