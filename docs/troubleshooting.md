@@ -43,7 +43,7 @@ Other hypervisors have the same setting (for example *host-passthrough* with lib
 
 ## Reporting a bug
 
-1. **Settings › App status › Prepare a report**: a file describing the state of the app, **without device names, sensor identifiers or location**. The preview shows everything it contains.
+1. **Settings › App status › Prepare a report**: a file describing the state of the app, **without device names, sensor identifiers or location**. The preview shows everything it contains, including the planning runs of the last seven days: for each run, the start time announced for each appliance and whether it was kept, moved, recognised as started or placed again.
 2. **Download** it and attach it to a [bug report](https://github.com/jmcruvellier/wattslot/issues/new/choose), with the version and what happened.
 3. As a Home Assistant app, the log is in **Settings › Apps › WattSlot › Log**; set the **Log level** option to `debug` if asked.
 

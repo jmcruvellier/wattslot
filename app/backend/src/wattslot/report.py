@@ -173,6 +173,20 @@ def _problem(problem: Problem, names: Anonymizer) -> dict[str, Any]:
     return {"code": problem.code, "severity": problem.severity.value, "params": params}
 
 
+def _run(run: dict[str, Any], names: Anonymizer) -> dict[str, Any]:
+    """Un calcul du journal, ses équipements sous leur alias ; un équipement qui n'est plus dans
+    la maison devient « équipement »."""
+    return {
+        "at": run["at"],
+        "day": run["day"],
+        "manual": run["manual"],
+        "devices": {
+            names.aliases.get(device, "équipement"): found
+            for device, found in run["devices"].items()
+        },
+    }
+
+
 def build(
     *,
     mode: str,
@@ -184,6 +198,7 @@ def build(
     saved: Configuration,
     settings: PlanningSettings,
     resource_hours: list[ResourceHour] | None = None,
+    runs: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     names = Anonymizer(home)
     return {
@@ -206,4 +221,6 @@ def build(
         },
         # Résumés horaires des ressources (des nombres seulement) : seuils des alertes.
         "resource_hours": [hour.model_dump(mode="json") for hour in resource_hours or []],
+        # Journal des calculs : l'heure annoncée de chaque équipement, calcul après calcul.
+        "runs": [_run(run, names) for run in runs or []],
     }

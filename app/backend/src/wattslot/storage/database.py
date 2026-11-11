@@ -221,6 +221,16 @@ MIGRATIONS: tuple[str, ...] = (
     # SSD, effet des compactages du graphe).
     "ALTER TABLE resource_minutes ADD COLUMN written_bytes INTEGER",
     "ALTER TABLE resource_hours ADD COLUMN written_bytes INTEGER",
+    # 23 : journal des calculs (``planning/run_log.py``) : ce que chaque calcul a annoncé pour
+    # chaque équipement, gardé quelques jours et joint au rapport anonymisé.
+    """
+    CREATE TABLE plan_runs (
+        at TEXT PRIMARY KEY,
+        day TEXT NOT NULL,
+        manual INTEGER NOT NULL,
+        devices TEXT NOT NULL
+    )
+    """,
 )
 
 

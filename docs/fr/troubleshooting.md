@@ -43,7 +43,7 @@ Les autres hyperviseurs ont le même réglage (par exemple *host-passthrough* av
 
 ## Signaler un problème
 
-1. **Réglages › État de l'application › Préparer un rapport** : un fichier qui décrit l'état de l'application, **sans nom d'équipement, ni identifiant de capteur, ni position**. L'aperçu montre tout ce qu'il contient.
+1. **Réglages › État de l'application › Préparer un rapport** : un fichier qui décrit l'état de l'application, **sans nom d'équipement, ni identifiant de capteur, ni position**. L'aperçu montre tout ce qu'il contient, dont les calculs des sept derniers jours : pour chacun, l'heure annoncée de chaque appareil, et si elle a été gardée, déplacée, reconnue lancée ou replacée.
 2. **Télécharger**, puis joignez-le à un [signalement](https://github.com/jmcruvellier/wattslot/issues/new/choose), avec la version et ce qui s'est passé.
 3. Comme application de Home Assistant, le journal est dans **Paramètres › Applications › WattSlot › Journal** ; réglez l'option **Niveau des journaux** sur `debug` si on vous le demande.
 

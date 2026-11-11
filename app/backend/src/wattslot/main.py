@@ -79,7 +79,7 @@ from wattslot.maintenance import (
 from wattslot.notification_events import Candidate
 from wattslot.ontology import GRAPH_CONFIGURATION, GRAPH_HOME
 from wattslot.ontology import migration as ontology_migration
-from wattslot.planning import journal, open_meteo, past
+from wattslot.planning import journal, open_meteo, past, run_log
 from wattslot.planning.assemble import TaskRules, build_input, rules_from_tasks, to_v1
 from wattslot.planning.cancelled import router as cancelled_routes
 from wattslot.planning.choices import router as choices_routes
@@ -1422,6 +1422,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             resource_hours=state.resources.hours(report.REPORT_DAYS)
             if getattr(state, "resources", None) is not None
             else [],
+            runs=run_log.recent(state.database, report.REPORT_DAYS),
         )
 
     def requestable(request: Request) -> list[RequestableDevice]:
