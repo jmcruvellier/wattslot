@@ -7,6 +7,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from tests.planning.test_assemble import MODEL, TODAY, Reader, client, local
+from tests.planning.test_journal import raw_cycle
 from wattslot.aggregation import HOUR, QUARTER
 from wattslot.planning import choices
 from wattslot.planning.plan import Plan
@@ -177,7 +178,9 @@ def test_a_full_run_then_an_hourly_run_then_the_next_day(tmp_path: Path) -> None
     periodic = refresh_actual(ctx.model, ctx.raw, ctx.database, local(TODAY, 9, 45), manual=False)
     assert periodic is not None and not periodic["manuel"]
 
-    # Calcul de l'heure suivante, une fois le lave-linge commencé : son bloc reste gelé.
+    # Calcul de l'heure suivante, une fois le lave-linge commencé (relevés de puissance depuis
+    # le départ annoncé) : son bloc reste à cette heure.
+    raw_cycle(ctx.raw, TODAY, local(TODAY, washer_start // 60, washer_start % 60), 90, 0.9, 50.0)
     later = local(TODAY, (washer_start // 60) + 1, 5)
     asyncio.run(run(ctx, later))
     again = store.load("today")
@@ -198,6 +201,28 @@ def test_a_full_run_then_an_hourly_run_then_the_next_day(tmp_path: Path) -> None
     current = store.load("today")
     assert current is not None and current.day == TODAY + timedelta(days=1)
     assert current.content["derniere_execution"]["manuel"] is False
+
+
+def test_a_recommendation_that_was_not_followed_is_placed_again(tmp_path: Path) -> None:
+    """Le départ annoncé est passé et le lave-linge, mesuré, n'a pas tourné : son créneau n'est
+    pas tenu pour commencé. L'appareil est replacé plus tard, et rien ne dit qu'il est lancé."""
+    ctx = context(tmp_path, reader_with_history())
+    store = PlanStore(ctx.database)
+    asyncio.run(run(ctx, local(TODAY, 9, 20), manual=True))
+    today = store.load("today")
+    assert today is not None
+    washer_start = next(
+        i["debut_min"] for i in today.content["planning"] if i["equipement"] == "Lave-linge"
+    )
+
+    later = local(TODAY, washer_start // 60 + 1, 5)
+    asyncio.run(run(ctx, later))
+
+    again = store.load("today")
+    assert again is not None
+    item = next(i for i in again.content["planning"] if i["equipement"] == "Lave-linge")
+    assert item["debut_min"] >= later.hour * 60 + later.minute
+    assert "Lancé" not in (item.get("justification") or "")
 
 
 def test_a_chosen_start_moves_a_planned_slot_already_in_the_past(tmp_path: Path) -> None:

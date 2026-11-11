@@ -28,7 +28,7 @@ from dataclasses import dataclass
 from datetime import date, timedelta
 from typing import Any
 
-from wattslot.planning.cycles import DAY_MIN, recognized_segment
+from wattslot.planning.cycles import DAY_MIN, ran_around, recognized_segment
 from wattslot.planning.inputs import PlanningInput, TaskRequest
 from wattslot.planning.problem import characteristics
 from wattslot.planning.reference import REFERENCE, Reference, task_key
@@ -280,16 +280,30 @@ def task_cycles(
 
 
 def launched_keys(data: PlanningInput, reference: Reference = REFERENCE) -> set[str]:
-    """Clés des équipements lancés aujourd'hui : bloc gelé d'une tâche active, ou cycle réel
+    """Clés des équipements lancés aujourd'hui : bloc gelé d'une tâche active (pour un
+    appareil mesuré, seulement s'il a tourné autour du départ annoncé), ou cycle réel
     reconnu d'une tâche en attente (même seuil que le recalage)."""
     active = {t.name for t in data.due_tasks if t.due == data.day} | {
         t.name for t in data.waiting_tasks
     }
-    keys = {task_key(item.name) for item in data.frozen if item.name in active}
     now = data.real_updated_at
     if now is None or now.date() != data.day:
-        return keys
+        return {task_key(item.name) for item in data.frozen if item.name in active}
     segments = {task_key(name): segs for name, segs in data.real_segments.items()}
+    # Appareil mesuré : un départ annoncé resté sans activité n'est pas un lancement.
+    keys = {
+        task_key(item.name)
+        for item in data.frozen
+        if item.name in active
+        and (
+            item.name not in data.measured
+            or ran_around(
+                segments.get(task_key(item.name), ()),
+                item.start_min if item.start_min is not None else item.start_hour * 60,
+                now,
+            )
+        )
+    }
     for task in data.waiting_tasks:
         cycle = characteristics(task.name, data, reference)
         key = task_key(task.name)

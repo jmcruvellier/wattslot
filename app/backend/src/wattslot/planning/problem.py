@@ -29,6 +29,7 @@ from wattslot.battery_settings import floor_percent_at
 from wattslot.home_model import LINES, Phase, line_shares
 from wattslot.planning.cycles import (
     DAY_MIN,
+    UNFOLLOWED_MIN,
     PlannedCycle,
     Segment,
     Shape,
@@ -37,6 +38,7 @@ from wattslot.planning.cycles import (
     free_from_minute,
     measured_hourly,
     planned_hourly,
+    ran_around,
     realign,
     recognized_segment,
     remaining_hourly,
@@ -205,6 +207,9 @@ class Problem:
     fixed_ends: dict[str, int] = field(default_factory=dict)  # fin (minute) des tâches fixées
     # Blocs gelés libérés (``released``) : replacés par ce calcul, la fusion prend le nouveau.
     released: frozenset[str] = frozenset()
+    # Parmi eux, les recommandations non suivies : sans nouveau créneau aujourd'hui, la
+    # fusion ne garde pas l'ancien (l'appareil n'a pas tourné).
+    unfollowed: frozenset[str] = frozenset()
     prices_eur_kwh: dict[int, float] = field(default_factory=dict)  # soutirage, par heure
     export_prices_eur_kwh: dict[int, float] = field(default_factory=dict)  # revente, par heure
     warnings: list[dict[str, Any]] = field(default_factory=list)
@@ -470,6 +475,29 @@ def _released(
     return frozenset(found)
 
 
+def _unfollowed(
+    frozen: Mapping[str, FrozenCycle],
+    data: PlanningInput,
+    segments: Mapping[str, tuple[Segment, ...]],
+    now: datetime | None,
+) -> frozenset[str]:
+    """Blocs gelés d'une recommandation non suivie : l'appareil est mesuré, son départ annoncé
+    est passé d'au moins ``UNFOLLOWED_MIN`` et il n'a pas tourné. Tenus jusqu'ici pour commencés
+    (comme en v1), ils marquaient la demande « lancée » et la fermaient le lendemain, sans que
+    l'appareil ait tourné. Libérés, ils redeviennent des tâches à placer."""
+    if now is None:
+        return frozenset()
+    minute = now.hour * 60 + now.minute
+    found = set()
+    for name, item in frozen.items():
+        start = _frozen_cycle(item).start_min
+        if name not in data.measured or minute < start + UNFOLLOWED_MIN:
+            continue
+        if not ran_around(segments.get(task_key(name), ()), start, now):
+            found.add(name)
+    return frozenset(found)
+
+
 def from_input(data: PlanningInput, reference: Reference = REFERENCE) -> Problem:
     day, first_hour = data.day, data.first_hour
     warnings: list[dict[str, Any]] = list(data.forecast_warnings)
@@ -508,6 +536,11 @@ def from_input(data: PlanningInput, reference: Reference = REFERENCE) -> Problem
     for name in released:
         del frozen[name]
         ends.pop(task_key(name), None)
+    unfollowed = _unfollowed(frozen, data, segments, now)
+    for name in unfollowed:
+        del frozen[name]
+        ends.pop(task_key(name), None)
+    released |= unfollowed
 
     def launched_now(
         name: str, energy_kwh: float, cycle_min: float, shape: Shape | None
@@ -760,6 +793,7 @@ def from_input(data: PlanningInput, reference: Reference = REFERENCE) -> Problem
         constraints={name: tuple(found) for name, found in data.constraints.items() if found},
         fixed_ends=ends,
         released=released,
+        unfollowed=unfollowed,
         warnings=warnings,
         prices_eur_kwh=data.tariff.hourly(day, data.tariff_context),
         export_prices_eur_kwh=data.tariff.export_hourly(day, data.tariff_context),

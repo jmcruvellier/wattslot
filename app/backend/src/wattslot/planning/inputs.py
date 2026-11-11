@@ -183,6 +183,10 @@ class PlanningInput:
     # « lancé ») : un cycle lancé les garde, au lieu du seul « Lancé à 9h59 ».
     planned_reasons: Mapping[str, tuple[Reason, ...]] = field(default_factory=dict)
     real_segments: Mapping[str, tuple[Segment, ...]] = field(default_factory=dict)
+    # Tâches dont l'appareil a un capteur de puissance : son cycle réel se voit dans les
+    # relevés. Pour elles seules, un départ annoncé resté sans activité n'est pas un
+    # lancement (``problem._unfollowed``).
+    measured: frozenset[str] = frozenset()
     real_updated_at: datetime | None = None
     # Durées de fonctionnement à placer (lot 3.4) ; la filtration de la v1 par défaut.
     runtimes: tuple[Runtime, ...] = field(default_factory=lambda: (V1_POOL,))

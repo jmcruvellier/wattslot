@@ -135,6 +135,23 @@ def recognized_segment(segments: Sequence[Segment], planned_kwh: float) -> Segme
     return recognized[-1] if recognized else None
 
 
+# Recommandation non suivie : délai après le départ annoncé, sans aucune activité mesurée de
+# l'appareil, au-delà duquel le créneau n'est plus tenu pour commencé (comme le délai de la
+# notification « cycle prévu non lancé », ``notification_events.LATE_MIN``).
+UNFOLLOWED_MIN = 30
+
+
+def ran_around(segments: Sequence[Segment], start_min: int, now: datetime) -> bool:
+    """L'appareil a-t-il tourné autour du départ annoncé (``start_min``, minutes du jour de
+    ``now``) : une activité mesurée qui dure encore, ou qui a fini au plus tôt
+    ``UNFOLLOWED_MIN`` avant ce départ. Toute activité compte, reconnue comme le cycle prévu ou
+    non : dans le doute, la recommandation est tenue pour suivie."""
+    planned = now.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(
+        minutes=start_min - UNFOLLOWED_MIN
+    )
+    return any(segment.running or segment.end >= planned for segment in segments)
+
+
 def realign(
     planned_kwh: float, cycle_min: float, segments: Sequence[Segment], now: datetime
 ) -> Realignment | None:
