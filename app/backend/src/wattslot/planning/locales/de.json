@@ -37,6 +37,7 @@
   "recommendation.appliance": "- {device}: {start}-{end} ({energy} kWh).",
   "reason.chosen": "Von Ihnen gewählter Start.",
   "reason.full_charge_first": "Die heute fällige Vollladung der Batterie hat Vorrang: Der Solarüberschuss geht an sie.",
+  "reason.announced_kept": "Bereits angekündigte Uhrzeit, beibehalten: Ein anderer Start würde nicht genug einsparen, um sie zu ändern.",
   "assistant.request": "„{device}“ zur besten Zeit laufen lassen: Soll ich den Auftrag stellen?",
   "assistant.request_by": "„{device}“ zur besten Zeit laufen lassen, spätestens am {date}: Soll ich den Auftrag stellen?",
   "assistant.not_planned": "An diesem Tag nicht geplant: Es wurde nichts beantragt und nichts ist fällig.",

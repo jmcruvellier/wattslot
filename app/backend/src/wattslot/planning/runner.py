@@ -190,6 +190,18 @@ def frozen_cycles(old: Plan | None, first_hour: int) -> tuple[FrozenCycle, ...]:
     )
 
 
+def announced_starts(old: Mapping[str, Any] | None) -> dict[str, int]:
+    """Départ de chaque appareil dans le plan précédent de la même journée : l'heure que
+    l'utilisateur a pu lire, gardée par le calcul sauf gain net."""
+    if not old:
+        return {}
+    return {
+        slot.device: slot.start_min
+        for slot in Plan.from_v1(dict(old)).slots
+        if slot.start_min is not None
+    }
+
+
 def planned_reasons(old: Plan | None) -> dict[str, tuple[Reason, ...]]:
     """Raisons du placement de chaque appareil dans le plan précédent de la journée, sans
     « lancé » : d'un recalcul à l'autre, un cycle lancé garde celles de son placement."""
@@ -558,6 +570,14 @@ async def run(ctx: Context, now: datetime, manual: bool = False) -> RunReport:
     data = replace(
         overnight.with_carried(data, carried),
         chosen_starts=choices.load(ctx.database, today),
+        # Heures annoncées : le plan précédent du jour, sinon celui de demain calculé hier.
+        announced_starts=announced_starts(
+            old
+            if old is not None
+            else previous_tomorrow.content
+            if previous_tomorrow is not None and previous_tomorrow.day == today
+            else None
+        ),
         next_day=await next_day_of(forecasts, ctx, data, today + timedelta(days=1), today),
     )
     data = with_past(data, old, now, ctx)
@@ -672,6 +692,11 @@ async def run(ctx: Context, now: datetime, manual: bool = False) -> RunReport:
             ),
             assignments=data.assignments,
             chosen_starts=choices.load(ctx.database, tomorrow),
+            announced_starts=announced_starts(
+                previous_tomorrow.content
+                if previous_tomorrow is not None and previous_tomorrow.day == tomorrow
+                else None
+            ),
             next_day=await next_day_of(forecasts, ctx, data_t, tomorrow + timedelta(days=1), today),
             history=history,
             # Une durée à placer qui tourne aujourd'hui (prévu) n'a pas de jour sans demain.

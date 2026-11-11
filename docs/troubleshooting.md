@@ -51,7 +51,7 @@ Other hypervisors have the same setting (for example *host-passthrough* with lib
 
 **The plan does not start any appliance today.** A cycle is only placed when something asks for it: a request, a task in your Home Assistant to-do list, or a recurrence (see [Your home and its rules](your-home.md#when-a-cycle-is-due)). Check also that the device is **Scheduled by planning**.
 
-**The plan changes during the day.** It is recomputed every hour with the latest measurements and forecast: a cloudier morning moves an appliance to the afternoon. When the panels produce less (or more) than forecast since the morning, the rest of the day's forecast is scaled by the same ratio, so the plan no longer counts on sun that is not coming. Appliances already started are kept.
+**The plan changes during the day.** It is recomputed every hour with the latest measurements and forecast: a cloudier morning moves an appliance to the afternoon. When the panels produce less (or more) than forecast since the morning, the rest of the day's forecast is scaled by the same ratio, so the plan no longer counts on sun that is not coming. Appliances already started are kept. A start time already announced is only left for a clear gain (about a tenth of what the cycle costs): the plan does not move an appliance for a few cents, and its explanation says when a time was kept.
 
 **The measured values are empty for the first hours.** On a new installation, today's measurements start when WattSlot starts; the history import fills the past days. Measured data is refreshed every 15 minutes, or with **Refresh actual data**.
 

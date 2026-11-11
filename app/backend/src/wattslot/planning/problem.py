@@ -62,6 +62,9 @@ class Task:
     earliest_min: int
     depends_on: str | None = None  # clé d'une autre tâche à placer, à finir avant
     chosen_min: int | None = None  # départ choisi par l'utilisateur, imposé au calcul
+    # Départ annoncé par le plan précédent : gardé tant qu'un autre ne fait pas gagner plus
+    # que la marge du moteur. Sans effet s'il n'est plus possible.
+    announced_min: int | None = None
     # Minutes permises après minuit (calcul prolongé, ``Overnight``) ; 0 : finir avant minuit.
     overflow_min: int = 0
 
@@ -662,6 +665,9 @@ def from_input(data: PlanningInput, reference: Reference = REFERENCE) -> Problem
                     if priority == 3 and request.depends_on
                     else None,
                     chosen_min=chosen,
+                    announced_min=None
+                    if chosen is not None
+                    else data.announced_starts.get(request.name),
                 )
             )
 

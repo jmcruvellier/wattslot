@@ -37,6 +37,7 @@
   "recommendation.appliance": "- {device}: {start}-{end} ({energy} kWh).",
   "reason.chosen": "Door u gekozen start.",
   "reason.full_charge_first": "De volledige lading van de batterij, vandaag nodig, gaat voor: het zonne-overschot gaat naar haar.",
+  "reason.announced_kept": "Al aangekondigd tijdstip, behouden: een andere start zou niet genoeg opleveren om het te wijzigen.",
   "assistant.request": "„{device}” op het beste moment laten draaien: zal ik het verzoek indienen?",
   "assistant.request_by": "„{device}” op het beste moment laten draaien, uiterlijk op {date}: zal ik het verzoek indienen?",
   "assistant.not_planned": "Die dag niet gepland: er is niets aangevraagd en niets is vervallen.",

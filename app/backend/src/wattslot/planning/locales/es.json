@@ -37,6 +37,7 @@
   "recommendation.appliance": "- {device}: {start}-{end} ({energy} kWh).",
   "reason.chosen": "Inicio elegido por usted.",
   "reason.full_charge_first": "La carga completa de la batería, prevista para hoy, va primero: el excedente solar es para ella.",
+  "reason.announced_kept": "Hora ya anunciada, mantenida: otro inicio no ahorraría lo suficiente para cambiarla.",
   "assistant.request": "Poner «{device}» en el mejor momento: ¿presento la solicitud?",
   "assistant.request_by": "Poner «{device}» en el mejor momento, a más tardar el {date}: ¿presento la solicitud?",
   "assistant.not_planned": "No previsto ese día: no se ha solicitado nada ni vence nada.",

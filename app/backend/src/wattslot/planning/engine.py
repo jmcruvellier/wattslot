@@ -68,6 +68,12 @@ CONTRACT_PENALTY = 1000.0
 # équipement qui dépasse seul reste placé, deux équipements de la même phase sont écartés l'un
 # de l'autre.
 PHASE_PENALTY = 10.0
+# Départ déjà annoncé par le plan précédent : gardé tant qu'un autre ne fait pas gagner plus
+# que cette part de ce que pèse le cycle dans l'objectif, à l'heure moyenne (10 % de son
+# coût au prix moyen, pour l'objectif de coût). Même marge que le choix du jour
+# (``assignment.STABILITY_MARGIN``). Sans elle, l'heure annoncée d'un appareil changeait
+# d'un calcul horaire à l'autre pour quelques centimes.
+KEEP_MARGIN = 0.10
 # Puissance supposée sans puissance souscrite saisie, pour le seul contrôle des données
 # impossibles : 36 kVA, le plus fort contrat résidentiel en France (lot 7.3).
 DEFAULT_CONTRACT_KWH = 36.0
@@ -510,6 +516,14 @@ def solve(problem: Problem, objective: Goal = Objective.COST, time_limit_s: floa
     # soutirerait la nuit pour garder la batterie pleine (mesuré au lot 2.6).
     stored_value = cheapest * battery.discharge_efficiency
     bonus = FULL_PRIORITY_BONUS if battery.full_priority else FULL_BONUS
+    mean_weight = sum(weight[hour] for hour in hours) / len(hours) if hours else 0.0
+    kept = [
+        KEEP_MARGIN * task.energy_kwh * mean_weight * choices[task.name][task.announced_min]
+        for task in problem.tasks
+        if task.chosen_min is None
+        and task.announced_min is not None
+        and task.announced_min in choices[task.name]
+    ]
     h.minimize(
         sum(
             # Compteur qui compte chaque phase à part : le coût porte sur chacune.
@@ -520,6 +534,7 @@ def solve(problem: Problem, objective: Goal = Objective.COST, time_limit_s: floa
         )
         - stored_value * (soc_previous + sum(line_stored.values()))
         - bonus * full_day
+        - sum(kept)
         + SKIP_PENALTY * sum(skips.values())
         + SKIP_PENALTY * sum(shortfalls)  # par kWh manquant : seulement s'il ne tient plus
         + SOFT_PENALTY * sum(penalties)
