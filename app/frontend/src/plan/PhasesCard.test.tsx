@@ -39,7 +39,7 @@ describe("carte Par phase", () => {
 
     const card = screen.getByRole("article", { name: "Par phase" });
     const row = within(card).getByRole("row", { name: /Phase 2/ });
-    expect(within(row).getAllByRole("cell").map((cell) => cell.textContent)).toEqual(["4,0\ kWh", "5,2\ kWh"]);
+    expect(within(row).getAllByRole("cell").map((cell) => cell.textContent)).toEqual(["4,0 kWh", "5,2 kWh"]);
     expect(within(card).queryByText(/mesuré/)).toBeNull();
   });
 
@@ -53,7 +53,7 @@ describe("carte Par phase", () => {
     expect(within(card).getByText(/prévu sur la journée, et mesuré jusqu'ici/)).toBeInTheDocument();
     const cells = (name: RegExp) =>
       within(within(card).getByRole("row", { name })).getAllByRole("cell").map((cell) => cell.textContent);
-    expect(cells(/Phase 2/)).toEqual(["4,0\ kWh1,5\ kWh mesurés", "5,2\ kWhpas de mesure"]);
-    expect(cells(/Phase 1/)).toEqual(["12,0\ kWhpas de mesure", "0,0\ kWhpas de mesure"]);
+    expect(cells(/Phase 2/)).toEqual(["4,0 kWh1,5 kWh mesurés", "5,2 kWhpas de mesure"]);
+    expect(cells(/Phase 1/)).toEqual(["12,0 kWhpas de mesure", "0,0 kWhpas de mesure"]);
   });
 });
