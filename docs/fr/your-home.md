@@ -67,7 +67,9 @@ Dans **L'essentiel › Mon raccordement**, indiquez si votre maison est en **mon
 
 Un appareil qui dépasse sa phase à lui seul reste placé, avec un avertissement dans le plan.
 
-**Batteries.** Dès que la consommation de chaque phase est mesurée, une batterie qui ne compense que sa phase est calculée sur cette phase : voir [Batterie](battery.md#plusieurs-batteries). Le coût reste compté sur le total des trois phases, comme le fait un compteur qui les additionne.
+**Batteries.** Dès que la consommation de chaque phase est mesurée, une batterie qui ne compense que sa phase est calculée sur cette phase : voir [Batterie](battery.md#plusieurs-batteries).
+
+**Un compteur qui compte chaque phase à part.** Avec **Mon compteur additionne les trois phases** décoché, et dès que la consommation de chaque phase est mesurée, le coût est compté phase par phase : ce qu'une phase injecte ne compense plus ce qu'une autre soutire. Le plan place alors un appareil sous le surplus de sa propre phase, et le coût, l'énergie achetée et l'énergie vendue du plan sont ceux que le compteur facture. Ce qui n'est sur aucune phase (un appareil ou une installation solaire dont la phase n'est pas renseignée, une batterie qui compense le total) est réparti à parts égales entre les trois. Les courbes montrent toujours l'échange de toute la maison.
 
 ## Objectif
 

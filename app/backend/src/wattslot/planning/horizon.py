@@ -126,6 +126,7 @@ def next_day_input(
         # Triphasé : phases, et consommation de base par phase du premier jour (celle du
         # même jour de la semaine n'est pas relue pour les jours suivants).
         three_phase=first.three_phase,
+        meter_sums_phases=first.meter_sums_phases,
         phases=first.phases,
         production_shares=first.production_shares,
         base_by_phase=first.base_by_phase,

@@ -538,6 +538,7 @@ def configured(
         needs=needs,
         constraints=_constraints(data, model, effective, every),
         three_phase=model.supply is Supply.THREE,
+        meter_sums_phases=model.meter_sums_phases,
         phases=_phases(data, model, every),
         production_shares=_production_shares(model),
         tariff=config.tariff_of(configuration),

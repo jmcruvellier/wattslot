@@ -1793,7 +1793,7 @@
     },
     "kind_hint": "If in doubt: a four-pole main breaker, or a \"three-phase\" contract on your bill.",
     "meter_sums": "My meter sums the three phases",
-    "meter_sums_hint": "What I export on one phase offsets what I import on another. This is how most smart meters work; untick if each phase is metered separately.",
+    "meter_sums_hint": "What I export on one phase offsets what I import on another. This is how most smart meters work. Untick if each phase is metered separately: the plan then counts the cost of each phase, and places an appliance under the surplus of its own phase, once the consumption of each phase is measured (phase sensors of the grid connection).",
     "phases_hint": "Then set the phase of each appliance, battery and solar installation in its sheet (Devices tab). With the contract power of your tariff, the plan then avoids running together, on one phase, more than it can supply. A battery that only offsets its own phase is calculated on that phase once the consumption of each phase is measured."
   }
 }
