@@ -142,6 +142,40 @@ def test_compacts_only_when_a_monthly_graph_is_removed(
     assert f"{BASE}/graph/aggregates/{QUARTER}/2026-08" not in graph.named_graphs()
 
 
+def test_one_flush_per_graph_whatever_the_number_of_sensors(tmp_path: Path) -> None:
+    """Un ``flush`` par capteur (82 capteurs) faisait recompacter RocksDB à chaque fois : 2,8 Go
+    écrits pour une journée supprimée (rapport du 11/11/2026)."""
+
+    class CountingStore:
+        def __init__(self, store: object) -> None:
+            self.store, self.flushes = store, 0
+
+        def flush(self) -> None:
+            self.flushes += 1
+
+        def __getattr__(self, name: str) -> object:
+            return getattr(self.store, name)
+
+    maintenance, _, graph = _maintenance(tmp_path, NOW)
+    expired, kept = datetime(2026, 9, 1, 10, tzinfo=UTC), datetime(2026, 9, 20, 10, tzinfo=UTC)
+    values = Values(mean=1.0, maximum=1.0)
+    name = graph_iri(QUARTER, expired, PARIS)
+    for index in range(5):
+        sensor = Target(f"sensor.p{index}", f"urn:sensor:p{index}", Role.POWER_CONSUMED)
+        for start in (expired, kept):
+            graph.add_nquads(
+                aggregate_nquads(sensor.entity_id, sensor, QUARTER, start, values, name)
+            )
+    counting = CountingStore(graph._store)
+    graph._store = counting  # type: ignore[assignment]
+
+    run = asyncio.run(maintenance.run(NOW))
+
+    assert run.removed_aggregates[QUARTER] == 5 and not run.compacted
+    assert counting.flushes == 1
+    assert _starts(graph, QUARTER) == ["2026-09-20T10:00:00Z"] * 5
+
+
 def test_directory_size_ignores_files_removed_while_measuring(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
