@@ -47,6 +47,7 @@ from wattslot.planning import (
     open_meteo,
     overnight,
     past,
+    run_log,
 )
 from wattslot.planning.actual import actual_day
 from wattslot.planning.assemble import build_input, to_v1
@@ -660,6 +661,23 @@ async def run(ctx: Context, now: datetime, manual: bool = False) -> RunReport:
     merged["texte_recommandation"] = recommendation(merged)
     seconds_today = time.perf_counter() - began
     store.save("today", today, merged, seconds_today, manual)
+    # Journal des calculs : ce que ce calcul annonce, à côté du précédent. Un échec ici ne
+    # doit pas faire perdre le plan, déjà enregistré.
+    try:
+        run_log.record(
+            ctx.database,
+            now,
+            today,
+            manual,
+            run_log.entry(
+                merged,
+                data.announced_starts,
+                {cycle.name for cycle in problem.launched},
+                problem.unfollowed,
+            ),
+        )
+    except Exception:
+        logger.exception("Journal des calculs : écriture impossible")
     report = RunReport(
         day=today, started_at=now, manual=manual, seconds_today=round(seconds_today, 2)
     )

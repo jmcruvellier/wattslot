@@ -9,7 +9,7 @@ from types import SimpleNamespace
 from tests.planning.test_assemble import MODEL, TODAY, Reader, client, local
 from tests.planning.test_journal import raw_cycle
 from wattslot.aggregation import HOUR, QUARTER
-from wattslot.planning import choices
+from wattslot.planning import choices, run_log
 from wattslot.planning.plan import Plan
 from wattslot.planning.runner import (
     Context,
@@ -187,6 +187,13 @@ def test_a_full_run_then_an_hourly_run_then_the_next_day(tmp_path: Path) -> None
     assert again is not None and not again.manual
     item = next(i for i in again.content["planning"] if i["equipement"] == "Lave-linge")
     assert item["debut_min"] == washer_start
+    # Journal des calculs : annoncé au premier, reconnu lancé au second.
+    runs = run_log.recent(ctx.database)
+    assert [(r["manual"], r["devices"]["Lave-linge"]["state"]) for r in runs] == [
+        (True, "new"),
+        (False, "launched"),
+    ]
+    assert runs[1]["devices"]["Lave-linge"]["previous_min"] == washer_start
 
     # Lendemain : le plan de la veille est archivé.
     asyncio.run(run(ctx, local(TODAY + timedelta(days=1), 0, 1)))
