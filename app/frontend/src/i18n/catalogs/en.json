@@ -1545,7 +1545,7 @@
       "buying": "buying {kw}",
       "selling": "surplus {kw}",
       "idle": "idle",
-      "measured": "Average from {start} to {end}"
+      "measured": "Powers: average from {start} to {end}. Battery: last reading."
     },
     "next": {
       "eyebrow": "Next action",
@@ -1805,5 +1805,15 @@
     "export": "Sold",
     "measured": "{kwh} measured",
     "unmeasured": "not measured"
+  },
+  "batteries": {
+    "title": "Batteries",
+    "note": "Each battery at its last reading; the home shows their mean, weighted by capacity.",
+    "level": "Charge",
+    "stored": "Content",
+    "doing": "Right now",
+    "idle": "idle",
+    "phase": "phase {number}",
+    "three_phase": "three-phase"
   }
 }

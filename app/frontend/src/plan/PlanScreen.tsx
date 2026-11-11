@@ -10,6 +10,7 @@ import RequestsSection from "../start/RequestsSection";
 import Agenda, { DaySummaryCard } from "./Agenda";
 import Banners from "./Banners";
 import { ExplanationsCard, IndicatorsCard } from "./InsightCards";
+import BatteriesCard from "./BatteryList";
 import PhasesCard from "./PhasesCard";
 import { availableDayCards } from "./layout";
 import DiscardedNote from "./DiscardedNote";
@@ -55,6 +56,7 @@ export default function PlanScreen() {
               <ExplanationsCard view={load.view} onChanged={reload} />
             )}
             <IndicatorsCard view={load.view} layout={layout.indicators} />
+            <BatteriesCard view={load.view} />
             <PhasesCard view={load.view} />
           </div>
         </>

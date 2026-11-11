@@ -1545,7 +1545,7 @@
       "buying": "compra {kw}",
       "selling": "excedente {kw}",
       "idle": "nada",
-      "measured": "Media de {start} a {end}"
+      "measured": "Potencias: media de {start} a {end}. Batería: última lectura."
     },
     "next": {
       "eyebrow": "Próxima acción",
@@ -1805,5 +1805,15 @@
     "export": "Vendido",
     "measured": "{kwh} medidos",
     "unmeasured": "sin medida"
+  },
+  "batteries": {
+    "title": "Baterías",
+    "note": "Cada batería en su última lectura; la casa muestra su media, ponderada por la capacidad.",
+    "level": "Carga",
+    "stored": "Contenido",
+    "doing": "Ahora mismo",
+    "idle": "en reposo",
+    "phase": "fase {number}",
+    "three_phase": "trifásica"
   }
 }

@@ -1545,7 +1545,7 @@
       "buying": "afname {kw}",
       "selling": "overschot {kw}",
       "idle": "niets",
-      "measured": "Gemiddelde van {start} tot {end}"
+      "measured": "Vermogens: gemiddelde van {start} tot {end}. Batterij: laatste meting."
     },
     "next": {
       "eyebrow": "Volgende actie",
@@ -1805,5 +1805,15 @@
     "export": "Geleverd",
     "measured": "{kwh} gemeten",
     "unmeasured": "geen meting"
+  },
+  "batteries": {
+    "title": "Batterijen",
+    "note": "Elke batterij bij haar laatste meting; het huis toont hun gemiddelde, gewogen naar capaciteit.",
+    "level": "Lading",
+    "stored": "Inhoud",
+    "doing": "Op dit moment",
+    "idle": "in rust",
+    "phase": "fase {number}",
+    "three_phase": "driefasig"
   }
 }

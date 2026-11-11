@@ -18,6 +18,7 @@ import TimelineCard from "../plan/TimelineCard";
 import { startChoices } from "../plan/startChoices";
 import { cancelTask } from "../plan/cancelled";
 import OtherStarts from "../plan/OtherStarts";
+import { BatteryList } from "../plan/BatteryList";
 import DiscardedNote from "../plan/DiscardedNote";
 import ProvisionalNote from "../plan/ProvisionalNote";
 import { useHomeFeatures } from "../home/features";
@@ -143,6 +144,8 @@ export default function TodayView({ onNavigate }: { onNavigate?: (target: string
               })}
             </p>
             <p>{t("today.battery.end", { pct: percent(view.summary.soc_end_percent) })}</p>
+            {/* Plusieurs batteries : l'état de charge de chacune, sous celui de la maison. */}
+            {(view.now?.batteries?.length ?? 0) > 1 && <BatteryList batteries={view.now?.batteries ?? []} />}
           </Card>
         )}
         {view.solar !== false && (

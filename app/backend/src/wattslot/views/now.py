@@ -2,8 +2,10 @@
 
 Les flux du moment viennent du dernier quart d'heure clos des agrégats (lot 1.3) : production,
 achat, surplus, charge et décharge de la batterie, en puissance moyenne ; la consommation de la
-maison en est le bilan. Le niveau de la batterie est la dernière valeur relevée. Une phrase
-résume le moment, dans la langue demandée ; sans quart d'heure récent, ni flux ni phrase.
+maison en est le bilan. Le niveau de la batterie est la dernière valeur relevée ; avec plusieurs
+batteries, celui de chacune, et pour la maison leur moyenne pondérée par la capacité (comme
+l'état de charge d'où part le calcul). Une phrase résume le moment, dans la langue demandée ;
+sans quart d'heure récent, ni flux ni phrase.
 
 La prochaine action est le prochain appareil à cycle encore à venir dans le plan du jour, avec
 son explication (« Pourquoi ce plan »).
@@ -18,6 +20,7 @@ from pydantic import BaseModel
 from wattslot import home_model
 from wattslot.aggregation import PERIODS, QUARTER
 from wattslot.detection import DeviceKind, Role
+from wattslot.home_model import Phase
 from wattslot.languages import Language
 from wattslot.planning.plan import Explanation
 from wattslot.views.display import Context
@@ -37,6 +40,19 @@ FLOWS = {
 }
 
 
+class BatteryNow(BaseModel):
+    """Une batterie de la maison : son dernier relevé, et sa puissance moyenne du dernier quart
+    d'heure clos."""
+
+    key: str
+    name: str
+    capacity_kwh: float | None = None
+    phase: Phase | None = None  # maison en triphasé : la phase où elle est branchée
+    soc_percent: float | None = None
+    stored_kwh: float | None = None  # contenu, si la capacité est connue
+    power_w: float | None = None  # positive en charge, négative en décharge
+
+
 class Now(BaseModel):
     """Le moment : puissances moyennes du dernier quart d'heure clos, en watts."""
 
@@ -46,7 +62,8 @@ class Now(BaseModel):
     consumption_w: float | None = None  # bilan de la maison
     battery_w: float | None = None  # positive en charge, négative en décharge
     grid_w: float | None = None  # positive à l'achat, négative au surplus
-    soc_percent: float | None = None  # dernier relevé
+    soc_percent: float | None = None  # dernier relevé ; plusieurs batteries : leur moyenne
+    batteries: list[BatteryNow] = []  # chaque batterie de la maison
     off_peak: bool = False
     sentence: str | None = None
 
@@ -150,7 +167,15 @@ def sentence(
 def measure_now(state: Any, moment: datetime, context: Context, lang: Language) -> Now:
     """Le moment d'après le dernier quart d'heure clos ; ``state`` : l'état de l'application."""
     local = moment.astimezone(context.zone)
-    found = Now(off_peak=context.off_peak_hours()[local.hour], soc_percent=_soc(state))
+    graph = getattr(state, "graph", None)
+    devices = home_model.load(graph).devices if graph is not None else []
+    levels = _levels(state)
+    batteries = _batteries(levels, devices)
+    found = Now(
+        off_peak=context.off_peak_hours()[local.hour],
+        soc_percent=_soc(batteries, levels),
+        batteries=batteries,
+    )
     aggregator = getattr(state, "aggregator", None)
     if aggregator is None:
         return found
@@ -159,7 +184,7 @@ def measure_now(state: Any, moment: datetime, context: Context, lang: Language) 
         return found
     since = until - QUARTER_LENGTH
     flows: dict[str, float] = {}
-    devices = home_model.load(state.graph).devices
+    exchanged: dict[str, float] = {}  # batterie (clé) → puissance, positive en charge
     solar = not devices or any(device.kind is DeviceKind.SOLAR for device in devices)
     for device in devices:
         for sensor in home_model.counted_sensors(device):
@@ -171,6 +196,9 @@ def measure_now(state: Any, moment: datetime, context: Context, lang: Language) 
                     # kWh sur 15 minutes → puissance moyenne en watts.
                     watts = aggregate.energy_kwh * 1000 * (timedelta(hours=1) / QUARTER_LENGTH)
                     flows[key] = flows.get(key, 0.0) + watts
+                    if key in ("charge_w", "discharge_w"):
+                        signed = watts if key == "charge_w" else -watts
+                        exchanged[device.key] = exchanged.get(device.key, 0.0) + signed
     if "production_w" not in flows and "import_w" not in flows:
         return found
     flows["consumption_w"] = max(
@@ -198,20 +226,65 @@ def measure_now(state: Any, moment: datetime, context: Context, lang: Language) 
                 round(flows.get("import_w", 0.0) - flows.get("export_w", 0.0)) if has_grid else None
             ),
             "sentence": sentence(flows, found.off_peak, lang, solar),
+            "batteries": [
+                battery.model_copy(update={"power_w": round(exchanged[battery.key])})
+                if battery.key in exchanged
+                else battery
+                for battery in batteries
+            ],
         }
     )
 
 
-def _soc(state: Any) -> float | None:
+def _levels(state: Any) -> list[tuple[str | None, float]]:
+    """(entité, dernier relevé) de chaque capteur d'état de charge suivi."""
     ingestor = getattr(state, "ingestor", None)
-    if ingestor is None:
-        return None
-    values = [
-        e.last_value
-        for e in ingestor.status().entities
-        if e.role is Role.STATE_OF_CHARGE and e.last_value is not None
+    return [
+        (getattr(entity, "entity_id", None), entity.last_value)
+        for entity in (ingestor.status().entities if ingestor is not None else [])
+        if entity.role is Role.STATE_OF_CHARGE and entity.last_value is not None
     ]
-    return round(values[0]) if values else None
+
+
+def _batteries(
+    levels: list[tuple[str | None, float]], devices: list[home_model.HomeDevice]
+) -> list[BatteryNow]:
+    """Chaque batterie de la maison à son dernier relevé d'état de charge."""
+    by_entity = dict(levels)
+    found = []
+    for device in devices:
+        if device.kind is not DeviceKind.BATTERY:
+            continue
+        entity_id = next(
+            (s.entity_id for s in device.sensors if s.role is Role.STATE_OF_CHARGE), None
+        )
+        soc = by_entity.get(entity_id) if entity_id is not None else None
+        capacity = device.capacity_kwh
+        found.append(
+            BatteryNow(
+                key=device.key,
+                name=device.name,
+                capacity_kwh=capacity,
+                phase=device.phase,
+                soc_percent=round(soc, 1) if soc is not None else None,
+                stored_kwh=round(soc * capacity / 100, 2) if soc is not None and capacity else None,
+            )
+        )
+    return found
+
+
+def _soc(batteries: list[BatteryNow], levels: list[tuple[str | None, float]]) -> float | None:
+    """État de charge de la maison : celui de ses batteries, pondéré par leur capacité (sans
+    capacité connue, leur moyenne simple) ; sans batterie reliée à un capteur suivi, le premier
+    état de charge relevé."""
+    measured = [battery for battery in batteries if battery.soc_percent is not None]
+    if not measured:
+        return round(levels[0][1]) if levels else None
+    weights = [battery.capacity_kwh or 0.0 for battery in measured]
+    if any(weight <= 0 for weight in weights):
+        weights = [1.0] * len(measured)
+    total = sum(w * (b.soc_percent or 0.0) for w, b in zip(weights, measured, strict=True))
+    return round(total / sum(weights))
 
 
 def next_action(
