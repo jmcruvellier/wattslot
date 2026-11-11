@@ -2445,6 +2445,15 @@ p[role="status"]:not(.state-message) {
   margin: 0.75rem 0;
 }
 
+/* Alimentation de la maison, sous les appareils trouvés. */
+.onboarding-supply {
+  margin: 0.75rem 0;
+}
+
+.onboarding-supply p {
+  margin: 0.5rem 0 0;
+}
+
 /* Petit écran : les boutons d'action gardent leur icône seule, l'âge et le détail restent dans
    le nom du bouton (lecteurs d'écran) ; la pastille d'état et « Demander un appareil » suivent. */
 @media (max-width: 30rem) {

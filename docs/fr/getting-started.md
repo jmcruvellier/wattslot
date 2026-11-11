@@ -7,7 +7,7 @@
 ## Les quatre premiers écrans
 
 1. **Reliez l'application à Home Assistant.** Comme application de Home Assistant, il n'y a rien à faire. En mode autonome, saisissez l'adresse de votre Home Assistant et connectez-vous (voir [Installation](installation.md#en-mode-autonome-docker)).
-2. **Voici ce que nous avons trouvé chez vous.** WattSlot lit le tableau Énergie de Home Assistant et propose vos équipements : production solaire, réseau, batterie, chauffe-eau, lave-linge, sèche-linge, lave-vaisselle, pompe de piscine… Décochez ce qui ne doit pas être pris en compte. Un équipement absent du tableau Énergie (une prise connectée, une pompe à chaleur) s'ajoute plus tard dans **Ma maison › Appareils › Ajouter un appareil**.
+2. **Voici ce que nous avons trouvé chez vous.** WattSlot lit le tableau Énergie de Home Assistant et propose vos équipements : production solaire, réseau, batterie, chauffe-eau, lave-linge, sèche-linge, lave-vaisselle, pompe de piscine… Décochez ce qui ne doit pas être pris en compte. Le même écran demande votre **alimentation**, monophasé ou triphasé : le triphasé est proposé d'avance quand des noms de Home Assistant disent une phase (voir [Maisons en triphasé](your-home.md#maisons-en-triphasé)). Un équipement absent du tableau Énergie (une prise connectée, une pompe à chaleur) s'ajoute plus tard dans **Ma maison › Appareils › Ajouter un appareil**.
 3. **Quel est votre contrat d'électricité ?** Choisissez le modèle le plus proche : tarif, batterie et appareils sont réglés d'un coup, avec des prix indicatifs à remplacer par les vôtres (voir [Tarifs](tariffs.md)).
 
    | Modèle | Pour |
@@ -35,6 +35,7 @@
 | Modèle prêt à l'emploi | | Facultatif, règle tout d'un coup |
 | Tarif de l'électricité | | Sinon, un prix unique de 0,25 par kWh, dans votre devise, est supposé |
 | Batterie | | Réglages par défaut tant que vous ne les ajustez pas |
+| Triphasé | | Maisons en triphasé seulement : la phase de chaque appareil, batterie et installation solaire, puis les compteurs par phase que Home Assistant a pour le réseau. Affichée aussi quand votre maison est réglée en monophasé alors que des noms de Home Assistant disent une phase |
 | Notification | | Un appareil pour recevoir les messages, voir [Notifications](notifications.md) |
 
 ## La reprise de l'historique

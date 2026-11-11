@@ -1,12 +1,13 @@
 // Premiers pas guidés (lot 6b.6) : tant que la mise en route n'est pas finie, quatre écrans, une
 // question par écran. Connexion à Home Assistant (sautée si elle est faite), appareils trouvés
-// dans le tableau Énergie (à décocher, puis enregistrés), contrat (un modèle prêt à l'emploi, ou
+// dans le tableau Énergie (à décocher, puis enregistrés, avec l'alimentation de la maison), contrat (un modèle prêt à l'emploi, ou
 // plus tard), puis le premier plan, ou ce qu'il manque d'indispensable avant lui (la prévision
 // solaire, par exemple). Chargé à la demande : une installation déjà en route ne le lit jamais.
 
 import { useEffect, useState } from "react";
 
 import { ApiError, getJson, postJson, putJson } from "../api";
+import { Hint } from "../common/Advanced";
 import { useI18n } from "../i18n/I18nProvider";
 import { buildDraft, firstModel, type DraftDevice } from "../home/draft";
 import type { TemplateSummary } from "../home/TemplateSection";
@@ -103,7 +104,15 @@ function ConnectionStep({ onNavigate }: { onNavigate: (target: string) => void }
 type HomeLoad =
   | { status: "loading" }
   | { status: "error"; code: "not_connected" | "failed" | "no_energy_dashboard" }
-  | { status: "ready"; draft: DraftDevice[]; supply: Supply | null };
+  | {
+      status: "ready";
+      draft: DraftDevice[];
+      supply: Supply; // choix de l'utilisateur, parti de la maison enregistrée ou de la détection
+      detected: boolean; // des noms de Home Assistant disent une phase
+      sums: boolean | undefined; // ce que compte le compteur d'une maison déjà enregistrée
+    };
+
+const SUPPLIES: Supply[] = ["SinglePhaseSupply", "ThreePhaseSupply"];
 
 /** Ce que le calcul fera de l'appareil, selon son type. */
 function role(device: DraftDevice, t: (key: string, params?: Record<string, string | number>) => string): string {
@@ -128,7 +137,15 @@ function HomeStep({ onNavigate, onDone }: { onNavigate: (target: string) => void
       .then(([proposal, saved]) =>
         setLoad(
           proposal.energy_dashboard
-            ? { status: "ready", draft: buildDraft(proposal.devices, saved), supply: proposal.supply ?? null }
+            ? {
+                status: "ready",
+                draft: buildDraft(proposal.devices, saved),
+                // Une maison déjà enregistrée garde son alimentation ; sinon, celle que la
+                // détection propose, et le monophasé quand rien ne dit une phase.
+                supply: (saved.devices.length > 0 ? saved.supply : proposal.supply) ?? "SinglePhaseSupply",
+                detected: proposal.supply === "ThreePhaseSupply",
+                sums: saved.devices.length > 0 ? saved.meter_sums_phases : undefined,
+              }
             : { status: "error", code: "no_energy_dashboard" },
         ),
       )
@@ -143,7 +160,7 @@ function HomeStep({ onNavigate, onDone }: { onNavigate: (target: string) => void
   if (load.status === "error") {
     return <p role="alert">{t(load.code === "no_energy_dashboard" ? "home.no_energy_dashboard" : `home.error.${load.code}`)}</p>;
   }
-  const { draft, supply } = load;
+  const { draft, supply, detected, sums } = load;
   const toggle = (key: string, included: boolean) =>
     setLoad({ ...load, draft: draft.map((device) => (device.key === key ? { ...device, included } : device)) });
 
@@ -151,7 +168,8 @@ function HomeStep({ onNavigate, onDone }: { onNavigate: (target: string) => void
     setSaving(true);
     setFailed(false);
     try {
-      await putJson<HomeModel>("api/home", firstModel(draft, supply));
+      const model = firstModel(draft, supply);
+      await putJson<HomeModel>("api/home", sums === undefined ? model : { ...model, meter_sums_phases: sums });
       onDone();
     } catch {
       setFailed(true);
@@ -192,6 +210,23 @@ function HomeStep({ onNavigate, onDone }: { onNavigate: (target: string) => void
           </Button>
         </div>
       )}
+      {/* Alimentation : demandée ici, sinon une maison en triphasé reste réglée en monophasé
+          sans que rien ne le dise. La phase de chaque appareil se règle ensuite, dans sa fiche. */}
+      <div className="onboarding-supply">
+        <label>
+          {t("supply.kind")}{" "}
+          <select value={supply} onChange={(event) => setLoad({ ...load, supply: event.target.value as Supply })}>
+            {SUPPLIES.map((kind) => (
+              <option key={kind} value={kind}>
+                {t(`supply.kinds.${kind}`)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <Hint text={t("supply.kind_hint")} />
+        {detected && <p role="note">{t("onboarding.home.supply_detected")}</p>}
+        {supply === "ThreePhaseSupply" && <p>{t("onboarding.home.three_phase")}</p>}
+      </div>
       {failed && <p role="alert">{t("onboarding.failed")}</p>}
       <Button variant="primary" disabled={saving} onClick={() => void save()}>
         {t("onboarding.continue")}

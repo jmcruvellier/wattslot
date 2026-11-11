@@ -99,6 +99,7 @@
       "first_plan": "First plan",
       "tariff": "Electricity tariff",
       "battery": "Battery",
+      "phases": "Three-phase",
       "notification": "Notification",
       "template": "Ready-made template"
     },
@@ -114,6 +115,9 @@
       "needs_previous_steps": "Possible once the essential steps are done.",
       "tariff_default": "A single price of {price} is assumed: set your tariff for a more accurate plan.",
       "battery_default": "Default battery settings: adjust them to yours.",
+      "three_phase_detected": "Home Assistant has sensors or devices whose name gives a phase: your home is probably three-phase. Check your grid connection.",
+      "phases_missing": "Set the phase of each device in its sheet: the plan needs it so as not to ask more of a phase than it can supply. {count} still missing, including: {devices}.",
+      "phase_sensors_missing": "Home Assistant has per-phase meters that your home does not follow: add them in the grid sheet, for a plan computed phase by phase.",
       "no_notification": "Choose a device to receive the plan's recommendation every day.",
       "needs_home": "Possible once your home is saved.",
       "template_suggested": "Start from a template (off-peak hours, Tempo, dynamic price…) that sets your devices and tariff at once, then adjust."
@@ -1697,6 +1701,8 @@
       "title": "Here is what we found in your home",
       "help": "Read from Home Assistant's Energy dashboard. Untick anything that should not be taken into account.",
       "missing": "Is an appliance missing?",
+      "supply_detected": "Names in Home Assistant give a phase: your home is probably three-phase.",
+      "three_phase": "With three phases, you will still need to set the phase of each appliance, battery and solar installation: the “Three-phase” step of the setup will take you there.",
       "kinds": {
         "SolarInstallation": "Production monitored",
         "GridConnection": "Purchases and surplus monitored",

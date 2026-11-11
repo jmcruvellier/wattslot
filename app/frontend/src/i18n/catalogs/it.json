@@ -99,6 +99,7 @@
       "first_plan": "Primo piano",
       "tariff": "Tariffa elettrica",
       "battery": "Batteria",
+      "phases": "Trifase",
       "notification": "Notifica",
       "template": "Modello pronto all'uso"
     },
@@ -114,6 +115,9 @@
       "needs_previous_steps": "Possibile non appena i passi essenziali sono fatti.",
       "tariff_default": "Si ipotizza un prezzo unico di {price}: indichi la sua tariffa per un piano più preciso.",
       "battery_default": "Impostazioni predefinite della batteria: le adatti alle sue.",
+      "three_phase_detected": "Home Assistant ha sensori o apparecchi il cui nome indica una fase: la sua casa è probabilmente trifase. Verifichi il suo allacciamento alla rete.",
+      "phases_missing": "Indichi la fase di ogni apparecchio nella sua scheda: la pianificazione ne ha bisogno per non chiedere a una fase più di quanto possa fornire. Ne mancano {count}, tra cui: {devices}.",
+      "phase_sensors_missing": "Home Assistant ha contatori per fase che la sua casa non segue: li aggiunga nella scheda della rete, per un piano calcolato fase per fase.",
       "no_notification": "Scelga un dispositivo che riceva ogni giorno la raccomandazione del piano.",
       "needs_home": "Possibile non appena la sua casa è salvata.",
       "template_suggested": "Parta da un modello (fasce orarie, Tempo, prezzo dinamico…) che imposta in una volta apparecchi e tariffa, poi affini."
@@ -1697,6 +1701,8 @@
       "title": "Ecco cosa abbiamo trovato a casa tua",
       "help": "Letto nel pannello Energia di Home Assistant. Togli la spunta a ciò che non va considerato.",
       "missing": "Manca un apparecchio?",
+      "supply_detected": "Alcuni nomi in Home Assistant indicano una fase: la sua casa è probabilmente trifase.",
+      "three_phase": "In trifase, resterà da indicare la fase di ogni apparecchio, batteria e impianto solare: il passo «Trifase» della messa in servizio la porterà lì.",
       "kinds": {
         "SolarInstallation": "Produzione seguita",
         "GridConnection": "Prelievi e surplus seguiti",

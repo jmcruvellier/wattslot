@@ -99,6 +99,7 @@
       "first_plan": "Erster Plan",
       "tariff": "Stromtarif",
       "battery": "Batterie",
+      "phases": "Dreiphasig",
       "notification": "Benachrichtigung",
       "template": "Fertige Vorlage"
     },
@@ -114,6 +115,9 @@
       "needs_previous_steps": "Möglich, sobald die wesentlichen Schritte erledigt sind.",
       "tariff_default": "Ein Einheitspreis von {price} wird angenommen: Geben Sie Ihren Tarif an, damit der Plan genauer wird.",
       "battery_default": "Standardeinstellungen der Batterie: Passen Sie sie an Ihre an.",
+      "three_phase_detected": "Home Assistant hat Sensoren oder Geräte, deren Name eine Phase nennt: Ihr Haus ist wahrscheinlich dreiphasig angeschlossen. Prüfen Sie Ihren Netzanschluss.",
+      "phases_missing": "Geben Sie die Phase jedes Geräts in seinem Blatt an: Der Plan braucht sie, um von einer Phase nicht mehr zu verlangen, als sie liefern kann. Es fehlen noch {count}, darunter: {devices}.",
+      "phase_sensors_missing": "Home Assistant hat Zähler je Phase, die Ihr Haus nicht verfolgt: Fügen Sie sie im Blatt des Netzes hinzu, für einen Plan, der Phase für Phase berechnet wird.",
       "no_notification": "Wählen Sie ein Gerät, das täglich die Empfehlung des Plans erhält.",
       "needs_home": "Möglich, sobald Ihr Zuhause gespeichert ist.",
       "template_suggested": "Starten Sie mit einer Vorlage (Nebenzeiten, Tempo, dynamischer Preis…), die Ihre Geräte und Ihren Tarif auf einmal einstellt, und passen Sie dann an."
@@ -1697,6 +1701,8 @@
       "title": "Das haben wir bei Ihnen gefunden",
       "help": "Aus dem Energie-Dashboard von Home Assistant gelesen. Entfernen Sie das Häkchen bei allem, was nicht berücksichtigt werden soll.",
       "missing": "Fehlt ein Gerät?",
+      "supply_detected": "Namen in Home Assistant nennen eine Phase: Ihr Haus ist wahrscheinlich dreiphasig angeschlossen.",
+      "three_phase": "Bei drei Phasen ist anschließend noch die Phase jedes Geräts, jeder Batterie und jeder Solaranlage anzugeben: Der Schritt „Dreiphasig“ der Einrichtung führt Sie dorthin.",
       "kinds": {
         "SolarInstallation": "Erzeugung beobachtet",
         "GridConnection": "Bezug und Überschuss beobachtet",
