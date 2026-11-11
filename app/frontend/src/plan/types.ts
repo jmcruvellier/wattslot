@@ -144,6 +144,9 @@ export interface TimelineRow {
   kind: "battery" | "cycle" | "runtime";
   planned: Bar[];
   actual: Bar[];
+  // Batteries d'une même phase (calcul par phase) : 1, 2 ou 3 ; 0 : celles qui compensent le
+  // total ; absent ou null : la batterie de la maison, ou un autre équipement.
+  phase?: number | null;
 }
 
 export interface Timeline {

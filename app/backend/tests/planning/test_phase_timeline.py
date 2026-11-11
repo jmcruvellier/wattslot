@@ -1,0 +1,203 @@
+"""Maison en triphasé : une ligne par groupe de batteries dans la frise, là où la prévision de
+chaque groupe est réelle (batteries qui ne compensent que leur phase)."""
+
+from dataclasses import replace
+from pathlib import Path
+from typing import Any
+
+import pytest
+
+from tests.planning.test_actual import DAY, at, reading
+from tests.planning.test_phase_battery import BASE, battery, home, on_phase_2
+from tests.test_views_day import V1_CONTEXT
+from wattslot.battery_settings import BatterySettings
+from wattslot.configuration import Behavior, Configuration, DeviceSettings
+from wattslot.detection import DeviceKind, Role
+from wattslot.home_model import HomeDevice, HomeModel, HomeSensor, Phase, Supply
+from wattslot.planning.actual import actual_day
+from wattslot.planning.engine import plan_day
+from wattslot.planning.merge import merge_plans
+from wattslot.planning.plan import BATTERY, Plan
+from wattslot.planning.store import dumps, loads
+from wattslot.storage.raw import RawStores
+from wattslot.views.timeline import build_timeline
+
+
+def stored(found: Any) -> dict[str, Any]:
+    """Plan tel qu'il est enregistré puis relu."""
+    plan: dict[str, Any] = loads(dumps(plan_day(found, explained=False).day.to_v1()))
+    return plan
+
+
+def battery_item(plan: dict[str, Any]) -> dict[str, Any]:
+    return next(item for item in plan["planning"] if item["equipement"] == BATTERY)
+
+
+def two_phases(sun_kwh: float = 1.5) -> Any:
+    """Une batterie vide sur la phase 2 (avec le solaire), une pleine sur la phase 3."""
+    lines = {Phase.L2: battery(5.0, 0.0), Phase.L3: battery(5.0, 5.0)}
+    return replace(
+        home(BASE, sun_kwh=sun_kwh),
+        battery=battery(10.0, 5.0),
+        line_batteries=lines,
+        shared_battery=replace(battery(5.0, 0.0), capacity_kwh=0.0, stored_kwh=0.0),
+    )
+
+
+# --- Plan -----------------------------------------------------------------------------------------
+
+
+def test_a_plan_on_the_whole_home_has_no_battery_groups() -> None:
+    whole = stored(replace(home(BASE, sun_kwh=1.5), battery=battery(5.0, 2.0)))
+
+    assert "groupes" not in battery_item(whole)
+
+
+def test_the_plan_keeps_the_forecast_of_each_group() -> None:
+    item = battery_item(stored(two_phases()))
+
+    groups = {group["phase"]: group["mouvements"] for group in item["groupes"]}
+    assert set(groups) == {2, 3}  # pas de groupe « total » : aucune batterie ne le compense
+    at_ten = {phase: next(m for m in found if m["heure"] == 10) for phase, found in groups.items()}
+    # À 10 h : la phase 2 charge son surplus, la phase 3 se décharge sur son déficit.
+    assert (at_ten[2]["action"], at_ten[2]["energie_kwh"]) == ("charge", 1.3)
+    assert (at_ten[3]["action"], at_ten[3]["energie_kwh"]) == ("decharge", 0.3)
+    # La ligne de toutes les batteries reste leur somme.
+    whole = next(m for m in item["mouvements"] if m["heure"] == 10)
+    assert (whole["action"], whole["energie_kwh"]) == ("charge", 1.0)
+    assert Plan.from_v1(stored(two_phases())).battery is not None
+
+
+def test_the_batteries_that_offset_the_total_are_a_group_of_their_own() -> None:
+    found = replace(two_phases(), shared_battery=battery(5.0, 4.0), battery=battery(15.0, 9.0))
+
+    phases = [group["phase"] for group in battery_item(stored(found))["groupes"]]
+
+    assert phases == [2, 3, 0]
+
+
+def test_groups_are_merged_hour_by_hour() -> None:
+    old, new = stored(two_phases(sun_kwh=1.5)), stored(two_phases(sun_kwh=3.0))
+
+    merged = battery_item(merge_plans(new, old, 11))
+
+    phase_2 = next(g for g in merged["groupes"] if g["phase"] == 2)["mouvements"]
+    by_hour = {m["heure"]: m["energie_kwh"] for m in phase_2}
+    assert by_hour[10] == 1.3  # avant 11 h : l'ancien plan
+    assert by_hour[11] == pytest.approx(2.5)  # ensuite : le nouveau, à pleine puissance
+    # Le nouveau plan ne distingue plus les phases : la ligne unique revient.
+    whole = stored(replace(home(BASE, sun_kwh=1.5), battery=battery(5.0, 2.0)))
+    assert "groupes" not in battery_item(merge_plans(whole, old, 11))
+
+
+# --- Frise ----------------------------------------------------------------------------------------
+
+
+def test_the_timeline_has_one_row_per_group() -> None:
+    plan = stored(two_phases())
+    actual = {
+        "batterie_reelle_segments_par_phase": {
+            2: [
+                {
+                    "action": "charge",
+                    "debut_iso": at(10).isoformat(),
+                    "fin_iso": at(11).isoformat(),
+                    "energie_kwh": 1.2,
+                }
+            ]
+        }
+    }
+
+    rows = [
+        r
+        for r in build_timeline(plan, actual, 15.0, 6.0, 24.0, V1_CONTEXT).rows
+        if r.kind == "battery"
+    ]
+
+    assert [(row.device, row.phase) for row in rows] == [("Batterie 2", 2), ("Batterie 3", 3)]
+    charge = next(bar for bar in rows[0].planned if bar.action == "charge")
+    assert (charge.start_hour, charge.end_hour) == (10, 14)
+    assert [(bar.action, bar.energy_kwh) for bar in rows[0].actual] == [("charge", 1.2)]
+    assert rows[1].actual == [] and all(bar.action == "discharge" for bar in rows[1].planned)
+
+
+def test_the_timeline_keeps_a_single_row_on_the_whole_home() -> None:
+    plan = stored(on_phase_2(home(BASE, sun_kwh=1.5), battery(5.0, 0.0)))
+    whole = stored(replace(home(BASE, sun_kwh=1.5), battery=battery(5.0, 2.0)))
+
+    def battery_rows(found: dict[str, Any]) -> list[tuple[str, int | None]]:
+        rows = build_timeline(found, None, 15.0, 6.0, 24.0, V1_CONTEXT).rows
+        return [(row.device, row.phase) for row in rows if row.kind == "battery"]
+
+    assert battery_rows(plan) == [("Batterie 2", 2)]
+    assert battery_rows(whole) == [("Batterie", None)]
+
+
+# --- Mesures du jour ------------------------------------------------------------------------------
+
+
+def storage(key: str, phase: Phase | None) -> HomeDevice:
+    return HomeDevice(
+        key=key,
+        kind=DeviceKind.BATTERY,
+        name=key,
+        phase=phase,
+        capacity_kwh=5.0,
+        sensors=[
+            HomeSensor(entity_id=f"sensor.{key}_in", role=Role.ENERGY_CHARGED),
+            HomeSensor(entity_id=f"sensor.{key}_out", role=Role.ENERGY_DISCHARGED),
+        ],
+    )
+
+
+MODEL = HomeModel(
+    supply=Supply.THREE,
+    devices=[storage("garage", Phase.L2), storage("cellar", Phase.L3), storage("meter", Phase.L1)],
+)
+# La batterie « meter » suit un compteur triphasé : elle compense le total, pas sa phase.
+SETTINGS = Configuration(
+    devices=[
+        DeviceSettings(
+            key="meter", behavior=Behavior.STORAGE, battery=BatterySettings(all_phases=True)
+        )
+    ]
+)
+
+
+def test_real_battery_segments_of_each_group(tmp_path: Path) -> None:
+    raw = RawStores(tmp_path, "Europe/Paris")
+    raw.write(
+        [
+            reading("garage", "sensor.garage_in", 10.0, at(-1)),
+            reading("garage", "sensor.garage_in", 10.0, at(10)),
+            reading("garage", "sensor.garage_in", 11.5, at(11)),
+            reading("cellar", "sensor.cellar_out", 4.0, at(-1)),
+            reading("cellar", "sensor.cellar_out", 4.0, at(11)),
+            reading("cellar", "sensor.cellar_out", 4.6, at(12)),
+            reading("meter", "sensor.meter_in", 2.0, at(-1)),
+            reading("meter", "sensor.meter_in", 2.0, at(8)),
+            reading("meter", "sensor.meter_in", 2.9, at(9)),
+        ]
+    )
+
+    found = actual_day(MODEL, raw, DAY, at(13), configuration=SETTINGS)
+    single = actual_day(
+        MODEL.model_copy(update={"supply": Supply.SINGLE}), raw, DAY, at(13), configuration=SETTINGS
+    )
+
+    by_phase = found["batterie_reelle_segments_par_phase"]
+    assert {
+        p: [(s["action"], s["energie_kwh"]) for s in segments] for p, segments in by_phase.items()
+    } == {
+        0: [("charge", 0.9)],
+        2: [("charge", 1.5)],
+        3: [("decharge", 0.6)],
+    }
+    # Toutes ensemble : inchangé.
+    assert [s["action"] for s in found["batterie_reelle_segments"]] == [
+        "charge",
+        "charge",
+        "decharge",
+    ]
+    # En monophasé, aucune batterie n'est sur une phase : rien par phase.
+    assert "batterie_reelle_segments_par_phase" not in single

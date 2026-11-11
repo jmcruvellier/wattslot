@@ -38,6 +38,7 @@ from wattslot.objective_settings import Weights
 from wattslot.planning.explain import explain
 from wattslot.planning.plan import (
     BATTERY,
+    BatteryGroup,
     BatteryPlan,
     Indicators,
     RuntimePlan,
@@ -696,6 +697,7 @@ def simulate_plan(problem: Problem, plan: Plan) -> BatteryRun:
         soc_kwh={hour: sum(run.soc_kwh[hour] for run in runs) for hour in shared.soc_kwh},
         residual_kwh=shared.residual_kwh,
         lines=lines,
+        shared=shared,
     )
 
 
@@ -882,29 +884,41 @@ def day_plan(problem: Problem, plan: Plan, run: BatteryRun) -> DayPlan:
             )
         )
     battery = problem.battery
+
+    def planned(found: BatteryRun) -> list[PlannedMovement]:
+        return [
+            PlannedMovement(hour=m.hour, action=m.action, energy_kwh=m.energy_kwh)
+            for m in found.movements
+        ]
+
+    # Calcul par phase : la prévision de chaque groupe de batteries, pour une ligne de la frise
+    # chacune ; celles qui compensent le total (phase 0) seulement s'il y en a.
+    groups = [
+        BatteryGroup(phase=LINES.index(line) + 1, movements=planned(run.lines[line]))
+        for line in LINES
+        if line in run.lines
+    ]
+    if groups and run.shared is not None and problem.total_battery.capacity_kwh > 0:
+        groups.append(BatteryGroup(phase=0, movements=planned(run.shared)))
     charges = [m for m in run.movements if m.action == "charge"]
     discharges = [m for m in run.movements if m.action == "decharge"]
-    items.append(
-        BatteryPlan(
-            device=BATTERY,
-            movements=[
-                PlannedMovement(hour=m.hour, action=m.action, energy_kwh=m.energy_kwh)
-                for m in run.movements
-            ],
-            soc_kwh={hour: round(v, 3) for hour, v in run.soc_kwh.items()},
-            charged_kwh=round(sum(m.energy_kwh for m in charges), 3),
-            discharged_kwh=round(sum(m.energy_kwh for m in discharges), 3),
-            # Début de la première heure : mesuré maintenant, moins sa part déjà écoulée.
-            start_kwh=round(battery.stored_kwh - battery.hour_change_kwh, 3),
-            end_kwh=round(run.end_kwh, 3),
-            priority=2,
-            justification=(
-                f"Autoconsommation simulée heure par heure à partir de {problem.first_hour}h "
-                f"(SoC {battery.soc_percent}%, {battery.stored_kwh} kWh) ; plage active "
-                f"{battery.active_from}h-{battery.active_to}h."
-            ),
-        )
+    whole = BatteryPlan(
+        device=BATTERY,
+        movements=planned(run),
+        soc_kwh={hour: round(v, 3) for hour, v in run.soc_kwh.items()},
+        charged_kwh=round(sum(m.energy_kwh for m in charges), 3),
+        discharged_kwh=round(sum(m.energy_kwh for m in discharges), 3),
+        # Début de la première heure : mesuré maintenant, moins sa part déjà écoulée.
+        start_kwh=round(battery.stored_kwh - battery.hour_change_kwh, 3),
+        end_kwh=round(run.end_kwh, 3),
+        priority=2,
+        justification=(
+            f"Autoconsommation simulée heure par heure à partir de {problem.first_hour}h "
+            f"(SoC {battery.soc_percent}%, {battery.stored_kwh} kWh) ; plage active "
+            f"{battery.active_from}h-{battery.active_to}h."
+        ),
     )
+    items.append(whole.model_copy(update={"groups": groups}) if groups else whole)
     for need in problem.needs:
         delivered = {h: kwh for h, kwh in plan.needs.get(need.name, {}).items() if kwh > 0.0005}
         total = round(sum(delivered.values()), 3)

@@ -31,7 +31,16 @@ from wattslot.energy_need import EnergyNeed
 from wattslot.energy_need import load as load_need
 from wattslot.energy_need import problems as need_problems
 from wattslot.energy_need import to_triples as need_triples
-from wattslot.home_model import RDF_TYPE, XSD_BOOLEAN, HomeModel, vocab
+from wattslot.home_model import (
+    LINES,
+    RDF_TYPE,
+    XSD_BOOLEAN,
+    HomeDevice,
+    HomeModel,
+    Phase,
+    Supply,
+    vocab,
+)
 from wattslot.objective_settings import ObjectiveSettings
 from wattslot.objective_settings import load as load_objective
 from wattslot.objective_settings import problems as objective_problems
@@ -216,6 +225,19 @@ def battery_of(
         for key, capacity in capacities.items()
     ]
     return combine_batteries(parts) if parts else house
+
+
+def battery_line(
+    home: HomeModel, configuration: Configuration | None, device: HomeDevice
+) -> Phase | None:
+    """Phase que compense une batterie : la sienne, dans une maison en triphasé, quand elle est
+    branchée sur une phase et que ses réglages ne disent pas qu'elle compense le total ;
+    ``None`` : elle compense le total de la maison."""
+    if home.supply is not Supply.THREE or device.phase not in LINES:
+        return None
+    saved = configuration.of(device.key) if configuration is not None else None
+    settings = (saved.battery if saved is not None else None) or battery_of(configuration)
+    return None if settings.all_phases else device.phase
 
 
 def tariff_of(configuration: Configuration | None) -> Tariff:

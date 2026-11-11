@@ -83,6 +83,14 @@ class Movement(_V1):
     energy_kwh: float = _v1_key("energie_kwh")
 
 
+class BatteryGroup(_V1):
+    """Batteries qui ne compensent que leur phase (triphasé), réunies : leur prévision propre.
+    ``phase`` : 1, 2 ou 3 ; 0 : les batteries qui compensent le total de la maison."""
+
+    phase: int
+    movements: list[Movement] = _v1_key("mouvements", default=[])
+
+
 class BatteryPlan(_V1):
     device: str = _v1_key("equipement", default=BATTERY)
     movements: list[Movement] = _v1_key("mouvements", default=[])
@@ -94,6 +102,9 @@ class BatteryPlan(_V1):
     priority: int | None = _v1_key("priorite", default=None)
     justification: str | None = None
     explanation: Explanation | None = _v1_key("explication", default=None)  # lot 3.7
+    # Calcul par phase : la prévision de chaque groupe de batteries, dont celle-ci est la
+    # somme ; absent sinon (toutes les batteries sont calculées comme une seule).
+    groups: list[BatteryGroup] = _v1_key("groupes", default=[])
 
     def to_v1(self) -> dict[str, Any]:
         found = super().to_v1()

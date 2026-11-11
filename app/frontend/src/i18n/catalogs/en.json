@@ -313,7 +313,9 @@
       "cancel_failed": "The cancellation failed.",
       "cancelled": "Cancelled today:",
       "restore": "Restore {device}",
-      "restore_failed": "The restoration failed."
+      "restore_failed": "The restoration failed.",
+      "battery_phase": "Battery phase {number}",
+      "battery_total": "Battery (total)"
     },
     "indicators": {
       "title": "Plan indicators",
@@ -385,7 +387,9 @@
       "battery_max": "Battery at its highest, {pct}%",
       "until": "Until {time}",
       "empty": "Nothing to start that day.",
-      "now": "Now"
+      "now": "Now",
+      "battery_charge_of": "{battery}: charging",
+      "battery_discharge_of": "{battery}: takes over"
     },
     "discarded": "Impossible measurement set aside at {hours}: probably a sensor dropout.",
     "discarded_link": "See the data",

@@ -7,6 +7,7 @@ import type { ReactNode } from "react";
 import { useI18n } from "../i18n/I18nProvider";
 import { minuteOfDay } from "../i18n/homeTime";
 import { agenda, type AgendaEntry, firstUpcoming, sunWindow } from "./agendaEntries";
+import { batteryLabel } from "./batteryLabel";
 import { clock, duration, kwh, percent } from "./format";
 import type { DayView } from "./types";
 import Card from "../ui/Card";
@@ -37,6 +38,16 @@ export function DaySummaryCard({ view }: { view: DayView }) {
   );
 }
 
+// Phase de la batterie : celle de la maison, ou celle des batteries d'une phase nommée.
+function batteryTitle(
+  phase: number | null | undefined,
+  action: "charge" | "discharge",
+  t: (key: string, params?: Record<string, string | number>) => string,
+): string {
+  if (phase == null) return t(`plan.agenda.battery_${action}`);
+  return t(`plan.agenda.battery_${action}_of`, { battery: batteryLabel(phase, t) });
+}
+
 function Entry({ entry, past }: { entry: AgendaEntry; past: boolean }) {
   const { language, t } = useI18n();
   let title: string;
@@ -51,11 +62,11 @@ function Entry({ entry, past }: { entry: AgendaEntry; past: boolean }) {
       detail = entry.mode ? t("plan.agenda.mode", { mode: entry.mode }) : null;
       break;
     case "battery_charge":
-      title = t("plan.agenda.battery_charge");
+      title = batteryTitle(entry.phase, "charge", t);
       detail = t("plan.agenda.until", { time: clock(entry.end, language) });
       break;
     case "battery_discharge":
-      title = t("plan.agenda.battery_discharge");
+      title = batteryTitle(entry.phase, "discharge", t);
       detail = t("plan.agenda.until", { time: clock(entry.end, language) });
       break;
     case "battery_max":

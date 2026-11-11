@@ -135,8 +135,9 @@ def battery_groups(
             continue  # état de charge illisible : pas comptée, comme dans l'ensemble
         # Sans réglages propres : ceux de la maison, dont elle prend sa part des puissances.
         settings = own.get(device.key) or share_of(house, capacity / total)
-        alone = model.supply is Supply.THREE and device.phase in LINES and not settings.all_phases
-        parts[device.phase if alone else None].append((capacity, stored, settings))
+        parts[config.battery_line(model, configuration, device)].append(
+            (capacity, stored, settings)
+        )
 
     def group(found: list[tuple[float, float, BatterySettings]]) -> Battery:
         capacity = sum(c for c, _, _ in found)
