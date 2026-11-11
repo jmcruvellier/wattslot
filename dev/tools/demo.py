@@ -16,8 +16,10 @@ maison synthétique de ``demo_home`` depuis 31 jours :
 l'application figée à 14 h 30 du jour J (``datetime.now`` des modules de ``wattslot``).
 
 ``--three-phase`` génère la même maison raccordée en triphasé (``demo_home.ThreePhaseHouse``) :
-deux installations solaires et deux batteries sur les phases 2 et 3, un compteur par phase,
-puissance souscrite de 9 kVA. Elle sert à essayer le calcul par phase, pas aux captures.
+deux installations solaires et deux batteries sur les phases 2 et 3, un chauffe-eau triphasé,
+un compteur par phase, puissance souscrite de 9 kVA ; ``--separate-meter`` : la même, dont le
+compteur compte chaque phase à part. Elles servent à essayer le calcul par phase, pas aux
+captures.
 
 Depuis ``dev/``, avec l'environnement du serveur (``pip install -e app/backend``) ::
 
@@ -437,7 +439,9 @@ class _Targets:
         self.targets = targets
 
 
-def home_from_proposal(proposal: Any, language: str, three_phase: bool = False) -> Any:
+def home_from_proposal(
+    proposal: Any, language: str, three_phase: bool = False, separate_meter: bool = False
+) -> Any:
     """Maison proposée par la détection, chaque équipement nommé dans la langue des captures.
     En triphasé : la phase de chaque équipement, et les compteurs par phase du réseau, que le
     tableau Énergie de HA ne connaît pas."""
@@ -446,7 +450,7 @@ def home_from_proposal(proposal: Any, language: str, three_phase: bool = False) 
 
     known = device_of(three_phase)
     h = house_data
-    lines = {1: Phase.L1, 2: Phase.L2, 3: Phase.L3}
+    lines = {1: Phase.L1, 2: Phase.L2, 3: Phase.L3, h.ALL_PHASES: Phase.ALL}
     phases = {
         "solar": h.SOLAR_PHASES[0],
         "battery": h.SOLAR_PHASES[0],
@@ -463,7 +467,8 @@ def home_from_proposal(proposal: Any, language: str, three_phase: bool = False) 
             if not s.excluded
         ]
         if three_phase and device.kind is DeviceKind.GRID:
-            for number, line in lines.items():
+            for number in h.PHASES:
+                line = lines[number]
                 sensors += [
                     HomeSensor(
                         entity_id=h.phase_import(number), role=Role.ENERGY_IMPORTED, phase=line
@@ -482,7 +487,11 @@ def home_from_proposal(proposal: Any, language: str, three_phase: bool = False) 
                 phase=lines[phases[logical]] if three_phase and logical in phases else None,
             )
         )
-    return HomeModel(devices=devices, supply=Supply.THREE if three_phase else Supply.SINGLE)
+    return HomeModel(
+        devices=devices,
+        supply=Supply.THREE if three_phase else Supply.SINGLE,
+        meter_sums_phases=not separate_meter,
+    )
 
 
 def minutes(start: datetime, end: datetime) -> Iterator[datetime]:
@@ -509,10 +518,16 @@ def planned_starts(content: dict[str, Any], names: dict[str, str]) -> dict[str, 
 
 
 async def generate(
-    data_dir: Path, language: str, quiet: bool = False, three_phase: bool = False
+    data_dir: Path,
+    language: str,
+    quiet: bool = False,
+    three_phase: bool = False,
+    separate_meter: bool = False,
 ) -> dict[str, Any]:
     """Dossier de données de la démonstration ; renvoie un résumé (plans, relevés).
-    ``three_phase`` : la maison raccordée en triphasé (essais du calcul par phase)."""
+    ``three_phase`` : la maison raccordée en triphasé (essais du calcul par phase) ;
+    ``separate_meter`` : en triphasé, le compteur compte chaque phase à part."""
+    three_phase = three_phase or separate_meter
     import_application()
     freeze_time()
     from wattslot import configuration, home_model, notifications, user_requests
@@ -542,7 +557,7 @@ async def generate(
     )
     window = WINDOW
     Clock.moment = first
-    house = house_data.ThreePhaseHouse() if three_phase else House()
+    house = house_data.ThreePhaseHouse(separate_meter=separate_meter) if three_phase else House()
     ha = FakeHomeAssistant(language, house.step(first - timedelta(minutes=1)))
 
     database = open_database(data_dir)
@@ -561,7 +576,9 @@ async def generate(
                 while client.status.state is not ConnectionState.CONNECTED:
                     await asyncio.sleep(0.02)
 
-            home = home_from_proposal(propose(client.snapshot), language, three_phase)
+            home = home_from_proposal(
+                propose(client.snapshot), language, three_phase, separate_meter
+            )
             home_model.save(graph, home)
             saved = apply(load_template("off_peak"), home, configuration.Configuration(), None)
             batteries = sum(d.kind is DeviceKind.BATTERY for d in home.devices)
@@ -769,6 +786,11 @@ def main() -> int:
     gen.add_argument("--language", choices=sorted(NAMES), default="en")
     gen.add_argument("--data", type=Path, required=True)
     gen.add_argument("--three-phase", action="store_true", help="maison raccordée en triphasé")
+    gen.add_argument(
+        "--separate-meter",
+        action="store_true",
+        help="en triphasé, le compteur compte chaque phase à part",
+    )
     run = sub.add_parser("serve", help="application sur le dossier, heure figée")
     run.add_argument("--data", type=Path, required=True)
     run.add_argument("--port", type=int, default=8100)
@@ -776,7 +798,14 @@ def main() -> int:
     args = parser.parse_args()
     logging.basicConfig(level=logging.WARNING)
     if args.command == "generate":
-        summary = asyncio.run(generate(args.data, args.language, three_phase=args.three_phase))
+        summary = asyncio.run(
+            generate(
+                args.data,
+                args.language,
+                three_phase=args.three_phase,
+                separate_meter=args.separate_meter,
+            )
+        )
         print(f"{summary['runs']} calculs, {summary['readings']} relevés, {summary['starts']}")
     else:
         asyncio.run(serve(args.data, args.port, args.ha_port))
