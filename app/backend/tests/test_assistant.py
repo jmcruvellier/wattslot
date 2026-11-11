@@ -19,7 +19,7 @@ from tests.test_health import _settings
 from tests.test_views_day import actual_of, state_of
 from tests.test_views_week import horizon_of
 from tests.v1_oracle import STATES, state_named
-from wattslot import home_model
+from wattslot import configuration, home_model
 from wattslot.assistant.prompts import prompt
 from wattslot.assistant.tools import (
     PENDING_FOR,
@@ -40,9 +40,11 @@ from wattslot.assistant.tools import (
     plan_text,
     problem_text,
 )
+from wattslot.battery_settings import BatterySettings
+from wattslot.configuration import Behavior, Configuration, DeviceSettings
 from wattslot.detection import DeviceKind, Role
 from wattslot.home_assistant import ConnectionState
-from wattslot.home_model import HomeDevice, HomeModel, HomeSensor
+from wattslot.home_model import HomeDevice, HomeModel, HomeSensor, Phase, Supply
 from wattslot.ingress import HOME_ASSISTANT_CORE_ADDRESS
 from wattslot.languages import LANGUAGES
 from wattslot.main import create_app
@@ -868,3 +870,125 @@ def test_battery_of_the_day_in_a_sentence(hour: int, expected: str) -> None:
     )
     view = SimpleNamespace(summary=summary, battery_capacity_kwh=5.0, indicators=None)
     assert _summary(view, "fr")["battery"] == expected  # type: ignore[arg-type]
+
+
+# --- Plusieurs batteries, maison en triphasé -------------------------------------------------
+
+
+def _three_phase_home() -> HomeModel:
+    def battery(key: str, name: str, capacity: float, phase: Phase) -> HomeDevice:
+        return HomeDevice(
+            key=key,
+            kind=DeviceKind.BATTERY,
+            name=name,
+            capacity_kwh=capacity,
+            phase=phase,
+            sensors=[HomeSensor(entity_id=f"sensor.{key}_soc", role=Role.STATE_OF_CHARGE)],
+        )
+
+    return HomeModel(
+        supply=Supply.THREE,
+        meter_sums_phases=False,
+        devices=[
+            battery("small", "Petite batterie", 2.0, Phase.L2),
+            battery("large", "Grande batterie", 6.0, Phase.L3),
+            HomeDevice(
+                key="heater",
+                kind=DeviceKind.WATER_HEATER,
+                name="Chauffe-eau",
+                phase=Phase.ALL,
+                sensors=[],
+            ),
+            HomeDevice(
+                key="washer", kind=DeviceKind.WASHING_MACHINE, name="Lave-linge", sensors=[]
+            ),
+            HomeDevice(
+                key="tv", kind=DeviceKind.OTHER_LOAD, name="Télé", phase=Phase.L1, sensors=[]
+            ),
+        ],
+    )
+
+
+def test_the_home_says_its_phases_and_each_battery(api: TestClient) -> None:
+    graph = api.app.state.graph  # type: ignore[attr-defined]
+    home_model.save(graph, _three_phase_home())
+    configuration.save(
+        graph,
+        Configuration(
+            tariff=Tariff(base_eur_kwh=0.2, contract_kva=12.0),
+            battery=BatterySettings(floor_percent=10),
+            devices=[
+                DeviceSettings(
+                    key="small",
+                    behavior=Behavior.STORAGE,
+                    battery=BatterySettings(floor_percent=30),
+                )
+            ],
+        ),
+    )
+
+    home = _call(api, "get_home")
+
+    # Chaque batterie avec son propre plancher : les réglages de la petite, ceux de la maison
+    # pour la grande.
+    by_name = {battery["name"]: battery for battery in home["batteries"]}
+    assert by_name["Petite batterie"]["never_below"] == "30\u00a0%"
+    assert by_name["Grande batterie"]["never_below"] == "10\u00a0%"
+    assert home["grid_connection"] == {
+        "supply": "triphasé",
+        "meter": "le compteur compte chaque phase à part",
+        "limit": "4,0 kVA par phase",
+    }
+    # La phase de ce que le calcul place ou simule ; pas celle d'une charge seulement mesurée,
+    # ni d'un équipement dont la phase n'est pas renseignée.
+    assert home["connected_to"] == {
+        "Petite batterie": "phase 2",
+        "Grande batterie": "phase 3",
+        "Chauffe-eau": "les trois phases",
+    }
+
+
+def test_a_single_phase_home_says_nothing_about_phases(api: TestClient) -> None:
+    single = _three_phase_home().model_copy(update={"supply": Supply.SINGLE})
+    home_model.save(api.app.state.graph, single)  # type: ignore[attr-defined]
+
+    home = _call(api, "get_home")
+
+    assert "grid_connection" not in home and "connected_to" not in home
+
+
+def test_the_charge_now_weighs_each_battery(
+    api: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """2 kWh à 40 % et 6 kWh à 80 % : 70 %, pas la moyenne simple de 60 %."""
+
+    async def today(*_: Any, **__: Any) -> None:
+        return None
+
+    monkeypatch.setattr("wattslot.assistant.tools.day_view_of", today)
+    app = api.app.state  # type: ignore[attr-defined]
+    home_model.save(app.graph, _three_phase_home())
+    moment = datetime.now(UTC)
+    entities = [
+        SimpleNamespace(
+            entity_id=f"sensor.{key}_soc",
+            role=Role.STATE_OF_CHARGE,
+            last_value=value,
+            last_time=moment,
+        )
+        for key, value in (("small", 40.0), ("large", 80.0), ("unknown", 10.0))
+    ]
+    state = SimpleNamespace(
+        graph=app.graph,
+        database=app.database,
+        ingestor=SimpleNamespace(status=lambda: SimpleNamespace(entities=entities)),
+        raw=SimpleNamespace(zone=ZoneInfo("Europe/Paris")),
+    )
+
+    found = asyncio.run(get_current_status(state))
+
+    assert found["battery_percent"] == 70
+    assert found["batteries"] == [
+        {"name": "Grande batterie", "charge": "80\u00a0%"},
+        {"name": "Petite batterie", "charge": "40\u00a0%"},
+    ]

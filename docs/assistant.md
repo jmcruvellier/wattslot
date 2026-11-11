@@ -42,7 +42,7 @@ The conversation card of the **Assistant** screen suggests questions, by theme, 
 
 ## What the assistant can and cannot do
 
-- **It reads**: the plan of a day, its cost and its explanations, the week, the measurements, the forecast, the tariff, your requests, your home and its problems.
+- **It reads**: the plan of a day, its cost and its explanations, the week, the measurements, the forecast, the tariff, your requests, your home and its problems. With several batteries, it knows the charge and the reserve of each one; in a three-phase home, the phase of each placed appliance and of each battery, what your meter counts and the limit of each phase.
 - **It does one thing on its own**: file a request (*“Run the dishwasher at the best time before tomorrow evening”*), after confirming it with you. WattSlot enforces it: the first call only returns the question to ask you, and the request is filed only when the assistant calls again to confirm, within ten minutes of that question.
 - **It never** starts a computation, changes a setting or controls a device.
 

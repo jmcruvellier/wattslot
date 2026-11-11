@@ -16,8 +16,9 @@ from typing import Any, Literal
 from wattslot import configuration, currency, home_model, notifications, user_requests
 from wattslot.aggregation import HOUR
 from wattslot.configuration import Behavior
-from wattslot.detection import Role
+from wattslot.detection import DeviceKind, Role
 from wattslot.home_assistant import ConnectionState
+from wattslot.home_model import LINES, Phase, Supply
 from wattslot.languages import number
 from wattslot.planning.explain import catalog
 from wattslot.planning.journal import cycle_appliances
@@ -469,11 +470,8 @@ async def get_current_status(state: Any) -> dict[str, Any]:
     ingestor = state.ingestor
     if ingestor is None:
         return {"error": "not_connected", "hint": "Home Assistant is not connected."}
-    names = {
-        sensor.entity_id: device.name
-        for device in home_model.load(state.graph).devices
-        for sensor in device.sensors
-    }
+    home = home_model.load(state.graph)
+    names = {sensor.entity_id: device.name for device in home.devices for sensor in device.sensors}
     now = datetime.now(UTC)
     # HA n'envoie un relevé qu'au changement : un niveau de charge stable reste valable, une
     # puissance figée depuis longtemps vient d'un capteur muet (panneaux la nuit…).
@@ -494,9 +492,30 @@ async def get_current_status(state: Any) -> dict[str, Any]:
         found["off_peak"] = view.now.off_peak
     # Un résumé plutôt que tous les relevés (~2 000 tokens, heures en UTC) : le niveau de la
     # batterie s'y cherchait sous le nom de l'appareil.
-    charge = [e.last_value for e in fresh if e.role is Role.STATE_OF_CHARGE]
-    if charge:
-        found["battery_percent"] = round(sum(charge) / len(charge))
+    levels = {e.entity_id: e.last_value for e in fresh if e.role is Role.STATE_OF_CHARGE}
+    batteries = [
+        (device, levels[sensor.entity_id])
+        for device in home.devices
+        if device.kind is DeviceKind.BATTERY
+        for sensor in device.sensors
+        if sensor.role is Role.STATE_OF_CHARGE and sensor.entity_id in levels
+    ]
+    if batteries:
+        # Plusieurs batteries : leur moyenne pondérée par la capacité, comme l'écran Aujourd'hui
+        # et le calcul ; sans capacité connue, leur moyenne simple.
+        weights = [device.capacity_kwh or 0.0 for device, _ in batteries]
+        if any(weight <= 0 for weight in weights):
+            weights = [1.0] * len(batteries)
+        total = sum(w * level for w, (_, level) in zip(weights, batteries, strict=True))
+        found["battery_percent"] = round(total / sum(weights))
+        if len(batteries) > 1:
+            lang = language(state)
+            found["batteries"] = [
+                {"name": device.name, "charge": _percent(level, lang)}
+                for device, level in batteries
+            ]
+    elif levels:
+        found["battery_percent"] = round(sum(levels.values()) / len(levels))
     solar = [e.last_value for e in fresh if e.role is Role.POWER_PRODUCED]
     if solar:
         found["solar_power_w"] = round(sum(solar))
@@ -747,17 +766,22 @@ def get_home(state: Any) -> dict[str, Any]:
     home = home_model.load(state.graph)
     saved = configuration.load(state.graph)
     settings = {d.key: d for d in configuration.effective(home, saved).devices}
-    battery = configuration.battery_of(saved, home)
+    house_battery = configuration.battery_of(saved)
     tariff = configuration.tariff_of(saved)
+    three_phase = home.supply is Supply.THREE
+    meter = "sums" if home.meter_sums_phases else "separate"
     lang = language(state)
     texts = catalog(lang)
     preset = objective_of(state, saved).value
     # Groupes par rôle dans le plan plutôt que les codes de la configuration : « scheduled »
     # valait vrai pour tout (même le réseau), d'où « tous les équipements sont planifiés ».
     groups: dict[str, list[Any]] = {key: [] for key in HOME_GROUPS}
+    phases: dict[str, str] = {}  # maison en triphasé : phase de chaque équipement qui en a une
     for d in home.devices:
         setting = settings.get(d.key)
         behavior = setting.behavior if setting else Behavior.UNCONTROLLED
+        if three_phase and d.phase is not None and behavior is not Behavior.UNCONTROLLED:
+            phases[d.name] = _phase(d.phase, texts)
         if behavior is Behavior.STORAGE:
             # Valeurs écrites dans la langue réglée (« 5,12 kWh ») et réserve nommée pour ce
             # qu'elle est : « floor_percent: 12.0 » se lisait « 12.0 % d'espace ».
@@ -769,7 +793,11 @@ def get_home(state: Any) -> dict[str, Any]:
                         if d.capacity_kwh
                         else {}
                     ),
-                    "never_below": f"{number(battery.floor_percent, lang, 0)}\u00a0%",
+                    # Ses propres réglages, sinon ceux de la maison.
+                    "never_below": _percent(
+                        ((setting.battery if setting else None) or house_battery).floor_percent,
+                        lang,
+                    ),
                 }
             )
         elif behavior in MANAGED:
@@ -791,7 +819,35 @@ def get_home(state: Any) -> dict[str, Any]:
         ),
         "tariff": texts[f"assistant.tariff.{tariff.kind.value}"],
         "objective": texts[f"objective.{OBJECTIVE_TEXT.get(preset, preset)}"],
+        # Maison en triphasé seulement : en monophasé, rien de plus à dire.
+        **(
+            {
+                "grid_connection": {
+                    "supply": texts["assistant.supply.three_phase"],
+                    "meter": texts[f"assistant.meter.{meter}"],
+                    **(
+                        {
+                            "limit": texts["assistant.phase_limit"].format(
+                                kva=number(tariff.contract_kva / 3, lang, 1)
+                            )
+                        }
+                        if tariff.contract_kva
+                        else {}
+                    ),
+                },
+                **({"connected_to": phases} if phases else {}),
+            }
+            if three_phase
+            else {}
+        ),
     }
+
+
+def _phase(phase: Phase, texts: dict[str, str]) -> str:
+    """« phase 2 », ou « les trois phases » pour un équipement triphasé."""
+    if phase is Phase.ALL:
+        return texts["assistant.all_phases"]
+    return texts["assistant.phase"].format(number=LINES.index(phase) + 1)
 
 
 def _fill(template: str, params: dict[str, str]) -> str:
