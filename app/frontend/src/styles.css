@@ -372,15 +372,36 @@ pre {
   min-width: 0;
 }
 
-/* Pastille courte (« Fiable ») sur la ligne du titre, même sur téléphone. */
+/* Pastille courte (« Fiable ») sur la ligne du titre, même sur téléphone ; style commun des
+   pastilles (.badge…), sans la hauteur minimale des boutons, la zone de toucher élargie par
+   ::after. */
 .quality-pill {
+  position: relative;
   flex: none;
-  font: inherit;
-  font-size: 0.8rem;
-  font-weight: 700;
-  line-height: 1.4;
-  padding: 0.1rem 0.55rem;
-  cursor: pointer;
+  min-height: 0;
+  color: inherit;
+}
+
+.quality-pill.trend-good {
+  color: var(--ok);
+}
+
+.quality-pill.badge-medium {
+  color: var(--warning);
+}
+
+.quality-pill.trend-bad {
+  color: var(--danger);
+}
+
+.quality-pill:hover:not(:disabled) {
+  border-color: currentColor;
+}
+
+.quality-pill::after {
+  content: "";
+  position: absolute;
+  inset: -0.6rem -0.25rem;
 }
 
 .quality-pill:focus-visible {
@@ -509,12 +530,25 @@ pre {
   padding-left: 1rem;
 }
 
-.badge {
-  font-size: 0.8rem;
+/* Pastilles d'état : même style et même taille partout (bandeaux du plan, tendances de la vue
+   Aujourd'hui, qualité des prévisions, connexion, gravité des problèmes). Contour et fond teinté
+   de la couleur d'état (currentColor). */
+.badge,
+.trend-pill,
+.quality-pill,
+.settings-pill,
+.problem-severity {
+  display: inline-block;
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: normal;
+  text-transform: none;
+  padding: 0.1rem 0.6rem;
   border-radius: 999px;
-  padding: 0.1rem 0.55rem;
-  white-space: nowrap;
   border: 1px solid currentColor;
+  background: color-mix(in srgb, currentColor 10%, transparent);
+  white-space: nowrap;
 }
 
 .badge-ok,
@@ -1175,16 +1209,8 @@ pre {
   text-transform: none;
 }
 
-/* Vue Aujourd'hui : la tendance en pilule, fond teinté et contour de la couleur d'état
-   (currentColor : vert, rouge ou gris selon que l'écart est favorable). */
-.trend-pill {
-  font-size: 1rem;
-  font-weight: 800;
-  padding: 0.15rem 0.6rem;
-  border-radius: 999px;
-  border: 1px solid currentColor;
-  background: color-mix(in srgb, currentColor 10%, transparent);
-}
+/* Vue Aujourd'hui : la tendance en pastille (style commun, avec .badge), de la couleur d'état
+   (vert, rouge ou gris selon que l'écart est favorable). */
 
 .ui-card-title {
   margin: 0.25rem 0 0.5rem;
@@ -2972,13 +2998,7 @@ p[role="status"]:not(.state-message) {
 }
 
 .settings-pill {
-  font-size: 0.8rem;
-  font-weight: 700;
-  padding: 0.1rem 0.6rem;
-  border-radius: 999px;
-  border: 1px solid currentColor;
   color: var(--ok);
-  background: color-mix(in srgb, currentColor 12%, transparent);
 }
 
 .settings-pill[data-state="error"] {
@@ -3211,15 +3231,8 @@ p[role="status"]:not(.state-message) {
 }
 
 .problem-severity {
-  display: inline-block;
   margin-bottom: 0.25rem;
-  font-size: 0.75rem;
-  font-weight: 700;
-  padding: 0.05rem 0.55rem;
-  border-radius: 999px;
-  border: 1px solid currentColor;
   color: var(--text-dim);
-  background: color-mix(in srgb, currentColor 12%, transparent);
 }
 
 .problem[data-severity="blocking"] .problem-severity {
