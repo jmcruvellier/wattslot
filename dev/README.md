@@ -91,7 +91,7 @@ python -m tools.demo serve --data /tmp/wattslot-demo/fr --port 8100
 `generate --three-phase` simule la même maison raccordée en triphasé (`demo_home.ThreePhaseHouse`), pour essayer le calcul par phase sans installation réelle :
 
 - le toit en deux installations solaires, sur les phases 2 et 3, chacune avec une batterie de 5 kWh qui ne compense que sa phase ;
-- rien sur la phase 1, qui porte la moitié de la consommation de base, le chauffe-eau, le lave-linge et le lave-vaisselle ; le sèche-linge sur la phase 3 ;
+- rien sur la phase 1, qui porte la moitié de la consommation de base, le lave-linge et le lave-vaisselle ; le sèche-linge sur la phase 3 ; le chauffe-eau en triphasé, un tiers de sa puissance sur chaque phase ;
 - un compteur de soutirage et d'injection par phase, en plus de celui du total, qui additionne les phases ; puissance souscrite de 9 kVA, soit 3 kVA par phase.
 
 ```bash
@@ -99,7 +99,9 @@ python -m tools.demo generate --language fr --three-phase --data /tmp/wattslot-d
 python -m tools.demo serve --data /tmp/wattslot-demo/tri --port 8100
 ```
 
-Elle ne sert pas aux captures de la documentation.
+`generate --separate-meter` simule la même maison, dont le compteur compte chaque phase à part : le soutirage d'une phase n'est pas compensé par l'injection d'une autre.
+
+Elles ne servent pas aux captures de la documentation.
 
 ## Banc d'essai de l'assistant
 

@@ -149,9 +149,9 @@ def test_planned_starts_are_read_in_local_time() -> None:
 # --- Maison en triphasé -------------------------------------------------------------------------
 
 
-def three_phase_day() -> tuple[dict[str, float], dict[str, float]]:
+def three_phase_day(separate_meter: bool = False) -> tuple[dict[str, float], dict[str, float]]:
     """(premier, dernier) relevé d'une journée de la maison en triphasé, chauffe-eau à midi."""
-    house = h.ThreePhaseHouse()
+    house = h.ThreePhaseHouse(separate_meter=separate_meter)
     house.start(h.WATER_HEATER, datetime.combine(h.DAY, time(12), h.ZONE))
     midnight = datetime.combine(h.DAY, time(), h.ZONE)
     values = [house.step(midnight + timedelta(minutes=m)) for m in range(1441)]
@@ -168,16 +168,17 @@ def test_the_three_phase_home_balances_phase_by_phase() -> None:
     # Le compteur du total additionne les phases.
     total = delta(h.GRID_IMPORT) - delta(h.GRID_EXPORT)
     assert sum(exchanged.values()) == pytest.approx(total, abs=0.01)
-    # Phase 1 : ni solaire ni batterie, elle ne fait que soutirer (dont le chauffe-eau).
-    assert delta(h.phase_export(1)) == 0 and delta(h.phase_import(1)) > delta(
-        h.energy_entity(h.WATER_HEATER)
-    )
+    # Phase 1 : ni solaire ni batterie, elle ne fait que soutirer (dont un tiers du chauffe-eau,
+    # triphasé).
+    heater = delta(h.energy_entity(h.WATER_HEATER))
+    assert delta(h.phase_export(1)) == 0 and delta(h.phase_import(1)) > heater / 3
     # Phases 2 et 3 : la moitié du toit chacune, et une batterie qui ne compense que sa phase.
     assert delta(h.SOLAR_ENERGY) == pytest.approx(delta(h.SOLAR_2_ENERGY))
     assert delta(h.phase_export(2)) > 0 and delta(h.phase_export(3)) > 0
     consumed_2 = delta(h.SOLAR_ENERGY) + exchanged[2] + delta(h.BATTERY_DISCHARGE)
     consumed_2 -= delta(h.BATTERY_CHARGE)
-    assert 1.5 < consumed_2 < 4  # un cinquième de la consommation de base, en kWh
+    # Un cinquième de la consommation de base et un tiers du chauffe-eau, en kWh.
+    assert 1.5 + heater / 3 < consumed_2 < 4 + heater / 3
 
 
 def test_the_three_phase_home_is_read_by_the_detection() -> None:
@@ -202,10 +203,29 @@ def test_the_three_phase_home_is_read_by_the_detection() -> None:
     assert by_name["Batterie du garage"].phase is Phase.L3
     assert by_name["Batterie du garage"].capacity_kwh == h.CAPACITY_KWH
     assert by_name["Panneaux solaires du garage"].phase is Phase.L3
-    assert by_name["Chauffe-eau"].phase is Phase.L1
+    assert by_name["Chauffe-eau"].phase is Phase.ALL  # triphasé
+    assert by_name["Lave-linge"].phase is Phase.L1
+    assert home.meter_sums_phases is True
     grid = by_name["Réseau"]
     assert grid.phase is None
     assert sorted(s.phase.value for s in grid.sensors if s.phase) == [
         "PhaseL1", "PhaseL1", "PhaseL2", "PhaseL2", "PhaseL3", "PhaseL3"
     ]  # fmt: skip
     assert len([s for s in grid.sensors if s.phase is None]) == 2
+
+
+def test_a_meter_that_counts_each_phase_apart_does_not_net_them() -> None:
+    summed_first, summed_last = three_phase_day()
+    first, last = three_phase_day(separate_meter=True)
+
+    def delta(entity_id: str) -> float:
+        return last[entity_id] - first[entity_id]
+
+    # Le total est la somme de chaque phase, sans compensation entre elles.
+    imported = sum(delta(h.phase_import(n)) for n in h.PHASES)
+    exported = sum(delta(h.phase_export(n)) for n in h.PHASES)
+    assert delta(h.GRID_IMPORT) == pytest.approx(imported, abs=0.01)
+    assert delta(h.GRID_EXPORT) == pytest.approx(exported, abs=0.01)
+    # La même journée coûte plus de soutirage qu'avec un compteur qui additionne.
+    summed = summed_last[h.GRID_IMPORT] - summed_first[h.GRID_IMPORT]
+    assert delta(h.GRID_IMPORT) > summed + 1

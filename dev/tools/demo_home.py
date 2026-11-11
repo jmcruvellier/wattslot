@@ -329,8 +329,10 @@ class House:
 #
 # La même maison, raccordée en triphasé : le toit en deux installations, sur les phases 2 et 3,
 # chacune avec sa batterie, qui ne compense que sa phase ; rien sur la phase 1, qui porte la
-# moitié de la consommation de base et trois des quatre appareils. Un compteur par phase en
-# plus de celui du total, qui additionne les phases.
+# moitié de la consommation de base, le lave-linge et le lave-vaisselle. Le chauffe-eau est
+# triphasé : un tiers de sa puissance sur chaque phase. Un compteur par phase en plus de
+# celui du total, qui additionne les phases - ou, avec ``separate_meter``, qui compte chaque
+# phase à part : le soutirage de l'une n'est alors pas compensé par l'injection d'une autre.
 
 SOLAR_2_POWER = "sensor.solar_2_power"
 SOLAR_2_ENERGY = "sensor.solar_2_energy"
@@ -340,7 +342,8 @@ BATTERY_2_LEVEL = "sensor.battery_2_level"
 BATTERY_2_CAPACITY = "sensor.battery_2_capacity"
 PHASES = (1, 2, 3)
 SOLAR_PHASES = (2, 3)  # phase de chaque installation solaire et de sa batterie
-APPLIANCE_PHASE = {WATER_HEATER: 1, WASHING_MACHINE: 1, DISHWASHER: 1, DRYER: 3}
+ALL_PHASES = 0  # appareil triphasé : un tiers de sa puissance sur chaque phase
+APPLIANCE_PHASE = {WATER_HEATER: ALL_PHASES, WASHING_MACHINE: 1, DISHWASHER: 1, DRYER: 3}
 BASE_SHARES = {1: 0.5, 2: 0.2, 3: 0.3}  # part de la consommation de base sur chaque phase
 CONTRACT_KVA = 9.0  # 3 kVA par phase
 
@@ -367,6 +370,7 @@ class ThreePhaseHouse(House):
     """La maison en triphasé : mêmes appareils et même météo, bilan phase par phase."""
 
     soc_2: float = START_SOC
+    separate_meter: bool = False  # le compteur compte chaque phase à part
     phases: PhaseCounters = field(default_factory=PhaseCounters)
 
     def step(self, moment: datetime) -> dict[str, float]:
@@ -383,7 +387,9 @@ class ThreePhaseHouse(House):
         grid = dict.fromkeys(PHASES, 0.0)  # positif : soutiré sur la phase
         for phase in PHASES:
             load = base * BASE_SHARES[phase] + sum(
-                watts for a, watts in loads.items() if APPLIANCE_PHASE[a] == phase
+                watts / len(PHASES) if APPLIANCE_PHASE[a] == ALL_PHASES else watts
+                for a, watts in loads.items()
+                if APPLIANCE_PHASE[a] in (phase, ALL_PHASES)
             )
             net = (pv if phase in SOLAR_PHASES else 0.0) - load
             if phase in socs:  # la batterie de la phase ne compense que cette phase
@@ -421,8 +427,8 @@ class ThreePhaseHouse(House):
         for appliance, watts in loads.items():
             values[power_entity(appliance)] = round(watts, 1)
             values[energy_entity(appliance)] = round(c.appliances[appliance], 3)
-        # Bilan de la minute. Le compteur du total additionne les phases : l'injection de l'une
-        # compense le soutirage d'une autre.
+        # Bilan de la minute. Le compteur du total additionne les phases (l'injection de l'une
+        # compense le soutirage d'une autre), ou compte chaque phase à part.
         self.soc, self.soc_2 = socs[first], socs[second]
         kwh = hours / 1000
         c.solar += pv * kwh
@@ -434,9 +440,13 @@ class ThreePhaseHouse(House):
         for phase in PHASES:
             p.imported[phase] += max(0.0, grid[phase]) * kwh
             p.exported[phase] += max(0.0, -grid[phase]) * kwh
-        total = sum(grid.values())
-        c.grid_import += max(0.0, total) * kwh
-        c.grid_export += max(0.0, -total) * kwh
+        if self.separate_meter:
+            c.grid_import += sum(max(0.0, watts) for watts in grid.values()) * kwh
+            c.grid_export += sum(max(0.0, -watts) for watts in grid.values()) * kwh
+        else:
+            total = sum(grid.values())
+            c.grid_import += max(0.0, total) * kwh
+            c.grid_export += max(0.0, -total) * kwh
         for appliance, watts in loads.items():
             c.appliances[appliance] += watts * kwh
         return values
