@@ -16,9 +16,9 @@ WattSlot envoie ses messages par Home Assistant, vers un appareil qui a l'**appl
 
 | Notification | Quand |
 |---|---|
-| **Recommandation du jour** | Le plan du jour : équipements, batterie, piscine, bilan et avertissements. **Rythme** : à chaque calcul, seulement quand le plan change, ou une fois par jour à partir d'une heure donnée |
+| **Recommandation du jour** | Le plan du jour : équipements, batterie, piscine, bilan et avertissements. **Rythme** : à chaque calcul, seulement quand le plan change (ce qu'il y a à faire : le départ d'un équipement, une plage de fonctionnement, un avertissement ; pas ses chiffres), ou une fois par jour à partir d'une heure donnée |
 | **Planning de la semaine** | Les appareils prévus pour les jours à venir, une ligne par jour (« Samedi 17 Octobre : Lave-linge 11h–13h »). **Jours et heure d'envoi** : un ou plusieurs jours de la semaine, à partir d'une heure donnée (le dimanche à partir de 18h par défaut) |
-| **« Lancez X maintenant »** | Le cycle prévu d'un équipement démarre dans l'heure et il n'est pas encore lancé |
+| **« Lancez X maintenant »** | Le cycle prévu d'un équipement va démarrer et il n'est pas encore lancé. Envoyée au dernier calcul automatique avant le départ ; à plus de dix minutes, le message dit l'heure au lieu de « maintenant » |
 | **Écart au plan** | Un cycle prévu n'a pas démarré 30 minutes après son heure, ou la production solaire s'écarte de plus de 25 % de la prévision |
 | **Batterie pleine avant midi** | Le plan prévoit la batterie pleine avant midi : bon moment pour lancer un appareil, le surplus suivant partirait sur le réseau |
 | **Prévision de demain en baisse** | La production prévue pour demain baisse de plus de 30 % par rapport à la prévision la plus haute vue jusque-là |

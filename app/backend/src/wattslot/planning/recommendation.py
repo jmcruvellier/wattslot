@@ -10,6 +10,7 @@ un avertissement. Un plan sans explications (calculé avant le lot 3.7) donne le
 les raisons.
 """
 
+import json
 from collections.abc import Mapping, Sequence
 from typing import Any
 
@@ -135,6 +136,32 @@ def _balance(indicators: Indicators | None, lang: str, first_hour: int = 0) -> s
 
 def title(lang: str = "fr") -> str:
     return _text(lang, "title")
+
+
+def signature(state: Mapping[str, Any]) -> str:
+    """Ce que le plan demande de faire, sans ses chiffres : jour, départ de chaque équipement,
+    plages des durées à placer, reports et avertissements. La recommandation envoyée « quand le
+    plan change » se juge là-dessus : le texte entier changeait pour un centième de kWh de
+    batterie ou un autre départ possible, et repartait sans rien de neuf à faire."""
+    day = DayPlan.from_v1(dict(state))
+    warnings = [
+        [w.get("code"), (w.get("params") or {}).get("equipement")] if isinstance(w, Mapping) else w
+        for w in state.get("avertissements") or []
+    ]
+    found = {
+        "day": str(state.get("date_cible")),
+        "slots": sorted([slot.device, slot.start_min] for slot in day.slots),
+        "runtimes": sorted(
+            [
+                item.device,
+                [[s.start_hour, s.end_hour, s.mode] for s in item.segments if s.mode != "off"],
+            ]
+            for item in day.runtimes
+        ),
+        "reports": state.get("reports") or [],
+        "warnings": warnings,
+    }
+    return json.dumps(found, ensure_ascii=False, sort_keys=True, default=str)
 
 
 def recommendation(state: Mapping[str, Any], lang: str = "fr") -> str:

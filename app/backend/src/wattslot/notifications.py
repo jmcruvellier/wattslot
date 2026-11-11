@@ -38,7 +38,7 @@ from pydantic import BaseModel, Field
 from wattslot import notification_events as events
 from wattslot.home_assistant import HomeAssistantClient
 from wattslot.languages import Language
-from wattslot.planning.recommendation import recommendation, title
+from wattslot.planning.recommendation import recommendation, signature, title
 from wattslot.planning.sources import load_settings
 from wattslot.planning.store import PlanStore
 from wattslot.views.week import WeekView
@@ -156,6 +156,8 @@ def last_sent(database: sqlite3.Connection, kind: str, key: str) -> tuple[str, s
 def record(
     database: sqlite3.Connection, kind: str, key: str, now: datetime, day: str, message: str
 ) -> None:
+    """Note l'envoi ; ``message`` : le texte envoyé, ou ce qui en fait un envoi nouveau (la
+    signature du plan, pour la recommandation)."""
     with database:
         database.execute(
             "INSERT INTO notifications_sent (kind, key, day, sent_at, fingerprint) "
@@ -169,7 +171,8 @@ def record(
 def due(
     rule: RecommendationRule, previous: tuple[str, str] | None, local: datetime, message: str
 ) -> bool:
-    """La recommandation part-elle à ce calcul, selon son rythme ?"""
+    """La recommandation part-elle à ce calcul, selon son rythme ? ``message`` : ce qui est
+    comparé au dernier envoi pour « quand le plan change » (la signature du plan)."""
     if rule.cadence == "every_run":
         return True
     if rule.cadence == "when_changed":
@@ -247,16 +250,25 @@ def candidates(
     reference: float | None,
     local: datetime,
     lang: str,
+    next_run_min: int | None = None,
 ) -> list[events.Candidate]:
     if kind == "forecast_drop":
         return events.forecast_drop(tomorrow, reference, lang) if tomorrow else []
     if today is None:
         return []
     if kind == "device_now":
-        return events.device_now(today, local, lang)
+        return events.device_now(today, local, lang, next_run_min)
     if kind == "plan_gap":
         return events.plan_gap(today, local, lang)
     return events.battery_full(today, local, lang)
+
+
+def _next_run(database: sqlite3.Connection, local: datetime) -> int | None:
+    """Minutes d'ici le prochain calcul horaire ; ``None`` sans calcul automatique."""
+    planning = load_settings(database)
+    if not planning.scheduler_enabled:
+        return None
+    return (planning.run_minute - local.minute - 1) % 60 + 1
 
 
 def _quiet(rule: Rule, local: datetime) -> bool:
@@ -292,18 +304,24 @@ async def dispatch(
             raise exc
         errors.append(f"notification {kind} : {type(exc).__name__}: {exc}")
 
-    async def deliver(kind: Kind, key: str, day: str, message: str, service: str) -> None:
+    async def deliver(
+        kind: Kind, key: str, day: str, message: str, service: str, mark: str | None = None
+    ) -> None:
         await send(client, service, kind, message, lang)
-        record(database, kind, key, now, day, message)
+        record(database, kind, key, now, day, message if mark is None else mark)
         sent.append(Sent(kind=kind, service=service, message=message))
 
     rule = settings.recommendation
     service = settings.service_of("recommendation")
     if rule.enabled and service is not None and today is not None and not _quiet(rule, local):
         message = recommendation(today, lang)
-        if due(rule, last_sent(database, "recommendation", "plan"), local, message):
+        # « Quand le plan change » : jugé sur ce qu'il y a à faire, pas sur le texte entier.
+        mark = signature(today)
+        if due(rule, last_sent(database, "recommendation", "plan"), local, mark):
             try:
-                await deliver("recommendation", "plan", local.date().isoformat(), message, service)
+                await deliver(
+                    "recommendation", "plan", local.date().isoformat(), message, service, mark
+                )
             except Exception as exc:  # noqa: BLE001 — noté, les autres continuent
                 failed("recommendation", exc)
 
@@ -313,7 +331,9 @@ async def dispatch(
         if not event_rule.enabled or service is None or _quiet(event_rule, local):
             continue
         try:
-            for found in candidates(kind, today, tomorrow, reference, local, lang):
+            for found in candidates(
+                kind, today, tomorrow, reference, local, lang, _next_run(database, local)
+            ):
                 if not already_sent(database, kind, found.key, found.day):
                     await deliver(kind, found.key, found.day, found.message, service)
         except Exception as exc:  # noqa: BLE001 — noté, les autres continuent

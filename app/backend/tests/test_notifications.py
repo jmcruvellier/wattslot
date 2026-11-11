@@ -26,6 +26,7 @@ from wattslot.notifications import (
     load,
     save,
 )
+from wattslot.planning.recommendation import recommendation
 from wattslot.planning.sources import PlanningSettings, save_settings
 from wattslot.planning.store import PlanStore
 from wattslot.storage.database import open_database
@@ -268,3 +269,27 @@ def test_resource_alert_test_send_uses_a_sample(database: sqlite3.Connection) ->
     )
     assert sent.message == "[Essai] exemple"
     assert notifications.last_sent(database, "resources", "sample") is None
+
+
+def test_when_changed_ignores_figures_that_ask_nothing_new(database: sqlite3.Connection) -> None:
+    """Le texte change pour un chiffre du bilan : rien de neuf à faire, la recommandation ne
+    repart pas. Un départ déplacé, lui, la renvoie."""
+    save(database, _with(cadence="when_changed"))
+    client = FakeHA()
+    _run(client, database, _at(10))
+    assert len(client.sent) == 1
+
+    figures = _plan()
+    figures["indicateurs"]["cout_eur"] += 0.5
+    assert recommendation(figures, "fr") != recommendation(_plan(), "fr")
+    PlanStore(database).save("today", date(2026, 10, 16), figures, 1.0, False)
+    _run(client, database, _at(11))
+    assert len(client.sent) == 1  # le texte a changé, pas ce qu'il y a à faire
+
+    moved = _plan()
+    slot = next(i for i in moved["planning"] if i.get("debut_min") is not None)
+    slot["debut_min"] += 60
+    slot["heure_debut"] += 1
+    PlanStore(database).save("today", date(2026, 10, 16), moved, 1.0, False)
+    _run(client, database, _at(12))
+    assert len(client.sent) == 2

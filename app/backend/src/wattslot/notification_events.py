@@ -29,6 +29,7 @@ from wattslot.views.display import BATTERY, Context, find_item
 from wattslot.views.week import WeekView
 
 LATE_MIN = 30  # cycle prévu non lancé passé ce délai : écart au plan
+NOW_MIN = 10  # « maintenant » : le cycle part dans ce délai ; au-delà, l'heure est dite
 FULL_PERCENT = 99.5  # « pleine », aux arrondis de la simulation près
 NOON = 12
 DROP_PERCENT = 30
@@ -37,6 +38,7 @@ TEXTS: dict[str, dict[str, str]] = {
     "fr": {
         "device_now.title": "À lancer maintenant",
         "device_now": "Lancez {device} maintenant : son cycle est prévu à {time} ({kwh} kWh).",
+        "device_soon": "Lancez {device} à {time} : son cycle est prévu à cette heure ({kwh} kWh).",
         "plan_gap.title": "Écart au plan",
         "plan_gap.cycle": "{device} n'a pas démarré : son cycle était prévu à {time}.",
         "plan_gap.production": (
@@ -66,6 +68,7 @@ TEXTS: dict[str, dict[str, str]] = {
     "en": {
         "device_now.title": "Start now",
         "device_now": "Start the {device} now: its cycle is planned at {time} ({kwh} kWh).",
+        "device_soon": "Start the {device} at {time}: its cycle is planned then ({kwh} kWh).",
         "plan_gap.title": "Off plan",
         "plan_gap.cycle": "The {device} has not started: its cycle was planned at {time}.",
         "plan_gap.production": (
@@ -96,6 +99,7 @@ TEXTS: dict[str, dict[str, str]] = {
     "de": {
         "device_now.title": "Jetzt starten",
         "device_now": "Starten Sie {device} jetzt: Sein Zyklus ist um {time} geplant ({kwh} kWh).",
+        "device_soon": "Starten Sie {device} um {time}: Sein Zyklus ist dann geplant ({kwh} kWh).",
         "plan_gap.title": "Abweichung vom Plan",
         "plan_gap.cycle": "{device} hat nicht begonnen: Sein Zyklus war um {time} geplant.",
         "plan_gap.production": (
@@ -125,6 +129,7 @@ TEXTS: dict[str, dict[str, str]] = {
     "nl": {
         "device_now.title": "Nu starten",
         "device_now": "Start {device} nu: de cyclus is gepland om {time} ({kwh} kWh).",
+        "device_soon": "Start {device} om {time}: de cyclus is dan gepland ({kwh} kWh).",
         "plan_gap.title": "Afwijking van het plan",
         "plan_gap.cycle": "{device} is niet gestart: de cyclus was gepland om {time}.",
         "plan_gap.production": (
@@ -154,6 +159,7 @@ TEXTS: dict[str, dict[str, str]] = {
     "es": {
         "device_now.title": "Póngalo ahora",
         "device_now": "Ponga {device} ahora: su ciclo está previsto a las {time} ({kwh} kWh).",
+        "device_soon": "Ponga {device} a las {time}: su ciclo está previsto entonces ({kwh} kWh).",
         "plan_gap.title": "Desviación del plan",
         "plan_gap.cycle": "{device} no ha empezado: su ciclo estaba previsto a las {time}.",
         "plan_gap.production": (
@@ -183,6 +189,7 @@ TEXTS: dict[str, dict[str, str]] = {
     "it": {
         "device_now.title": "Da avviare ora",
         "device_now": "Avvii {device} ora: il suo ciclo è previsto alle {time} ({kwh} kWh).",
+        "device_soon": "Avvii {device} alle {time}: il suo ciclo è previsto allora ({kwh} kWh).",
         "plan_gap.title": "Scostamento dal piano",
         "plan_gap.cycle": "{device} non è partito: il suo ciclo era previsto alle {time}.",
         "plan_gap.production": (
@@ -241,17 +248,24 @@ def _today_view(state: Mapping[str, Any], zone: Any, lang: str) -> Any:
     return build_day(state, "today", Context(zone=zone), lang)
 
 
-def device_now(state: Mapping[str, Any], local: datetime, lang: str) -> list[Candidate]:
+def device_now(
+    state: Mapping[str, Any], local: datetime, lang: str, next_run_min: int | None = None
+) -> list[Candidate]:
+    """Cycles à lancer d'ici une heure. ``next_run_min`` : minutes d'ici le prochain calcul ; un
+    cycle qui part après lui attend ce calcul, plus proche de son heure (le calcul de 0 h 01
+    disait « maintenant » pour un cycle de 1 h, que celui de 0 h 59 annonce une minute avant).
+    Un départ à plus de ``NOW_MIN`` minutes dit son heure, pas « maintenant »."""
     view = _today_view(state, local.tzinfo, lang)
     cycles = {row.device for row in view.timeline.rows if row.kind == "cycle"}
     now_min = local.hour * 60 + local.minute
+    window = 60 if next_run_min is None else min(60, next_run_min)
     return [
         Candidate(
             key=f"{status.device}@{status.planned_start_min}",
             day=_day(state),
             message=text(
                 lang,
-                "device_now",
+                "device_now" if status.planned_start_min - now_min <= NOW_MIN else "device_soon",
                 device=status.device,
                 time=clock(status.planned_start_min, lang),
                 kwh=number(status.planned_kwh, lang, 1),
@@ -260,7 +274,7 @@ def device_now(state: Mapping[str, Any], local: datetime, lang: str) -> list[Can
         for status in view.timeline.statuses
         if status.device in cycles
         and status.status == "planned"
-        and now_min < status.planned_start_min <= now_min + 60
+        and now_min < status.planned_start_min <= now_min + window
     ]
 
 

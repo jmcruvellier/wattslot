@@ -66,16 +66,22 @@ def _full_at(state: dict[str, Any], hour: int) -> dict[str, Any]:
 
 
 def test_device_now_only_for_a_cycle_starting_within_the_hour() -> None:
-    found = events.device_now(_today(), _local(10, 30), "fr")
+    found = events.device_now(_today(), _local(10, 59), "fr")
     assert [c.message for c in found] == [
         "Lancez Lave-linge maintenant : son cycle est prévu à 11h00 ("
         + found[0].message.split("(")[1]
     ]
+    # À plus de dix minutes du départ, le message dit l'heure, pas « maintenant ».
+    early = events.device_now(_today(), _local(10, 30), "fr")[0].message
+    assert early.startswith("Lancez Lave-linge à 11h00 : son cycle est prévu à cette heure")
+    # Un calcul horaire aura lieu avant le départ (dans 29 minutes) : il l'annoncera.
+    assert events.device_now(_today(), _local(10, 30), "fr", next_run_min=29) == []
+    assert len(events.device_now(_today(), _local(10, 59), "fr", next_run_min=60)) == 1
     assert found[0].key == "Lave-linge@660" and found[0].day == "2025-10-15"
     assert events.device_now(_today(), _local(9, 59), "fr") == []  # plus d'une heure avant
     # À midi : le sèche-linge (12 h 10), pas la filtration de 13 h, qui n'est pas un cycle.
     assert [c.key for c in events.device_now(_today(), _local(12, 0), "fr")] == ["Sèche-linge@730"]
-    english = events.device_now(_today(), _local(10, 30), "en")[0].message
+    english = events.device_now(_today(), _local(10, 59), "en")[0].message
     assert english.startswith("Start the Lave-linge now: its cycle is planned at 11:00")
 
 
@@ -162,8 +168,10 @@ def test_each_notification_is_sent_once_per_key_and_day(database: sqlite3.Connec
     _save_plan(database, "today", _today())
     _enable(database, device_now=Rule(enabled=True))
     client = FakeHA()
-    _run(client, database, _local(10, 30))
-    _run(client, database, _local(10, 45))
+    _run(client, database, _local(10, 1))  # le calcul de 10 h 59 est plus proche du départ
+    assert client.sent == []
+    _run(client, database, _local(10, 59))
+    _run(client, database, _local(10, 59))  # déjà envoyée : pas deux fois
     assert len(client.sent) == 1
     assert client.sent[0]["service_data"]["title"] == "À lancer maintenant"
     _run(client, database, _local(12, 0))  # le sèche-linge, une autre clé
@@ -227,7 +235,7 @@ def test_a_failing_notification_does_not_stop_the_others(database: sqlite3.Conne
 
     client = Flaky()
     errors: list[str] = []
-    asyncio.run(dispatch(client, database, _local(10, 30).astimezone(UTC), PARIS, errors))  # type: ignore[arg-type]
+    asyncio.run(dispatch(client, database, _local(10, 59).astimezone(UTC), PARIS, errors))  # type: ignore[arg-type]
     assert errors == ["notification device_now : RuntimeError: service inconnu"]
     assert [c["service_data"]["title"] for c in client.sent] == ["Batterie pleine avant midi"]
 
@@ -239,6 +247,6 @@ def test_test_send_uses_the_current_situation_or_an_example(database: sqlite3.Co
     sent = asyncio.run(send_test(client, database, "battery_full", _local(9), PARIS))  # type: ignore[arg-type]
     assert sent.message.startswith("[Essai] Batterie pleine prévue vers 9h00")
     _save_plan(database, "today", _today())
-    sent = asyncio.run(send_test(client, database, "device_now", _local(10, 30), PARIS))  # type: ignore[arg-type]
+    sent = asyncio.run(send_test(client, database, "device_now", _local(10, 59), PARIS))  # type: ignore[arg-type]
     assert sent.message.startswith("[Essai] Lancez Lave-linge maintenant")
     assert client.sent[-1]["service_data"]["title"] == "À lancer maintenant"
