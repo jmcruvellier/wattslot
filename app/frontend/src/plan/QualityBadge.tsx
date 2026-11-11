@@ -65,7 +65,7 @@ export function QualityBadge({ quality }: { quality: ForecastQuality }) {
     <>
       <button
         type="button"
-        className={`trend trend-pill quality-pill ${TONE[quality.level]}`}
+        className={`quality-pill ${TONE[quality.level]}`}
         aria-haspopup="dialog"
         aria-label={t("plan.quality.open", { badge })}
         onClick={() => setOpen(true)}
