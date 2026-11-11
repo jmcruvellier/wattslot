@@ -225,6 +225,12 @@ def explain(
                 reasons = [Reason(code="full_charge_first")] + [
                     r for r in reasons if r.code != "objective"
                 ]
+            elif better and starts[task.name] == task.announced_min:
+                # Un autre départ noterait un peu mieux : l'heure déjà annoncée est gardée,
+                # le gain ne passe pas la marge du moteur.
+                reasons = [Reason(code="announced_kept")] + [
+                    r for r in reasons if r.code != "objective"
+                ]
             explanation = Explanation(
                 reasons=reasons,
                 alternative=alternatives[0] if alternatives else None,

@@ -170,6 +170,10 @@ class PlanningInput:
     # Départs choisis par l'utilisateur pour aujourd'hui (``planning.choices``) : appareil →
     # minutes depuis minuit, imposés au calcul.
     chosen_starts: Mapping[str, int] = field(default_factory=dict)
+    # Départs annoncés par le plan précédent de la même journée (celui du jour, ou celui de
+    # demain calculé la veille) : appareil → minutes depuis minuit. Le calcul ne les quitte
+    # que pour un gain net (``engine.KEEP_MARGIN``).
+    announced_starts: Mapping[str, int] = field(default_factory=dict)
     cycle_profiles: Mapping[str, CycleProfile] = field(default_factory=dict)
     daily_profiles: Mapping[str, DailyProfile | None] = field(default_factory=dict)
     profile_status: Mapping[str, str] = field(default_factory=dict)  # pour les avertissements

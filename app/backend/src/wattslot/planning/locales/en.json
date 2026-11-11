@@ -37,6 +37,7 @@
   "recommendation.appliance": "- {device}: {start}-{end} ({energy} kWh).",
   "reason.chosen": "Start chosen by you.",
   "reason.full_charge_first": "The battery's full charge, due today, comes first: the solar surplus goes to it.",
+  "reason.announced_kept": "Time already announced, kept: another start would not save enough to change it.",
   "assistant.request": "Run “{device}” at the best time: shall I file the request?",
   "assistant.request_by": "Run “{device}” at the best time, by {date} at the latest: shall I file the request?",
   "assistant.not_planned": "Not planned that day: nothing was requested and nothing is due.",
