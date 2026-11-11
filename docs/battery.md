@@ -35,7 +35,7 @@ In a **three-phase** home (see [Your home and its rules](your-home.md#three-phas
 
 Batteries on the same phase are seen as one, with their own content; the batteries that offset the total come after them. Otherwise, all batteries are calculated on the total of the home, as before.
 
-The curves and the **Today** screen show all your batteries together, as the plan calculated them phase by phase. Beyond today, the plan only knows their total content and shares it between them according to their capacity.
+The **appliance schedule** then has one line per phase ("Battery phase 2", "Battery phase 3"), each with its own planned and measured charges and discharges, and a "Battery (total)" line for the batteries that offset the total. The curves still show all your batteries together. Beyond today, the plan only knows their total content and shares it between them according to their capacity.
 
 ## What you see
 

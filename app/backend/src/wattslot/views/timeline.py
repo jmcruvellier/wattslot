@@ -36,6 +36,9 @@ class TimelineRow(BaseModel):
     kind: Literal["battery", "cycle", "runtime"]
     planned: list[Bar]
     actual: list[Bar]
+    # Batteries d'une même phase (calcul par phase) : 1, 2 ou 3 ; 0 : celles qui compensent
+    # le total. ``None`` : la batterie de la maison, ou un autre équipement.
+    phase: int | None = None
 
 
 class DeviceStatus(BaseModel):
@@ -282,22 +285,45 @@ def build_timeline(
     measured = dict((actual or {}).get("equipements_reels_horaire") or {})
     rows: list[TimelineRow] = []
     battery = find_item(planning, BATTERY)
-    if battery is not None:
-        planned_bars = [
+
+    def battery_bars(movements: Sequence[Mapping[str, Any]]) -> list[Bar]:
+        return [
             Bar(
                 start_hour=b["debut"],
                 end_hour=b["fin"],
                 energy_kwh=round(b["energie_kwh"], 3),
                 action="charge" if b["action"] == "charge" else "discharge",
             )
-            for b in battery_blocks(battery.get("mouvements", []))
+            for b in battery_blocks(movements)
             if b["energie_kwh"] >= MIN_BATTERY_BAR_KWH
         ]
+
+    groups = (battery or {}).get("groupes") or []
+    if battery is not None and groups:
+        # Calcul par phase : une ligne par groupe de batteries, avec sa propre prévision et ses
+        # propres mesures, à la place de la ligne de toutes les batteries ensemble.
+        measured_by_phase = {
+            int(phase): segments
+            for phase, segments in (
+                (actual or {}).get("batterie_reelle_segments_par_phase") or {}
+            ).items()
+        }
+        for group in sorted(groups, key=lambda g: g["phase"] or 9):
+            rows.append(
+                TimelineRow(
+                    device=f"{BATTERY} {group['phase']}",
+                    kind="battery",
+                    planned=battery_bars(group.get("mouvements", [])),
+                    actual=_actual_bars(measured_by_phase.get(group["phase"]) or [], context),
+                    phase=group["phase"],
+                )
+            )
+    elif battery is not None:
         rows.append(
             TimelineRow(
                 device=BATTERY,
                 kind="battery",
-                planned=planned_bars,
+                planned=battery_bars(battery.get("mouvements", [])),
                 actual=_actual_bars((actual or {}).get("batterie_reelle_segments") or [], context),
             )
         )

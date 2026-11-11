@@ -42,9 +42,13 @@ def test_readings_of_several_sensors_are_combined() -> None:
     assert combined([small]) == [(at(0), 50.0), (at(2), 60.0)]
     # Rien avant que les deux aient une valeur ; ensuite la moyenne pondérée par la capacité.
     assert combined([small, large], [2.0, 6.0]) == [(at(1), 87.5), (at(2), 90.0)]
-    # Sans poids : la somme, pour des compteurs.
-    assert combined([small, large]) == [(at(1), 150.0), (at(2), 160.0)]
-    assert combined([]) == []
+    # Sans poids, pour des compteurs : la somme de ce que chacun a compté depuis son premier
+    # relevé ; l'arrivée du second ne fait pas sauter le total.
+    assert combined([small, large]) == [(at(0), 0.0), (at(1), 0.0), (at(2), 10.0)]
+    # Un capteur sans relevé est ignoré, avec ou sans poids.
+    assert combined([small, []]) == [(at(0), 50.0), (at(2), 60.0)]
+    assert combined([[], large], [2.0, 6.0]) == large
+    assert combined([]) == [] and combined([[], []]) == []
 
 
 def test_the_measured_level_of_the_day_weighs_each_battery(tmp_path: Path) -> None:

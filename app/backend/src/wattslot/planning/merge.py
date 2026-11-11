@@ -100,8 +100,24 @@ def _merge_battery(
     soc = merge_hourly(old.get("soc_horaire_kwh", {}), new.get("soc_horaire_kwh", {}), first_hour)
     charged = sum(m["energie_kwh"] for m in movements if m["action"] == "charge")
     discharged = sum(m["energie_kwh"] for m in movements if m["action"] == "decharge")
+    # Calcul par phase : chaque groupe de batteries fusionné de même, quand le nouveau plan
+    # les distingue encore.
+    before = {group["phase"]: group for group in old.get("groupes") or []}
+    groups = [
+        {
+            **group,
+            "mouvements": [
+                m
+                for m in before.get(group["phase"], {}).get("mouvements", [])
+                if m["heure"] < first_hour
+            ]
+            + [m for m in group.get("mouvements", []) if m["heure"] >= first_hour],
+        }
+        for group in new.get("groupes") or []
+    ]
     return {
         **new,
+        **({"groupes": groups} if groups else {}),
         "mouvements": movements,
         "soc_horaire_kwh": soc,
         "energie_chargee_kwh": round(charged, 3),

@@ -313,7 +313,9 @@
       "cancel_failed": "La cancelación no se ha completado.",
       "cancelled": "Cancelados hoy:",
       "restore": "Restablecer {device}",
-      "restore_failed": "La restauración no se ha completado."
+      "restore_failed": "La restauración no se ha completado.",
+      "battery_phase": "Batería fase {number}",
+      "battery_total": "Batería (total)"
     },
     "indicators": {
       "title": "Indicadores del plan",
@@ -385,7 +387,9 @@
       "battery_max": "Batería al máximo, {pct} %",
       "until": "Hasta las {time}",
       "empty": "Nada que poner ese día.",
-      "now": "Ahora"
+      "now": "Ahora",
+      "battery_charge_of": "{battery}: carga",
+      "battery_discharge_of": "{battery}: toma el relevo"
     },
     "discarded": "Medida imposible descartada a las {hours}: probablemente un corte de un sensor.",
     "discarded_link": "Ver los datos",

@@ -16,6 +16,7 @@ import { useI18n } from "../i18n/I18nProvider";
 import { minuteOfDay } from "../i18n/homeTime";
 import { hour, kwh } from "./format";
 import { freeSpan } from "./timelineSpan";
+import { rowLabel } from "./batteryLabel";
 import type { Bar, TimelineRow, Timeline } from "./types";
 import Icon from "../ui/Icon";
 import Button from "../ui/Button";
@@ -186,8 +187,8 @@ export default function TimelineCard({
       ) : (
         <div className="tl">
           {timeline.rows.map((row, index) => (
-            <div key={row.device} className="tl-row" aria-label={row.device}>
-              <span className="tl-label">{row.device === "Batterie" ? t("plan.timeline.battery") : row.device}</span>
+            <div key={row.device} className="tl-row" aria-label={rowLabel(row, t)}>
+              <span className="tl-label">{rowLabel(row, t)}</span>
               <div className="tl-track" ref={index === 0 ? measureTrack : undefined}>
                 {bars(row, row.planned, false)}
                 {bars(row, row.actual, true)}

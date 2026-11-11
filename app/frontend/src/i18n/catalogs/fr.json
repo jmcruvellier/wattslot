@@ -313,7 +313,9 @@
       "cancel_failed": "L'annulation n'a pas abouti.",
       "cancelled": "Annulés aujourd'hui :",
       "restore": "Rétablir {device}",
-      "restore_failed": "Le rétablissement n'a pas abouti."
+      "restore_failed": "Le rétablissement n'a pas abouti.",
+      "battery_phase": "Batterie phase {number}",
+      "battery_total": "Batterie (total)"
     },
     "indicators": {
       "title": "Indicateurs du plan",
@@ -385,7 +387,9 @@
       "battery_max": "Batterie au plus haut, {pct} %",
       "until": "Jusqu'à {time}",
       "empty": "Rien à lancer ce jour-là.",
-      "now": "Maintenant"
+      "now": "Maintenant",
+      "battery_charge_of": "{battery} : charge",
+      "battery_discharge_of": "{battery} : prend le relais"
     },
     "discarded": "Mesure impossible écartée à {hours} : sans doute une coupure d'un capteur.",
     "discarded_link": "Voir les données",

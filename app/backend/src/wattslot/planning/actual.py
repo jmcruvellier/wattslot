@@ -109,31 +109,46 @@ def soc_max(points: Sequence[Observation], zone: ZoneInfo) -> dict[str, Any] | N
 def combined(
     series: Sequence[Sequence[Observation]], weights: Sequence[float] | None = None
 ) -> list[Observation]:
-    """Relevés de plusieurs capteurs réunis en un seul : à chaque relevé de l'un, la somme des
-    dernières valeurs de tous, ou leur moyenne pondérée par ``weights`` (état de charge de
-    plusieurs batteries, pondéré par leur capacité). Rien tant que l'un d'eux n'a pas encore de
-    valeur ; un seul capteur : ses relevés, triés."""
-    if len(series) == 1:
-        return sorted(series[0], key=lambda o: o[0])
-    if weights is None or sum(weights) <= 0:
-        shares = [1.0 if weights is None else 1 / len(series)] * len(series)
-    else:
-        shares = [weight / sum(weights) for weight in weights]
+    """Relevés de plusieurs capteurs réunis en un seul, à chaque relevé de l'un d'eux. Un capteur
+    sans relevé est ignoré ; un seul capteur : ses relevés, triés.
+
+    - Avec ``weights`` (état de charge de plusieurs batteries, pondéré par leur capacité) : la
+      moyenne pondérée des dernières valeurs de tous ; rien tant que l'un d'eux n'a pas encore
+      de valeur.
+    - Sans (compteurs d'énergie) : la somme de ce que chacun a compté depuis son premier relevé.
+      Un compteur muet jusque-là ne fait donc ni attendre les autres, ni sauter le total quand
+      il parle enfin."""
+    kept = [index for index, points in enumerate(series) if points]
+    if len(kept) <= 1:
+        return sorted(series[kept[0]], key=lambda o: o[0]) if kept else []
     events = sorted(
-        ((moment, index, value) for index, points in enumerate(series) for moment, value in points),
+        ((moment, index, value) for index in kept for moment, value in series[index]),
         key=lambda event: event[0],
     )
     latest: dict[int, float] = {}
     found: list[Observation] = []
-    for moment, index, value in events:
-        latest[index] = value
-        if len(latest) < len(series):
-            continue
-        total = sum(shares[i] * v for i, v in latest.items())
+
+    def add(moment: datetime, total: float) -> None:
         if found and found[-1][0] == moment:
             found[-1] = (moment, total)
         else:
             found.append((moment, total))
+
+    if weights is None:
+        first: dict[int, float] = {}
+        for moment, index, value in events:
+            first.setdefault(index, value)
+            latest[index] = value
+            add(moment, sum(v - first[i] for i, v in latest.items()))
+        return found
+    known = [weights[index] for index in kept]
+    if sum(known) <= 0:
+        known = [1.0] * len(kept)
+    shares = {index: weight / sum(known) for index, weight in zip(kept, known, strict=True)}
+    for moment, index, value in events:
+        latest[index] = value
+        if len(latest) == len(kept):
+            add(moment, sum(shares[i] * v for i, v in latest.items()))
     return found
 
 
@@ -484,8 +499,40 @@ def actual_day(
             for hour, kwh in (measured or {}).items():
                 phase[hour] = phase.get(hour, 0.0) + kwh
 
+    # Batteries qui ne compensent que leur phase : charges et décharges réelles de chaque
+    # groupe (phase 1 à 3 ; 0 : celles qui compensent le total), pour la frise par phase.
+    lines: dict[int, dict[Role, list[list[Observation]]]] = {}
+    for device in model.devices:
+        if device.kind is not DeviceKind.BATTERY:
+            continue
+        line = config.battery_line(model, configuration, device)
+        group = lines.setdefault(LINES.index(line) + 1 if line is not None else 0, {})
+        for sensor in device.sensors:
+            if sensor.role in (Role.ENERGY_CHARGED, Role.ENERGY_DISCHARGED):
+                group.setdefault(sensor.role, []).append(
+                    by_sensor.get(sensor_iri(device.key, sensor.entity_id), [])
+                )
+
+    def group_counter(group: dict[Role, list[list[Observation]]], role: Role) -> list[Observation]:
+        before, today = together(combined(group.get(role, [])))
+        return before[-1:] + today
+
+    battery_lines: dict[str, Any] = {}
+    if any(phase for phase in lines):  # au moins une batterie sur une phase
+        battery_lines["batterie_reelle_segments_par_phase"] = {
+            phase: battery_segments(
+                group_counter(group, Role.ENERGY_CHARGED),
+                group_counter(group, Role.ENERGY_DISCHARGED),
+                midnight,
+                until,
+                zone,
+            )
+            for phase, group in sorted(lines.items())
+        }
+
     return {
         **by_phase,
+        **battery_lines,
         "soc_pct_reel": hourly_mean(soc_today, until, zone),
         "soc_pct_fin_heure": soc_end_of_hour(soc_today, until, zone),
         "soc_max_reel": soc_max(soc_today, zone),

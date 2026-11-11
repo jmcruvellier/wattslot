@@ -313,7 +313,9 @@
       "cancel_failed": "Het annuleren is mislukt.",
       "cancelled": "Vandaag geannuleerd:",
       "restore": "{device} herstellen",
-      "restore_failed": "Het herstellen is mislukt."
+      "restore_failed": "Het herstellen is mislukt.",
+      "battery_phase": "Batterij fase {number}",
+      "battery_total": "Batterij (totaal)"
     },
     "indicators": {
       "title": "Kengetallen van het plan",
@@ -385,7 +387,9 @@
       "battery_max": "Batterij op het hoogst, {pct}%",
       "until": "Tot {time}",
       "empty": "Niets te starten die dag.",
-      "now": "Nu"
+      "now": "Nu",
+      "battery_charge_of": "{battery}: laadt",
+      "battery_discharge_of": "{battery}: neemt het over"
     },
     "discarded": "Onmogelijke meting weggelaten om {hours}: waarschijnlijk een sensoronderbreking.",
     "discarded_link": "Gegevens bekijken",

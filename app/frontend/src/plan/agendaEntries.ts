@@ -8,7 +8,8 @@ import type { DayView } from "./types";
 export type AgendaEntry =
   | { kind: "cycle"; minute: number; end: number; device: string; explanation: string | null }
   | { kind: "runtime"; minute: number; end: number; device: string; mode: string | null }
-  | { kind: "battery_charge" | "battery_discharge"; minute: number; end: number }
+  // `phase` : les batteries d'une phase (calcul par phase), 0 : celles qui compensent le total.
+  | { kind: "battery_charge" | "battery_discharge"; minute: number; end: number; phase?: number | null }
   | { kind: "battery_max"; minute: number; percent: number };
 
 const toMinute = (hour: number) => Math.round(hour * 60);
@@ -22,7 +23,7 @@ export function agenda(view: DayView): AgendaEntry[] {
       const minute = toMinute(bar.start_hour);
       const end = toMinute(bar.end_hour);
       if (row.kind === "battery") {
-        if (bar.action) entries.push({ kind: `battery_${bar.action}`, minute, end });
+        if (bar.action) entries.push({ kind: `battery_${bar.action}`, minute, end, phase: row.phase ?? null });
       } else if (row.kind === "cycle") {
         entries.push({ kind: "cycle", minute, end, device: row.device, explanation: explanations.get(row.device) ?? null });
       } else {
