@@ -231,6 +231,10 @@ class Problem:
     # compense le total, comme en monophasé ; ``battery`` reste l'ensemble des batteries.
     line_batteries: Mapping[Phase, BatteryModel] = field(default_factory=dict)
     shared_battery: BatteryModel | None = None
+    # Compteur qui compte chaque phase à part (triphasé, consommation de base par phase
+    # mesurée) : le soutirage d'une phase n'est pas compensé par l'injection d'une autre.
+    # Le coût porte alors sur les échanges de chaque phase, plus sur leur somme.
+    separate_phases: bool = False
 
     @property
     def total_battery(self) -> BatteryModel:
@@ -712,6 +716,7 @@ def from_input(data: PlanningInput, reference: Reference = REFERENCE) -> Problem
         return battery.active_from_hour, battery.active_to_hour
 
     by_phase = data.three_phase and bool(data.line_batteries)
+    measured = all(len(data.base_by_phase.get(line, {})) == 24 for line in LINES)
     return Problem(
         day=day,
         first_hour=first_hour,
@@ -729,6 +734,7 @@ def from_input(data: PlanningInput, reference: Reference = REFERENCE) -> Problem
         shared_battery=model_of(data.shared_battery, own_range(data.shared_battery))
         if by_phase and data.shared_battery is not None
         else None,
+        separate_phases=data.three_phase and not data.meter_sums_phases and measured,
         runtimes=runtimes,
         needs=_needs(data, warnings),
         constraints={name: tuple(found) for name, found in data.constraints.items() if found},

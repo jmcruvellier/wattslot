@@ -276,7 +276,7 @@ def solve(problem: Problem, objective: Goal = Objective.COST, time_limit_s: floa
     # Suivi pour la limite de puissance par phase, et pour les batteries qui ne compensent
     # que leur phase.
     limited = problem.phase_limit_kwh is not None
-    tracked = limited or bool(problem.line_batteries)
+    tracked = limited or bool(problem.line_batteries) or problem.separate_phases
     phase_load: dict[tuple[Phase, int], Any] = {
         (line, hour): problem.fixed_by_phase.get(line, {}).get(hour, 0.0)
         + problem.base_by_phase.get(line, {}).get(hour % 24, 0.0)
@@ -439,6 +439,9 @@ def solve(problem: Problem, objective: Goal = Objective.COST, time_limit_s: floa
         line: group.stored_kwh for line, group in problem.line_batteries.items()
     }
     imports, exports = {}, {}
+    # Compteur qui compte chaque phase à part : soutirage et injection de chaque phase.
+    bought: dict[int, list[Any]] = defaultdict(list)
+    sold: dict[int, list[Any]] = defaultdict(list)
     over_contract: list[Any] = []  # soutirage au-delà de la puissance souscrite (lot 7.3)
     net = _extended(problem.net_kwh, night.net_kwh if night else None)
     for hour in hours + later:
@@ -449,11 +452,18 @@ def solve(problem: Problem, objective: Goal = Objective.COST, time_limit_s: floa
             over_contract.append(over)
         balance = net.get(hour, 0.0) - load[hour]
         clock = hour % 24  # heure du lendemain dans le prolongement
+        # Échange de chaque phase, avant ce qui n'est sur aucune (ci-dessous).
+        line_residual: dict[Phase, Any] = {
+            line: problem.production_shares.get(line, 0.0) * max(0.0, production.get(hour, 0.0))
+            - phase_load[line, hour]
+            for line in (LINES if tracked else ())
+        }
         for line, group in problem.line_batteries.items():
             if not active(group, clock):
                 continue
             drawn, injected = var(), var()  # échanges de la phase, après sa batterie
             solar = problem.production_shares.get(line, 0.0) * max(0.0, production.get(hour, 0.0))
+            line_residual[line] = injected - drawn
             line_stored[line], exchanged = battery_hour(
                 group, line_stored[line], hour, drawn, injected, group.floor_at(clock)
             )
@@ -479,6 +489,17 @@ def solve(problem: Problem, objective: Goal = Objective.COST, time_limit_s: floa
             h.addConstr(exports[hour] <= BIG_KWH * exporting)
             h.addConstr(imports[hour] <= BIG_KWH * (1 - exporting))
         h.addConstr(balance == exports[hour] - imports[hour])
+        if problem.separate_phases:
+            # Ce qui n'est sur aucune phase (équipement ou production sans phase, batterie
+            # qui compense le total) : réparti à parts égales sur les trois.
+            rest = exports[hour] - imports[hour] - sum(line_residual.values())
+            for line in LINES:
+                drawn, injected, selling = var(), var(), var(0, 1, True)
+                h.addConstr(line_residual[line] + (1 / 3) * rest == injected - drawn)
+                h.addConstr(injected <= BIG_KWH * selling)
+                h.addConstr(drawn <= BIG_KWH * (1 - selling))
+                bought[hour].append(drawn)
+                sold[hour].append(injected)
     full_day = var(0, 1, True)
     h.addConstr(full_day <= (sum(full_hours) if full_hours else 0))
 
@@ -490,7 +511,10 @@ def solve(problem: Problem, objective: Goal = Objective.COST, time_limit_s: floa
     bonus = FULL_PRIORITY_BONUS if battery.full_priority else FULL_BONUS
     h.minimize(
         sum(
-            weight[hour] * imports[hour] + export_cost[hour] * exports[hour]
+            # Compteur qui compte chaque phase à part : le coût porte sur chacune.
+            weight[hour] * sum(bought[hour]) + export_cost[hour] * sum(sold[hour])
+            if problem.separate_phases
+            else weight[hour] * imports[hour] + export_cost[hour] * exports[hour]
             for hour in hours + later
         )
         - stored_value * (soc_previous + sum(line_stored.values()))
@@ -616,15 +640,17 @@ def simulate_plan(problem: Problem, plan: Plan) -> BatteryRun:
     """Batterie simulée sur le plan. Avec des batteries qui ne compensent que leur phase :
     chaque groupe sur le bilan de sa phase (production de la phase, moins sa consommation de
     base et ses équipements), puis celle qui compense le total sur ce qui reste ; le résultat
-    réunit les groupes (``BatteryRun.lines`` garde chacun)."""
+    réunit les groupes (``BatteryRun.lines`` garde chacun). Avec un compteur qui compte chaque
+    phase à part : l'échange de chaque phase (``BatteryRun.phase_residual_kwh``)."""
     load = load_kwh(problem, plan)
     net = {hour: problem.net_kwh.get(hour, 0.0) - load[hour] for hour in problem.hours}
-    if not problem.line_batteries:
+    if not problem.line_batteries and not problem.separate_phases:
         return _simulate(problem.battery, net, problem.first_hour)
     drawn, _ = _phase_drawn(problem, plan)
     lines: dict[Phase, BatteryRun] = {}
+    line_residual: dict[Phase, Mapping[int, float]] = {}
     exchanged: dict[int, float] = defaultdict(float)  # côté maison, positif : charge
-    for line, group in problem.line_batteries.items():
+    for line in LINES:
         share = problem.production_shares.get(line, 0.0)
         line_net = {
             hour: share * max(0.0, problem.production_kwh.get(hour, 0.0))
@@ -632,16 +658,34 @@ def simulate_plan(problem: Problem, plan: Plan) -> BatteryRun:
             - problem.base_by_phase.get(line, {}).get(hour, 0.0)
             for hour in problem.hours
         }
+        line_residual[line] = line_net
+        group = problem.line_batteries.get(line)
+        if group is None:
+            continue
         lines[line] = _simulate(group, line_net, problem.first_hour)
+        line_residual[line] = lines[line].residual_kwh
         for hour in problem.hours:
             taken = line_net[hour] - lines[line].residual_kwh[hour]
             exchanged[hour] += taken
             net[hour] -= taken
     shared = _simulate(problem.total_battery, net, problem.first_hour)
+    # Ce qui n'est sur aucune phase (équipement ou production sans phase, batterie qui compense
+    # le total) : réparti à parts égales sur les trois, comme dans le moteur.
+    by_phase = {
+        line: {
+            hour: line_residual[line][hour]
+            + (shared.residual_kwh[hour] - sum(line_residual[n][hour] for n in LINES)) / 3
+            for hour in problem.hours
+        }
+        for line in (LINES if problem.separate_phases else ())
+    }
+    if not lines:
+        return replace(shared, phase_residual_kwh=by_phase)
     for hour in problem.hours:
         exchanged[hour] += net[hour] - shared.residual_kwh[hour]
     runs = [shared, *lines.values()]
     return BatteryRun(
+        phase_residual_kwh=by_phase,
         # Une charge et une décharge de la même heure, sur deux phases, se compensent ici.
         movements=[
             Movement(hour, "charge" if kwh > 0 else "decharge", round(abs(kwh), 3))
@@ -970,9 +1014,13 @@ def _over_contract(problem: Problem, run: BatteryRun) -> list[int]:
 
 def indicators(problem: Problem, run: BatteryRun) -> Indicators:
     """Indicateurs du plan (lot 3.6) sur les heures calculées : échanges avec le réseau après
-    la batterie simulée, au tarif de la maison."""
-    imported = {h: max(0.0, -kwh) for h, kwh in run.residual_kwh.items()}
-    exported = {h: max(0.0, kwh) for h, kwh in run.residual_kwh.items()}
+    la batterie simulée, au tarif de la maison. Avec un compteur qui compte chaque phase à
+    part, soutirage et injection sont ceux de chaque phase, additionnés : ce que le compteur
+    facture."""
+    # Sans compteur par phase : un seul échange, celui de la maison.
+    counted = list(run.phase_residual_kwh.values()) or [run.residual_kwh]
+    imported = {h: sum(max(0.0, -phase[h]) for phase in counted) for h in run.residual_kwh}
+    exported = {h: sum(max(0.0, phase[h]) for phase in counted) for h in run.residual_kwh}
     price, export_price = problem.prices_eur_kwh, problem.export_prices_eur_kwh
     produced = sum(max(0.0, problem.production_kwh.get(h, 0.0)) for h in problem.hours)
     capacity = problem.battery.capacity_kwh

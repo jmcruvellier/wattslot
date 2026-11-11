@@ -202,6 +202,8 @@ class PlanningInput:
     # Maison en triphasé (limite de puissance par phase) : phase de chaque élément du plan, par
     # nom (tâche, besoin, durée) ; part de la production branchée sur chaque phase.
     three_phase: bool = False
+    # Le compteur additionne les trois phases ; sinon chaque phase est comptée à part.
+    meter_sums_phases: bool = True
     phases: Mapping[str, Phase] = field(default_factory=dict)
     production_shares: Mapping[Phase, float] = field(default_factory=dict)
     # Consommation de base de chaque phase, par heure (kWh) ; vide : pas mesurée.
