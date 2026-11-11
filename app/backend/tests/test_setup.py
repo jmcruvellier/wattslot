@@ -1,6 +1,7 @@
 """Mise en route (lot 4.1) : étapes vers un premier plan, calculées par l'application."""
 
 import asyncio
+from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
@@ -11,12 +12,13 @@ import pytest
 from fastapi.testclient import TestClient
 
 from tests.planning.test_open_meteo import response
+from tests.test_detection_phases import _three_phase_snapshot
 from tests.test_health import _settings
 from wattslot import configuration, home_model, notifications, profiles
 from wattslot.aggregation import Aggregator
 from wattslot.configuration import Automation, Behavior, Configuration, DeviceSettings
-from wattslot.detection import DeviceKind
-from wattslot.home_assistant import ConnectionState, HomeAssistantClient
+from wattslot.detection import DeviceKind, Role
+from wattslot.home_assistant import ConnectionState, HomeAssistantClient, HomeSnapshot
 from wattslot.main import create_app
 from wattslot.notifications import NotificationSettings, Rule
 from wattslot.planning import open_meteo
@@ -41,7 +43,7 @@ class Client:
     def __init__(self, dashboard: bool = True, forecast: bool = True) -> None:
         sources = [{"type": "solar", "stat_energy_from": "sensor.pv"}] if dashboard else []
         self.status = SimpleNamespace(state=ConnectionState.CONNECTED, error=None, error_code=None)
-        self.snapshot = SimpleNamespace(energy_preferences={"energy_sources": sources})
+        self.snapshot = HomeSnapshot(energy_preferences={"energy_sources": sources})
         self.forecast = forecast
 
     async def command(self, command: str, **_: Any) -> Any:
@@ -85,6 +87,7 @@ def test_a_fresh_install_says_what_is_missing(tmp_path: Path) -> None:
         "template": "blocked",
         "tariff": "todo",
         "battery": "not_applicable",
+        "phases": "not_applicable",
         "notification": "todo",
     }
     assert [s.key for s in found.steps if s.required][:2] == ["connection", "energy_dashboard"]
@@ -115,7 +118,10 @@ def test_the_steps_follow_the_home(tmp_path: Path) -> None:
     save_settings(database, PlanningSettings(notify_service="notify.mobile_app_phone"))
     ready = run(Client(), graph, tmp_path)
 
-    assert all(s.state is StepState.DONE for s in ready.steps) and ready.ready
+    # Tout est fait, sauf l'étape du triphasé, sans objet pour cette maison en monophasé.
+    assert states(ready).pop("phases") == "not_applicable"
+    assert all(s.state is StepState.DONE for s in ready.steps if s.key != "phases")
+    assert ready.ready
     tariff = next(s for s in ready.steps if s.key == "tariff")
     assert tariff.target == "home#tariff"
     notification = next(s for s in ready.steps if s.key == "notification")
@@ -166,7 +172,9 @@ def test_described_panels_give_a_forecast_without_integration(
     graph = GraphStore(tmp_path)
     home_model.save(graph, REFERENCE.home)
     no_forecast = Client(forecast=False)
-    no_forecast.snapshot.config = {"latitude": 45.76, "longitude": 4.84}
+    no_forecast.snapshot = replace(
+        no_forecast.snapshot, config={"latitude": 45.76, "longitude": 4.84}
+    )
     assert states(run(no_forecast, graph, tmp_path))["forecast"] == "todo"
     forecast_step = next(s for s in run(no_forecast, graph, tmp_path).steps if s.key == "forecast")
     assert forecast_step.target == "home#solar"
@@ -183,3 +191,91 @@ def test_described_panels_give_a_forecast_without_integration(
 
     monkeypatch.setattr(open_meteo, "fetch", fetch)
     assert states(run(no_forecast, graph, tmp_path))["forecast"] == "done"
+
+
+# --- Triphasé -----------------------------------------------------------------------------------
+
+
+def phases_step(found: Setup) -> tuple[str, str | None, str | None]:
+    step = next(s for s in found.steps if s.key == "phases")
+    return step.state.value, step.reason, step.target
+
+
+def three_phase(change: Any = None) -> home_model.HomeModel:
+    """La maison de référence en triphasé, chaque équipement sur la phase 1."""
+    devices = [
+        d if d.kind is DeviceKind.GRID else d.model_copy(update={"phase": home_model.Phase.L1})
+        for d in REFERENCE.home.devices
+    ]
+    home = REFERENCE.home.model_copy(update={"devices": devices, "supply": home_model.Supply.THREE})
+    return change(home) if change else home
+
+
+def test_a_single_phase_home_has_no_phase_step(tmp_path: Path) -> None:
+    graph = GraphStore(tmp_path)
+    home_model.save(graph, REFERENCE.home)
+
+    assert phases_step(run(Client(), graph, tmp_path)) == ("not_applicable", None, None)
+
+
+def test_a_home_whose_names_give_phases_is_told_to_check_its_supply(tmp_path: Path) -> None:
+    graph = GraphStore(tmp_path)
+    home_model.save(graph, REFERENCE.home)
+    client = Client()
+    client.snapshot = HomeSnapshot(
+        energy_preferences={
+            "energy_sources": [{"type": "solar", "stat_energy_from": "sensor.roof_l2_energy"}]
+        }
+    )
+
+    assert phases_step(run(client, graph, tmp_path)) == (
+        "todo",
+        "three_phase_detected",
+        "home#supply",
+    )
+
+
+def test_a_three_phase_home_is_led_to_its_phases_then_its_phase_meters(tmp_path: Path) -> None:
+    graph = GraphStore(tmp_path)
+
+    # 1. Des équipements placés ou simulés sans phase : on y mène, en nommant les premiers.
+    home_model.save(graph, REFERENCE.home.model_copy(update={"supply": home_model.Supply.THREE}))
+    found = run(Client(), graph, tmp_path)
+    step = next(s for s in found.steps if s.key == "phases")
+    assert (step.state.value, step.reason) == ("todo", "phases_missing")
+    assert step.target is not None and step.target.startswith("home#device-")
+    assert int(step.params["count"]) >= 3 and step.params["devices"].count(",") == 2
+
+    # 2. Toutes les phases renseignées, et Home Assistant sans compteur par phase : rien de plus
+    # à faire.
+    home_model.save(graph, three_phase())
+    assert phases_step(run(Client(), graph, tmp_path)) == ("done", None, "home#supply")
+
+    # 3. Home Assistant a des compteurs par phase que la maison ne suit pas : la fiche du réseau.
+    with_meter = Client()
+    with_meter.snapshot = _three_phase_snapshot()
+    grid = next(d for d in REFERENCE.home.devices if d.kind is DeviceKind.GRID)
+    assert phases_step(run(with_meter, graph, tmp_path)) == (
+        "todo",
+        "phase_sensors_missing",
+        f"home#device-{grid.key}",
+    )
+
+    # 4. Un compteur de soutirage par phase dans la maison : l'étape est faite.
+    def with_meters(home: home_model.HomeModel) -> home_model.HomeModel:
+        meters = [
+            home_model.HomeSensor(
+                entity_id=f"sensor.meter_l{number}", role=Role.ENERGY_IMPORTED, phase=line
+            )
+            for number, line in enumerate(home_model.LINES, start=1)
+        ]
+        devices = [
+            d.model_copy(update={"sensors": [*d.sensors, *meters]})
+            if d.kind is DeviceKind.GRID
+            else d
+            for d in home.devices
+        ]
+        return home.model_copy(update={"devices": devices})
+
+    home_model.save(graph, three_phase(with_meters))
+    assert phases_step(run(with_meter, graph, tmp_path)) == ("done", None, "home#supply")

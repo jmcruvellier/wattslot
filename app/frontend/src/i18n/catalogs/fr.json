@@ -99,6 +99,7 @@
       "first_plan": "Premier plan",
       "tariff": "Tarif de l'électricité",
       "battery": "Batterie",
+      "phases": "Triphasé",
       "notification": "Notification",
       "template": "Modèle prêt à l'emploi"
     },
@@ -114,6 +115,9 @@
       "needs_previous_steps": "Possible une fois les étapes indispensables faites.",
       "tariff_default": "Un prix unique de {price} est supposé : réglez votre tarif pour un plan plus juste.",
       "battery_default": "Réglages par défaut de la batterie : ajustez-les à la vôtre.",
+      "three_phase_detected": "Home Assistant a des capteurs ou des appareils dont le nom dit une phase : votre maison est sans doute en triphasé. Vérifiez votre raccordement.",
+      "phases_missing": "Indiquez la phase de chaque équipement dans sa fiche : le planning en a besoin pour ne pas demander à une phase plus qu'elle ne peut fournir. Il en manque {count}, dont : {devices}.",
+      "phase_sensors_missing": "Home Assistant a des compteurs par phase que votre maison ne suit pas : ajoutez-les dans la fiche du réseau, pour un plan calculé phase par phase.",
       "no_notification": "Choisissez un appareil pour recevoir chaque jour la recommandation du plan.",
       "needs_home": "Possible une fois votre maison enregistrée.",
       "template_suggested": "Partez d'un modèle (heures creuses, Tempo, prix dynamique…) qui règle vos équipements et votre tarif d'un coup, puis ajustez."
@@ -1697,6 +1701,8 @@
       "title": "Voici ce que nous avons trouvé chez vous",
       "help": "Lu dans le tableau Énergie de Home Assistant. Décochez ce qui ne doit pas être pris en compte.",
       "missing": "Il manque un appareil ?",
+      "supply_detected": "Des noms de Home Assistant disent une phase : votre maison est sans doute en triphasé.",
+      "three_phase": "En triphasé, il restera à indiquer la phase de chaque appareil, batterie et installation solaire : l'étape « Triphasé » de la mise en route vous y mènera.",
       "kinds": {
         "SolarInstallation": "Production suivie",
         "GridConnection": "Achats et surplus suivis",

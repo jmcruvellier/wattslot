@@ -16,7 +16,7 @@ from pydantic import BaseModel
 
 from wattslot import configuration, home_model, notifications
 from wattslot.aggregation import Aggregator
-from wattslot.detection import DeviceKind
+from wattslot.detection import DeviceKind, Role, propose
 from wattslot.home_assistant import ConnectionState, HomeAssistantClient
 from wattslot.planning import open_meteo
 from wattslot.planning.sources import (
@@ -66,6 +66,60 @@ def _step(
     return Step(
         key=key, state=state, required=required, reason=reason, params=params, target=target
     )
+
+
+def _phases_step(
+    home: home_model.HomeModel,
+    settings: configuration.Configuration,
+    client: HomeAssistantClient | None,
+) -> Step:
+    """Étape « Triphasé » : à faire tant qu'une maison que les noms de HA disent en triphasé est
+    réglée en monophasé, puis tant qu'il manque la phase d'un équipement, ou des compteurs par
+    phase du réseau que Home Assistant a et que la maison ne suit pas ; sans objet sinon."""
+    if not home.devices:
+        return _step("phases", StepState.NOT_APPLICABLE, False)
+    proposal = propose(client.snapshot) if client is not None else None
+    if home.supply is not home_model.Supply.THREE:
+        if proposal is not None and proposal.supply is home_model.Supply.THREE:
+            return _step("phases", StepState.TODO, False, "three_phase_detected", "home#supply")
+        return _step("phases", StepState.NOT_APPLICABLE, False)
+    behaviors = {d.key: d.behavior for d in configuration.effective(home, settings).devices}
+    ignored = (configuration.Behavior.GRID, configuration.Behavior.UNCONTROLLED)
+    missing = [
+        device
+        for device in home.devices
+        if device.phase is None and behaviors.get(device.key) not in ignored
+    ]
+    if missing:
+        return _step(
+            "phases",
+            StepState.TODO,
+            False,
+            "phases_missing",
+            f"home#device-{missing[0].key}",
+            devices=", ".join(device.name for device in missing[:3]),
+            count=str(len(missing)),
+        )
+    grid = next((d for d in home.devices if d.kind is DeviceKind.GRID), None)
+    measured = {
+        sensor.phase
+        for sensor in (grid.sensors if grid is not None else [])
+        if sensor.role is Role.ENERGY_IMPORTED and sensor.phase is not None
+    }
+    # Compteurs de soutirage par phase que la détection trouve : une maison qui n'en a pas (un
+    # compteur qui ne donne que le total) n'a rien à faire de plus.
+    found = {
+        sensor.phase
+        for device in (proposal.devices if proposal is not None else [])
+        if device.kind is DeviceKind.GRID
+        for sensor in device.sensors
+        if sensor.role is Role.ENERGY_IMPORTED and sensor.phase is not None
+    }
+    if grid is not None and found - measured:
+        return _step(
+            "phases", StepState.TODO, False, "phase_sensors_missing", f"home#device-{grid.key}"
+        )
+    return _step("phases", StepState.DONE, False, target="home#supply")
 
 
 async def setup_status(
@@ -174,6 +228,11 @@ async def setup_status(
         steps.append(_step("battery", StepState.TODO, False, "battery_default", "home#battery"))
     else:
         steps.append(_step("battery", StepState.DONE, False, target="home#battery"))
+
+    # 8 bis. Triphasé : l'alimentation, puis la phase de ce que le calcul place ou simule, puis
+    # les compteurs par phase du réseau. Sans objet pour une maison en monophasé que rien ne dit
+    # en triphasé.
+    steps.append(_phases_step(home, settings, client if connected else None))
 
     # 9. Notifications (lot 4.2, réglages du lot 5.6) : facultative, faite dès qu'une
     # notification est activée avec un appareil.

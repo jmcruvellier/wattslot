@@ -7,7 +7,7 @@ The first time you open WattSlot, a guided path of four screens replaces the hom
 ## The four first steps
 
 1. **Connect the app to Home Assistant.** As a Home Assistant app there is nothing to do. In standalone mode, enter your Home Assistant address and log in (see [Installation](installation.md#standalone-docker)).
-2. **Here is what we found in your home.** WattSlot reads Home Assistant's Energy dashboard and proposes your devices: solar production, grid, battery, water heater, washing machine, dryer, dishwasher, pool pump… Untick anything that should not be taken into account. A device missing from the Energy dashboard (a smart plug, a heat pump) can be added later in **My home › Devices › Add a device**.
+2. **Here is what we found in your home.** WattSlot reads Home Assistant's Energy dashboard and proposes your devices: solar production, grid, battery, water heater, washing machine, dryer, dishwasher, pool pump… Untick anything that should not be taken into account. The same screen asks for your **power supply**, single-phase or three-phase: three-phase is preselected when names in Home Assistant give a phase (see [Three-phase homes](your-home.md#three-phase-homes)). A device missing from the Energy dashboard (a smart plug, a heat pump) can be added later in **My home › Devices › Add a device**.
 3. **What is your electricity contract?** Pick the closest template: tariff, battery and appliances are set in one go, with indicative prices to replace with yours (see [Tariffs](tariffs.md)).
 
    | Template | For |
@@ -35,6 +35,7 @@ The first time you open WattSlot, a guided path of four screens replaces the hom
 | Ready-made template | | Optional, sets everything in one go |
 | Electricity tariff | | Otherwise a single price of 0.25 per kWh, in your currency, is assumed |
 | Battery | | Default settings until you adjust them |
+| Three-phase | | Three-phase homes only: the phase of each appliance, battery and solar installation, then the per-phase meters Home Assistant has for the grid. Also shown when your home is set as single-phase while names in Home Assistant give a phase |
 | Notification | | A device to receive messages, see [Notifications](notifications.md) |
 
 ## The history import

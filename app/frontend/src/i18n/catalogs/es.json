@@ -99,6 +99,7 @@
       "first_plan": "Primer plan",
       "tariff": "Tarifa eléctrica",
       "battery": "Batería",
+      "phases": "Trifásico",
       "notification": "Notificación",
       "template": "Plantilla lista para usar"
     },
@@ -114,6 +115,9 @@
       "needs_previous_steps": "Posible en cuanto los pasos esenciales estén hechos.",
       "tariff_default": "Se supone un precio único de {price}: indique su tarifa para un plan más preciso.",
       "battery_default": "Ajustes predeterminados de la batería: adáptelos a los suyos.",
+      "three_phase_detected": "Home Assistant tiene sensores o aparatos cuyo nombre indica una fase: su casa es probablemente trifásica. Compruebe su conexión a la red.",
+      "phases_missing": "Indique la fase de cada equipo en su ficha: la planificación la necesita para no pedir a una fase más de lo que puede suministrar. Faltan {count}, entre ellos: {devices}.",
+      "phase_sensors_missing": "Home Assistant tiene contadores por fase que su casa no sigue: añádalos en la ficha de la red, para un plan calculado fase por fase.",
       "no_notification": "Elija un dispositivo que reciba cada día la recomendación del plan.",
       "needs_home": "Posible en cuanto su casa esté guardada.",
       "template_suggested": "Empiece con una plantilla (horas valle, Tempo, precio dinámico…) que ajusta de una vez sus aparatos y su tarifa, y luego afine."
@@ -1697,6 +1701,8 @@
       "title": "Esto es lo que encontramos en su casa",
       "help": "Leído en el panel Energía de Home Assistant. Desmarque lo que no deba tenerse en cuenta.",
       "missing": "¿Falta algún aparato?",
+      "supply_detected": "Hay nombres en Home Assistant que indican una fase: su casa es probablemente trifásica.",
+      "three_phase": "En trifásico, quedará por indicar la fase de cada aparato, batería e instalación solar: el paso «Trifásico» de la puesta en marcha le llevará hasta allí.",
       "kinds": {
         "SolarInstallation": "Producción seguida",
         "GridConnection": "Compras y excedentes seguidos",

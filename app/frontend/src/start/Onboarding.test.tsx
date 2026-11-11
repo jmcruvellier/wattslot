@@ -87,8 +87,10 @@ describe("Onboarding", () => {
     await user.click(screen.getByRole("button", { name: "C'est bon, continuer" }));
 
     const put = fetch.mock.calls.find(([url, init]) => url === "api/home" && init?.method === "PUT");
-    const saved = JSON.parse(String(put?.[1]?.body)) as { devices: { key: string }[] };
+    const saved = JSON.parse(String(put?.[1]?.body)) as { devices: { key: string }[]; supply: string };
     expect(saved.devices.map((device) => device.key)).toEqual(["solar", "battery"]);
+    // Rien ne dit une phase, et l'utilisateur n'a rien changé : monophasé.
+    expect(saved.supply).toBe("SinglePhaseSupply");
     expect(onChanged).toHaveBeenCalled();
 
     // Contrat : un modèle sans entités s'applique ici.
@@ -103,6 +105,36 @@ describe("Onboarding", () => {
     expect(await screen.findByText("Étape 3 sur 3")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Calculer mon premier plan" }));
     expect(onRun).toHaveBeenCalled();
+  });
+
+  it("demande l'alimentation : le triphasé que la détection propose, ou celui que l'on choisit", async () => {
+    const user = userEvent.setup();
+    const fetch = mockApi();
+    renderFlow(CONNECTED);
+
+    // Rien ne dit une phase : monophasé proposé, sans remarque ; on choisit le triphasé.
+    const supply = await screen.findByRole("combobox", { name: "Alimentation" });
+    expect(supply).toHaveValue("SinglePhaseSupply");
+    expect(screen.queryByRole("note")).not.toBeInTheDocument();
+    await user.selectOptions(supply, "ThreePhaseSupply");
+    expect(screen.getByText(/il restera à indiquer la phase de chaque appareil/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "C'est bon, continuer" }));
+
+    const put = fetch.mock.calls.find(([url, init]) => url === "api/home" && init?.method === "PUT");
+    expect((JSON.parse(String(put?.[1]?.body)) as { supply: string }).supply).toBe("ThreePhaseSupply");
+  });
+
+  it("part du triphasé, et le dit, quand des noms de Home Assistant disent une phase", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const url = String(input);
+      if (url === "api/home/proposals") return Response.json({ ...PROPOSAL, supply: "ThreePhaseSupply" });
+      if (url === "api/home") return Response.json({ devices: [], supply: "SinglePhaseSupply" });
+      return new Response(null, { status: 404 });
+    });
+    renderFlow(CONNECTED);
+
+    expect(await screen.findByRole("combobox", { name: "Alimentation" })).toHaveValue("ThreePhaseSupply");
+    expect(screen.getByRole("note")).toHaveTextContent("sans doute en triphasé");
   });
 
   it("propose la connexion quand elle manque, et permet de la passer", async () => {

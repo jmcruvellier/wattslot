@@ -99,6 +99,7 @@
       "first_plan": "Eerste plan",
       "tariff": "Elektriciteitstarief",
       "battery": "Batterij",
+      "phases": "Driefasig",
       "notification": "Melding",
       "template": "Kant-en-klaar sjabloon"
     },
@@ -114,6 +115,9 @@
       "needs_previous_steps": "Mogelijk zodra de essentiële stappen klaar zijn.",
       "tariff_default": "Er wordt een vaste prijs van {price} aangenomen: stel uw tarief in voor een nauwkeuriger plan.",
       "battery_default": "Standaardinstellingen van de batterij: pas ze aan de uwe aan.",
+      "three_phase_detected": "Home Assistant heeft sensoren of apparaten waarvan de naam een fase noemt: uw huis is waarschijnlijk driefasig aangesloten. Controleer uw netaansluiting.",
+      "phases_missing": "Geef de fase van elk apparaat op in zijn fiche: de planning heeft die nodig om van een fase niet meer te vragen dan ze kan leveren. Er ontbreken er nog {count}, waaronder: {devices}.",
+      "phase_sensors_missing": "Home Assistant heeft meters per fase die uw huis niet volgt: voeg ze toe in de fiche van het net, voor een plan dat fase per fase wordt berekend.",
       "no_notification": "Kies een apparaat dat elke dag het advies van het plan ontvangt.",
       "needs_home": "Mogelijk zodra uw huis is opgeslagen.",
       "template_suggested": "Begin met een sjabloon (daluren, Tempo, dynamische prijs…) dat uw apparaten en uw tarief in één keer instelt, en pas daarna aan."
@@ -1697,6 +1701,8 @@
       "title": "Dit hebben we bij je gevonden",
       "help": "Gelezen uit het Energie-dashboard van Home Assistant. Vink uit wat niet meegeteld moet worden.",
       "missing": "Ontbreekt er een apparaat?",
+      "supply_detected": "Namen in Home Assistant noemen een fase: uw huis is waarschijnlijk driefasig aangesloten.",
+      "three_phase": "Bij drie fasen moet u daarna nog de fase van elk apparaat, elke batterij en elke zonne-installatie opgeven: de stap ‘Driefasig’ van de ingebruikname brengt u erheen.",
       "kinds": {
         "SolarInstallation": "Opwekking gevolgd",
         "GridConnection": "Afname en overschot gevolgd",
