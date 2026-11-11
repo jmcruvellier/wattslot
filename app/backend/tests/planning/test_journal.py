@@ -183,3 +183,16 @@ def test_real_cycle_ended_after_long_pause(
     (cycle,) = real_cycles(MODEL, raw, now)["Lave-linge"]
 
     assert cycle.end == local(TODAY, 9, 58) and not cycle.running
+
+
+def test_real_cycles_of_a_closed_day(setup: tuple[CycleJournal, RawStores, QuarterReader]) -> None:
+    """À l'archivage de la veille, les cycles sont lus jusqu'à minuit du lendemain : ceux de la
+    journée demandée, pas ceux (aucun) de la journée qui commence."""
+    _, raw, _ = setup
+    raw_cycle(raw, TODAY, local(TODAY, 9), 40, 0.2, 50.0)
+    end = local(TODAY + timedelta(days=1), 0).astimezone(UTC)
+
+    (cycle,) = real_cycles(MODEL, raw, end, day=TODAY)["Lave-linge"]
+
+    assert cycle.start == local(TODAY, 9) and not cycle.running
+    assert real_cycles(MODEL, raw, end)["Lave-linge"] == ()  # lu sur le lendemain : rien

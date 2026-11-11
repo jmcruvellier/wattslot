@@ -139,8 +139,10 @@ def phase_days(state: Mapping[str, Any], actual: Mapping[str, Any] | None) -> li
                 phase=phase,
                 import_kwh=round(sum(max(0.0, -v) for v in values), 3),
                 export_kwh=round(sum(max(0.0, v) for v in values), 3),
-                import_actual_kwh=round(sum(bought.values()), 3) if bought else None,
-                export_actual_kwh=round(sum(sold.values()), 3) if sold else None,
+                # Un compteur suivi qui n'a pas bougé a compté 0 kWh : seule une phase
+                # sans compteur est « sans mesure ».
+                import_actual_kwh=round(sum(bought.values()), 3) if bought is not None else None,
+                export_actual_kwh=round(sum(sold.values()), 3) if sold is not None else None,
             )
         )
     return found

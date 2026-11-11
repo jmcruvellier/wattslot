@@ -204,7 +204,7 @@ def _next_action(view: DayView, lang: str) -> dict[str, Any] | None:
 # (« Bilan prévu : 0,99 € ») et la batterie en kWh, avec l'heure du maximum du plan. À côté du
 # coût de la journée entière et de la batterie en pourcentage du résumé, deux chiffres pour une
 # même question : les modèles prenaient l'un pour l'autre.
-FIGURE_LINES = ("battery", "balance")
+FIGURE_LINES = ("battery", "balance", "balance_rest")
 
 
 def _pattern(template: str) -> re.Pattern[str]:

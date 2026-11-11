@@ -17,6 +17,7 @@ avertissements de la v1.
 
 import re
 import unicodedata
+from collections import Counter
 from enum import StrEnum
 from typing import Any
 
@@ -228,9 +229,11 @@ class _Detector:
     def friendly_name(self, entity_id: str) -> str | None:
         return self.attributes(entity_id).get("friendly_name")
 
+    def device_id(self, entity_id: str) -> str | None:
+        return (self.snapshot.entities.get(entity_id) or {}).get("device_id")
+
     def device_name(self, entity_id: str) -> str | None:
-        device_id = (self.snapshot.entities.get(entity_id) or {}).get("device_id")
-        device = self.snapshot.devices.get(device_id or "") or {}
+        device = self.snapshot.devices.get(self.device_id(entity_id) or "") or {}
         return device.get("name_by_user") or device.get("name")
 
     def sensor(self, entity_id: str, role: Role) -> SensorProposal:
@@ -512,9 +515,20 @@ def propose(snapshot: HomeSnapshot) -> HomeProposal:
             )
         )
 
+    # Appareils de HA qui portent un seul compteur du tableau Énergie : leur nom vaut pour
+    # l'équipement (« Lave-linge », pas « Lave-linge Énergie », le nom du capteur). Un
+    # appareil à plusieurs voies garde le nom de chaque capteur.
+    consumers = [d["stat_consumption"] for d in preferences.get("device_consumption", [])]
+    owners = Counter(detector.device_id(energy) for energy in consumers)
     for device in preferences.get("device_consumption", []):
         energy = device["stat_consumption"]
-        name = device.get("name") or detector.friendly_name(energy) or energy
+        alone = owners[detector.device_id(energy)] == 1
+        name = (
+            device.get("name")
+            or (detector.device_name(energy) if alone else None)
+            or detector.friendly_name(energy)
+            or energy
+        )
         kind = classify_appliance(name, detector.device_name(energy), energy)
         sensors, issues = detector.with_power(
             energy, device.get("stat_rate"), Role.ENERGY_CONSUMED, Role.POWER_CONSUMED

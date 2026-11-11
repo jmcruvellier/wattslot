@@ -9,7 +9,7 @@ from typing import Any
 import pytest
 from pydantic import ValidationError
 
-from tests.v1_oracle import STATES, load
+from tests.v1_oracle import STATES, load, state_named
 from wattslot.planning.engine import plan_day
 from wattslot.planning.inputs import from_v1
 from wattslot.planning.plan import Plan, Slot
@@ -163,3 +163,16 @@ def test_scheduled_run_sends_the_plan_text(tmp_path: Path) -> None:
 
     asyncio.run(_notify(Failing(), database, now, zone, report))  # type: ignore[arg-type]
     assert report.errors == ["notification recommendation : RuntimeError: service inconnu"]
+
+
+def test_the_balance_says_when_it_only_covers_the_rest_of_the_day() -> None:
+    """Le plan ne chiffre que les heures qui restaient à son calcul : passé minuit, le texte le
+    dit, pour ne pas être lu comme le bilan de la journée entière."""
+    # Plan calculé à 7 h : enregistré avec son heure de calcul (``assemble.plan_state``).
+    state = {**output(state_named("05_today_h07_morning")), "heure_execution": 7}
+
+    assert "Reste de la journée, à partir de 7 h :" in recommendation(state, "fr")
+    assert "Rest of the day, from 7:00:" in recommendation(state, "en")
+    assert "Bilan prévu" not in recommendation(state, "fr")
+    midnight = {**state, "heure_execution": 0}
+    assert "Bilan prévu :" in recommendation(midnight, "fr")

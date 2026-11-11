@@ -141,3 +141,16 @@ def test_measures_of_the_day_by_phase(tmp_path: Path) -> None:
     # Le capteur de la phase n'entre pas dans le total, mesuré par un autre capteur.
     assert sum(found["reseau_reel_soutire_horaire"].values()) == pytest.approx(1.0)
     assert "reseau_reel_soutire_par_phase" not in without
+
+
+def test_a_followed_phase_meter_that_did_not_move_measured_zero() -> None:
+    """Un compteur de phase suivi mais resté immobile (aucun relevé du jour) a compté 0 kWh ;
+    seule une phase sans compteur est « sans mesure »."""
+    plan = stored(replace(home(BASE, sun_kwh=1.5), separate_phases=True))
+    actual = {"reseau_reel_soutire_par_phase": {1: {0: 0.4}, 2: {}}}
+
+    found = phase_days(plan, actual)
+
+    assert found[1].import_actual_kwh == 0.0  # compteur suivi, rien compté
+    assert found[2].import_actual_kwh is None  # pas de compteur sur la phase 3
+    assert found[1].export_actual_kwh is None

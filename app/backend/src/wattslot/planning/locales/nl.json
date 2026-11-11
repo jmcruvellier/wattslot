@@ -31,6 +31,7 @@
   "recommendation.runtime": "{device}: {ranges}.",
   "recommendation.runtime_none": "Geen looptijd in te plannen.",
   "recommendation.balance": "Verwachte balans: {cost} en {grid} kWh afname.",
+  "recommendation.balance_rest": "Rest van de dag, vanaf {hour} uur: {cost} en {grid} kWh afname.",
   "recommendation.balance_self": "Eigen verbruik: {percent} %.",
   "recommendation.balance_co2": "CO₂ van de afname: {co2} kg.",
   "recommendation.warnings": "Waarschuwingen:",

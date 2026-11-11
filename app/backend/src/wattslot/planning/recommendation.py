@@ -111,12 +111,17 @@ def _runtime(item: RuntimePlan, lang: str) -> str:
     return _text(lang, "runtime", device=item.device, ranges=ranges) + _why(item.explanation, lang)
 
 
-def _balance(indicators: Indicators | None, lang: str) -> str | None:
+def _balance(indicators: Indicators | None, lang: str, first_hour: int = 0) -> str | None:
+    """Bilan du plan. Il ne chiffre que les heures qui restaient à son calcul : passé
+    minuit, le texte le dit (« Reste de la journée, à partir de 14 h »), sinon il se lisait
+    comme le bilan de la journée, à côté d'indicateurs qui, eux, comptent les heures
+    déjà mesurées."""
     if indicators is None:
         return None
     text = _text(
         lang,
-        "balance",
+        "balance_rest" if first_hour > 0 else "balance",
+        hour=first_hour,
         cost=currency.amount(indicators.cost_eur, lang),
         grid=number(indicators.import_kwh, lang, 1),
     )
@@ -154,7 +159,8 @@ def recommendation(state: Mapping[str, Any], lang: str = "fr") -> str:
     lines += ["", _battery(day, lang)] if capacity is None or capacity > 0 else [""]
     runtimes = day.runtimes
     lines += [_runtime(item, lang) for item in runtimes] or [_text(lang, "runtime_none")]
-    balance = _balance(day.indicators, lang)
+    first_hour = state.get("heure_execution")
+    balance = _balance(day.indicators, lang, first_hour if isinstance(first_hour, int) else 0)
     if balance is not None:
         lines += ["", balance]
     warnings = state.get("avertissements", [])

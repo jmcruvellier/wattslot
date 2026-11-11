@@ -319,3 +319,38 @@ def test_appliances_are_classified_and_missing_power_is_flagged() -> None:
 )
 def test_classify_appliance(name: str, kind: DeviceKind) -> None:
     assert classify_appliance(name) is kind
+
+
+def test_an_appliance_takes_the_name_of_its_device_before_that_of_its_meter() -> None:
+    """Sans nom donné au tableau Énergie : « Lave-linge », le nom de l'appareil dans Home
+    Assistant, pas « Lave-linge Énergie », celui de son compteur. Un appareil à plusieurs voies
+    garde le nom de chaque compteur."""
+    meters = {
+        "sensor.plug_washer_energy": "Lave-linge Énergie",
+        "sensor.meter_channel_1_energy": "Compteur voie 1",
+        "sensor.meter_channel_2_energy": "Compteur voie 2",
+        "sensor.orphan_energy": "Congélateur Énergie",
+    }
+    snapshot = HomeSnapshot(
+        energy_preferences={
+            "energy_sources": [],
+            "device_consumption": [{"stat_consumption": entity_id} for entity_id in meters],
+        },
+        states={
+            entity_id: _state(entity_id, "kWh", "energy", friendly_name=name)
+            for entity_id, name in meters.items()
+        },
+        entities={
+            "sensor.plug_washer_energy": {"device_id": "plug"},
+            "sensor.meter_channel_1_energy": {"device_id": "meter"},
+            "sensor.meter_channel_2_energy": {"device_id": "meter"},
+        },
+        devices={
+            "plug": {"name": "Prise", "name_by_user": "Lave-linge"},
+            "meter": {"name": "Compteur"},
+        },
+    )
+
+    names = [device.name for device in propose(snapshot).devices]
+
+    assert names == ["Lave-linge", "Compteur voie 1", "Compteur voie 2", "Congélateur Énergie"]
