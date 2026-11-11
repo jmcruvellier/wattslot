@@ -39,8 +39,8 @@ Les courbes et l'écran **Aujourd'hui** montrent toutes vos batteries ensemble, 
 
 ## Ce que vous voyez
 
-- **Aujourd'hui** : la charge maintenant, son point le plus haut et son niveau à minuit.
-- **Planning** : la charge prévue (en pointillés) face à la charge mesurée, la ligne du plancher, et la charge et la décharge de la batterie dans le Planning des équipements.
+- **Aujourd'hui** : la charge maintenant, son point le plus haut et son niveau à minuit. Avec plusieurs batteries, la charge de la maison est leur moyenne, pondérée par la capacité, et chaque batterie est listée dessous avec sa propre charge, son contenu et ce qu'elle fait en ce moment. Le pourcentage est le dernier relevé ; les puissances sont des moyennes sur le dernier quart d'heure.
+- **Planning** : une carte **Batteries** liste chaque batterie de la même façon quand il y en a plusieurs ; la charge prévue (en pointillés) face à la charge mesurée, la ligne du plancher, et la charge et la décharge de la batterie dans le Planning des équipements.
 - **Batterie pleine avant midi** ([notification](notifications.md)) : le surplus suivant partirait sur le réseau, bon moment pour lancer un appareil.
 
 ## Bon à savoir

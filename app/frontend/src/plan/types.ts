@@ -185,6 +185,17 @@ export interface DeviceExplanation {
 }
 
 // Aujourd'hui (lot 6b.3) : puissances moyennes du dernier quart d'heure clos, en watts.
+// Une batterie de la maison, à son dernier relevé (backend : views.now.BatteryNow).
+export interface BatteryNow {
+  key: string;
+  name: string;
+  capacity_kwh: number | null;
+  phase?: string | null; // maison en triphasé : PhaseL1, PhaseL2, PhaseL3 ou ThreePhases
+  soc_percent: number | null;
+  stored_kwh: number | null;
+  power_w: number | null; // positive en charge, négative en décharge
+}
+
 export interface Now {
   since: string | null;
   until: string | null;
@@ -192,7 +203,8 @@ export interface Now {
   consumption_w: number | null;
   battery_w: number | null; // positive en charge, négative en décharge
   grid_w: number | null; // positive à l'achat, négative au surplus
-  soc_percent: number | null;
+  soc_percent: number | null; // plusieurs batteries : leur moyenne pondérée par la capacité
+  batteries?: BatteryNow[]; // chaque batterie de la maison
   off_peak: boolean;
   sentence: string | null;
 }

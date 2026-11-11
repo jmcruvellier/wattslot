@@ -3411,3 +3411,12 @@ p[role="status"]:not(.state-message) {
 .phases-table small {
   display: block;
 }
+
+/* Chaque batterie de la maison (carte Batterie d'Aujourd'hui, carte « Batteries » de Planning) :
+   le nom peut passer à la ligne, pas les chiffres. */
+.battery-table {
+  margin-top: 0.5rem;
+}
+.battery-table th[scope="row"] {
+  white-space: normal;
+}

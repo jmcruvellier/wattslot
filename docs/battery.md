@@ -39,8 +39,8 @@ The curves and the **Today** screen show all your batteries together, as the pla
 
 ## What you see
 
-- **Today**: the charge now, its highest point and its level at midnight.
-- **Planning**: the planned charge (dotted) against the measured one, the floor line, and the battery's charge and discharge in the appliance schedule.
+- **Today**: the charge now, its highest point and its level at midnight. With several batteries, the charge of the home is their mean, weighted by capacity, and each battery is listed below with its own charge, its content and what it is doing right now. The percentage is the last reading; the powers are averaged over the last quarter of an hour.
+- **Planning**: a **Batteries** card lists each battery the same way when there are several; the planned charge (dotted) against the measured one, the floor line, and the battery's charge and discharge in the appliance schedule.
 - **Battery full before noon** ([notification](notifications.md)): the next surplus would go to the grid, a good time to start an appliance.
 
 ## Good to know

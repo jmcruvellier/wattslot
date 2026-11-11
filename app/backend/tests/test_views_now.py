@@ -15,7 +15,7 @@ from tests.v1_oracle import STATES
 from wattslot import home_model
 from wattslot.aggregation import QUARTER
 from wattslot.detection import DeviceKind, Role
-from wattslot.home_model import HomeDevice, HomeModel, HomeSensor
+from wattslot.home_model import HomeDevice, HomeModel, HomeSensor, Phase, Supply
 from wattslot.languages import LANGUAGES
 from wattslot.main import create_app
 from wattslot.planning.plan import Alternative, Explanation, Reason
@@ -184,7 +184,132 @@ def test_no_flows_without_home_assistant() -> None:
     state = SimpleNamespace(aggregator=None, ingestor=None)
     night = datetime(2026, 10, 15, 21, 30, tzinfo=UTC)  # 23 h 30 à Paris, heures creuses
     found = measure_now(state, night, CONTEXT, "fr")
-    assert found.model_dump(exclude_none=True) == {"off_peak": True}
+    assert found.model_dump(exclude_none=True) == {"off_peak": True, "batteries": []}
+
+
+# --- Plusieurs batteries ----------------------------------------------------------------------
+
+
+def _two_batteries(tmp_path: Path) -> GraphStore:
+    graph = GraphStore(tmp_path)
+    home_model.load_vocabulary(graph)
+
+    def battery(key: str, name: str, capacity: float | None, phase: Phase | None) -> HomeDevice:
+        return HomeDevice(
+            key=key,
+            kind=DeviceKind.BATTERY,
+            name=name,
+            capacity_kwh=capacity,
+            phase=phase,
+            sensors=[
+                HomeSensor(entity_id=f"sensor.{key}_soc", role=Role.STATE_OF_CHARGE),
+                HomeSensor(entity_id=f"sensor.{key}_in", role=Role.ENERGY_CHARGED),
+                HomeSensor(entity_id=f"sensor.{key}_out", role=Role.ENERGY_DISCHARGED),
+            ],
+        )
+
+    home_model.save(
+        graph,
+        HomeModel(
+            supply=Supply.THREE,
+            devices=[
+                battery("small", "Petite batterie", 2.0, Phase.L2),
+                battery("large", "Grande batterie", 6.0, Phase.L3),
+                HomeDevice(
+                    key="grid",
+                    kind=DeviceKind.GRID,
+                    name="Réseau",
+                    sensors=[HomeSensor(entity_id="sensor.import", role=Role.ENERGY_IMPORTED)],
+                ),
+            ],
+        ),
+    )
+    return graph
+
+
+def _levels(**soc: float) -> Any:
+    entities = [
+        SimpleNamespace(role=Role.STATE_OF_CHARGE, entity_id=f"sensor.{key}_soc", last_value=value)
+        for key, value in soc.items()
+    ]
+    return SimpleNamespace(status=lambda: SimpleNamespace(entities=entities))
+
+
+def test_each_battery_has_its_own_level_and_the_home_their_weighted_mean(tmp_path: Path) -> None:
+    until = datetime(2026, 10, 15, 10, 0, tzinfo=UTC)
+    # Sur 15 minutes : la petite charge 0,1 kWh (400 W), la grande rend 0,25 kWh (1 000 W).
+    aggregator = QuarterAggregator(
+        until,
+        {
+            "sensor.small_in": 0.1,
+            "sensor.large_out": 0.25,
+            "sensor.large_in": 0.0,
+            "sensor.import": 0.05,
+        },
+    )
+    state = SimpleNamespace(
+        aggregator=aggregator,
+        ingestor=_levels(small=40.0, large=80.0),
+        graph=_two_batteries(tmp_path),
+    )
+
+    found = measure_now(state, NOON, CONTEXT, "fr")
+
+    # 2 kWh à 40 % et 6 kWh à 80 % : 70 % pour la maison, pas les 40 % du premier capteur.
+    assert found.soc_percent == 70
+    by_name = {battery.name: battery for battery in found.batteries}
+    small, large = by_name["Petite batterie"], by_name["Grande batterie"]
+    assert (small.soc_percent, small.stored_kwh, small.power_w) == (40.0, 0.8, 400)
+    assert (large.soc_percent, large.stored_kwh, large.power_w) == (80.0, 4.8, -1000)
+    assert (small.phase, large.phase) == (Phase.L2, Phase.L3)
+    assert found.battery_w == -600
+
+
+def test_a_battery_without_a_reading_is_listed_without_a_level(tmp_path: Path) -> None:
+    state = SimpleNamespace(
+        aggregator=None, ingestor=_levels(large=80.0), graph=_two_batteries(tmp_path)
+    )
+
+    found = measure_now(state, NOON, CONTEXT, "fr")
+
+    assert found.soc_percent == 80  # la seule batterie mesurée
+    assert {b.name: b.soc_percent for b in found.batteries} == {
+        "Petite batterie": None,
+        "Grande batterie": 80.0,
+    }
+
+
+def test_three_batteries_of_different_sizes(tmp_path: Path) -> None:
+    """Trois batteries de 3,6, 4 et 10 kWh à 23, 24 et 48 % : 37 % pour la maison. La tuile
+    affichait les 24 % d'une seule (issue 52)."""
+    graph = GraphStore(tmp_path)
+    home_model.load_vocabulary(graph)
+    sizes = {"portable": 3.6, "second": 4.0, "large": 10.0}
+    home_model.save(
+        graph,
+        HomeModel(
+            devices=[
+                HomeDevice(
+                    key=key,
+                    kind=DeviceKind.BATTERY,
+                    name=key,
+                    capacity_kwh=capacity,
+                    sensors=[HomeSensor(entity_id=f"sensor.{key}_soc", role=Role.STATE_OF_CHARGE)],
+                )
+                for key, capacity in sizes.items()
+            ]
+        ),
+    )
+    # L'ordre des relevés n'est pas celui des batteries : la plus grosse n'est pas la première.
+    state = SimpleNamespace(
+        aggregator=None, ingestor=_levels(second=24.0, portable=23.0, large=48.0), graph=graph
+    )
+
+    found = measure_now(state, NOON, CONTEXT, "fr")
+
+    assert found.soc_percent == 37
+    assert [b.soc_percent for b in found.batteries] == [48.0, 23.0, 24.0]  # triées par clé
+    assert [b.stored_kwh for b in found.batteries] == [4.8, 0.83, 0.96]
 
 
 # --- Prochaine action -------------------------------------------------------------------------

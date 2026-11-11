@@ -1545,7 +1545,7 @@
       "buying": "Bezug {kw}",
       "selling": "Überschuss {kw}",
       "idle": "nichts",
-      "measured": "Mittelwert von {start} bis {end}"
+      "measured": "Leistungen: Mittelwert von {start} bis {end}. Batterie: letzte Messung."
     },
     "next": {
       "eyebrow": "Nächste Aktion",
@@ -1805,5 +1805,15 @@
     "export": "Eingespeist",
     "measured": "{kwh} gemessen",
     "unmeasured": "keine Messung"
+  },
+  "batteries": {
+    "title": "Batterien",
+    "note": "Jede Batterie bei ihrer letzten Messung; das Haus zeigt ihren nach Kapazität gewichteten Mittelwert.",
+    "level": "Ladestand",
+    "stored": "Inhalt",
+    "doing": "Im Moment",
+    "idle": "in Ruhe",
+    "phase": "Phase {number}",
+    "three_phase": "dreiphasig"
   }
 }
