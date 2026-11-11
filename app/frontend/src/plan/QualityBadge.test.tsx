@@ -30,8 +30,8 @@ describe("QualityBadge", () => {
         <QualityBadge quality={QUALITY} />
       </I18nProvider>,
     );
-    const badge = screen.getByRole("button", { name: "Qualité des prévisions : Prévisions moyennes. Afficher le détail" });
-    expect(badge).toHaveTextContent("Prévisions moyennes");
+    const badge = screen.getByRole("button", { name: "Qualité des prévisions : Moyenne. Afficher le détail" });
+    expect(badge).toHaveTextContent("Moyenne");
 
     await userEvent.click(badge);
     const dialog = screen.getByRole("dialog", { name: "Qualité des prévisions" });

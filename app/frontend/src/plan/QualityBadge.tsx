@@ -1,5 +1,6 @@
 // Qualité des prévisions d'une vue de jour, en pastille au coin du bloc « Indicateurs du plan » :
-// fiables, moyennes ou incertaines, d'après les données dont disposait le calcul (serveur :
+// libellé court (« Fiable », « Moyenne », « Incertaine ») pour tenir sur la ligne du titre,
+// même sur téléphone ; d'après les données dont disposait le calcul (serveur :
 // planning/forecast_quality.py). Un clic ouvre le détail : chaque critère, son niveau et sa raison.
 
 import { useState } from "react";

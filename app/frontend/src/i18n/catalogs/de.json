@@ -337,9 +337,9 @@
     "quality": {
       "title": "Prognosequalität",
       "badge": {
-        "good": "Zuverlässige Prognosen",
-        "fair": "Mittlere Prognosen",
-        "poor": "Unsichere Prognosen"
+        "good": "Zuverlässig",
+        "fair": "Mittel",
+        "poor": "Unsicher"
       },
       "open": "Prognosequalität: {badge}. Details anzeigen",
       "score": "Bewertung: {score} von 100",
