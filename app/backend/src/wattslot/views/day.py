@@ -34,7 +34,9 @@ from wattslot.views.display import (
     day_summary,
     displayed_soc,
     find_item,
+    grid_exchange,
     initial_forecast_summary,
+    phase_hours,
     recalculated_production,
 )
 from wattslot.views.now import NextAction, Now
@@ -108,6 +110,37 @@ def summary_from_v1(found: Mapping[str, Any] | None) -> DaySummary | None:
     return DaySummary.model_validate({new: found[old] for old, new in _V1_SUMMARY.items()})
 
 
+class PhaseDay(BaseModel):
+    """Échanges d'une phase avec le réseau sur la journée (triphasé, calcul par phase), en kWh :
+    prévus par le plan, et mesurés jusqu'ici par les capteurs de la phase, s'il y en a."""
+
+    phase: int  # 1, 2 ou 3
+    import_kwh: float
+    export_kwh: float
+    import_actual_kwh: float | None = None
+    export_actual_kwh: float | None = None
+
+
+def phase_days(state: Mapping[str, Any], actual: Mapping[str, Any] | None) -> list[PhaseDay]:
+    """Les trois phases d'un plan calculé par phase ; aucune sinon."""
+    found = []
+    measured_in = (actual or {}).get("reseau_reel_soutire_par_phase") or {}
+    measured_out = (actual or {}).get("reseau_reel_injecte_par_phase") or {}
+    for phase, hourly in sorted((state.get("residu_reseau_par_phase") or {}).items()):
+        values = phase_hours(hourly).values()
+        bought, sold = measured_in.get(phase), measured_out.get(phase)
+        found.append(
+            PhaseDay(
+                phase=int(phase),
+                import_kwh=round(sum(max(0.0, -v) for v in values), 3),
+                export_kwh=round(sum(max(0.0, v) for v in values), 3),
+                import_actual_kwh=round(sum(bought.values()), 3) if bought else None,
+                export_actual_kwh=round(sum(sold.values()), 3) if sold else None,
+            )
+        )
+    return found
+
+
 class DayView(BaseModel):
     kind: Kind
     day: date
@@ -137,6 +170,7 @@ class DayView(BaseModel):
     explanations: list[DeviceExplanation] = []
     recommendation: str | None = None  # texte du plan, dans la langue demandée
     cards: Cards | None = None  # Aujourd'hui et Hier : estimé et mesuré au relevé
+    phases: list[PhaseDay] = []  # triphasé, plan calculé par phase : échanges de chacune
     # Aujourd'hui (lot 6b.3) : le moment et le prochain appareil à lancer, ajoutés par les routes.
     now: Now | None = None
     next_action: NextAction | None = None
@@ -226,7 +260,7 @@ def build_day(
     planning = state.get("planning", [])
     battery = find_item(planning, BATTERY)
     curve = displayed_soc(state, actual, context)
-    residual = state.get("residu_reseau_horaire", {}) or {}
+    imports, exports = grid_exchange(state)
     charge = [0.0] * 24
     discharge = [0.0] * 24
     for movement in battery.get("mouvements", []) if battery else []:
@@ -237,15 +271,14 @@ def build_day(
     soc_actual = (actual or {}).get("soc_pct_fin_heure") or (actual or {}).get("soc_pct_reel")
     hours = []
     for h in range(24):
-        exchange = -round(_value(residual, h) or 0.0, 3)  # positif : acheté au réseau
         hours.append(
             HourPoint(
                 hour=h,
                 off_peak=off_peak[h],
                 production_kwh=curve.production[h],
                 consumption_kwh=round(curve.baseline.get(h, 0) + curve.planned.get(h, 0), 3),
-                grid_import_kwh=round(max(exchange, 0), 3),
-                grid_export_kwh=round(max(-exchange, 0), 3),
+                grid_import_kwh=round(imports.get(h, 0.0), 3),
+                grid_export_kwh=round(exports.get(h, 0.0), 3),
                 battery_charge_kwh=round(charge[h], 3),
                 battery_discharge_kwh=round(discharge[h], 3),
                 soc_percent=curve.soc_percent[h] if battery else None,
@@ -337,4 +370,5 @@ def build_day(
         explanations=explained,
         recommendation=recommendation(as_stored(state), lang) if state.get("planning") else None,
         cards=cards,
+        phases=phase_days(state, actual),
     )

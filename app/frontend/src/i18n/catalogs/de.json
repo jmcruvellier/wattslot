@@ -1795,5 +1795,14 @@
     "meter_sums": "Mein Zähler saldiert die drei Phasen",
     "meter_sums_hint": "Was ich auf einer Phase einspeise, gleicht aus, was ich auf einer anderen beziehe. So arbeiten die meisten intelligenten Zähler. Abwählen, wenn jede Phase einzeln gezählt wird: Die Planung rechnet dann die Kosten jeder Phase und legt ein Gerät unter den Überschuss seiner eigenen Phase, sobald der Verbrauch jeder Phase gemessen wird (Phasensensoren des Netzanschlusses).",
     "phases_hint": "Geben Sie danach die Phase jedes Geräts, jeder Batterie und jeder Solaranlage in ihrem Blatt an (Reiter Geräte). Mit der vertraglichen Leistung Ihres Tarifs vermeidet die Planung dann, auf einer Phase gleichzeitig mehr laufen zu lassen, als sie liefern kann. Eine Batterie, die nur ihre eigene Phase ausgleicht, wird auf dieser Phase berechnet, sobald der Verbrauch jeder Phase gemessen wird."
+  },
+  "phases": {
+    "title": "Je Phase",
+    "note": "Was jede Phase über den Tag aus dem Netz bezieht und ins Netz einspeist.",
+    "phase": "Phase {number}",
+    "import": "Bezogen (geplant)",
+    "export": "Eingespeist (geplant)",
+    "import_actual": "Bezogen (gemessen)",
+    "export_actual": "Eingespeist (gemessen)"
   }
 }

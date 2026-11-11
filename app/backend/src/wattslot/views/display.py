@@ -285,8 +285,35 @@ def displayed_soc(
     production = [round(_hour(production_by_hour, h), 3) for h in range(24)]
     baseline = {int(h): v for h, v in (state.get("consommation_baseline_horaire") or {}).items()}
     planned = planned_devices_hourly(planning, actual, context, state.get("suite_veille"))
-    resimulated = resimulated_soc(state, actual, production, baseline, planned, context)
+    # Batteries qui ne compensent que leur phase : la courbe du plan, calculée phase par
+    # phase ; la resimulation, qui voit toutes les batteries sur le total, s'en écarterait.
+    resimulated = (
+        None
+        if state.get("batteries_par_phase")
+        else resimulated_soc(state, actual, production, baseline, planned, context)
+    )
     return SocCurve(resimulated if resimulated is not None else soc, production, baseline, planned)
+
+
+def grid_exchange(state: Mapping[str, Any]) -> tuple[dict[int, float], dict[int, float]]:
+    """(soutirage, injection) prévus par heure, en kWh. Avec un compteur qui compte chaque phase
+    à part : ceux de chaque phase additionnés, comme il les facture - une heure peut alors
+    avoir les deux. Sinon, l'échange de la maison."""
+    phases = state.get("residu_reseau_par_phase") or {}
+    if state.get("compteur_par_phase") and phases:
+        series = [phase_hours(hourly) for hourly in phases.values()]
+    else:
+        series = [phase_hours(state.get("residu_reseau_horaire") or {})]
+    hours = sorted({h for hourly in series for h in hourly})
+    return (
+        {h: sum(max(0.0, -hourly.get(h, 0.0)) for hourly in series) for h in hours},
+        {h: sum(max(0.0, hourly.get(h, 0.0)) for hourly in series) for h in hours},
+    )
+
+
+def phase_hours(values: Mapping[Any, Any]) -> dict[int, float]:
+    """Série horaire aux heures entières (les clés du JSON sont du texte)."""
+    return {int(h): float(v) for h, v in values.items() if v is not None}
 
 
 def _hour(values: Mapping[Any, float], h: int) -> float:
@@ -306,7 +333,7 @@ def day_summary(state: Mapping[str, Any], soc_percent: Sequence[float]) -> dict[
     else:
         max_hour = list(soc_percent).index(soc_max) + 1
     final_pct = soc_percent[23] if soc_percent else initial_pct
-    residual = state.get("residu_reseau_horaire", {})
+    imports, exports = grid_exchange(state)
     movements = battery.get("mouvements", []) if battery else []
     return {
         "soc_end_kwh": round(final_pct / 100 * capacity, 3),
@@ -318,8 +345,8 @@ def day_summary(state: Mapping[str, Any], soc_percent: Sequence[float]) -> dict[
         "discharge_kwh": round(
             sum(m["energie_kwh"] for m in movements if m["action"] == "decharge"), 3
         ),
-        "grid_import_kwh": round(-sum(v for v in residual.values() if v < 0), 3),
-        "grid_export_kwh": round(sum(v for v in residual.values() if v > 0), 3),
+        "grid_import_kwh": round(sum(imports.values()), 3),
+        "grid_export_kwh": round(sum(exports.values()), 3),
         "production_kwh": round(sum((state.get("production_solaire_horaire") or {}).values()), 3),
     }
 

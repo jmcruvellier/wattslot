@@ -163,6 +163,12 @@ class Plan(_V1):
     warnings: list[dict[str, Any] | str] = _v1_key("avertissements", default=[])
     residual_kwh: dict[int, float] = _v1_key("residu_reseau_horaire", default={})
     indicators: Indicators | None = _v1_key("indicateurs", default=None)
+    # Calcul par phase (triphasé), absents sinon : échange de chaque phase avec le réseau
+    # (phase « 1 », « 2 », « 3 » → heure → kWh, positif injection) ; le compteur compte
+    # chaque phase à part ; des batteries ne compensent que leur phase.
+    phase_residual_kwh: dict[str, dict[int, float]] = _v1_key("residu_reseau_par_phase", default={})
+    separate_phases: bool = _v1_key("compteur_par_phase", default=False)
+    phase_batteries: bool = _v1_key("batteries_par_phase", default=False)
 
     @classmethod
     def from_v1(cls, content: dict[str, Any]) -> "Plan":

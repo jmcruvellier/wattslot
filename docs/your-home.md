@@ -69,7 +69,9 @@ An appliance that exceeds its phase on its own stays placed, with a warning in t
 
 **Batteries.** Once the consumption of each phase is measured, a battery that only offsets its own phase is calculated on that phase: see [Battery](battery.md#several-batteries).
 
-**A meter that counts each phase apart.** With **My meter sums the three phases** unticked, and once the consumption of each phase is measured, the cost is counted phase by phase: what one phase exports no longer offsets what another imports. The plan then places an appliance under the surplus of its own phase, and the cost, bought and sold energy of the plan are those the meter bills. What is on no phase (a device or a solar installation whose phase is not set, a battery that offsets the total) is shared equally between the three. The curves still show the exchange of the whole home.
+**A meter that counts each phase apart.** With **My meter sums the three phases** unticked, and once the consumption of each phase is measured, the cost is counted phase by phase: what one phase exports no longer offsets what another imports. The plan then places an appliance under the surplus of its own phase, and the cost, bought and sold energy of the plan are those the meter bills. What is on no phase (a device or a solar installation whose phase is not set, a battery that offsets the total) is shared equally between the three. The curves then show, hour by hour, what the three phases buy and sell together: an hour can have both.
+
+**What you see.** When the plan is calculated by phase (batteries that only offset their phase, or a meter that counts each phase apart), **Planning** shows a **By phase** card: what each phase buys from and sells to the grid over the day, as planned and, with phase sensors on the grid connection, as measured so far. The battery curve is then the one of the plan.
 
 ## Objective
 

@@ -3388,3 +3388,20 @@ p[role="status"]:not(.state-message) {
   background: var(--accent);
   pointer-events: none;
 }
+
+/* Carte « Par phase » du jour (triphasé) : un tableau de trois lignes, chiffres alignés. */
+.phases-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+.phases-table th,
+.phases-table td {
+  padding: 0.25rem 0 0.25rem 0.5rem;
+  text-align: right;
+  font-weight: normal;
+}
+.phases-table th[scope="row"] {
+  padding-left: 0;
+  text-align: left;
+}

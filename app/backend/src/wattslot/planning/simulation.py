@@ -33,7 +33,8 @@ class BatteryRun:
     # Batteries qui ne compensent que leur phase : la simulation de chaque groupe, par phase
     # (``residual_kwh`` : échange de la phase après sa batterie). Vide sinon.
     lines: Mapping[Any, "BatteryRun"] = field(default_factory=dict)
-    # Compteur qui compte chaque phase à part : échange de chaque phase avec le réseau, par
+    # Calcul qui distingue les phases (batteries par phase, ou compteur qui compte chaque
+    # phase à part) : échange de chaque phase avec le réseau, par
     # heure (positif injection, négatif soutirage) ; leur somme est ``residual_kwh``. Vide
     # sinon.
     phase_residual_kwh: Mapping[Any, Mapping[int, float]] = field(default_factory=dict)

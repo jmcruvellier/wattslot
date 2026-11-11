@@ -35,7 +35,7 @@ from wattslot import configuration as config
 from wattslot.aggregation import CounterState
 from wattslot.configuration import Behavior, Configuration
 from wattslot.detection import DeviceKind, Role
-from wattslot.home_model import HomeModel, counted_sensors, sensor_iri
+from wattslot.home_model import LINES, HomeModel, counted_sensors, sensor_iri
 from wattslot.planning.appliances import DEFAULT_RULES, RULES, SHORT_GAP_MIN, Observation
 from wattslot.planning.inputs import V1_POOL
 from wattslot.planning.journal import appliances, real_cycles
@@ -413,7 +413,29 @@ def actual_day(
         thresholds = speed_thresholds(speeds, on_w) if speeds else [(MEASURED_SPEED, on_w)]
         equipment[runtime.name] = runtime_segments(points, until, zone, thresholds)
 
+    # Capteurs du réseau qui ne mesurent qu'une phase : soutirage et injection de chacune.
+    by_phase: dict[str, dict[str, dict[int, float]]] = {}
+    series = {
+        Role.ENERGY_IMPORTED: "reseau_reel_soutire_par_phase",
+        Role.ENERGY_EXPORTED: "reseau_reel_injecte_par_phase",
+    }
+    for device in model.devices:
+        if device.kind is not DeviceKind.GRID:
+            continue
+        for sensor in device.sensors:
+            if sensor.phase not in LINES or sensor.role not in series:
+                continue
+            measured = counter_hourly(
+                *split(sensor_iri(device.key, sensor.entity_id)), midnight, zone
+            )
+            phase = by_phase.setdefault(series[sensor.role], {}).setdefault(
+                str(LINES.index(sensor.phase) + 1), {}
+            )
+            for hour, kwh in (measured or {}).items():
+                phase[hour] = phase.get(hour, 0.0) + kwh
+
     return {
+        **by_phase,
         "soc_pct_reel": hourly_mean(soc_today, until, zone),
         "soc_pct_fin_heure": soc_end_of_hour(soc_today, until, zone),
         "soc_max_reel": soc_max(soc_today, zone),

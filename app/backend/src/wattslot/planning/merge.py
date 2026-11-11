@@ -34,6 +34,8 @@ HOURLY_FIELDS = (
     "residu_reseau_horaire",
 )
 
+PHASE_RESIDUAL = "residu_reseau_par_phase"
+
 Plan = dict[str, Any]
 
 
@@ -214,6 +216,12 @@ def merge_plans(
     merged = dict(new)
     for field in HOURLY_FIELDS:
         merged[field] = merge_hourly(old.get(field, {}), new.get(field, {}), first_hour)
+    if PHASE_RESIDUAL in new:  # échange de chaque phase : heure par heure, comme le total
+        before = old.get(PHASE_RESIDUAL) or {}
+        merged[PHASE_RESIDUAL] = {
+            phase: merge_hourly(before.get(phase), hourly, first_hour)
+            for phase, hourly in new[PHASE_RESIDUAL].items()
+        }
     day = new.get("date_cible")
     day_iso = day.isoformat() if isinstance(day, date) else day
     active = {t["summary"] for t in new.get("taches_placees", []) if t.get("due") == day_iso} | {
