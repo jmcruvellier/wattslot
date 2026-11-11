@@ -138,11 +138,13 @@ describe("TodayView", () => {
   });
 
   it("donne la batterie et le soleil du jour, avec leur tendance au relevé", async () => {
-    mockApi({ ...TODAY, now: NOW, next_action: null });
+    // Total attendu : le mesuré puis le prévu (bandeau météo), jamais moins que le déjà produit ;
+    // la somme des prévisions seules (10 kWh ici) donnait « 10 kWh prévus, 14 déjà produits ».
+    mockApi({ ...TODAY, weather: { ...TODAY.weather, production_kwh: 16.5 }, now: NOW, next_action: null });
     renderView();
     expect(await screen.findByRole("heading", { name: "64 % en ce moment" })).toBeInTheDocument();
     expect(screen.getByText("Au plus haut vers 16h00 : 98 %.")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "10,0 kWh prévus aujourd'hui" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "16,5 kWh prévus aujourd'hui" })).toBeInTheDocument();
     expect(screen.getByText("14,0 kWh déjà produits.")).toBeInTheDocument();
     // Tendances de TODAY : SoC +25 %, production +8 %, en pilule en tête de chaque carte.
     expect(screen.getAllByTitle("Écart avec la prévision au relevé")).toHaveLength(2);
@@ -155,7 +157,7 @@ describe("TodayView", () => {
     mockApi({ ...TODAY, now: NOW, next_action: null, cards: null });
     renderView();
     expect(await screen.findByRole("heading", { name: "64 % en ce moment" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "10,0 kWh prévus aujourd'hui" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "9,5 kWh prévus aujourd'hui" })).toBeInTheDocument();
     expect(screen.queryByText(/[▲▼●]/)).not.toBeInTheDocument();
   });
 
@@ -163,7 +165,7 @@ describe("TodayView", () => {
     mockApi({ ...TODAY, solar: false, now: NOW, next_action: null });
     renderView();
     expect(await screen.findByRole("heading", { name: "64 % en ce moment" })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "10,0 kWh prévus aujourd'hui" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "9,5 kWh prévus aujourd'hui" })).not.toBeInTheDocument();
     expect(screen.queryByText("Soleil")).not.toBeInTheDocument();
   });
 

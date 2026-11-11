@@ -120,7 +120,7 @@ describe("Agenda", () => {
   it("résume la journée et liste les actions", () => {
     renderAgenda(TOMORROW);
     expect(screen.getByRole("heading", { name: "Samedi, journée ensoleillée" })).toBeInTheDocument();
-    expect(screen.getByText("10,0 kWh de soleil, surtout entre 8 h et 18 h")).toBeInTheDocument();
+    expect(screen.getByText("9,5 kWh de soleil, surtout entre 8 h et 18 h")).toBeInTheDocument();
     const items = within(screen.getByRole("list", { name: "Agenda de la journée" })).getAllByRole("listitem");
     expect(items.map((item) => item.textContent)).toEqual([
       "9h00La batterie se chargeJusqu'à 13h00",

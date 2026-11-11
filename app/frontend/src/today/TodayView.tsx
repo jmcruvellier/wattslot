@@ -112,6 +112,10 @@ export default function TodayView({ onNavigate }: { onNavigate?: (target: string
   const { view } = load;
   const produced = view.hours.reduce((total, h) => total + (h.production_actual_kwh ?? 0), 0);
   const measuredHours = view.hours.some((h) => h.production_actual_kwh !== null);
+  // Total attendu : le mesuré puis le prévu, comme le bandeau météo de Planning. La somme des
+  // prévisions seules pouvait être inférieure à ce qui est déjà produit (« 1,2 kWh prévus »
+  // à côté de « 1,5 kWh déjà produits »).
+  const expected = view.weather?.production_kwh ?? view.summary.production_kwh;
 
   return (
     <div className="today">
@@ -149,7 +153,7 @@ export default function TodayView({ onNavigate }: { onNavigate?: (target: string
           </Card>
         )}
         {view.solar !== false && (
-          <Card tone="sun" eyebrow={t("today.sun.eyebrow")} title={t("today.sun.title", { kwh: kwh(view.summary.production_kwh, 1) })} meta={<TrendBadge view={view} line="production" />}>
+          <Card tone="sun" eyebrow={t("today.sun.eyebrow")} title={t("today.sun.title", { kwh: kwh(expected, 1) })} meta={<TrendBadge view={view} line="production" />}>
             <p>{measuredHours ? t("today.sun.done", { kwh: kwh(produced, 1) }) : t("today.sun.none")}</p>
           </Card>
         )}
