@@ -416,6 +416,19 @@ def _real_end(
     return free_from_minute(result) if result is not None else None
 
 
+def _earliest(first_hour: int, now: datetime | None, chosen_min: int | None) -> int:
+    """Départ au plus tôt d'une tâche à placer : l'instant du calcul, pas le début de l'heure
+    en cours. Un calcul lancé à 11 h 59 plaçait un départ à 11 h 00, passé de 59 minutes ;
+    l'heure suivante, ce créneau était gelé comme commencé, et l'appareil n'était plus replacé.
+    Un départ choisi par l'utilisateur dans l'heure en cours reste possible, comme avant."""
+    start = first_hour * 60
+    if now is None or now.hour != first_hour:
+        return start
+    if chosen_min is not None and start <= chosen_min:
+        return start
+    return start + now.minute
+
+
 def _released(
     frozen: Mapping[str, FrozenCycle],
     data: PlanningInput,
@@ -634,6 +647,7 @@ def from_input(data: PlanningInput, reference: Reference = REFERENCE) -> Problem
                     )
                 )
                 continue
+            chosen = data.chosen_starts.get(request.name)
             tasks.append(
                 Task(
                     name=request.name,
@@ -643,11 +657,11 @@ def from_input(data: PlanningInput, reference: Reference = REFERENCE) -> Problem
                     slot_min=max(1, min(reference.cycle_max_hours * 60, round(cycle_min))),
                     shape=shape,
                     priority=priority,
-                    earliest_min=first_hour * 60,
+                    earliest_min=_earliest(first_hour, now, chosen),
                     depends_on=task_key(request.depends_on)
                     if priority == 3 and request.depends_on
                     else None,
-                    chosen_min=data.chosen_starts.get(request.name),
+                    chosen_min=chosen,
                 )
             )
 

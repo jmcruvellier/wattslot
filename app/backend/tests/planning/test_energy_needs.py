@@ -73,8 +73,9 @@ def test_the_energy_is_delivered_before_the_deadline() -> None:
 
     found = slot(data, "Voiture")
 
-    assert found.energy_kwh == 10 and found.hourly_kwh is not None
-    assert sum(found.hourly_kwh.values()) == pytest.approx(10, abs=1e-9)
+    # Énergie du créneau : somme des heures arrondies au Wh.
+    assert found.energy_kwh == pytest.approx(10, abs=0.002) and found.hourly_kwh is not None
+    assert sum(found.hourly_kwh.values()) == pytest.approx(10, abs=0.002)
     assert all(8 <= hour < 20 and kwh <= 3 for hour, kwh in found.hourly_kwh.items())
 
 

@@ -680,7 +680,7 @@ async def generate(
                     plan = PlanStore(database).load("today")
                     if plan is not None:
                         for appliance, start in planned_starts(plan.content, names).items():
-                            soon = moment < start < moment + timedelta(minutes=60)
+                            soon = moment <= start < moment + timedelta(minutes=60)
                             if soon and not house.started(appliance, start.date()):
                                 house.start(appliance, start)
                                 summary["starts"].append((appliance, start.isoformat()))
