@@ -86,6 +86,21 @@ python -m tools.demo serve --data /tmp/wattslot-demo/fr --port 8100
 
 (avec `PYTHONPATH` sur `app/backend/src` et `dev/`, ce que fait `tools.screenshots`). L'heure du serveur est figée, pas celle du navigateur.
 
+### Maison en triphasé
+
+`generate --three-phase` simule la même maison raccordée en triphasé (`demo_home.ThreePhaseHouse`), pour essayer le calcul par phase sans installation réelle :
+
+- le toit en deux installations solaires, sur les phases 2 et 3, chacune avec une batterie de 5 kWh qui ne compense que sa phase ;
+- rien sur la phase 1, qui porte la moitié de la consommation de base, le chauffe-eau, le lave-linge et le lave-vaisselle ; le sèche-linge sur la phase 3 ;
+- un compteur de soutirage et d'injection par phase, en plus de celui du total, qui additionne les phases ; puissance souscrite de 9 kVA, soit 3 kVA par phase.
+
+```bash
+python -m tools.demo generate --language fr --three-phase --data /tmp/wattslot-demo/tri
+python -m tools.demo serve --data /tmp/wattslot-demo/tri --port 8100
+```
+
+Elle ne sert pas aux captures de la documentation.
+
 ## Banc d'essai de l'assistant
 
 `dev/tools/assistant_bench.py` pose les 18 questions de la suite de test de l'assistant à des modèles locaux d'Ollama, plusieurs fois chacune, avec les outils du serveur MCP d'une installation de WattSlot (sans Open WebUI). Il ne dépend que de la bibliothèque standard de Python.

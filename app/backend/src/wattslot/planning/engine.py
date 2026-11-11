@@ -1000,7 +1000,7 @@ def day_plan(problem: Problem, plan: Plan, run: BatteryRun) -> DayPlan:
     by_phase: dict[str, Any] = {}
     if run.phase_residual_kwh:
         by_phase["phase_residual_kwh"] = {
-            str(LINES.index(line) + 1): {h: round(kwh, 3) for h, kwh in hourly.items()}
+            LINES.index(line) + 1: {h: round(kwh, 3) for h, kwh in hourly.items()}
             for line, hourly in run.phase_residual_kwh.items()
         }
     if problem.separate_phases:

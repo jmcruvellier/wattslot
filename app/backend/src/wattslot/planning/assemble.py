@@ -29,7 +29,7 @@ from pydantic import BaseModel
 from wattslot import configuration as config
 from wattslot import user_requests
 from wattslot.aggregation import QUARTER
-from wattslot.battery_settings import BatterySettings, combine
+from wattslot.battery_settings import BatterySettings, combine, share_of
 from wattslot.configuration import Behavior, Configuration, DeviceSettings
 from wattslot.detection import DeviceKind, Role, classify_appliance
 from wattslot.home_assistant import HomeAssistantClient
@@ -124,13 +124,17 @@ def battery_groups(
     house = config.battery_of(configuration)
     own = {d.key: d.battery for d in configuration.devices if d.battery is not None}
     parts: dict[Phase | None, list[tuple[float, float, BatterySettings]]] = defaultdict(list)
+    total = sum(
+        device.capacity_kwh or 0.0 for device in model.devices if device.kind is DeviceKind.BATTERY
+    )
     for device in model.devices:
         if device.kind is not DeviceKind.BATTERY or not device.capacity_kwh:
             continue
         capacity, stored, _ = battery_state(HomeModel(devices=[device]), states)
         if capacity <= 0:
             continue  # état de charge illisible : pas comptée, comme dans l'ensemble
-        settings = own.get(device.key, house)
+        # Sans réglages propres : ceux de la maison, dont elle prend sa part des puissances.
+        settings = own.get(device.key) or share_of(house, capacity / total)
         alone = model.supply is Supply.THREE and device.phase in LINES and not settings.all_phases
         parts[device.phase if alone else None].append((capacity, stored, settings))
 

@@ -238,6 +238,19 @@ def test_batteries_are_grouped_by_the_phase_they_offset() -> None:
     assert sum(g.capacity_kwh for g in [*lines.values(), shared]) == WHOLE.capacity_kwh
 
 
+def test_each_group_takes_its_share_of_the_home_powers() -> None:
+    house = Configuration(battery=BatterySettings(charge_max_w=6000, discharge_max_w=3000))
+
+    lines, shared = battery_groups(WHOLE, MODEL, STATES, house)
+
+    # 36 kWh de batteries dans la maison, dont une illisible : 8 kWh sur la phase 2, 2 kWh sur
+    # la phase 3, 6 kWh sur la phase 1, 14 kWh sur le total ; chacune prend sa part des 6 kW.
+    assert lines[Phase.L2].charge_max_w == pytest.approx(6000 * 8 / 36)
+    assert lines[Phase.L3].discharge_max_w == pytest.approx(3000 * 2 / 36)
+    assert lines[Phase.L1].charge_max_w == pytest.approx(6000 * 6 / 36)
+    assert shared.charge_max_w == pytest.approx(6000 * 14 / 36)
+
+
 def test_no_groups_without_a_battery_on_one_phase() -> None:
     single = MODEL.model_copy(update={"supply": Supply.SINGLE})
     all_shared = Configuration(battery=BatterySettings(all_phases=True))

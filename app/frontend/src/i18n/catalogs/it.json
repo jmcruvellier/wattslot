@@ -1798,11 +1798,12 @@
   },
   "phases": {
     "title": "Per fase",
-    "note": "Ciò che ogni fase acquista dalla rete e le vende nella giornata.",
+    "note": "Ciò che ogni fase acquista dalla rete e le vende nella giornata, secondo il piano.",
+    "note_measured": "Ciò che ogni fase acquista dalla rete e le vende: previsto nella giornata e misurato finora.",
     "phase": "Fase {number}",
-    "import": "Acquistato (previsto)",
-    "export": "Venduto (previsto)",
-    "import_actual": "Acquistato (misurato)",
-    "export_actual": "Venduto (misurato)"
+    "import": "Acquistato",
+    "export": "Venduto",
+    "measured": "{kwh} misurati",
+    "unmeasured": "nessuna misura"
   }
 }

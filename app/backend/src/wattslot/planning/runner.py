@@ -21,6 +21,7 @@ dernière exécution.
 import logging
 import sqlite3
 import time
+from collections import defaultdict
 from collections.abc import Mapping
 from dataclasses import dataclass, replace
 from datetime import UTC, date, datetime, timedelta
@@ -222,20 +223,40 @@ def _soc_today(
     """(SoC en fin de chaque heure close aujourd'hui, SoC à minuit, maximum du jour)."""
     zone = ctx.raw.zone
     midnight = datetime.combine(now.astimezone(zone).date(), day_time(), zone)
-    by_hour: dict[int, float] = {}
-    at_midnight: float | None = None
-    maximum = 0.0
-    for entity_id in past.sensors(model, [Role.STATE_OF_CHARGE]):
+    # Plusieurs batteries : un seul état de charge, pondéré par la capacité de chacune, comme
+    # celui d'où part le calcul (``assemble.battery_state``).
+    levels: dict[int, list[tuple[float, float, float]]] = defaultdict(list)  # heure → mesures
+    for device in model.devices:
+        if device.kind is not DeviceKind.BATTERY:
+            continue
+        entity_id = next(
+            (s.entity_id for s in device.sensors if s.role is Role.STATE_OF_CHARGE), None
+        )
+        if entity_id is None:
+            continue
         for aggregate in reader.read(entity_id, HOUR, midnight - timedelta(hours=1), now):
             if aggregate.last is None:
                 continue
             local = aggregate.start.astimezone(zone)
-            if local < midnight:
-                at_midnight = aggregate.last
-            else:
-                by_hour[local.hour] = aggregate.last
-                maximum = max(maximum, aggregate.max or aggregate.last)
-        break  # une batterie : le premier capteur de SoC
+            levels[-1 if local < midnight else local.hour].append(
+                (device.capacity_kwh or 0.0, aggregate.last, aggregate.max or aggregate.last)
+            )
+
+    def mean(found: list[tuple[float, float, float]], index: int) -> float:
+        total = sum(capacity for capacity, _, _ in found)
+        if total <= 0:
+            return sum(values[index] for values in found) / len(found)
+        return sum(values[0] * values[index] for values in found) / total
+
+    whole = max((len(found) for found in levels.values()), default=0)
+    by_hour = {
+        hour: mean(found, 1) for hour, found in levels.items() if hour >= 0 and len(found) == whole
+    }
+    at_midnight = mean(levels[-1], 1) if len(levels.get(-1, [])) == whole and whole else None
+    maximum = max(
+        (mean(found, 2) for hour, found in levels.items() if hour >= 0 and len(found) == whole),
+        default=0.0,
+    )
     return by_hour, at_midnight, maximum
 
 

@@ -21,7 +21,7 @@ from pydantic import BaseModel, Field
 from pyoxigraph import Literal, NamedNode, Triple
 
 from wattslot.battery_settings import DEFAULT as DEFAULT_BATTERY
-from wattslot.battery_settings import BatterySettings
+from wattslot.battery_settings import BatterySettings, share_of
 from wattslot.battery_settings import combine as combine_batteries
 from wattslot.battery_settings import load as load_battery
 from wattslot.battery_settings import problems as battery_problems
@@ -197,17 +197,23 @@ def battery_of(
 ) -> BatterySettings:
     """Réglages de la batterie que voit le calcul : ceux de la maison (par défaut s'ils ne sont
     pas configurés), ou, avec ``home``, ceux de ses batteries réunis quand certaines ont les
-    leurs (``battery_settings.combine``)."""
+    leurs (``battery_settings.combine``) ; une batterie sans réglages propres prend sa part
+    des puissances de la maison (``battery_settings.share_of``)."""
     if configuration is None:
         return DEFAULT_BATTERY
     house = configuration.battery or DEFAULT_BATTERY
     own = {d.key: d.battery for d in configuration.devices if d.battery is not None}
     if home is None or not own:
         return house
-    parts = [
-        (device.capacity_kwh, own.get(device.key, house))
+    capacities = {
+        device.key: device.capacity_kwh
         for device in home.devices
         if device.kind is DeviceKind.BATTERY and device.capacity_kwh
+    }
+    total = sum(capacities.values())
+    parts = [
+        (capacity, own.get(key) or share_of(house, capacity / total))
+        for key, capacity in capacities.items()
     ]
     return combine_batteries(parts) if parts else house
 

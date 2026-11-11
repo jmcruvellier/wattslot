@@ -15,6 +15,10 @@ maison synthétique de ``demo_home`` depuis 31 jours :
 ``serve`` lance l'application sur ce dossier, connectée au faux HA, avec l'heure de
 l'application figée à 14 h 30 du jour J (``datetime.now`` des modules de ``wattslot``).
 
+``--three-phase`` génère la même maison raccordée en triphasé (``demo_home.ThreePhaseHouse``) :
+deux installations solaires et deux batteries sur les phases 2 et 3, un compteur par phase,
+puissance souscrite de 9 kVA. Elle sert à essayer le calcul par phase, pas aux captures.
+
 Depuis ``dev/``, avec l'environnement du serveur (``pip install -e app/backend``) ::
 
     python -m tools.demo generate --language en --data <dossier>
@@ -51,7 +55,6 @@ from tools.demo_home import (
     SOLAR_ENERGY,
     SOLAR_POWER,
     WASHING_MACHINE,
-    WATER_HEATER,
     ZONE,
     House,
     energy_entity,
@@ -173,6 +176,21 @@ DEVICE_OF: dict[str, str] = {
     **{power_entity(a): a for a in APPLIANCES},
     **{energy_entity(a): a for a in APPLIANCES},
 }
+# Maison en triphasé : seconde installation solaire, seconde batterie, compteurs par phase.
+THREE_PHASE_DEVICE_OF: dict[str, str] = {
+    house_data.SOLAR_2_POWER: "solar_2",
+    house_data.SOLAR_2_ENERGY: "solar_2",
+    house_data.BATTERY_2_CHARGE: "battery_2",
+    house_data.BATTERY_2_DISCHARGE: "battery_2",
+    house_data.BATTERY_2_LEVEL: "battery_2",
+    house_data.BATTERY_2_CAPACITY: "battery_2",
+    **{house_data.phase_import(n): "grid" for n in house_data.PHASES},
+    **{house_data.phase_export(n): "grid" for n in house_data.PHASES},
+}
+
+
+def device_of(three_phase: bool) -> dict[str, str]:
+    return DEVICE_OF | THREE_PHASE_DEVICE_OF if three_phase else DEVICE_OF
 
 
 def ha_states(values: dict[str, float], language: str) -> list[dict[str, Any]]:
@@ -215,16 +233,61 @@ def ha_states(values: dict[str, float], language: str) -> list[dict[str, Any]]:
             found.append(
                 _sensor(entity_id, values[entity_id], f"{names[appliance]} {labels[kind]}", kind)
             )
+    if house_data.SOLAR_2_ENERGY not in values:
+        return found
+    # Maison en triphasé : seconde installation, seconde batterie, compteurs par phase.
+    h = house_data
+    solar, battery = names["solar_2"], names["battery_2"]
+    found += [
+        _sensor(h.SOLAR_2_POWER, values[h.SOLAR_2_POWER], f"{solar} {labels['power']}", "power"),
+        _sensor(
+            h.SOLAR_2_ENERGY, values[h.SOLAR_2_ENERGY], f"{solar} {labels['energy']}", "energy"
+        ),
+        _sensor(
+            h.BATTERY_2_CHARGE,
+            values[h.BATTERY_2_CHARGE],
+            f"{battery} {labels['charge']}",
+            "energy",
+        ),
+        _sensor(
+            h.BATTERY_2_DISCHARGE,
+            values[h.BATTERY_2_DISCHARGE],
+            f"{battery} {labels['discharge']}",
+            "energy",
+        ),
+        _sensor(
+            h.BATTERY_2_LEVEL, values[h.BATTERY_2_LEVEL], f"{battery} {labels['level']}", "battery"
+        ),
+        _sensor(h.BATTERY_2_CAPACITY, CAPACITY_KWH, f"{battery} {labels['capacity']}", "storage"),
+    ]
+    for phase in h.PHASES:
+        found += [
+            _sensor(
+                h.phase_import(phase),
+                values[h.phase_import(phase)],
+                f"{labels['import']} L{phase}",
+                "energy",
+            ),
+            _sensor(
+                h.phase_export(phase),
+                values[h.phase_export(phase)],
+                f"{labels['export']} L{phase}",
+                "energy",
+            ),
+        ]
     return found
 
 
-def registries(language: str) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+def registries(
+    language: str, three_phase: bool = False
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """(registre des entités, registre des appareils) de HA."""
-    devices = sorted(set(DEVICE_OF.values()))
+    known = device_of(three_phase)
+    devices = sorted(set(known.values()))
     return (
         [
             {"entity_id": entity_id, "device_id": f"demo-{device}", "platform": "demo"}
-            for entity_id, device in sorted(DEVICE_OF.items())
+            for entity_id, device in sorted(known.items())
         ],
         [{"id": f"demo-{device}", "name": NAMES[language][device]} for device in devices],
     )
@@ -252,6 +315,29 @@ ENERGY_PREFERENCES: dict[str, Any] = {
 }
 
 
+def energy_preferences(three_phase: bool) -> dict[str, Any]:
+    """Tableau Énergie de HA ; en triphasé, avec la seconde installation et la seconde batterie
+    (les compteurs par phase n'y sont pas : ils s'ajoutent dans la fiche du réseau)."""
+    if not three_phase:
+        return ENERGY_PREFERENCES
+    h = house_data
+    extra = [
+        {
+            "type": "solar",
+            "stat_energy_from": h.SOLAR_2_ENERGY,
+            "stat_rate": h.SOLAR_2_POWER,
+            "config_entry_solar_forecast": [],
+        },
+        {
+            "type": "battery",
+            "stat_energy_from": h.BATTERY_2_DISCHARGE,
+            "stat_energy_to": h.BATTERY_2_CHARGE,
+            "stat_soc": h.BATTERY_2_LEVEL,
+        },
+    ]
+    return ENERGY_PREFERENCES | {"energy_sources": [*ENERGY_PREFERENCES["energy_sources"], *extra]}
+
+
 def solar_forecast() -> dict[str, Any]:
     """Prévision du tableau Énergie (``energy/solar_forecast``), de la veille à J+9."""
     wh_hours: dict[str, float] = {}
@@ -269,12 +355,13 @@ class FakeHomeAssistant:
     def __init__(self, language: str, values: dict[str, float]) -> None:
         self.language = language
         self.values = dict(values)
+        self.three_phase = house_data.SOLAR_2_ENERGY in values
         self.forecast = solar_forecast()
         self.notifications: list[dict[str, Any]] = []
 
     def answer(self, message: dict[str, Any]) -> Any:
         kind = message["type"]
-        entities, devices = registries(self.language)
+        entities, devices = registries(self.language, self.three_phase)
         if kind == "get_config":
             return {
                 "version": HA_VERSION,
@@ -291,7 +378,7 @@ class FakeHomeAssistant:
         if kind == "config/device_registry/list":
             return devices
         if kind == "energy/get_prefs":
-            return ENERGY_PREFERENCES
+            return energy_preferences(self.three_phase)
         if kind == "energy/solar_forecast":
             return self.forecast
         if kind == "get_services":
@@ -350,36 +437,52 @@ class _Targets:
         self.targets = targets
 
 
-def home_from_proposal(proposal: Any, language: str) -> Any:
-    """Maison proposée par la détection, chaque équipement nommé dans la langue des captures."""
-    from wattslot.detection import DeviceKind
-    from wattslot.home_model import HomeDevice, HomeModel, HomeSensor
+def home_from_proposal(proposal: Any, language: str, three_phase: bool = False) -> Any:
+    """Maison proposée par la détection, chaque équipement nommé dans la langue des captures.
+    En triphasé : la phase de chaque équipement, et les compteurs par phase du réseau, que le
+    tableau Énergie de HA ne connaît pas."""
+    from wattslot.detection import DeviceKind, Role
+    from wattslot.home_model import HomeDevice, HomeModel, HomeSensor, Phase, Supply
 
-    by_kind = {
-        DeviceKind.SOLAR: "solar",
-        DeviceKind.GRID: "grid",
-        DeviceKind.BATTERY: "battery",
-        DeviceKind.WATER_HEATER: WATER_HEATER,
-        DeviceKind.WASHING_MACHINE: WASHING_MACHINE,
-        DeviceKind.DRYER: DRYER,
-        DeviceKind.DISHWASHER: DISHWASHER,
+    known = device_of(three_phase)
+    h = house_data
+    lines = {1: Phase.L1, 2: Phase.L2, 3: Phase.L3}
+    phases = {
+        "solar": h.SOLAR_PHASES[0],
+        "battery": h.SOLAR_PHASES[0],
+        "solar_2": h.SOLAR_PHASES[1],
+        "battery_2": h.SOLAR_PHASES[1],
+        **h.APPLIANCE_PHASE,
     }
-    return HomeModel(
-        devices=[
+    devices = []
+    for device in proposal.devices:
+        logical = known[device.sensors[0].entity_id]
+        sensors = [
+            HomeSensor(entity_id=s.entity_id, role=s.role, resets_daily=s.resets_daily)
+            for s in device.sensors
+            if not s.excluded
+        ]
+        if three_phase and device.kind is DeviceKind.GRID:
+            for number, line in lines.items():
+                sensors += [
+                    HomeSensor(
+                        entity_id=h.phase_import(number), role=Role.ENERGY_IMPORTED, phase=line
+                    ),
+                    HomeSensor(
+                        entity_id=h.phase_export(number), role=Role.ENERGY_EXPORTED, phase=line
+                    ),
+                ]
+        devices.append(
             HomeDevice(
                 key=device.key,
                 kind=device.kind,
-                name=NAMES[language][by_kind[device.kind]],
+                name=NAMES[language][logical],
                 capacity_kwh=device.capacity_kwh,
-                sensors=[
-                    HomeSensor(entity_id=s.entity_id, role=s.role, resets_daily=s.resets_daily)
-                    for s in device.sensors
-                    if not s.excluded
-                ],
+                sensors=sensors,
+                phase=lines[phases[logical]] if three_phase and logical in phases else None,
             )
-            for device in proposal.devices
-        ]
-    )
+        )
+    return HomeModel(devices=devices, supply=Supply.THREE if three_phase else Supply.SINGLE)
 
 
 def minutes(start: datetime, end: datetime) -> Iterator[datetime]:
@@ -405,8 +508,11 @@ def planned_starts(content: dict[str, Any], names: dict[str, str]) -> dict[str, 
     return found
 
 
-async def generate(data_dir: Path, language: str, quiet: bool = False) -> dict[str, Any]:
-    """Dossier de données de la démonstration ; renvoie un résumé (plans, relevés)."""
+async def generate(
+    data_dir: Path, language: str, quiet: bool = False, three_phase: bool = False
+) -> dict[str, Any]:
+    """Dossier de données de la démonstration ; renvoie un résumé (plans, relevés).
+    ``three_phase`` : la maison raccordée en triphasé (essais du calcul par phase)."""
     import_application()
     freeze_time()
     from wattslot import configuration, home_model, notifications, user_requests
@@ -436,7 +542,7 @@ async def generate(data_dir: Path, language: str, quiet: bool = False) -> dict[s
     )
     window = WINDOW
     Clock.moment = first
-    house = House()
+    house = house_data.ThreePhaseHouse() if three_phase else House()
     ha = FakeHomeAssistant(language, house.step(first - timedelta(minutes=1)))
 
     database = open_database(data_dir)
@@ -455,12 +561,13 @@ async def generate(data_dir: Path, language: str, quiet: bool = False) -> dict[s
                 while client.status.state is not ConnectionState.CONNECTED:
                     await asyncio.sleep(0.02)
 
-            home = home_from_proposal(propose(client.snapshot), language)
+            home = home_from_proposal(propose(client.snapshot), language, three_phase)
             home_model.save(graph, home)
             saved = apply(load_template("off_peak"), home, configuration.Configuration(), None)
-            saved.battery = BatterySettings(
-                charge_max_w=house_data.BATTERY_MAX_W,
-                discharge_max_w=house_data.BATTERY_MAX_W,
+            batteries = sum(d.kind is DeviceKind.BATTERY for d in home.devices)
+            saved.battery = BatterySettings(  # puissances de toutes les batteries ensemble
+                charge_max_w=house_data.BATTERY_MAX_W * batteries,
+                discharge_max_w=house_data.BATTERY_MAX_W * batteries,
                 floor_percent=house_data.FLOOR_PERCENT,
             )
             # Lave-vaisselle pas avant 15 h (contrainte horaire) : la prochaine action à 14 h 30.
@@ -471,16 +578,24 @@ async def generate(data_dir: Path, language: str, quiet: bool = False) -> dict[s
                         TimeConstraint(kind=ConstraintKind.NOT_BEFORE, start_hour=15)
                     ]
             # Panneaux décrits : un toit de 4,5 kWc plein sud (sans position dans HA, la
-            # prévision reste celle du tableau Énergie).
-            solar = next(d for d in home.devices if d.kind is DeviceKind.SOLAR)
-            saved.devices = [d for d in saved.devices if d.key != solar.key] + [
+            # prévision reste celle du tableau Énergie) ; en triphasé, deux moitiés.
+            solar = [d for d in home.devices if d.kind is DeviceKind.SOLAR]
+            solar_keys = {d.key for d in solar}
+            saved.devices = [d for d in saved.devices if d.key not in solar_keys] + [
                 DeviceSettings(
-                    key=solar.key,
+                    key=device.key,
                     behavior=Behavior.PRODUCTION,
                     automation=Automation.INFORM,
-                    panels=SolarPanels(arrays=[PanelArray(kwp=4.5)], inverter_kw=3.6),
+                    panels=SolarPanels(
+                        arrays=[PanelArray(kwp=4.5 / len(solar))], inverter_kw=3.6 / len(solar)
+                    ),
                 )
+                for device in solar
             ]
+            if three_phase and saved.tariff is not None:  # 3 kVA par phase
+                saved.tariff = saved.tariff.model_copy(
+                    update={"contract_kva": house_data.CONTRACT_KVA}
+                )
             issues = configuration.validate(home, configuration.effective(home, saved))
             if issues:
                 raise RuntimeError(f"configuration de démonstration invalide : {issues}")
@@ -653,6 +768,7 @@ def main() -> int:
     gen = sub.add_parser("generate", help="dossier de données de la démonstration")
     gen.add_argument("--language", choices=sorted(NAMES), default="en")
     gen.add_argument("--data", type=Path, required=True)
+    gen.add_argument("--three-phase", action="store_true", help="maison raccordée en triphasé")
     run = sub.add_parser("serve", help="application sur le dossier, heure figée")
     run.add_argument("--data", type=Path, required=True)
     run.add_argument("--port", type=int, default=8100)
@@ -660,7 +776,7 @@ def main() -> int:
     args = parser.parse_args()
     logging.basicConfig(level=logging.WARNING)
     if args.command == "generate":
-        summary = asyncio.run(generate(args.data, args.language))
+        summary = asyncio.run(generate(args.data, args.language, three_phase=args.three_phase))
         print(f"{summary['runs']} calculs, {summary['readings']} relevés, {summary['starts']}")
     else:
         asyncio.run(serve(args.data, args.port, args.ha_port))

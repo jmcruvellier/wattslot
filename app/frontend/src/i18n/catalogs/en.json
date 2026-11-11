@@ -1798,11 +1798,12 @@
   },
   "phases": {
     "title": "By phase",
-    "note": "What each phase buys from and sells to the grid over the day.",
+    "note": "What each phase buys from and sells to the grid over the day, according to the plan.",
+    "note_measured": "What each phase buys from and sells to the grid: planned over the day, and measured so far.",
     "phase": "Phase {number}",
-    "import": "Bought (planned)",
-    "export": "Sold (planned)",
-    "import_actual": "Bought (measured)",
-    "export_actual": "Sold (measured)"
+    "import": "Bought",
+    "export": "Sold",
+    "measured": "{kwh} measured",
+    "unmeasured": "not measured"
   }
 }

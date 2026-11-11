@@ -1798,11 +1798,12 @@
   },
   "phases": {
     "title": "Per fase",
-    "note": "Wat elke fase over de dag van het net afneemt en aan het net levert.",
+    "note": "Wat elke fase volgens het plan over de dag van het net afneemt en eraan levert.",
+    "note_measured": "Wat elke fase van het net afneemt en eraan levert: gepland over de dag en tot nu toe gemeten.",
     "phase": "Fase {number}",
-    "import": "Afgenomen (gepland)",
-    "export": "Geleverd (gepland)",
-    "import_actual": "Afgenomen (gemeten)",
-    "export_actual": "Geleverd (gemeten)"
+    "import": "Afgenomen",
+    "export": "Geleverd",
+    "measured": "{kwh} gemeten",
+    "unmeasured": "geen meting"
   }
 }
