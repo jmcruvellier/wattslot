@@ -5,13 +5,14 @@ Enregistré en RDF dans le graphe de la maison (décision 12), avec la biblioth�
 vivent que dans le magasin de l'installation, jamais dans le dépôt (décision 2).
 """
 
-from enum import StrEnum
 from importlib import resources
 
 from pydantic import BaseModel
 from pyoxigraph import Literal, NamedNode, Triple
 
 from wattslot.detection import DeviceKind, Role, slug
+from wattslot.detection import Phase as Phase
+from wattslot.detection import Supply as Supply
 from wattslot.ontology import (
     BASE,
     GRAPH_HOME,
@@ -33,23 +34,6 @@ HOME_IRI = NamedNode(HOME)
 
 def vocab(name: str) -> NamedNode:
     return NamedNode(f"{VOCAB}{name}")
-
-
-class Supply(StrEnum):
-    """Alimentation de la maison par le réseau."""
-
-    SINGLE = "SinglePhaseSupply"
-    THREE = "ThreePhaseSupply"
-
-
-class Phase(StrEnum):
-    """Branchement d'un équipement dans une maison en triphasé : une phase, ou les trois
-    (équipement triphasé, réparti à parts égales)."""
-
-    L1 = "PhaseL1"
-    L2 = "PhaseL2"
-    L3 = "PhaseL3"
-    ALL = "ThreePhases"
 
 
 LINES = (Phase.L1, Phase.L2, Phase.L3)  # les trois phases d'une maison en triphasé

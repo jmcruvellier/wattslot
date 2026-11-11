@@ -195,7 +195,11 @@ def test_the_three_phase_home_is_read_by_the_detection() -> None:
         devices={d["id"]: d for d in devices},
     )
 
-    home = home_from_proposal(propose(snapshot), "fr", three_phase=True)
+    proposal = propose(snapshot)
+    home = home_from_proposal(proposal, "fr", three_phase=True)
+
+    # La détection propose le triphasé : les compteurs par phase portent leur phase.
+    assert proposal.supply is Supply.THREE
 
     assert home.supply is Supply.THREE
     by_name = {device.name: device for device in home.devices}

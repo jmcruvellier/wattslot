@@ -8,9 +8,9 @@ import { useEffect, useState } from "react";
 
 import { ApiError, getJson, postJson, putJson } from "../api";
 import { useI18n } from "../i18n/I18nProvider";
-import { buildDraft, toModel, type DraftDevice } from "../home/draft";
+import { buildDraft, firstModel, type DraftDevice } from "../home/draft";
 import type { TemplateSummary } from "../home/TemplateSection";
-import type { HomeModel, HomeProposal } from "../home/types";
+import type { HomeModel, HomeProposal, Supply } from "../home/types";
 import { kwh } from "../plan/format";
 import Button from "../ui/Button";
 import type { Setup } from "./StartScreen";
@@ -103,7 +103,7 @@ function ConnectionStep({ onNavigate }: { onNavigate: (target: string) => void }
 type HomeLoad =
   | { status: "loading" }
   | { status: "error"; code: "not_connected" | "failed" | "no_energy_dashboard" }
-  | { status: "ready"; draft: DraftDevice[] };
+  | { status: "ready"; draft: DraftDevice[]; supply: Supply | null };
 
 /** Ce que le calcul fera de l'appareil, selon son type. */
 function role(device: DraftDevice, t: (key: string, params?: Record<string, string | number>) => string): string {
@@ -128,7 +128,7 @@ function HomeStep({ onNavigate, onDone }: { onNavigate: (target: string) => void
       .then(([proposal, saved]) =>
         setLoad(
           proposal.energy_dashboard
-            ? { status: "ready", draft: buildDraft(proposal.devices, saved) }
+            ? { status: "ready", draft: buildDraft(proposal.devices, saved), supply: proposal.supply ?? null }
             : { status: "error", code: "no_energy_dashboard" },
         ),
       )
@@ -143,15 +143,15 @@ function HomeStep({ onNavigate, onDone }: { onNavigate: (target: string) => void
   if (load.status === "error") {
     return <p role="alert">{t(load.code === "no_energy_dashboard" ? "home.no_energy_dashboard" : `home.error.${load.code}`)}</p>;
   }
-  const { draft } = load;
+  const { draft, supply } = load;
   const toggle = (key: string, included: boolean) =>
-    setLoad({ status: "ready", draft: draft.map((device) => (device.key === key ? { ...device, included } : device)) });
+    setLoad({ ...load, draft: draft.map((device) => (device.key === key ? { ...device, included } : device)) });
 
   const save = async () => {
     setSaving(true);
     setFailed(false);
     try {
-      await putJson<HomeModel>("api/home", toModel(draft));
+      await putJson<HomeModel>("api/home", firstModel(draft, supply));
       onDone();
     } catch {
       setFailed(true);

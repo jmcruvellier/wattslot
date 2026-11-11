@@ -303,7 +303,12 @@ function HomeMain({
       </section>
       {open?.kind === "supply" && data && (
         <Suspense fallback={null}>
-          <SupplySheet data={data} onClose={() => setOpen(null)} onSaved={reload} />
+          <SupplySheet
+            data={data}
+            detected={found?.ok === true && found.supply === "ThreePhaseSupply"}
+            onClose={() => setOpen(null)}
+            onSaved={reload}
+          />
         </Suspense>
       )}
       {open && data && open.kind !== "device" && open.kind !== "add" && open.kind !== "supply" && (

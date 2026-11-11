@@ -40,6 +40,23 @@ class DeviceKind(StrEnum):
     OTHER_LOAD = "OtherLoad"
 
 
+class Supply(StrEnum):
+    """Alimentation de la maison par le réseau."""
+
+    SINGLE = "SinglePhaseSupply"
+    THREE = "ThreePhaseSupply"
+
+
+class Phase(StrEnum):
+    """Branchement d'un équipement dans une maison en triphasé : une phase, ou les trois
+    (équipement triphasé, réparti à parts égales)."""
+
+    L1 = "PhaseL1"
+    L2 = "PhaseL2"
+    L3 = "PhaseL3"
+    ALL = "ThreePhases"
+
+
 class Role(StrEnum):
     ENERGY_PRODUCED = "EnergyProduced"
     POWER_PRODUCED = "PowerProduced"
@@ -95,6 +112,25 @@ COST_WORDS = (
 )
 
 
+# Marques d'une phase dans le nom d'une entité ou d'un appareil de HA, en mots entiers une
+# fois le nom normalisé : « l1 », « phase 1 », « phase a », « channel a » (pince d'un compteur
+# triphasé). Pas « channel 1 » : les deux pinces d'un compteur monophasé se nomment ainsi.
+_PHASE_MARKS: tuple[tuple[Phase, tuple[str, ...]], ...] = (
+    (Phase.L1, ("l1", "phase 1", "phase a", "channel a")),
+    (Phase.L2, ("l2", "phase 2", "phase b", "channel b")),
+    (Phase.L3, ("l3", "phase 3", "phase c", "channel c")),
+)
+# Mots qui désignent l'énergie rendue au réseau dans le nom d'un compteur par phase.
+EXPORT_WORDS = ("returned", "return", "export", "exported", "injection", "injecte", "to grid")
+
+
+def phase_of(*texts: str | None) -> Phase | None:
+    """Phase que nomme une entité ou son appareil, s'ils en nomment une et une seule."""
+    text = f" {_normalize(' '.join(t for t in texts if t))} "
+    found = {phase for phase, marks in _PHASE_MARKS if any(f" {mark} " in text for mark in marks)}
+    return found.pop() if len(found) == 1 else None
+
+
 class Issue(BaseModel):
     code: str
     params: dict[str, str] = {}
@@ -108,6 +144,8 @@ class SensorProposal(BaseModel):
     resets_daily: bool = False
     excluded: bool = False  # proposé exclu du modèle (l'utilisateur peut le reprendre)
     issues: list[Issue] = []
+    # Capteur du réseau qui ne mesure qu'une phase, d'après son nom ; ``None`` : le total.
+    phase: Phase | None = None
 
 
 class DeviceProposal(BaseModel):
@@ -118,11 +156,15 @@ class DeviceProposal(BaseModel):
     capacity_kwh: float | None = None
     capacity_source: str | None = None  # entité HA dont la capacité a été lue
     issues: list[Issue] = []
+    phase: Phase | None = None  # phase que nomme l'équipement ou son compteur dans HA
 
 
 class HomeProposal(BaseModel):
     energy_dashboard: bool
     devices: list[DeviceProposal] = []
+    # Triphasé quand un capteur ou un équipement de HA nomme une phase ; ``None`` : rien ne
+    # le dit (monophasé, ou triphasé sans nom qui le montre).
+    supply: Supply | None = None
 
 
 def _normalize(text: str) -> str:
@@ -236,6 +278,41 @@ class _Detector:
             excluded=excluded,
             issues=issues,
         )
+
+    def phase(self, *entity_ids: str | None) -> Phase | None:
+        """Phase que nomment ces entités ou leur appareil HA, d'après leurs noms."""
+        names: list[str | None] = []
+        for entity_id in entity_ids:
+            if entity_id:
+                names += [entity_id, self.friendly_name(entity_id), self.device_name(entity_id)]
+        return phase_of(*names)
+
+    def phase_meters(self, grid: list[SensorProposal]) -> list[SensorProposal]:
+        """Compteurs par phase du même appareil HA que les compteurs du réseau (compteur
+        triphasé, pinces sur chaque phase) : au plus un de soutirage et un d'injection par
+        phase, que le tableau Énergie ne connaît pas."""
+        devices = {
+            (self.snapshot.entities.get(sensor.entity_id) or {}).get("device_id") for sensor in grid
+        } - {None}
+        taken = {(sensor.role, sensor.phase) for sensor in grid if sensor.phase is not None}
+        found: list[SensorProposal] = []
+        for entity_id, entry in sorted(self.snapshot.entities.items()):
+            if entry.get("device_id") not in devices or entity_id in self.used:
+                continue
+            if not entity_id.startswith("sensor."):
+                continue
+            attributes = self.attributes(entity_id)
+            counter = attributes.get("state_class") in ("total", "total_increasing")
+            if attributes.get("unit_of_measurement") not in ENERGY_UNITS or not counter:
+                continue
+            name = f"{entity_id} {attributes.get('friendly_name') or ''}"
+            phase = phase_of(name)
+            role = Role.ENERGY_EXPORTED if _has_word(name, EXPORT_WORDS) else Role.ENERGY_IMPORTED
+            if phase is None or (role, phase) in taken:
+                continue
+            taken.add((role, phase))
+            found.append(self.sensor(entity_id, role).model_copy(update={"phase": phase}))
+        return found
 
     def sibling_capacity(self, entity_id: str) -> tuple[str, float] | None:
         """Capacité (kWh) lue sur une entité du même appareil HA qu'une entité de la batterie.
@@ -366,6 +443,7 @@ def propose(snapshot: HomeSnapshot) -> HomeProposal:
                     name=name,
                     sensors=sensors,
                     issues=issues,
+                    phase=detector.phase(energy),
                 )
             )
         elif kind == "grid":
@@ -407,10 +485,24 @@ def propose(snapshot: HomeSnapshot) -> HomeProposal:
                     capacity_kwh=capacity,
                     capacity_source=capacity_source,
                     issues=issues,
+                    phase=detector.phase(discharge, source.get("stat_soc")),
                 )
             )
 
     if grid_sensors:
+        # Compteurs du tableau Énergie qui nomment une phase (le nom de l'entité seulement : celui
+        # de l'appareil ne dit pas ce que mesure ce capteur), puis ceux du même appareil HA.
+        grid_sensors = [
+            sensor
+            if sensor.excluded
+            else sensor.model_copy(
+                update={
+                    "phase": phase_of(sensor.entity_id, detector.friendly_name(sensor.entity_id))
+                }
+            )
+            for sensor in grid_sensors
+        ]
+        grid_sensors += detector.phase_meters(grid_sensors)
         devices.append(
             DeviceProposal(
                 key="grid",
@@ -436,7 +528,14 @@ def propose(snapshot: HomeSnapshot) -> HomeProposal:
                 name=name,
                 sensors=sensors,
                 issues=issues,
+                phase=detector.phase(energy),
             )
         )
 
-    return HomeProposal(energy_dashboard=True, devices=devices)
+    named = any(
+        device.phase is not None or any(sensor.phase is not None for sensor in device.sensors)
+        for device in devices
+    )
+    return HomeProposal(
+        energy_dashboard=True, devices=devices, supply=Supply.THREE if named else None
+    )

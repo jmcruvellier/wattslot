@@ -37,6 +37,7 @@ export interface SensorProposal {
   resets_daily: boolean;
   excluded: boolean;
   issues: Issue[];
+  phase?: Phase | null; // capteur du réseau qui ne mesure qu'une phase, d'après son nom
 }
 
 export interface DeviceProposal {
@@ -47,11 +48,13 @@ export interface DeviceProposal {
   capacity_kwh: number | null;
   capacity_source?: string | null;
   issues: Issue[];
+  phase?: Phase | null; // phase que nomme l'équipement ou son compteur dans HA
 }
 
 export interface HomeProposal {
   energy_dashboard: boolean;
   devices: DeviceProposal[];
+  supply?: Supply | null; // triphasé quand un nom de HA dit une phase ; sinon inconnu
 }
 
 export interface HomeSensor {

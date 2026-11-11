@@ -14,6 +14,7 @@ import type {
   LibraryType,
   Phase,
   SensorProposal,
+  Supply,
 } from "./types";
 
 export const MANUAL_PREFIX = "manual-"; // clé d'un équipement ajouté à la main (AddDevice)
@@ -58,7 +59,8 @@ function draftSensors(proposal: DeviceProposal, existing: HomeDevice | undefined
   const proposed = proposal.sensors.map((sensor) => ({
     ...sensor,
     included: saved ? saved.has(sensorKey(sensor)) : !sensor.excluded,
-    phase: saved?.get(sensorKey(sensor))?.phase ?? null,
+    // Capteur déjà enregistré : ce qu'il mesure chez l'utilisateur ; sinon ce que dit son nom.
+    phase: saved?.has(sensorKey(sensor)) ? (saved.get(sensorKey(sensor))?.phase ?? null) : (sensor.phase ?? null),
   }));
   // Capteurs par phase ajoutés à la main : jamais proposés par HA, gardés avec l'équipement.
   const known = new Set(proposal.sensors.map(sensorKey));
@@ -86,7 +88,8 @@ export function buildDraft(proposals: DeviceProposal[], saved: HomeModel): Draft
       name: existing?.name ?? proposal.name,
       capacityKwh: existing?.capacity_kwh ?? proposal.capacity_kwh,
       capacitySource: proposal.capacity_source ?? null,
-      phase: existing?.phase ?? null,
+      // Phase réglée par l'utilisateur, sinon celle que nomme l'équipement dans HA.
+      phase: existing?.phase ?? proposal.phase ?? null,
       sensors: draftSensors(proposal, existing),
       issues: proposal.issues,
     };
@@ -169,6 +172,14 @@ export function toModel(draft: DraftDevice[]): HomeModel {
   };
 }
 
+/**
+ * Première validation de la maison : avec l'alimentation que la détection propose (triphasé
+ * quand un nom de HA dit une phase). Ensuite, elle se règle dans « Mon raccordement ».
+ */
+export function firstModel(draft: DraftDevice[], supply: Supply | null | undefined): HomeModel {
+  return supply ? { ...toModel(draft), supply } : toModel(draft);
+}
+
 // Choix du type : un type de la bibliothèque, ou un type propre (et alors son parent).
 export function kindChoice(value: string, types: DeviceType[]): { kind: DeviceKind; customType: string | null } {
   const own = value.startsWith("custom:") ? types.find((t) => t.key === value.slice(7)) : undefined;
@@ -177,7 +188,14 @@ export function kindChoice(value: string, types: DeviceType[]): { kind: DeviceKi
 
 // Propositions de HA fusionnées avec la maison enregistrée, et types d'appareils.
 export type LoadResult =
-  | { ok: true; draft: DraftDevice[]; energyDashboard: boolean; types: DeviceType[]; library: LibraryType[] }
+  | {
+      ok: true;
+      draft: DraftDevice[];
+      energyDashboard: boolean;
+      types: DeviceType[];
+      library: LibraryType[];
+      supply: Supply | null; // alimentation que la détection propose
+    }
   | { ok: false; code: "not_connected" | "failed" };
 
 export async function loadHome(refresh: boolean): Promise<LoadResult> {
@@ -192,6 +210,7 @@ export async function loadHome(refresh: boolean): Promise<LoadResult> {
       ok: true,
       draft: buildDraft(proposal.devices, saved),
       energyDashboard: proposal.energy_dashboard,
+      supply: proposal.supply ?? null,
       types: types.types,
       library: types.library,
     };
