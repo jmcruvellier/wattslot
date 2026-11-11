@@ -22,7 +22,8 @@ export function DaySummaryCard({ view }: { view: DayView }) {
   const day = weekday.charAt(0).toUpperCase() + weekday.slice(1);
   const quality = view.weather.quality;
   const sun = sunWindow(view);
-  const production = kwh(view.summary.production_kwh, 1);
+  // Mesuré puis prévu (Aujourd'hui), comme le bandeau météo : pas la somme des prévisions seules.
+  const production = kwh(view.weather.production_kwh, 1);
   if (view.solar === false) return null; // sans panneaux, la journée n'a pas de soleil à raconter
   return (
     <Card
