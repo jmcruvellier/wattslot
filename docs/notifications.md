@@ -16,9 +16,9 @@ WattSlot sends its messages through Home Assistant, to a device that has the **H
 
 | Notification | When |
 |---|---|
-| **Today's recommendation** | Today's plan: appliances, battery, pool, balance and warnings. **Frequency**: after each run, only when the plan changes, or once a day from a given hour |
+| **Today's recommendation** | Today's plan: appliances, battery, pool, balance and warnings. **Frequency**: after each run, only when the plan changes (what there is to do: an appliance's start, a running period, a warning; not its figures), or once a day from a given hour |
 | **This week's plan** | The appliances planned for the coming days, one line per day ("Saturday, October 17: Washing machine 11 AM–1 PM"). **Sending days and hour**: one or more days of the week, from a given hour (Sunday from 6 pm by default) |
-| **“Start X now”** | An appliance's planned cycle starts within the hour and it has not been started yet |
+| **“Start X now”** | An appliance's planned cycle is about to start and it has not been started yet. Sent with the last automatic run before the start; more than ten minutes ahead, the message gives the time instead of “now” |
 | **Off plan** | A planned cycle has not started 30 minutes after its time, or solar production is more than 25 % away from the forecast |
 | **Battery full before noon** | The plan expects a full battery before noon: a good time to start an appliance, as the next surplus would go to the grid |
 | **Tomorrow's forecast drops** | Tomorrow's planned production drops by more than 30 % against the highest forecast seen so far |
