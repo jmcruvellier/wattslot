@@ -55,8 +55,10 @@ def energy_entity(appliance: str) -> str:
 NAMES: dict[str, dict[str, str]] = {
     "en": {
         "solar": "Solar panels",
+        "solar_2": "Solar panels, garage",
         "grid": "Grid",
         "battery": "Home battery",
+        "battery_2": "Garage battery",
         WATER_HEATER: "Water heater",
         WASHING_MACHINE: "Washing machine",
         DRYER: "Dryer",
@@ -64,8 +66,10 @@ NAMES: dict[str, dict[str, str]] = {
     },
     "fr": {
         "solar": "Panneaux solaires",
+        "solar_2": "Panneaux solaires du garage",
         "grid": "Réseau",
         "battery": "Batterie maison",
+        "battery_2": "Batterie du garage",
         WATER_HEATER: "Chauffe-eau",
         WASHING_MACHINE: "Lave-linge",
         DRYER: "Sèche-linge",
@@ -321,6 +325,123 @@ class House:
         return values
 
 
+# --- Maison en triphasé (essais du calcul par phase) -----------------------------------------
+#
+# La même maison, raccordée en triphasé : le toit en deux installations, sur les phases 2 et 3,
+# chacune avec sa batterie, qui ne compense que sa phase ; rien sur la phase 1, qui porte la
+# moitié de la consommation de base et trois des quatre appareils. Un compteur par phase en
+# plus de celui du total, qui additionne les phases.
+
+SOLAR_2_POWER = "sensor.solar_2_power"
+SOLAR_2_ENERGY = "sensor.solar_2_energy"
+BATTERY_2_CHARGE = "sensor.battery_2_charge_energy"
+BATTERY_2_DISCHARGE = "sensor.battery_2_discharge_energy"
+BATTERY_2_LEVEL = "sensor.battery_2_level"
+BATTERY_2_CAPACITY = "sensor.battery_2_capacity"
+PHASES = (1, 2, 3)
+SOLAR_PHASES = (2, 3)  # phase de chaque installation solaire et de sa batterie
+APPLIANCE_PHASE = {WATER_HEATER: 1, WASHING_MACHINE: 1, DISHWASHER: 1, DRYER: 3}
+BASE_SHARES = {1: 0.5, 2: 0.2, 3: 0.3}  # part de la consommation de base sur chaque phase
+CONTRACT_KVA = 9.0  # 3 kVA par phase
+
+
+def phase_import(phase: int) -> str:
+    return f"sensor.grid_import_l{phase}_energy"
+
+
+def phase_export(phase: int) -> str:
+    return f"sensor.grid_export_l{phase}_energy"
+
+
+@dataclass
+class PhaseCounters:
+    solar_2: float = 9_120.0
+    charge_2: float = 1_204.0
+    discharge_2: float = 1_077.0
+    imported: dict[int, float] = field(default_factory=lambda: {1: 6_410.0, 2: 1_903.0, 3: 2_644.0})
+    exported: dict[int, float] = field(default_factory=lambda: {1: 0.0, 2: 3_518.0, 3: 2_871.0})
+
+
+@dataclass
+class ThreePhaseHouse(House):
+    """La maison en triphasé : mêmes appareils et même météo, bilan phase par phase."""
+
+    soc_2: float = START_SOC
+    phases: PhaseCounters = field(default_factory=PhaseCounters)
+
+    def step(self, moment: datetime) -> dict[str, float]:
+        local = moment.astimezone(ZONE)
+        minute = local.hour * 60 + local.minute
+        hours = 1 / 60
+        pv = solar_w(local.date(), minute) / len(SOLAR_PHASES)  # par installation
+        loads = {a: self.appliance_w(a, moment) for a in APPLIANCES}
+        base = base_w(local.date(), minute)
+        floor = FLOOR_PERCENT / 100 * CAPACITY_KWH
+        socs = {SOLAR_PHASES[0]: self.soc, SOLAR_PHASES[1]: self.soc_2}
+        charge = dict.fromkeys(PHASES, 0.0)
+        discharge = dict.fromkeys(PHASES, 0.0)
+        grid = dict.fromkeys(PHASES, 0.0)  # positif : soutiré sur la phase
+        for phase in PHASES:
+            load = base * BASE_SHARES[phase] + sum(
+                watts for a, watts in loads.items() if APPLIANCE_PHASE[a] == phase
+            )
+            net = (pv if phase in SOLAR_PHASES else 0.0) - load
+            if phase in socs:  # la batterie de la phase ne compense que cette phase
+                stored = socs[phase] / 100 * CAPACITY_KWH
+                if net >= 0:
+                    room_w = max(0.0, (CAPACITY_KWH - stored) / EFFICIENCY / hours * 1000)
+                    charge[phase] = min(net, BATTERY_MAX_W, room_w)
+                else:
+                    available_w = max(0.0, (stored - floor) * EFFICIENCY / hours * 1000)
+                    discharge[phase] = min(-net, BATTERY_MAX_W, available_w)
+                stored += (
+                    (charge[phase] * EFFICIENCY - discharge[phase] / EFFICIENCY) * hours / 1000
+                )
+                socs[phase] = min(100.0, max(0.0, stored / CAPACITY_KWH * 100))
+            grid[phase] = -(net - charge[phase] + discharge[phase])
+        c, p = self.counters, self.phases
+        first, second = SOLAR_PHASES
+        values = {
+            SOLAR_POWER: round(pv),
+            SOLAR_ENERGY: round(c.solar, 3),
+            SOLAR_2_POWER: round(pv),
+            SOLAR_2_ENERGY: round(p.solar_2, 3),
+            GRID_IMPORT: round(c.grid_import, 3),
+            GRID_EXPORT: round(c.grid_export, 3),
+            BATTERY_CHARGE: round(c.charge, 3),
+            BATTERY_DISCHARGE: round(c.discharge, 3),
+            BATTERY_LEVEL: float(round(self.soc)),
+            BATTERY_2_CHARGE: round(p.charge_2, 3),
+            BATTERY_2_DISCHARGE: round(p.discharge_2, 3),
+            BATTERY_2_LEVEL: float(round(self.soc_2)),
+        }
+        for phase in PHASES:
+            values[phase_import(phase)] = round(p.imported[phase], 3)
+            values[phase_export(phase)] = round(p.exported[phase], 3)
+        for appliance, watts in loads.items():
+            values[power_entity(appliance)] = round(watts, 1)
+            values[energy_entity(appliance)] = round(c.appliances[appliance], 3)
+        # Bilan de la minute. Le compteur du total additionne les phases : l'injection de l'une
+        # compense le soutirage d'une autre.
+        self.soc, self.soc_2 = socs[first], socs[second]
+        kwh = hours / 1000
+        c.solar += pv * kwh
+        p.solar_2 += pv * kwh
+        c.charge += charge[first] * kwh
+        c.discharge += discharge[first] * kwh
+        p.charge_2 += charge[second] * kwh
+        p.discharge_2 += discharge[second] * kwh
+        for phase in PHASES:
+            p.imported[phase] += max(0.0, grid[phase]) * kwh
+            p.exported[phase] += max(0.0, -grid[phase]) * kwh
+        total = sum(grid.values())
+        c.grid_import += max(0.0, total) * kwh
+        c.grid_export += max(0.0, -total) * kwh
+        for appliance, watts in loads.items():
+            c.appliances[appliance] += watts * kwh
+        return values
+
+
 ENERGY_ENTITIES = frozenset(
     {
         SOLAR_ENERGY,
@@ -329,6 +450,11 @@ ENERGY_ENTITIES = frozenset(
         BATTERY_CHARGE,
         BATTERY_DISCHARGE,
         *(energy_entity(a) for a in APPLIANCES),
+        SOLAR_2_ENERGY,
+        BATTERY_2_CHARGE,
+        BATTERY_2_DISCHARGE,
+        *(phase_import(phase) for phase in PHASES),
+        *(phase_export(phase) for phase in PHASES),
     }
 )
 

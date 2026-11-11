@@ -76,6 +76,22 @@ class BatterySettings(BaseModel):
 DEFAULT = BatterySettings()
 
 
+def share_of(house: BatterySettings, fraction: float) -> BatterySettings:
+    """Réglages de la maison vus par une de ses batteries, qui porte ``fraction`` de la capacité
+    totale : les puissances réglées valent pour toutes les batteries ensemble, chacune en prend
+    sa part ; le reste (plancher en %, plages, charge complète) vaut tel quel pour chacune."""
+
+    def part(watts: float | None) -> float | None:
+        return None if watts is None else watts * fraction
+
+    return house.model_copy(
+        update={
+            "charge_max_w": part(house.charge_max_w),
+            "discharge_max_w": part(house.discharge_max_w),
+        }
+    )
+
+
 def _floor_at(settings: BatterySettings, hour: int) -> float:
     ranges = [(r.start_hour, r.end_hour, r.percent) for r in settings.floor_ranges]
     return floor_percent_at(settings.floor_percent, ranges, hour)

@@ -37,10 +37,10 @@ describe("carte Par phase", () => {
   it("dit ce que chaque phase achète et vend, prévu seulement sans capteur par phase", () => {
     renderCard({ ...TODAY, phases: PLANNED });
 
-    const card = screen.getByRole("region", { name: "Par phase" });
+    const card = screen.getByRole("article", { name: "Par phase" });
     const row = within(card).getByRole("row", { name: /Phase 2/ });
-    expect(within(row).getAllByRole("cell").map((cell) => cell.textContent)).toEqual(["4,0 kWh", "5,2 kWh"]);
-    expect(within(card).queryByRole("columnheader", { name: "Acheté (mesuré)" })).toBeNull();
+    expect(within(row).getAllByRole("cell").map((cell) => cell.textContent)).toEqual(["4,0\ kWh", "5,2\ kWh"]);
+    expect(within(card).queryByText(/mesuré/)).toBeNull();
   });
 
   it("ajoute ce qui est mesuré, phase par phase", () => {
@@ -49,11 +49,11 @@ describe("carte Par phase", () => {
     );
     renderCard({ ...TODAY, phases });
 
-    const card = screen.getByRole("region", { name: "Par phase" });
-    expect(within(card).getByRole("columnheader", { name: "Acheté (mesuré)" })).toBeInTheDocument();
+    const card = screen.getByRole("article", { name: "Par phase" });
+    expect(within(card).getByText(/prévu sur la journée, et mesuré jusqu'ici/)).toBeInTheDocument();
     const cells = (name: RegExp) =>
       within(within(card).getByRole("row", { name })).getAllByRole("cell").map((cell) => cell.textContent);
-    expect(cells(/Phase 2/)).toEqual(["4,0 kWh", "5,2 kWh", "1,5 kWh", "—"]);
-    expect(cells(/Phase 1/)).toEqual(["12,0 kWh", "0,0 kWh", "—", "—"]);
+    expect(cells(/Phase 2/)).toEqual(["4,0\ kWh1,5\ kWh mesurés", "5,2\ kWhpas de mesure"]);
+    expect(cells(/Phase 1/)).toEqual(["12,0\ kWhpas de mesure", "0,0\ kWhpas de mesure"]);
   });
 });

@@ -106,6 +106,37 @@ def soc_max(points: Sequence[Observation], zone: ZoneInfo) -> dict[str, Any] | N
     return {"pct": best, "heure_iso": best_time.astimezone(zone).isoformat()}
 
 
+def combined(
+    series: Sequence[Sequence[Observation]], weights: Sequence[float] | None = None
+) -> list[Observation]:
+    """Relevés de plusieurs capteurs réunis en un seul : à chaque relevé de l'un, la somme des
+    dernières valeurs de tous, ou leur moyenne pondérée par ``weights`` (état de charge de
+    plusieurs batteries, pondéré par leur capacité). Rien tant que l'un d'eux n'a pas encore de
+    valeur ; un seul capteur : ses relevés, triés."""
+    if len(series) == 1:
+        return sorted(series[0], key=lambda o: o[0])
+    if weights is None or sum(weights) <= 0:
+        shares = [1.0 if weights is None else 1 / len(series)] * len(series)
+    else:
+        shares = [weight / sum(weights) for weight in weights]
+    events = sorted(
+        ((moment, index, value) for index, points in enumerate(series) for moment, value in points),
+        key=lambda event: event[0],
+    )
+    latest: dict[int, float] = {}
+    found: list[Observation] = []
+    for moment, index, value in events:
+        latest[index] = value
+        if len(latest) < len(series):
+            continue
+        total = sum(shares[i] * v for i, v in latest.items())
+        if found and found[-1][0] == moment:
+            found[-1] = (moment, total)
+        else:
+            found.append((moment, total))
+    return found
+
+
 # --- Compteurs d'énergie ---------------------------------------------------------------------
 
 
@@ -347,8 +378,24 @@ def actual_day(
                 total[hour] += kwh
         return dict(total)
 
-    soc_iris = iris.get(Role.STATE_OF_CHARGE, [])
-    soc_before, soc_today = split(soc_iris[0]) if soc_iris else ([], [])
+    def together(points: list[Observation]) -> tuple[list[Observation], list[Observation]]:
+        return [p for p in points if p[0] < midnight], [p for p in points if p[0] >= midnight]
+
+    # Plusieurs batteries : un seul état de charge, pondéré par la capacité de chacune, comme
+    # celui d'où part le calcul ; leurs compteurs de charge et de décharge additionnés.
+    levels = [
+        (device.capacity_kwh or 0.0, by_sensor.get(sensor_iri(device.key, sensor.entity_id), []))
+        for device in model.devices
+        if device.kind is DeviceKind.BATTERY
+        for sensor in device.sensors
+        if sensor.role is Role.STATE_OF_CHARGE
+    ]
+    levels = [(capacity, points) for capacity, points in levels if points] or levels[:1]
+    soc_before, soc_today = together(
+        combined([points for _, points in levels], [capacity for capacity, _ in levels])
+        if levels
+        else []
+    )
     production = hourly(Role.ENERGY_PRODUCED)
     imported, exported = hourly(Role.ENERGY_IMPORTED), hourly(Role.ENERGY_EXPORTED)
     charged, discharged = hourly(Role.ENERGY_CHARGED), hourly(Role.ENERGY_DISCHARGED)
@@ -375,8 +422,11 @@ def actual_day(
         before, today = split(iri)
         return before[-1:] + today
 
-    def first(role: Role) -> str | None:
-        return next(iter(iris.get(role, [])), None)
+    def battery_counter(role: Role) -> list[Observation]:
+        """Compteur de toutes les batteries réunies : relevés du jour, précédés du dernier de
+        la veille."""
+        before, today = together(combined([by_sensor.get(iri, []) for iri in iris.get(role, [])]))
+        return before[-1:] + today
 
     equipment: dict[str, list[dict[str, Any]]] = {
         name: [
@@ -414,7 +464,7 @@ def actual_day(
         equipment[runtime.name] = runtime_segments(points, until, zone, thresholds)
 
     # Capteurs du réseau qui ne mesurent qu'une phase : soutirage et injection de chacune.
-    by_phase: dict[str, dict[str, dict[int, float]]] = {}
+    by_phase: dict[str, dict[int, dict[int, float]]] = {}
     series = {
         Role.ENERGY_IMPORTED: "reseau_reel_soutire_par_phase",
         Role.ENERGY_EXPORTED: "reseau_reel_injecte_par_phase",
@@ -429,7 +479,7 @@ def actual_day(
                 *split(sensor_iri(device.key, sensor.entity_id)), midnight, zone
             )
             phase = by_phase.setdefault(series[sensor.role], {}).setdefault(
-                str(LINES.index(sensor.phase) + 1), {}
+                LINES.index(sensor.phase) + 1, {}
             )
             for hour, kwh in (measured or {}).items():
                 phase[hour] = phase.get(hour, 0.0) + kwh
@@ -446,8 +496,8 @@ def actual_day(
         "reseau_reel_injecte_horaire": exported,
         "equipements_reels_horaire": equipment,
         "batterie_reelle_segments": battery_segments(
-            counter(first(Role.ENERGY_CHARGED)),
-            counter(first(Role.ENERGY_DISCHARGED)),
+            battery_counter(Role.ENERGY_CHARGED),
+            battery_counter(Role.ENERGY_DISCHARGED),
             midnight,
             until,
             zone,

@@ -1798,11 +1798,12 @@
   },
   "phases": {
     "title": "Je Phase",
-    "note": "Was jede Phase über den Tag aus dem Netz bezieht und ins Netz einspeist.",
+    "note": "Was jede Phase laut Plan über den Tag aus dem Netz bezieht und einspeist.",
+    "note_measured": "Was jede Phase aus dem Netz bezieht und einspeist: für den Tag geplant und bisher gemessen.",
     "phase": "Phase {number}",
-    "import": "Bezogen (geplant)",
-    "export": "Eingespeist (geplant)",
-    "import_actual": "Bezogen (gemessen)",
-    "export_actual": "Eingespeist (gemessen)"
+    "import": "Bezogen",
+    "export": "Eingespeist",
+    "measured": "{kwh} gemessen",
+    "unmeasured": "keine Messung"
   }
 }

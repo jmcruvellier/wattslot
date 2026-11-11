@@ -3389,7 +3389,8 @@ p[role="status"]:not(.state-message) {
   pointer-events: none;
 }
 
-/* Carte « Par phase » du jour (triphasé) : un tableau de trois lignes, chiffres alignés. */
+/* Carte « Par phase » du jour (triphasé) : trois lignes, chiffres alignés ; le mesuré sous le
+   prévu, pour tenir dans une carte étroite. */
 .phases-table {
   width: 100%;
   border-collapse: collapse;
@@ -3397,11 +3398,16 @@ p[role="status"]:not(.state-message) {
 }
 .phases-table th,
 .phases-table td {
-  padding: 0.25rem 0 0.25rem 0.5rem;
+  padding: 0.3rem 0 0.3rem 0.75rem;
   text-align: right;
   font-weight: normal;
+  white-space: nowrap;
+  vertical-align: top;
 }
 .phases-table th[scope="row"] {
   padding-left: 0;
   text-align: left;
+}
+.phases-table small {
+  display: block;
 }

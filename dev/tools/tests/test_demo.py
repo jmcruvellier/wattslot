@@ -144,3 +144,68 @@ def test_planned_starts_are_read_in_local_time() -> None:
     starts = planned_starts(content, {"Dishwasher": h.DISHWASHER})
 
     assert starts == {h.DISHWASHER: datetime.combine(h.DAY, time(15), h.ZONE)}
+
+
+# --- Maison en triphasé -------------------------------------------------------------------------
+
+
+def three_phase_day() -> tuple[dict[str, float], dict[str, float]]:
+    """(premier, dernier) relevé d'une journée de la maison en triphasé, chauffe-eau à midi."""
+    house = h.ThreePhaseHouse()
+    house.start(h.WATER_HEATER, datetime.combine(h.DAY, time(12), h.ZONE))
+    midnight = datetime.combine(h.DAY, time(), h.ZONE)
+    values = [house.step(midnight + timedelta(minutes=m)) for m in range(1441)]
+    return values[0], values[-1]
+
+
+def test_the_three_phase_home_balances_phase_by_phase() -> None:
+    first, last = three_phase_day()
+
+    def delta(entity_id: str) -> float:
+        return last[entity_id] - first[entity_id]
+
+    exchanged = {n: delta(h.phase_import(n)) - delta(h.phase_export(n)) for n in h.PHASES}
+    # Le compteur du total additionne les phases.
+    total = delta(h.GRID_IMPORT) - delta(h.GRID_EXPORT)
+    assert sum(exchanged.values()) == pytest.approx(total, abs=0.01)
+    # Phase 1 : ni solaire ni batterie, elle ne fait que soutirer (dont le chauffe-eau).
+    assert delta(h.phase_export(1)) == 0 and delta(h.phase_import(1)) > delta(
+        h.energy_entity(h.WATER_HEATER)
+    )
+    # Phases 2 et 3 : la moitié du toit chacune, et une batterie qui ne compense que sa phase.
+    assert delta(h.SOLAR_ENERGY) == pytest.approx(delta(h.SOLAR_2_ENERGY))
+    assert delta(h.phase_export(2)) > 0 and delta(h.phase_export(3)) > 0
+    consumed_2 = delta(h.SOLAR_ENERGY) + exchanged[2] + delta(h.BATTERY_DISCHARGE)
+    consumed_2 -= delta(h.BATTERY_CHARGE)
+    assert 1.5 < consumed_2 < 4  # un cinquième de la consommation de base, en kWh
+
+
+def test_the_three_phase_home_is_read_by_the_detection() -> None:
+    from tools.demo import energy_preferences, home_from_proposal
+    from wattslot.home_model import Phase, Supply
+
+    first, _ = three_phase_day()
+    entities, devices = registries("fr", three_phase=True)
+    snapshot = HomeSnapshot(
+        config={"time_zone": "Europe/Paris"},
+        energy_preferences=energy_preferences(True),
+        states={s["entity_id"]: s for s in ha_states(first, "fr")},
+        entities={e["entity_id"]: e for e in entities},
+        devices={d["id"]: d for d in devices},
+    )
+
+    home = home_from_proposal(propose(snapshot), "fr", three_phase=True)
+
+    assert home.supply is Supply.THREE
+    by_name = {device.name: device for device in home.devices}
+    assert by_name["Batterie maison"].phase is Phase.L2
+    assert by_name["Batterie du garage"].phase is Phase.L3
+    assert by_name["Batterie du garage"].capacity_kwh == h.CAPACITY_KWH
+    assert by_name["Panneaux solaires du garage"].phase is Phase.L3
+    assert by_name["Chauffe-eau"].phase is Phase.L1
+    grid = by_name["Réseau"]
+    assert grid.phase is None
+    assert sorted(s.phase.value for s in grid.sensors if s.phase) == [
+        "PhaseL1", "PhaseL1", "PhaseL2", "PhaseL2", "PhaseL3", "PhaseL3"
+    ]  # fmt: skip
+    assert len([s for s in grid.sensors if s.phase is None]) == 2

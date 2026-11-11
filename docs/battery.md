@@ -22,7 +22,7 @@ The settings above apply to all your batteries. When the home has several, the *
 
 The calculation still sees your batteries as one:
 
-- the **powers** add up (with no setting, each counts for half its capacity per hour);
+- the **powers** add up (with no setting, each counts for half its capacity per hour). The powers set for the home are those of all your batteries together: a battery without its own settings takes its share of them, according to its capacity;
 - the **floor** follows each battery's capacity: 30 % of a 2 kWh battery and 10 % of a 6 kWh battery keep 1.2 kWh in reserve, hour by hour with the ranges;
 - the **active range** is when at least one battery runs, and the **full charge** follows the battery that asks for it most often.
 

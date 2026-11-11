@@ -164,9 +164,10 @@ class Plan(_V1):
     residual_kwh: dict[int, float] = _v1_key("residu_reseau_horaire", default={})
     indicators: Indicators | None = _v1_key("indicateurs", default=None)
     # Calcul par phase (triphasé), absents sinon : échange de chaque phase avec le réseau
-    # (phase « 1 », « 2 », « 3 » → heure → kWh, positif injection) ; le compteur compte
+    # (phase 1, 2 ou 3 → heure → kWh, positif injection ; des nombres, comme les heures :
+    # le plan enregistré relit en nombres toute clé faite de chiffres) ; le compteur compte
     # chaque phase à part ; des batteries ne compensent que leur phase.
-    phase_residual_kwh: dict[str, dict[int, float]] = _v1_key("residu_reseau_par_phase", default={})
+    phase_residual_kwh: dict[int, dict[int, float]] = _v1_key("residu_reseau_par_phase", default={})
     separate_phases: bool = _v1_key("compteur_par_phase", default=False)
     phase_batteries: bool = _v1_key("batteries_par_phase", default=False)
 

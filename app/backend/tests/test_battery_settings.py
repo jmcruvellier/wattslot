@@ -9,7 +9,14 @@ from tests.planning.test_assemble import MODEL
 from tests.planning.test_configured_run import plans
 from tests.v1_oracle import STATES, load
 from wattslot import configuration
-from wattslot.battery_settings import DEFAULT, BatterySettings, FloorRange, combine, problems
+from wattslot.battery_settings import (
+    DEFAULT,
+    BatterySettings,
+    FloorRange,
+    combine,
+    problems,
+    share_of,
+)
 from wattslot.configuration import Behavior, Configuration, DeviceSettings
 from wattslot.detection import DeviceKind
 from wattslot.home_model import HomeDevice, HomeModel
@@ -148,7 +155,9 @@ def test_the_calculation_sees_the_batteries_combined() -> None:
 
     assert configuration.battery_of(house, TWO) == CUSTOM
     assert configuration.battery_of(own) == CUSTOM  # sans la maison : ses réglages
-    assert configuration.battery_of(own, TWO) == combine([(2.0, EVENING), (6.0, CUSTOM)])
+    assert configuration.battery_of(own, TWO) == combine(
+        [(2.0, EVENING), (6.0, share_of(CUSTOM, 0.75))]
+    )
     # Une batterie sans capacité ne compte pas, comme au calcul.
     unknown = TWO.model_copy(
         update={
@@ -187,3 +196,17 @@ def test_the_problem_follows_the_combined_settings() -> None:
 
     assert (found.charge_max_kw, found.discharge_max_kw) == (3.0, 1.5)
     assert (found.active_from, found.active_to) == (8, 22)
+
+
+def test_a_battery_without_own_settings_takes_its_share_of_the_home_powers() -> None:
+    """Les puissances de la maison valent pour toutes les batteries ensemble (défaut trouvé avec
+    la maison de test en triphasé : chaque groupe recevait la puissance entière)."""
+    house = Configuration(battery=CUSTOM)  # 3 kW de charge, 1,5 kW de décharge
+    own = Configuration(battery=CUSTOM, devices=[storage("small", EVENING), storage("large")])
+
+    # Sans réglages propres : exactement ceux de la maison.
+    assert configuration.battery_of(house, TWO) == CUSTOM
+    # La grande batterie (6 kWh sur 8) prend les trois quarts des puissances de la maison.
+    combined = configuration.battery_of(own, TWO)
+    assert combined.charge_max_w == pytest.approx(800 + 3000 * 0.75)
+    assert combined.discharge_max_w == pytest.approx(800 + 1500 * 0.75)

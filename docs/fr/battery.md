@@ -22,7 +22,7 @@ Les réglages ci-dessus valent pour toutes vos batteries. Quand la maison en a p
 
 Le calcul voit toujours vos batteries comme une seule :
 
-- les **puissances** s'additionnent (sans réglage, chacune compte pour la moitié de sa capacité par heure) ;
+- les **puissances** s'additionnent (sans réglage, chacune compte pour la moitié de sa capacité par heure). Les puissances réglées pour la maison sont celles de toutes vos batteries ensemble : une batterie sans réglages propres en prend sa part, selon sa capacité ;
 - le **plancher** suit la capacité de chacune : 30 % d'une batterie de 2 kWh et 10 % d'une batterie de 6 kWh font 1,2 kWh gardés en réserve, heure par heure avec les plages ;
 - la **plage active** est celle où une batterie au moins fonctionne, et la **charge complète** suit la batterie qui la demande le plus souvent.
 

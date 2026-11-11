@@ -124,14 +124,19 @@ class PhaseDay(BaseModel):
 def phase_days(state: Mapping[str, Any], actual: Mapping[str, Any] | None) -> list[PhaseDay]:
     """Les trois phases d'un plan calculé par phase ; aucune sinon."""
     found = []
-    measured_in = (actual or {}).get("reseau_reel_soutire_par_phase") or {}
-    measured_out = (actual or {}).get("reseau_reel_injecte_par_phase") or {}
-    for phase, hourly in sorted((state.get("residu_reseau_par_phase") or {}).items()):
+
+    def by_phase(values: Mapping[Any, Any] | None) -> dict[int, Any]:
+        """Par numéro de phase, que les clés soient des nombres ou du texte (JSON)."""
+        return {int(phase): found for phase, found in (values or {}).items()}
+
+    measured_in = by_phase((actual or {}).get("reseau_reel_soutire_par_phase"))
+    measured_out = by_phase((actual or {}).get("reseau_reel_injecte_par_phase"))
+    for phase, hourly in sorted(by_phase(state.get("residu_reseau_par_phase")).items()):
         values = phase_hours(hourly).values()
         bought, sold = measured_in.get(phase), measured_out.get(phase)
         found.append(
             PhaseDay(
-                phase=int(phase),
+                phase=phase,
                 import_kwh=round(sum(max(0.0, -v) for v in values), 3),
                 export_kwh=round(sum(max(0.0, v) for v in values), 3),
                 import_actual_kwh=round(sum(bought.values()), 3) if bought else None,
