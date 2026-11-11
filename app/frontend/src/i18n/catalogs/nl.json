@@ -1798,7 +1798,8 @@
     "kind_hint": "Bij twijfel: een vierpolige hoofdschakelaar of een 'driefasig' contract op de factuur.",
     "meter_sums": "Mijn meter saldeert de drie fasen",
     "meter_sums_hint": "Wat ik op de ene fase injecteer, compenseert wat ik op een andere afneem. Zo werken de meeste slimme meters. Vink uit als elke fase apart wordt geteld: de planning telt dan de kosten van elke fase en plaatst een toestel onder het overschot van zijn eigen fase, zodra het verbruik van elke fase gemeten wordt (fasesensoren van de netaansluiting).",
-    "phases_hint": "Geef daarna de fase op van elk toestel, elke batterij en elke zonne-installatie in de bijbehorende fiche (tabblad Apparaten). Met het gecontracteerde vermogen van uw tarief vermijdt de planning dan dat op één fase samen meer draait dan ze kan leveren. Een batterij die alleen haar eigen fase compenseert, wordt op die fase berekend zodra het verbruik van elke fase gemeten wordt."
+    "phases_hint": "Geef daarna de fase op van elk toestel, elke batterij en elke zonne-installatie in de bijbehorende fiche (tabblad Apparaten). Met het gecontracteerde vermogen van uw tarief vermijdt de planning dan dat op één fase samen meer draait dan ze kan leveren. Een batterij die alleen haar eigen fase compenseert, wordt op die fase berekend zodra het verbruik van elke fase gemeten wordt.",
+    "detected": "Home Assistant heeft sensoren of toestellen waarvan de naam een fase noemt: uw huis is waarschijnlijk driefasig. De gevonden fasesensoren worden voorgesteld in de fiche van de netaansluiting (tabblad Apparaten)."
   },
   "phases": {
     "title": "Per fase",

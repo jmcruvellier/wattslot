@@ -10,12 +10,13 @@ import NumberInput from "../common/NumberInput";
 import { useI18n } from "../i18n/I18nProvider";
 import AddDevice from "./AddDevice";
 import { IssueList } from "./DeviceSheet";
-import { kindChoice, loadHome, mergeDraft, toModel, type DraftDevice, type LoadResult } from "./draft";
+import { firstModel, kindChoice, loadHome, mergeDraft, type DraftDevice, type LoadResult } from "./draft";
 import {
   DEVICE_KINDS,
   type DeviceType,
   type LibraryType,
   type HomeModel,
+  type Supply,
 } from "./types";
 
 type LoadState =
@@ -32,6 +33,8 @@ export default function HomeEditor({ onSaved }: { onSaved: () => void }) {
   const [save, setSave] = useState<SaveState>("idle");
   const [types, setTypes] = useState<DeviceType[]>([]);
   const [library, setLibrary] = useState<LibraryType[]>([]);
+  // Alimentation que la détection propose (triphasé quand un nom de HA dit une phase).
+  const [supply, setSupply] = useState<Supply | null>(null);
 
   const apply = useCallback((result: LoadResult, keepChoices: boolean) => {
     if (!result.ok) {
@@ -41,6 +44,7 @@ export default function HomeEditor({ onSaved }: { onSaved: () => void }) {
     setDraft((previous) => (keepChoices ? mergeDraft(previous, result.draft) : result.draft));
     setTypes(result.types);
     setLibrary(result.library);
+    setSupply(result.supply);
     setLoad({ status: "ready", energyDashboard: result.energyDashboard });
   }, []);
 
@@ -82,7 +86,8 @@ export default function HomeEditor({ onSaved }: { onSaved: () => void }) {
   const onSave = async () => {
     setSave("saving");
     try {
-      await putJson<HomeModel>("api/home", toModel(draft));
+      // Première validation : avec l'alimentation que la détection propose.
+      await putJson<HomeModel>("api/home", firstModel(draft, supply));
       setSave("saved");
       onSaved();
     } catch {

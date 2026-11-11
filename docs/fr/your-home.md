@@ -56,7 +56,7 @@ Seulement si le tableau Énergie de Home Assistant n'a pas de prévision solaire
 
 ## Maisons en triphasé
 
-Dans **L'essentiel › Mon raccordement**, indiquez si votre maison est en **monophasé** (par défaut) ou en **triphasé**. En triphasé :
+Dans **L'essentiel › Mon raccordement**, indiquez si votre maison est en **monophasé** (par défaut) ou en **triphasé**. WattSlot lit ce que disent les noms de Home Assistant : quand un capteur ou un appareil nomme une phase (`l1`, `phase 2`, `phase a`, `channel c`…), une nouvelle maison est proposée en triphasé, l'appareil prend cette phase, et les compteurs par phase d'un compteur triphasé sont proposés dans la fiche du réseau. Vérifiez ces propositions : un nom peut tromper. En triphasé :
 
 - **Mon compteur additionne les trois phases** (coché par défaut) : ce que vous injectez sur une phase compense ce que vous soutirez sur une autre, comme le font la plupart des compteurs communicants. Décochez si chaque phase est comptée à part.
 - La fiche de chaque appareil demande alors sur quelle phase il est **branché** : phase 1, 2 ou 3, les trois phases pour un appareil triphasé (borne de recharge, pompe à chaleur…), ou *Je ne sais pas*. Cela vaut aussi pour chaque batterie et chaque installation solaire.

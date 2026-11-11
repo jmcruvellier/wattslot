@@ -16,10 +16,12 @@ const SUPPLIES: Supply[] = ["SinglePhaseSupply", "ThreePhaseSupply"];
 
 export default function SupplySheet({
   data,
+  detected = false,
   onClose,
   onSaved,
 }: {
   data: HomeData;
+  detected?: boolean; // des noms de Home Assistant disent une phase : sans doute du triphasé
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -59,6 +61,7 @@ export default function SupplySheet({
           </select>
         </label>
         <Hint text={t("supply.kind_hint")} />
+        {detected && supply === "SinglePhaseSupply" && <p role="note">{t("supply.detected")}</p>}
         {supply === "ThreePhaseSupply" && (
           <>
             <p>

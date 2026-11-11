@@ -1798,7 +1798,8 @@
     "kind_hint": "En caso de duda: un interruptor general de cuatro polos o un contrato «trifásico» en la factura.",
     "meter_sums": "Mi contador suma las tres fases",
     "meter_sums_hint": "Lo que vierto en una fase compensa lo que consumo de la red en otra. Así funcionan la mayoría de los contadores inteligentes. Desmárquelo si cada fase se cuenta por separado: la planificación cuenta entonces el coste de cada fase y coloca un aparato bajo el excedente de su propia fase, en cuanto se mide el consumo de cada fase (sensores por fase de la conexión a la red).",
-    "phases_hint": "Indique después la fase de cada aparato, batería e instalación solar en su ficha (pestaña Aparatos). Con la potencia contratada de su tarifa, la planificación evita entonces que funcionen juntos, en una misma fase, más de lo que esta puede suministrar. Una batería que solo compensa su fase se calcula en esa fase en cuanto se mide el consumo de cada fase."
+    "phases_hint": "Indique después la fase de cada aparato, batería e instalación solar en su ficha (pestaña Aparatos). Con la potencia contratada de su tarifa, la planificación evita entonces que funcionen juntos, en una misma fase, más de lo que esta puede suministrar. Una batería que solo compensa su fase se calcula en esa fase en cuanto se mide el consumo de cada fase.",
+    "detected": "Home Assistant tiene sensores o aparatos cuyo nombre indica una fase: su casa es probablemente trifásica. Los sensores por fase encontrados se proponen en la ficha de la conexión a la red (pestaña Aparatos)."
   },
   "phases": {
     "title": "Por fase",

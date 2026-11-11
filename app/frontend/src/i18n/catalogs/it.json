@@ -1798,7 +1798,8 @@
     "kind_hint": "In caso di dubbio: un interruttore generale a quattro poli o un contratto «trifase» in bolletta.",
     "meter_sums": "Il mio contatore somma le tre fasi",
     "meter_sums_hint": "Ciò che immetto su una fase compensa ciò che prelevo su un'altra. È così per la maggior parte dei contatori intelligenti. Deselezionare se ogni fase è contata a parte: la pianificazione conta allora il costo di ogni fase e colloca un apparecchio sotto il surplus della propria fase, non appena il consumo di ogni fase è misurato (sensori per fase dell'allacciamento alla rete).",
-    "phases_hint": "Indicare poi la fase di ogni apparecchio, batteria e impianto solare nella sua scheda (scheda Apparecchi). Con la potenza impegnata del contratto, la pianificazione evita allora di far funzionare insieme, su una stessa fase, più di quanto essa possa fornire. Una batteria che compensa solo la sua fase è calcolata su quella fase non appena il consumo di ogni fase è misurato."
+    "phases_hint": "Indicare poi la fase di ogni apparecchio, batteria e impianto solare nella sua scheda (scheda Apparecchi). Con la potenza impegnata del contratto, la pianificazione evita allora di far funzionare insieme, su una stessa fase, più di quanto essa possa fornire. Una batteria che compensa solo la sua fase è calcolata su quella fase non appena il consumo di ogni fase è misurato.",
+    "detected": "Home Assistant ha sensori o apparecchi il cui nome indica una fase: la casa è probabilmente trifase. I sensori per fase trovati sono proposti nella scheda dell'allacciamento alla rete (scheda Apparecchi)."
   },
   "phases": {
     "title": "Per fase",

@@ -443,9 +443,8 @@ def home_from_proposal(
     proposal: Any, language: str, three_phase: bool = False, separate_meter: bool = False
 ) -> Any:
     """Maison proposée par la détection, chaque équipement nommé dans la langue des captures.
-    En triphasé : la phase de chaque équipement, et les compteurs par phase du réseau, que le
-    tableau Énergie de HA ne connaît pas."""
-    from wattslot.detection import DeviceKind, Role
+    En triphasé : la phase de chaque équipement, que rien ne nomme dans HA ; les compteurs par
+    phase du réseau, eux, sont trouvés par la détection."""
     from wattslot.home_model import HomeDevice, HomeModel, HomeSensor, Phase, Supply
 
     known = device_of(three_phase)
@@ -462,21 +461,13 @@ def home_from_proposal(
     for device in proposal.devices:
         logical = known[device.sensors[0].entity_id]
         sensors = [
-            HomeSensor(entity_id=s.entity_id, role=s.role, resets_daily=s.resets_daily)
+            # Capteurs par phase du réseau : trouvés par la détection, d'après leurs noms.
+            HomeSensor(
+                entity_id=s.entity_id, role=s.role, resets_daily=s.resets_daily, phase=s.phase
+            )
             for s in device.sensors
             if not s.excluded
         ]
-        if three_phase and device.kind is DeviceKind.GRID:
-            for number in h.PHASES:
-                line = lines[number]
-                sensors += [
-                    HomeSensor(
-                        entity_id=h.phase_import(number), role=Role.ENERGY_IMPORTED, phase=line
-                    ),
-                    HomeSensor(
-                        entity_id=h.phase_export(number), role=Role.ENERGY_EXPORTED, phase=line
-                    ),
-                ]
         devices.append(
             HomeDevice(
                 key=device.key,

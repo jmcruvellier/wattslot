@@ -56,7 +56,7 @@ Needed only if Home Assistant's Energy dashboard has no solar forecast: describe
 
 ## Three-phase homes
 
-In **Essentials › My grid connection**, say whether your home is **single-phase** (the default) or **three-phase**. In a three-phase home:
+In **Essentials › My grid connection**, say whether your home is **single-phase** (the default) or **three-phase**. WattSlot reads what the names in Home Assistant say: when a sensor or a device names a phase (`l1`, `phase 2`, `phase a`, `channel c`…), a new home is suggested as three-phase, the device takes that phase, and the phase meters of a three-phase meter are suggested in the sheet of the grid connection. Check these suggestions: a name can be misleading. In a three-phase home:
 
 - **My meter sums the three phases** (ticked by default): what you export on one phase offsets what you import on another, as most smart meters do. Untick it if each phase is metered separately.
 - Each device's sheet then asks which phase it is **connected to**: phase 1, 2 or 3, all three phases for a three-phase device (car charger, heat pump…), or *I don't know*. This also applies to each battery and each solar installation.
