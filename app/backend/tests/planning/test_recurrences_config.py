@@ -15,7 +15,7 @@ from wattslot.energy_need import EnergyNeed
 from wattslot.main import create_app
 from wattslot.planning.assemble import configured, recurring_tasks, rules_from_tasks
 from wattslot.planning.engine import plan_day
-from wattslot.planning.horizon import next_day_input
+from wattslot.planning.horizon import DayForecast, next_day_input
 from wattslot.planning.inputs import PlanningInput, TaskRequest, from_v1
 from wattslot.planning.plan import Plan, Slot
 from wattslot.planning.problem import from_input
@@ -120,7 +120,7 @@ def test_the_following_days_assume_each_due_cycle_is_done() -> None:
         ),
         day=DAY,
     )
-    forecast = type("F", (), {"net_kwh": {}, "production_kwh": {}, "warnings": []})()
+    forecast = DayForecast(net_kwh={}, production_kwh={})
 
     due = {
         offset: [

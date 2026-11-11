@@ -3,14 +3,16 @@
 // HTML, à la taille de la page. Une ligne rouge marque le seuil d'alerte quand il y en a un, vers
 // 80 % de la hauteur ; la courbe est lissée sans dépasser les relevés (``smoothPath``). Le
 // survol (ou le toucher) montre l'heure et la valeur du point le plus proche ; un trou dans les
-// relevés (redémarrage) coupe la courbe.
+// relevés (redémarrage) coupe la courbe. Sous l'axe, l'heure de début, celle de fin et les heures
+// pleines entre les deux, espacées selon la largeur affichée (``hourTicks``).
 
-import { useState, type PointerEvent } from "react";
+import { useCallback, useEffect, useState, type PointerEvent } from "react";
 
 import { useI18n } from "../i18n/I18nProvider";
 import { zoned } from "../i18n/homeTime";
 import { smoothPath } from "./chartPath";
 import { axisTop } from "./format";
+import { hourTicks } from "./hourTicks";
 
 export interface ChartPoint {
   time: number; // millisecondes
@@ -24,6 +26,19 @@ const GAP_MS = 3 * 60_000; // au-delà, deux relevés ne se suivent pas
 
 type Known = { time: number; value: number };
 
+/** Largeur affichée du tracé, suivie au redimensionnement ; 0 sans ResizeObserver. */
+function usePlotWidth(): [number, (element: HTMLDivElement | null) => void] {
+  const [element, setElement] = useState<HTMLDivElement | null>(null);
+  const [width, setWidth] = useState(0);
+  useEffect(() => {
+    if (!element || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => setWidth(element.getBoundingClientRect().width));
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [element]);
+  return [width, useCallback((node: HTMLDivElement | null) => setElement(node), [])];
+}
+
 export default function ResourceChart({ points, format, label, threshold }: {
   points: ChartPoint[];
   format: (value: number) => string;
@@ -32,6 +47,7 @@ export default function ResourceChart({ points, format, label, threshold }: {
 }) {
   const { language, t } = useI18n();
   const [hover, setHover] = useState<number | null>(null);
+  const [width, plotRef] = usePlotWidth();
   const known = points.filter((p): p is Known => p.value !== null);
   if (known.length < 2) return <p className="ui-row-help resource-chart-empty">{t("diagnostic.resources.chart_empty")}</p>;
 
@@ -66,6 +82,7 @@ export default function ResourceChart({ points, format, label, threshold }: {
   };
   const shown = hover === null ? null : known[hover];
   const shownThreshold = threshold != null && threshold <= top ? threshold : null;
+  const ticks = hourTicks(start, end, width);
 
   return (
     <figure className="resource-chart">
@@ -82,7 +99,7 @@ export default function ResourceChart({ points, format, label, threshold }: {
           </>
         )}
       </figcaption>
-      <div className="resource-chart-plot" onPointerMove={onMove} onPointerLeave={() => setHover(null)}>
+      <div className="resource-chart-plot" ref={plotRef} onPointerMove={onMove} onPointerLeave={() => setHover(null)}>
         <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} preserveAspectRatio="none" role="img" aria-label={label}>
           <line className="resource-chart-grid" x1={0} x2={WIDTH} y1={0.5} y2={0.5} />
           {segments.map((segment) => (
@@ -100,6 +117,9 @@ export default function ResourceChart({ points, format, label, threshold }: {
               y2={y(shownThreshold)}
             />
           )}
+          {ticks.map((tick) => (
+            <line key={tick} className="resource-chart-tick" x1={x(tick)} x2={x(tick)} y1={HEIGHT - 4} y2={HEIGHT} />
+          ))}
           <line className="resource-chart-axis" x1={0} x2={WIDTH} y1={HEIGHT - 0.5} y2={HEIGHT - 0.5} />
           {shown && <line className="resource-chart-cursor" x1={x(shown.time)} x2={x(shown.time)} y1={0} y2={HEIGHT} />}
         </svg>
@@ -112,6 +132,11 @@ export default function ResourceChart({ points, format, label, threshold }: {
       </div>
       <div className="resource-chart-times ui-row-help">
         <span>{clock(start)}</span>
+        {ticks.map((tick) => (
+          <span key={tick} className="resource-chart-hour" style={{ left: `${(x(tick) / WIDTH) * 100}%` }}>
+            {clock(tick)}
+          </span>
+        ))}
         <span>{clock(end)}</span>
       </div>
     </figure>

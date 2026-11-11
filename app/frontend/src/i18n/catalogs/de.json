@@ -334,6 +334,56 @@
       "chosen": "Hervorgehobene Kennzahl unter „Anpassen“ gewählt.",
       "subscription_part": "davon Grundgebühr {amount}"
     },
+    "quality": {
+      "title": "Prognosequalität",
+      "badge": {
+        "good": "Zuverlässige Prognosen",
+        "fair": "Mittlere Prognosen",
+        "poor": "Unsichere Prognosen"
+      },
+      "open": "Prognosequalität: {badge}. Details anzeigen",
+      "score": "Bewertung: {score} von 100",
+      "summary": {
+        "good": "Die Berechnung hatte vollständige Daten: Prognostizierte Erzeugung und Verbrauch sollten nahe an der Realität liegen.",
+        "fair": "Die Berechnung hatte Daten mit einigen Lücken: Nehmen Sie die prognostizierten Werte als Größenordnung.",
+        "poor": "Die Berechnung hatte unvollständige oder unsichere Daten: Die prognostizierten Werte können stark von der Realität abweichen."
+      },
+      "levels": {
+        "good": "Gut",
+        "fair": "Mittel",
+        "poor": "Schwach"
+      },
+      "factors": {
+        "consumption_history": {
+          "same": "Üblicher Verbrauch: Mittel der letzten {days} gleichen Wochentage ({target} erwartet).",
+          "all": "Üblicher Verbrauch: weniger als {target} gleiche Wochentage im Verlauf, Mittel aller verfügbaren Tage ({days} Tage).",
+          "none": "Üblicher Verbrauch: noch nicht genug Messwerte für eine Schätzung.",
+          "missing": "{hours} von 24 Stunden ohne genug Messwerte (weniger als 3 Tage): Ihr Verbrauch zählt als null."
+        },
+        "consumption_regularity": {
+          "text": "Regelmäßigkeit: Der Verbrauch schwankt von Tag zu Tag um etwa {percent} %.",
+          "good": "Er lässt sich gut vorhersagen.",
+          "fair": "Abweichungen von Tag zu Tag sind möglich.",
+          "poor": "Ein Tag kann stark vom Mittel abweichen."
+        },
+        "solar_source": {
+          "dedicated": "Solarprognose: aus Home Assistant gelesen (Energie-Dashboard oder Prognose-Entitäten).",
+          "fallback": "Solarprognose: mit Open-Meteo anhand der Modulbeschreibung geschätzt, ungenauer als eine Prognose-Integration."
+        },
+        "weather_horizon": {
+          "today": "Wetter: Prognose für denselben Tag, die sicherste.",
+          "tomorrow": "Wetter: Prognose für einen Tag, meist zuverlässig.",
+          "later": "Wetter: Prognose für {days} Tage, weniger sicher als für einen Tag.",
+          "far": "Wetter: Prognose für {days} Tage, oft weit von der Realität entfernt."
+        },
+        "cycle_profiles": {
+          "good": "Gerätezyklen: Energie und Dauer aus gemessenen Zyklen gelernt.",
+          "missing": "Gerätezyklen: noch nicht genug gemessene Zyklen für {devices}."
+        },
+        "history_import": "Verlauf von Home Assistant wird noch übernommen: Der übliche Verbrauch ist unvollständig, der Plan ist vorläufig."
+      },
+      "how": "Die Bewertung kombiniert diese Kriterien aus den Daten der letzten Planberechnung; die schwächsten stehen oben."
+    },
     "explanations": {
       "title": "Warum dieser Plan",
       "recommendation": "Text der Empfehlung"

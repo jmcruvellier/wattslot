@@ -257,12 +257,36 @@ export interface DayView {
   notices: Notice[];
   freshness: Freshness | null;
   indicators: Indicators | null;
+  // Qualité des prévisions d'après les données du calcul ; absente : plan d'avant ce critère.
+  forecast_quality?: ForecastQuality | null;
   objective: ObjectivePreset;
   explanations: DeviceExplanation[];
   recommendation: string | null;
   cards: Cards | null;
   now?: Now | null; // Aujourd'hui seulement
   next_action?: NextAction | null;
+}
+
+export type QualityLevel = "good" | "fair" | "poor";
+
+export type QualityCode =
+  | "consumption_history"
+  | "consumption_regularity"
+  | "solar_source"
+  | "weather_horizon"
+  | "cycle_profiles"
+  | "history_import";
+
+export interface QualityFactor {
+  code: QualityCode;
+  level: QualityLevel;
+  params: Record<string, string | number | boolean>;
+}
+
+export interface ForecastQuality {
+  level: QualityLevel;
+  score: number; // 0 à 100
+  factors: QualityFactor[]; // les plus faibles d'abord
 }
 
 export interface PlannedDevice {

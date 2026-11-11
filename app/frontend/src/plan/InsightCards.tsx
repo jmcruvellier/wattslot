@@ -1,6 +1,7 @@
 // Indicateurs du plan, mis en avant selon l'objectif du calcul (point n° 5 de la phase 5), et
 // explications de chaque équipement avec la recommandation du jour (lot 5.3). Les textes sont
-// rédigés par le serveur dans la langue demandée.
+// rédigés par le serveur dans la langue demandée. Au coin des indicateurs, la qualité des
+// prévisions (QualityBadge).
 
 import { useCurrency } from "../i18n/currency";
 import { minuteOfDay } from "../i18n/homeTime";
@@ -10,6 +11,7 @@ import { availableIndicators, type IndicatorLayout } from "./layout";
 import type { DayView, Indicators, ObjectivePreset } from "./types";
 import Icon from "../ui/Icon";
 import OtherStarts from "./OtherStarts";
+import { QualityBadge } from "./QualityBadge";
 
 type IndicatorKey = keyof Indicators;
 
@@ -42,9 +44,13 @@ export function IndicatorsCard({ view, layout }: { view: DayView; layout: Indica
   const sorted = main && keys.includes(main) ? [main, ...keys.filter((key) => key !== main)] : keys;
   return (
     <article className="card" aria-label={t("plan.indicators.title")}>
-      <h3>
-        <Icon name="target" size={20} /> {t("plan.indicators.title")}
-      </h3>
+      {/* Qualité des prévisions au coin droit, comme la tendance des cartes de la vue Aujourd'hui. */}
+      <div className="card-head">
+        <h3>
+          <Icon name="target" size={20} /> {t("plan.indicators.title")}
+        </h3>
+        {view.forecast_quality && <QualityBadge quality={view.forecast_quality} />}
+      </div>
       <p className="dim">
         {layout.highlight
           ? t("plan.indicators.chosen")

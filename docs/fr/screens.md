@@ -31,6 +31,7 @@ Le plan en détail, pour **Hier**, **Aujourd'hui**, **Demain**, les jours suivan
 - **Pourquoi ce plan** : l'explication de chaque décision, en clair.
   - Aujourd'hui, les autres départs possibles de chaque appareil se choisissent aussi ici.
 - **Indicateurs du plan** (coût, achat, surplus, autoconsommation…) : sur la journée entière, mesurés pour les heures déjà passées, prévus pour la suite.
+  - Dans son coin, la **qualité des prévisions** (fiables, moyennes ou incertaines) dit à quel point se fier à la production et à la consommation prévues, d'après les données dont disposait le calcul : jours d'historique derrière la consommation habituelle, sa régularité, source de la prévision solaire, nombre de jours d'avance de la météo. Touchez-la pour la raison de chaque critère.
 - **Mes demandes** (sous chaque onglet) : les appareils que vous avez demandés, avec ou sans échéance, à marquer faits ou à annuler.
 - **Semaine** : les jours à venir en agenda, une ligne par jour avec ce qui est prévu ; touchez un jour pour l'ouvrir.
 

@@ -29,6 +29,7 @@ from zoneinfo import ZoneInfo
 from wattslot.aggregation import HOUR, Aggregate
 from wattslot.detection import DeviceKind, Role
 from wattslot.home_model import LINES, HomeModel, Phase, Supply, counted_sensors, line_shares
+from wattslot.planning.forecast_quality import BaselineQuality, spread_percent
 
 SAME_WEEKDAY_OCCURRENCES = 6
 SAFETY_WEEKS = 3  # marge contre les trous de données : fenêtre de 9 semaines (63 jours)
@@ -172,6 +173,15 @@ def spike(
     return max(found, key=lambda f: (f[0], f[1]))[2]
 
 
+@dataclass(frozen=True)
+class BaselineDetail:
+    """Consommation de base typique par heure et données derrière elle (qualité des
+    prévisions)."""
+
+    kwh: dict[int, float]
+    quality: BaselineQuality
+
+
 def baseline(
     model: HomeModel,
     reader: AggregateReader,
@@ -184,6 +194,20 @@ def baseline(
     """Consommation de base typique par heure locale (kWh), pour le jour ``target`` ; la
     consommation des équipements planifiés en est retirée : ceux dont la clé est dans
     ``planned`` (configuration, lot 3.4), sinon ceux des types ``PLANNED_KINDS``."""
+    return baseline_detail(model, reader, target, today, zone, occurrences, planned).kwh
+
+
+def baseline_detail(
+    model: HomeModel,
+    reader: AggregateReader,
+    target: date,
+    today: date,
+    zone: ZoneInfo,
+    occurrences: int = SAME_WEEKDAY_OCCURRENCES,
+    planned: Collection[str] | None = None,
+) -> BaselineDetail:
+    """``baseline`` avec le nombre de jours derrière chaque heure et la régularité des
+    journées."""
     start, end = window(today, (occurrences + SAFETY_WEEKS) * 7, zone)
 
     def read(roles: Iterable[Role], kinds: Iterable[DeviceKind] | None = None) -> DaySeries:
@@ -215,7 +239,7 @@ def baseline(
         appliances=appliances,
         has_battery=bool(sensors(model, [Role.ENERGY_CHARGED, Role.ENERGY_DISCHARGED])),
     )
-    return _typical(flows, target, occurrences)
+    return _typical_detail(flows, target, occurrences)
 
 
 @dataclass(frozen=True)
@@ -234,6 +258,11 @@ class _Flows:
 def _typical(flows: _Flows, target: date, occurrences: int) -> dict[int, float]:
     """Consommation de base typique par heure : bilan des flux, équipements planifiés retirés,
     moyenne des mêmes jours de la semaine."""
+    return _typical_detail(flows, target, occurrences).kwh
+
+
+def _typical_detail(flows: _Flows, target: date, occurrences: int) -> BaselineDetail:
+    """``_typical`` avec les jours moyennés par heure et l'écart des journées complètes."""
     produced, imported, exported = flows.produced, flows.imported, flows.exported
     charged, discharged, appliances = flows.charged, flows.discharged, flows.appliances
     has_battery = flows.has_battery
@@ -244,12 +273,14 @@ def _typical(flows: _Flows, target: date, occurrences: int) -> dict[int, float]:
     kept = set(same_weekday[:occurrences]) if len(same_weekday) >= occurrences else None
 
     values: dict[int, list[float]] = defaultdict(list)
+    totals: list[float] = []  # journées complètes (24 heures), pour la régularité
     for day in sorted(available):
         if day == target or (kept is not None and day not in kept):
             continue
         grid_hours = set(imported.get(day, {})) | set(exported.get(day, {}))
         battery_hours = set(charged.get(day, {})) | set(discharged.get(day, {}))
         hours = grid_hours & battery_hours if has_battery else grid_hours
+        day_total = 0.0
         for hour in hours:
             house = (
                 produced.get(day, {}).get(hour, 0.0)
@@ -258,12 +289,22 @@ def _typical(flows: _Flows, target: date, occurrences: int) -> dict[int, float]:
                 + discharged.get(day, {}).get(hour, 0.0)
                 - charged.get(day, {}).get(hour, 0.0)
             )
-            values[hour].append(house - appliances.get(day, {}).get(hour, 0.0))
-    return {
+            base = house - appliances.get(day, {}).get(hour, 0.0)
+            values[hour].append(base)
+            day_total += base
+        if len(hours) == 24:
+            totals.append(day_total)
+    kwh = {
         hour: max(0.0, sum(found) / len(found))
         for hour, found in sorted(values.items())
         if len(found) >= MIN_DAYS_PER_HOUR
     }
+    quality = BaselineQuality(
+        days_per_hour=tuple(len(values.get(hour, ())) for hour in range(24)),
+        same_weekday=kept is not None,
+        spread_percent=spread_percent(totals),
+    )
+    return BaselineDetail(kwh, quality)
 
 
 def _weighted(

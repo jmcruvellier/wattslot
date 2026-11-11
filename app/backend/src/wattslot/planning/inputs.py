@@ -12,6 +12,7 @@ from typing import Any
 from wattslot.home_model import Phase
 from wattslot.planning.co2_sources import Co2Context
 from wattslot.planning.cycles import Segment, Shape
+from wattslot.planning.forecast_quality import BaselineQuality
 from wattslot.planning.plan import POOL, Reason
 from wattslot.tariff import V1 as V1_TARIFF
 from wattslot.tariff import Tariff, TariffContext
@@ -199,6 +200,8 @@ class PlanningInput:
     measured_production_kwh: float | None = None  # production mesurée au relevé
     measured_at_hour: float | None = None  # heure du relevé (fractionnaire)
     forecast_warnings: tuple[dict[str, Any], ...] = ()
+    # Données derrière la consommation habituelle (qualité des prévisions) ; ``None`` : inconnues.
+    baseline_quality: BaselineQuality | None = None
     # Débordement après minuit : lendemain pour prolonger le calcul, et fins de cycles
     # commencés la veille, reprises comme consommation déjà décidée.
     next_day: NextDay | None = None

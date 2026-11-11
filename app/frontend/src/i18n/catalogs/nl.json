@@ -334,6 +334,56 @@
       "chosen": "Uitgelicht kengetal gekozen in „Aanpassen”.",
       "subscription_part": "waarvan vastrecht {amount}"
     },
+    "quality": {
+      "title": "Kwaliteit van de voorspellingen",
+      "badge": {
+        "good": "Betrouwbare voorspellingen",
+        "fair": "Redelijke voorspellingen",
+        "poor": "Onzekere voorspellingen"
+      },
+      "open": "Kwaliteit van de voorspellingen: {badge}. Details tonen",
+      "score": "Score: {score} van 100",
+      "summary": {
+        "good": "De berekening had volledige gegevens: voorspelde productie en verbruik zouden dicht bij de werkelijkheid moeten liggen.",
+        "fair": "De berekening had gegevens met enkele hiaten: zie de voorspelde waarden als een orde van grootte.",
+        "poor": "De berekening had onvolledige of onzekere gegevens: de voorspelde waarden kunnen sterk van de werkelijkheid afwijken."
+      },
+      "levels": {
+        "good": "Goed",
+        "fair": "Redelijk",
+        "poor": "Zwak"
+      },
+      "factors": {
+        "consumption_history": {
+          "same": "Gebruikelijk verbruik: gemiddelde van de laatste {days} zelfde weekdagen ({target} verwacht).",
+          "all": "Gebruikelijk verbruik: minder dan {target} zelfde weekdagen in de geschiedenis, gemiddelde van alle beschikbare dagen ({days} dagen).",
+          "none": "Gebruikelijk verbruik: nog niet genoeg metingen om het te schatten.",
+          "missing": "{hours} van de 24 uur zonder genoeg metingen (minder dan 3 dagen): hun verbruik telt als nul."
+        },
+        "consumption_regularity": {
+          "text": "Regelmaat: het verbruik varieert ongeveer {percent} % van dag tot dag.",
+          "good": "Het is goed te voorspellen.",
+          "fair": "Verschillen van dag tot dag zijn mogelijk.",
+          "poor": "Een dag kan sterk van het gemiddelde afwijken."
+        },
+        "solar_source": {
+          "dedicated": "Zonnevoorspelling: gelezen uit Home Assistant (Energiedashboard of voorspellingsentiteiten).",
+          "fallback": "Zonnevoorspelling: geschat met Open-Meteo op basis van de paneelbeschrijving, minder nauwkeurig dan een voorspellingsintegratie."
+        },
+        "weather_horizon": {
+          "today": "Weer: voorspelling voor dezelfde dag, de betrouwbaarste.",
+          "tomorrow": "Weer: voorspelling voor één dag, meestal betrouwbaar.",
+          "later": "Weer: voorspelling voor {days} dagen, minder zeker dan voor één dag.",
+          "far": "Weer: voorspelling voor {days} dagen, vaak ver van de werkelijkheid."
+        },
+        "cycle_profiles": {
+          "good": "Apparaatcycli: energie en duur geleerd uit gemeten cycli.",
+          "missing": "Apparaatcycli: nog niet genoeg gemeten cycli voor {devices}."
+        },
+        "history_import": "Geschiedenis van Home Assistant wordt nog overgenomen: het gebruikelijke verbruik is onvolledig, het plan is voorlopig."
+      },
+      "how": "De score combineert deze criteria uit de gegevens van de laatste planberekening; de zwakste staan bovenaan."
+    },
     "explanations": {
       "title": "Waarom dit plan",
       "recommendation": "Tekst van het advies"

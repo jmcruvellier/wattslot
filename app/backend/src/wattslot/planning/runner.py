@@ -18,6 +18,7 @@ initiale de la journée (premier calcul du jour), SoC de départ prévu la veill
 dernière exécution.
 """
 
+import asyncio
 import logging
 import sqlite3
 import time
@@ -38,7 +39,15 @@ from wattslot.detection import DeviceKind, Role
 from wattslot.home_assistant import HomeAssistantClient
 from wattslot.home_model import HomeModel
 from wattslot.objective_settings import Preset
-from wattslot.planning import cancelled, capture, choices, open_meteo, overnight, past
+from wattslot.planning import (
+    cancelled,
+    capture,
+    choices,
+    forecast_quality,
+    open_meteo,
+    overnight,
+    past,
+)
 from wattslot.planning.actual import actual_day
 from wattslot.planning.assemble import build_input, to_v1
 from wattslot.planning.assignment import decide, launched_keys
@@ -326,11 +335,13 @@ def with_past(
 
 async def day_forecast(forecasts: Forecasts, ctx: Context, day: date, today: date) -> DayForecast:
     production, warnings = await forecasts.hourly(day)
-    baseline = past.baseline(ctx.model, ctx.reader, day, today, ctx.raw.zone)
+    detail = past.baseline_detail(ctx.model, ctx.reader, day, today, ctx.raw.zone)
+    baseline = detail.kwh
     return DayForecast(
         net_kwh={h: production.get(h, 0.0) - baseline.get(h, 0.0) for h in range(24)},
         production_kwh={h: production.get(h, 0.0) for h in range(24)},
         warnings=tuple(warnings),
+        baseline_quality=detail.quality,
     )
 
 
@@ -388,6 +399,9 @@ def plan_state(
         "date_cible": data.day.isoformat(),
         "duree_calcul_s": round(result.seconds, 2),
         overnight.CARRIED_KEY: overnight.stored(data.carried),
+        forecast_quality.STORED_KEY: forecast_quality.stored(
+            data.baseline_quality, data.forecast_warnings, data.profile_status
+        ),
         **(extra or {}),
     }
 
@@ -596,7 +610,9 @@ async def run(ctx: Context, now: datetime, manual: bool = False) -> RunReport:
         # Prévision recalée sur la production mesurée : calcul et plan enregistré la partagent.
         data = with_corrected_forecast(data)
         problem = from_input(data)
-        result = plan_day(problem, objective)
+        # Solveur hors de la boucle : pendant le calcul, le serveur répond et les vues lisent le
+        # dernier plan gardé (« Lecture du plan… » sans fin auparavant).
+        result = await asyncio.to_thread(plan_day, problem, objective)
     except NoPlanError as exc:
         ctx.capture_no_plan(exc)
         raise
@@ -710,7 +726,7 @@ async def run(ctx: Context, now: datetime, manual: bool = False) -> RunReport:
             ),
         )
         data_t = overnight.with_carried(data_t, overnight.carried_from(merged_plan))
-        result_t = plan_day(from_input(data_t), objective)
+        result_t = await asyncio.to_thread(plan_day, from_input(data_t), objective)
         state_t = plan_state(data_t, result_t, {"derniere_execution": execution})
         state_t["texte_recommandation"] = recommendation(state_t)
         if best is not None:

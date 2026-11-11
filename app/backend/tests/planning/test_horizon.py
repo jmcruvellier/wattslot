@@ -2,6 +2,7 @@
 
 import asyncio
 import random
+import time
 from datetime import date, timedelta
 from pathlib import Path
 from typing import Any
@@ -264,3 +265,40 @@ def test_an_impossible_day_gets_its_own_warning(monkeypatch: pytest.MonkeyPatch)
         {"code": "donnees_impossibles_sans_origine", "params": {"jour": "x"}}
     ]
     assert [(e.day, e.hour) for e in told] == [(failing, 20)]
+
+
+def test_the_solver_leaves_the_server_free(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Le solveur tourne hors de la boucle : pendant le calcul, les autres requêtes (les vues, qui
+    lisent le dernier plan gardé) avancent au lieu d'attendre la fin de l'horizon."""
+    first_state, _ = load(state_named("tomorrow_laundry"))
+    first = from_v1(first_state)
+    rng = random.Random(0)
+    available = {first.day + timedelta(days=k): forecast(rng) for k in range(1, 3)}
+
+    async def forecast_of(day: date) -> DayForecast:
+        surplus = available[day]
+        return DayForecast(surplus["net_horaire_signe"], surplus["production_solaire_horaire"])
+
+    def slow_plan(problem: Problem, objective: Goal, explained: bool = True) -> Result:
+        time.sleep(0.2)
+        return plan_day(problem, objective, explained)
+
+    first_result = plan_day(from_input(first))
+    monkeypatch.setattr(horizon, "plan_day", slow_plan)
+
+    async def scenario() -> int:
+        ticks = 0
+
+        async def other_request() -> None:
+            nonlocal ticks
+            while True:
+                await asyncio.sleep(0.01)
+                ticks += 1
+
+        other = asyncio.create_task(other_request())
+        await compute_horizon(first, first_result, forecast_of, days=3)
+        other.cancel()
+        return ticks
+
+    # Deux jours de 0,2 s : une boucle gelée n'aurait avancé qu'entre les deux.
+    assert asyncio.run(scenario()) >= 10
