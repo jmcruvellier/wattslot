@@ -272,13 +272,20 @@ def _paused_as_running(cycles: list[Cycle], now: datetime, merge_min: float) -> 
 
 
 def real_cycles(
-    model: HomeModel, raw: RawStores, now: datetime, configuration: Configuration | None = None
+    model: HomeModel,
+    raw: RawStores,
+    now: datetime,
+    configuration: Configuration | None = None,
+    day: date | None = None,
 ) -> dict[str, tuple[Segment, ...]]:
     """Cycles réels du jour (depuis minuit, heure locale) par équipement, sur le brut : mêmes
     règles que la v1 (``donnees_reelles_du_jour``), compteur relu depuis la veille. Instants en
-    heure locale de la maison : le calcul en tire l'heure et la minute du démarrage réel."""
+    heure locale de la maison : le calcul en tire l'heure et la minute du démarrage réel.
+    ``day`` : la journée à lire quand ``now`` est sa fin (minuit du lendemain, à l'archivage
+    de la veille) ; sans lui, minuit tombait sur le lendemain et la veille n'avait aucun
+    cycle (« aucun cycle » dans la vue Hier pour un appareil pourtant lancé)."""
     zone = raw.zone
-    midnight = datetime.combine(now.astimezone(zone).date(), time(), zone)
+    midnight = datetime.combine(day or now.astimezone(zone).date(), time(), zone)
     found: dict[str, tuple[Segment, ...]] = {}
     for appliance in cycle_appliances(model, configuration):
         power, _ = _raw_observations(raw, appliance, midnight, now)

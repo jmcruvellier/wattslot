@@ -31,6 +31,7 @@
   "recommendation.runtime": "{device}: {ranges}.",
   "recommendation.runtime_none": "No runtime to schedule.",
   "recommendation.balance": "Expected balance: {cost} and {grid} kWh imported.",
+  "recommendation.balance_rest": "Rest of the day, from {hour}:00: {cost} and {grid} kWh imported.",
   "recommendation.balance_self": "Self-consumption: {percent} %.",
   "recommendation.balance_co2": "CO₂ of the import: {co2} kg.",
   "recommendation.warnings": "Warnings:",

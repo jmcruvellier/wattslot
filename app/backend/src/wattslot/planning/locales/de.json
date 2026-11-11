@@ -31,6 +31,7 @@
   "recommendation.runtime": "{device}: {ranges}.",
   "recommendation.runtime_none": "Keine Laufzeit einzuplanen.",
   "recommendation.balance": "Erwartete Bilanz: {cost} und {grid} kWh Netzbezug.",
+  "recommendation.balance_rest": "Rest des Tages, ab {hour} Uhr: {cost} und {grid} kWh Netzbezug.",
   "recommendation.balance_self": "Eigenverbrauch: {percent} %.",
   "recommendation.balance_co2": "CO₂ des Bezugs: {co2} kg.",
   "recommendation.warnings": "Hinweise:",

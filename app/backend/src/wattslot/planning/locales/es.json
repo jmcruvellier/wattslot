@@ -31,6 +31,7 @@
   "recommendation.runtime": "{device}: {ranges}.",
   "recommendation.runtime_none": "Ningún tiempo de funcionamiento que programar.",
   "recommendation.balance": "Balance previsto: {cost} y {grid} kWh comprados.",
+  "recommendation.balance_rest": "Resto del día, desde las {hour} h: {cost} y {grid} kWh comprados.",
   "recommendation.balance_self": "Autoconsumo: {percent} %.",
   "recommendation.balance_co2": "CO₂ de las compras: {co2} kg.",
   "recommendation.warnings": "Avisos:",

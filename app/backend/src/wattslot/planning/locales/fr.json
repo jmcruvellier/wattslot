@@ -31,6 +31,7 @@
   "recommendation.runtime": "{device} : {ranges}.",
   "recommendation.runtime_none": "Aucune durée de fonctionnement à placer.",
   "recommendation.balance": "Bilan prévu : {cost} et {grid} kWh soutirés.",
+  "recommendation.balance_rest": "Reste de la journée, à partir de {hour} h : {cost} et {grid} kWh soutirés.",
   "recommendation.balance_self": "Autoconsommation : {percent} %.",
   "recommendation.balance_co2": "CO₂ du soutirage : {co2} kg.",
   "recommendation.warnings": "Avertissements :",

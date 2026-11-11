@@ -453,7 +453,7 @@ def actual_day(
             }
             for s in segments
         ]
-        for name, segments in real_cycles(model, raw, until, configuration).items()
+        for name, segments in real_cycles(model, raw, until, configuration, day).items()
     }
     # Durées à placer (filtration…) : celles de la configuration, sinon la piscine de la v1.
     effective = config.effective(model, configuration) if configuration is not None else None

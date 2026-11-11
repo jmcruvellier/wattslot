@@ -240,6 +240,12 @@ def test_the_plan_text_leaves_the_figures_to_the_summary() -> None:
     assert found is not None and "Lave-linge : 11h-12h10" in found
     assert "Filtration" in found and "Bilan" not in found and "Batterie :" not in found
     assert "\n\n\n" not in found and plan_text(None, "fr") is None
+    # Le bilan d'un plan calculé en cours de journée (« Reste de la journée… ») est retiré aussi.
+    rest = (
+        "- Lave-linge : 11h-12h10.\n\n"
+        "Reste de la journée, à partir de 14 h : 0,22 € et 1,0 kWh soutirés."
+    )
+    assert plan_text(rest, "fr") == "- Lave-linge : 11h-12h10."
 
 
 def test_no_appliance_left_today_is_a_sentence(api: TestClient) -> None:
