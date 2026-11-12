@@ -97,6 +97,12 @@ def test_settings_before_lot_5_6_still_apply(database: sqlite3.Connection) -> No
     assert not load(database).recommendation.enabled
 
 
+def test_the_recommendation_is_sent_when_the_plan_changes_by_default() -> None:
+    """« À chaque calcul » envoyait une vingtaine de messages par jour (issue #224)."""
+    assert RecommendationRule().cadence == "when_changed"
+    assert NotificationSettings().recommendation.cadence == "when_changed"
+
+
 def test_every_run_sends_each_time_like_the_v1(database: sqlite3.Connection) -> None:
     save(database, _with(cadence="every_run"))
     client = FakeHA()

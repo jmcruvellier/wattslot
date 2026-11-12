@@ -153,16 +153,18 @@ def test_scheduled_run_sends_the_plan_text(tmp_path: Path) -> None:
     asyncio.run(_notify(client, database, now, zone, report))  # type: ignore[arg-type]
     assert client.sent == []  # désactivé par défaut
     save_settings(database, on)
-    asyncio.run(_notify(client, database, now, zone, report))  # type: ignore[arg-type]
-    assert client.sent[0]["service_data"]["title"] == "Today's energy plan"
-    assert client.sent[0]["service_data"]["message"].startswith("Objective: the lowest cost.")
 
     class Failing(Client):
         async def command(self, command: str, **params: Any) -> None:
             raise RuntimeError("service inconnu")
 
+    # Envoi en échec d'abord : il n'est pas noté, le plan part donc au calcul suivant (rythme
+    # « quand le plan change » par défaut, qui ne renvoie pas un plan déjà envoyé).
     asyncio.run(_notify(Failing(), database, now, zone, report))  # type: ignore[arg-type]
     assert report.errors == ["notification recommendation : RuntimeError: service inconnu"]
+    asyncio.run(_notify(client, database, now, zone, report))  # type: ignore[arg-type]
+    assert client.sent[0]["service_data"]["title"] == "Today's energy plan"
+    assert client.sent[0]["service_data"]["message"].startswith("Objective: the lowest cost.")
 
 
 def test_the_balance_says_when_it_only_covers_the_rest_of_the_day() -> None:

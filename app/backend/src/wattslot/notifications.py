@@ -79,7 +79,9 @@ class Rule(BaseModel):
 
 
 class RecommendationRule(Rule):
-    cadence: Cadence = "every_run"  # comme la v1 (n8n, chaque heure)
+    # « Quand le plan change » par défaut : « à chaque calcul » (la v1, n8n chaque heure) envoyait
+    # une vingtaine de messages par jour, surtout « aucun appareil à lancer » (issue #224).
+    cadence: Cadence = "when_changed"
     daily_at: time = time(7, 0)  # rythme « une fois par jour »
 
 
