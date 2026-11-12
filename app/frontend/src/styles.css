@@ -2533,6 +2533,24 @@ p[role="status"]:not(.state-message) {
   margin: 0.5rem 0 0;
 }
 
+/* Premiers pas, jour annoncé (Tempo, EJP) : capteur du jour et du lendemain. Le nom d'une
+   entité peut être long : la liste ne dépasse pas l'écran. */
+.onboarding-day-entities {
+  margin: 0.75rem 0;
+}
+
+.onboarding-day-entity {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0.5rem 0;
+}
+
+.onboarding-day-entity select,
+.onboarding-day-entity input {
+  max-width: 100%;
+}
+
 /* Petit écran : les boutons d'action gardent leur icône seule, l'âge et le détail restent dans
    le nom du bouton (lecteurs d'écran) ; la pastille d'état et « Demander un appareil » suivent. */
 @media (max-width: 30rem) {

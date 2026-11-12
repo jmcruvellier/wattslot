@@ -1778,7 +1778,11 @@
       "loading": "Sjablonen worden gelezen…",
       "apply": "Dit sjabloon gebruiken",
       "later": "Ik stel het later in",
-      "entities": "Dit sjabloon heeft entiteiten van Home Assistant nodig (kleur van de dag, prijs): stel het in bij"
+      "entities": "Dit sjabloon heeft entiteiten van Home Assistant nodig (actuele prijs): stel het in bij",
+      "none": "Geen",
+      "other_entity": "Andere entiteit…",
+      "entity_id": "ID van de entiteit",
+      "no_candidate": "Geen entiteit van Home Assistant lijkt op de aangekondigde dag van dit contract: typ de ID van de sensor."
     },
     "first_plan": {
       "title": "Alles klaar",

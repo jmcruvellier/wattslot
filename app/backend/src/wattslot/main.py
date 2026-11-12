@@ -970,6 +970,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         ]
         return sorted(found, key=lambda t: not (tempo and t.key == "tempo"))
 
+    @app.get("/api/templates/{key}/entities")
+    def template_entities(request: Request, key: str) -> list[templates.DayEntity]:
+        """Entités de HA qui peuvent donner le jour annoncé du modèle (Tempo, EJP), pour les
+        premiers pas ; vide pour un autre tarif ou sans HA."""
+        template = template_of(key)
+        client: HomeAssistantClient | None = request.app.state.home_assistant
+        states = client.snapshot.states if client is not None else {}
+        return templates.day_entities(template, states)
+
     @app.post("/api/templates/{key}/preview")
     def preview_template(
         request: Request, key: str, entities: TariffEntities | None = None

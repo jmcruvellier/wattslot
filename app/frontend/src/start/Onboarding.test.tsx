@@ -93,7 +93,7 @@ describe("Onboarding", () => {
     expect(saved.supply).toBe("SinglePhaseSupply");
     expect(onChanged).toHaveBeenCalled();
 
-    // Contrat : un modèle sans entités s'applique ici.
+    // Contrat : un modèle sans entités s'applique ici ; Tempo attend son capteur.
     expect(await screen.findByText("Étape 2 sur 3")).toBeInTheDocument();
     await user.click(await screen.findByRole("radio", { name: /Tempo/ }));
     expect(screen.getByRole("button", { name: "Utiliser ce modèle" })).toBeDisabled();
@@ -166,6 +166,59 @@ describe("Onboarding", () => {
     expect(await screen.findByText(/Aucun appareil à placer n'a été trouvé/)).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Ajouter un appareil" }));
     expect(onNavigate).toHaveBeenCalledWith("devices#add-device");
+  });
+
+  it("Tempo : le capteur du jour se choisit sur place, parmi ceux de Home Assistant", async () => {
+    const user = userEvent.setup();
+    const fetch = mockApi();
+    const candidates = [
+      { entity_id: "sensor.tempo_today", name: "Couleur du jour", state: "Bleu", tomorrow: false },
+      { entity_id: "sensor.tempo_tomorrow", name: "Couleur de demain", state: "Blanc", tomorrow: true },
+    ];
+    fetch.mockImplementation(async (input) => {
+      const url = String(input);
+      if (url === "api/templates") return Response.json(TEMPLATES);
+      if (url === "api/templates/tempo/entities") return Response.json(candidates);
+      if (url.endsWith("/apply")) return Response.json({});
+      return new Response(null, { status: 404 });
+    });
+    const setup: Setup = { ...CONNECTED, steps: [step("connection", "done"), step("home", "done"), step("tariff", "todo"), step("first_plan", "todo")] };
+    renderFlow(setup);
+
+    await user.click(await screen.findByRole("radio", { name: /Tempo/ }));
+    // Proposés d'office : le premier capteur du jour, le premier du lendemain.
+    const today = await screen.findByRole("combobox", { name: "Capteur du jour annoncé" });
+    expect(today).toHaveValue("sensor.tempo_today");
+    expect(screen.getByRole("combobox", { name: "Capteur du lendemain" })).toHaveValue("sensor.tempo_tomorrow");
+
+    // Une autre entité, saisie à la main.
+    await user.selectOptions(today, "Autre entité…");
+    expect(screen.getByRole("button", { name: "Utiliser ce modèle" })).toBeDisabled();
+    await user.type(screen.getByRole("textbox", { name: "Identifiant de l'entité" }), "sensor.ma_couleur");
+    await user.click(screen.getByRole("button", { name: "Utiliser ce modèle" }));
+
+    const apply = fetch.mock.calls.find(([url]) => url === "api/templates/tempo/apply");
+    expect(JSON.parse(String(apply?.[1]?.body))).toEqual({
+      color_entity: "sensor.ma_couleur",
+      color_tomorrow_entity: "sensor.tempo_tomorrow",
+    });
+    expect(await screen.findByRole("heading", { name: "Tout est prêt" })).toBeInTheDocument();
+  });
+
+  it("Tempo sans entité candidate : l'identifiant du capteur se saisit", async () => {
+    const user = userEvent.setup();
+    const fetch = mockApi();
+    const setup: Setup = { ...CONNECTED, steps: [step("connection", "done"), step("home", "done"), step("tariff", "todo"), step("first_plan", "todo")] };
+    renderFlow(setup);
+
+    await user.click(await screen.findByRole("radio", { name: /Tempo/ }));
+    expect(await screen.findByText(/Aucune entité de Home Assistant ne ressemble/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Utiliser ce modèle" })).toBeDisabled();
+    await user.type(screen.getByRole("textbox", { name: "Capteur du jour annoncé" }), "sensor.tempo");
+    await user.click(screen.getByRole("button", { name: "Utiliser ce modèle" }));
+
+    const apply = fetch.mock.calls.find(([url]) => url === "api/templates/tempo/apply");
+    expect(JSON.parse(String(apply?.[1]?.body))).toEqual({ color_entity: "sensor.tempo" });
   });
 
   it("reprend à la première étape pas encore faite, et laisse le contrat pour plus tard", async () => {

@@ -31,7 +31,7 @@ from wattslot.home_model import HomeDevice, HomeModel
 from wattslot.objective_settings import ObjectiveSettings
 from wattslot.recurrence_settings import Recurrence
 from wattslot.runtime_settings import RuntimeSettings
-from wattslot.tariff import Tariff
+from wattslot.tariff import Tariff, TariffKind, color_key
 from wattslot.time_constraints import TimeConstraint
 
 FORMAT = "wattslot/template"
@@ -70,6 +70,52 @@ class TariffEntities(BaseModel):
     color_tomorrow_entity: str | None = None
     price_entity: str | None = None
     export_entity: str | None = None
+
+
+class DayEntity(BaseModel):
+    """Entité de HA qui peut donner le jour annoncé d'un modèle (Tempo, EJP), proposée dans les
+    premiers pas."""
+
+    entity_id: str
+    name: str | None = None
+    state: str | None = None
+    tomorrow: bool = False  # son nom parle du lendemain : capteur du lendemain
+
+
+DAY_DOMAINS = ("sensor.", "binary_sensor.", "select.", "input_select.")
+# États trop communs pour désigner seuls un jour annoncé : tous les interrupteurs seraient
+# proposés pour l'EJP (« on » / « off »).
+GENERIC_STATES = {"on", "off"}
+TOMORROW_WORDS = ("tomorrow", "demain", "lendemain", "prochain", "suivant", "j1", "j_1", "next")
+
+
+def day_entities(template: Template, states: dict[str, dict[str, Any]]) -> list[DayEntity]:
+    """Entités dont l'état est un des jours du modèle (« Bleu », « EJP », « Pointe mobile »…), ou
+    dont l'identifiant ou le nom contient la clé du modèle (« tempo », « ejp ») : un capteur du
+    lendemain vaut souvent « inconnu » avant l'annonce. Celles du jour d'abord."""
+    tariff = template.tariff
+    if tariff.kind is not TariffKind.DAY_COLOR:
+        return []
+    recognized = set().union(*(color.recognized() for color in tariff.colors)) - GENERIC_STATES
+    found = []
+    for entity_id, state in states.items():
+        if not entity_id.startswith(DAY_DOMAINS):
+            continue
+        value = state.get("state")
+        name = (state.get("attributes") or {}).get("friendly_name")
+        text = f"{entity_id} {name or ''}".casefold()
+        matches = isinstance(value, str) and color_key(value) in recognized
+        if not matches and template.key not in text:
+            continue
+        found.append(
+            DayEntity(
+                entity_id=entity_id,
+                name=str(name) if name else None,
+                state=str(value) if value is not None else None,
+                tomorrow=any(word in text for word in TOMORROW_WORDS),
+            )
+        )
+    return sorted(found, key=lambda entity: (entity.tomorrow, entity.entity_id))
 
 
 class Change(BaseModel):

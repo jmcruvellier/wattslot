@@ -14,9 +14,11 @@
    |---|---|
    | Tarif unique | Le même prix toute la journée |
    | Heures creuses | Des heures moins chères la nuit (indicatif : de minuit à 6 h et de 22 h à minuit) |
-   | Tempo | Contrat Tempo d'EDF, couleur du jour lue dans Home Assistant |
-   | EJP | Contrat EJP d'EDF, jours de pointe lus dans Home Assistant |
-   | Prix dynamique | Prix horaires du marché lus dans une entité de Home Assistant |
+   | Tempo | Contrat Tempo d'EDF, couleur du jour lue dans Home Assistant : le capteur se choisit sur place |
+   | EJP | Contrat EJP d'EDF, jours de pointe lus dans Home Assistant : le capteur se choisit sur place |
+   | Prix dynamique | Prix horaires du marché lus dans une entité de Home Assistant, réglé dans **Modèles prêts à l'emploi** |
+
+   Pour Tempo et l'EJP, WattSlot propose les entités de Home Assistant dont l'état est un jour du contrat (Bleu, Blanc, Rouge, EJP…) ou dont le nom le dit, pour le jour et pour le lendemain. Choisissez **Autre entité…** pour en saisir une autre.
 
 4. **Tout est prêt.** Cliquez sur **Calculer mon premier plan**. WattSlot recalcule ensuite chaque heure, tout seul.
 

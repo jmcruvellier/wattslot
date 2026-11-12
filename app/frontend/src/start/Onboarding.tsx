@@ -4,7 +4,7 @@
 // plus tard), puis le premier plan, ou ce qu'il manque d'indispensable avant lui (la prévision
 // solaire, par exemple). Chargé à la demande : une installation déjà en route ne le lit jamais.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { ApiError, getJson, postJson, putJson } from "../api";
 import { Hint } from "../common/Advanced";
@@ -235,16 +235,35 @@ function HomeStep({ onNavigate, onDone }: { onNavigate: (target: string) => void
   );
 }
 
-// Modèles qui demandent des entités de HA (couleur du jour, prix dynamique) : réglés dans leur
-// page, pas dans les premiers pas.
-const NEEDS_ENTITIES = new Set(["DayColorTariff", "DynamicTariff"]);
+// Modèle au prix dynamique : ses entités se règlent dans la page des modèles. Le jour annoncé
+// (Tempo, EJP) se choisit ici, parmi les entités de HA qui lui ressemblent.
+const NEEDS_ENTITIES = new Set(["DynamicTariff"]);
+const ANNOUNCED_DAY = "DayColorTariff";
+const OTHER = "__other__";
+
+interface DayEntity {
+  entity_id: string;
+  name: string | null;
+  state: string | null;
+  tomorrow: boolean; // son nom parle du lendemain
+}
+
+interface DayEntities {
+  color_entity: string;
+  color_tomorrow_entity: string;
+}
+
+const NO_ENTITIES: DayEntities = { color_entity: "", color_tomorrow_entity: "" };
 
 function TariffStep({ onNavigate, onDone }: { onNavigate: (target: string) => void; onDone: () => void }) {
   const { language, t } = useI18n();
   const [templates, setTemplates] = useState<TemplateSummary[] | null>(null);
   const [chosen, setChosen] = useState<string | null>(null);
+  const [candidates, setCandidates] = useState<DayEntity[] | null>(null);
+  const [entities, setEntities] = useState<DayEntities>(NO_ENTITIES);
   const [applying, setApplying] = useState(false);
   const [failed, setFailed] = useState(false);
+  const latest = useRef<string | null>(null); // modèle choisi en dernier (réponses en retard)
 
   useEffect(() => {
     const controller = new AbortController();
@@ -256,13 +275,40 @@ function TariffStep({ onNavigate, onDone }: { onNavigate: (target: string) => vo
 
   const local = (texts: Record<string, string>) => texts[language] ?? texts.fr ?? "";
   const template = templates?.find((found) => found.key === chosen) ?? null;
+  const announced = template?.tariff_kind === ANNOUNCED_DAY;
+
+  // Jour annoncé : les entités candidates, la première du jour et la première du lendemain
+  // proposées d'office (modifiables).
+  const choose = (found: TemplateSummary) => {
+    setChosen(found.key);
+    latest.current = found.key;
+    setFailed(false);
+    setEntities(NO_ENTITIES);
+    setCandidates(null);
+    if (found.tariff_kind !== ANNOUNCED_DAY) return;
+    getJson<DayEntity[]>(`api/templates/${found.key}/entities`)
+      .then((listed) => {
+        if (latest.current !== found.key) return;
+        setCandidates(listed);
+        setEntities({
+          color_entity: listed.find((entity) => !entity.tomorrow)?.entity_id ?? "",
+          color_tomorrow_entity: listed.find((entity) => entity.tomorrow)?.entity_id ?? "",
+        });
+      })
+      .catch(() => {
+        if (latest.current === found.key) setCandidates([]);
+      });
+  };
 
   const apply = async () => {
     if (!template) return;
     setApplying(true);
     setFailed(false);
+    const body = announced
+      ? Object.fromEntries(Object.entries(entities).filter(([, value]) => value))
+      : {};
     try {
-      await postJson("api/templates/" + template.key + "/apply", {});
+      await postJson("api/templates/" + template.key + "/apply", body);
       onDone();
     } catch {
       setFailed(true);
@@ -272,6 +318,11 @@ function TariffStep({ onNavigate, onDone }: { onNavigate: (target: string) => vo
   };
 
   if (templates === null) return <p>{t("onboarding.tariff.loading")}</p>;
+  const blocked =
+    !template ||
+    applying ||
+    NEEDS_ENTITIES.has(template.tariff_kind) ||
+    (announced && (candidates === null || !entities.color_entity));
   return (
     <>
       <p>{t("onboarding.tariff.help")}</p>
@@ -279,7 +330,7 @@ function TariffStep({ onNavigate, onDone }: { onNavigate: (target: string) => vo
         <legend className="visually-hidden">{t("onboarding.tariff.title")}</legend>
         {templates.map((found) => (
           <label key={found.key}>
-            <input type="radio" name="template" checked={chosen === found.key} onChange={() => setChosen(found.key)} />
+            <input type="radio" name="template" checked={chosen === found.key} onChange={() => choose(found)} />
             <span>
               <span className="ui-row-label">{local(found.name)}</span>
               <span className="ui-row-help">{local(found.description)}</span>
@@ -295,18 +346,92 @@ function TariffStep({ onNavigate, onDone }: { onNavigate: (target: string) => vo
           </button>
         </p>
       )}
+      {announced && candidates !== null && (
+        <div className="onboarding-day-entities">
+          {candidates.length === 0 && <p>{t("onboarding.tariff.no_candidate")}</p>}
+          <DayEntityField
+            key={`${chosen}-today`}
+            label={t("tariff.color_entity")}
+            value={entities.color_entity}
+            candidates={candidates}
+            onChange={(color_entity) => setEntities({ ...entities, color_entity })}
+          />
+          <Hint text={t("tariff.color_entity_hint")} />
+          <DayEntityField
+            key={`${chosen}-tomorrow`}
+            label={t("tariff.color_tomorrow_entity")}
+            value={entities.color_tomorrow_entity}
+            candidates={candidates}
+            optional
+            onChange={(color_tomorrow_entity) => setEntities({ ...entities, color_tomorrow_entity })}
+          />
+        </div>
+      )}
       {failed && <p role="alert">{t("onboarding.failed")}</p>}
       <div className="onboarding-buttons">
-        <Button
-          variant="primary"
-          disabled={!template || applying || NEEDS_ENTITIES.has(template.tariff_kind)}
-          onClick={() => void apply()}
-        >
+        <Button variant="primary" disabled={blocked} onClick={() => void apply()}>
           {t("onboarding.tariff.apply")}
         </Button>
         <Button onClick={onDone}>{t("onboarding.tariff.later")}</Button>
       </div>
     </>
+  );
+}
+
+// Choix d'une entité du jour annoncé : une des candidates, ou un identifiant saisi (« Autre
+// entité… », ou d'office quand HA n'en propose aucune).
+function DayEntityField({
+  label,
+  value,
+  candidates,
+  optional = false,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  candidates: DayEntity[];
+  optional?: boolean;
+  onChange: (value: string) => void;
+}) {
+  const { t } = useI18n();
+  const [typing, setTyping] = useState(candidates.length === 0);
+  const describe = (entity: DayEntity) =>
+    `${entity.name ? `${entity.name} — ` : ""}${entity.entity_id}${entity.state ? ` (${entity.state})` : ""}`;
+  return (
+    <p className="onboarding-day-entity">
+      {candidates.length > 0 && (
+        <label>
+          {label}{" "}
+          <select
+            value={typing ? OTHER : value}
+            onChange={(event) => {
+              const chosen = event.target.value;
+              setTyping(chosen === OTHER);
+              onChange(chosen === OTHER ? "" : chosen);
+            }}
+          >
+            {optional && <option value="">{t("onboarding.tariff.none")}</option>}
+            {!optional && value === "" && !typing && <option value="" disabled />}
+            {candidates.map((entity) => (
+              <option key={entity.entity_id} value={entity.entity_id}>
+                {describe(entity)}
+              </option>
+            ))}
+            <option value={OTHER}>{t("onboarding.tariff.other_entity")}</option>
+          </select>
+        </label>
+      )}
+      {typing && (
+        <label>
+          {candidates.length > 0 ? t("onboarding.tariff.entity_id") : label}{" "}
+          <input
+            value={value}
+            placeholder="sensor.…"
+            onChange={(event) => onChange(event.target.value.trim())}
+          />
+        </label>
+      )}
+    </p>
   );
 }
 

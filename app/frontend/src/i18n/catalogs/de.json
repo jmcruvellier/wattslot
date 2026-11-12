@@ -1778,7 +1778,11 @@
       "loading": "Vorlagen werden gelesen…",
       "apply": "Diese Vorlage verwenden",
       "later": "Später einstellen",
-      "entities": "Diese Vorlage braucht Entitäten von Home Assistant (Tagesfarbe, Preis): Einrichten unter"
+      "entities": "Diese Vorlage braucht Entitäten von Home Assistant (aktueller Preis): richten Sie sie ein unter",
+      "none": "Keiner",
+      "other_entity": "Andere Entität…",
+      "entity_id": "ID der Entität",
+      "no_candidate": "Keine Entität von Home Assistant sieht nach dem angekündigten Tag dieses Vertrags aus: geben Sie die ID des Sensors ein."
     },
     "first_plan": {
       "title": "Alles bereit",
