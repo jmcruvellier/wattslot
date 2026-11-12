@@ -1595,18 +1595,31 @@ a.ui-setting-row {
   align-items: center;
   gap: 0.2rem;
   min-height: 2.75rem;
-  padding: 0.3rem 0.1rem;
+  /* Colonnes d'environ 60 px sur un téléphone de 375 px : sans marge latérale et à 0,66 rem,
+     les libellés français, anglais et néerlandais tiennent sur une ligne. */
+  padding: 0.3rem 0;
   border-radius: 0.75rem;
   color: var(--text-dim);
-  font-size: 0.7rem;
+  font-size: 0.66rem;
   font-weight: 600;
   text-align: center;
   text-decoration: none;
 }
 
+/* Un mot plus long que sa colonne (« Einstellungen », « Pianificazione ») est coupé selon la
+   langue de la page, ou n'importe où sans dictionnaire de césure, plutôt que de déborder. */
+.main-menu-label {
+  max-width: 100%;
+  line-height: 1.15;
+  hyphens: auto;
+  overflow-wrap: anywhere;
+}
+
+/* Sur téléphone, l'onglet actif garde la même graisse : en gras, « Ma maison » passait sur deux
+   lignes. Il se repère à sa couleur et à son fond, comme sur ordinateur. */
 .main-menu a[aria-current="page"] {
   color: var(--text);
-  font-weight: 800;
+  background: var(--surface-alt);
 }
 
 .main-menu a:focus-visible {
@@ -1687,7 +1700,7 @@ a.ui-setting-row {
   }
 
   .main-menu a[aria-current="page"] {
-    background: var(--surface-alt);
+    font-weight: 800;
   }
 
   .app-shell[data-menu="collapsed"] .main-menu-brand,
