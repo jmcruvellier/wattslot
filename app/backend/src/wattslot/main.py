@@ -35,6 +35,7 @@ from wattslot import (
     currency,
     exchange,
     home_model,
+    memory,
     notifications,
     profiles,
     report,
@@ -112,7 +113,7 @@ from wattslot.resources import ResourceHour, ResourceMonitor, ResourcePoint, Res
 from wattslot.runtime import RunMode, Settings, load_settings
 from wattslot.settings_choices import SettingsChoices, settings_choices
 from wattslot.setup import Setup, setup_status
-from wattslot.storage.database import open_database
+from wattslot.storage.database import open_connections, open_database
 from wattslot.storage.graph import GraphStore
 from wattslot.storage.raw import RawStores
 from wattslot.tariff import (
@@ -324,6 +325,12 @@ def _scheduler(
         )
         report = await run(context, now)
         await _notify(client, database, now, raw.zone, report, week_of, alerts_of)
+        # Le calcul lit des semaines d'agrégats puis les libère : cette mémoire, gardée par
+        # l'allocateur, est rendue au système (``memory.py``).
+        try:
+            await asyncio.to_thread(memory.release, open_connections(database))
+        except Exception:
+            logger.exception("Mémoire libre non rendue au système")
         return report
 
     async def refresher(now: datetime) -> None:

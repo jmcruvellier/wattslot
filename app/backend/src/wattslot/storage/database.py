@@ -288,13 +288,18 @@ def _connect(path: Path) -> sqlite3.Connection:
 class ThreadConnections:
     """Une connexion SQLite par fil, derrière l'interface d'une connexion : ``execute``,
     ``with database:`` (transaction du fil appelant), ``commit``, ``backup``… sont ceux de la
-    connexion du fil qui appelle. Ouverte à la première utilisation dans un fil."""
+    connexion du fil qui appelle. Ouverte à la première utilisation dans un fil.
+
+    Les fils qui servent les routes de l'API ne vivent pas toujours : au-delà d'un seul, ils
+    s'arrêtent après 10 s sans requête. La connexion d'un fil arrêté est fermée à l'ouverture de
+    la suivante ; gardée jusqu'à l'arrêt de l'application, chacune tenait sa mémoire et ses
+    fichiers ouverts, et leur nombre montait à chaque page chargée."""
 
     def __init__(self, path: Path, connect: Callable[[Path], sqlite3.Connection] = _connect):
         self._path = path
         self._connect = connect
         self._local = threading.local()
-        self._opened: list[sqlite3.Connection] = []
+        self._opened: list[tuple[threading.Thread, sqlite3.Connection]] = []
         self._lock = threading.Lock()
 
     def connection(self) -> sqlite3.Connection:
@@ -304,8 +309,17 @@ class ThreadConnections:
             found = self._connect(self._path)
             self._local.connection = found
             with self._lock:
-                self._opened.append(found)
+                orphans = [c for thread, c in self._opened if not thread.is_alive()]
+                self._opened = [(t, c) for t, c in self._opened if t.is_alive()]
+                self._opened.append((threading.current_thread(), found))
+            for orphan in orphans:
+                orphan.close()
         return found
+
+    def open_count(self) -> int:
+        """Connexions ouvertes, tous fils confondus."""
+        with self._lock:
+            return len(self._opened)
 
     def __getattr__(self, name: str) -> Any:
         return getattr(self.connection(), name)
@@ -327,8 +341,13 @@ class ThreadConnections:
         with self._lock:
             opened, self._opened = self._opened, []
             self._local = threading.local()
-        for connection in opened:
+        for _, connection in opened:
             connection.close()
+
+
+def open_connections(database: sqlite3.Connection | None) -> int | None:
+    """Connexions ouvertes de la base de l'application ; ``None`` pour une connexion simple."""
+    return database.open_count() if isinstance(database, ThreadConnections) else None
 
 
 def open_database(data_dir: Path) -> sqlite3.Connection:

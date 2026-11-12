@@ -33,8 +33,9 @@ from typing import Literal
 
 from pydantic import BaseModel
 
+from wattslot import memory
 from wattslot.maintenance import directory_size
-from wattslot.storage.database import DATABASE_FILENAME
+from wattslot.storage.database import DATABASE_FILENAME, open_connections
 from wattslot.storage.graph import GRAPH_DIRNAME
 
 logger = logging.getLogger(__name__)
@@ -124,6 +125,9 @@ class Resources(BaseModel):
     measured_s: int = 0  # durée couverte par les relevés (moins de 24 h après un démarrage)
     # Octets écrits sur disque pendant les dernières 24 h (minutes relevées) ; aucun hors de Linux.
     written_day_bytes: int | None = None
+    # Ce qui compose la mémoire (``memory.py``) : utilisée, gardée libre par l'allocateur, en
+    # échange ; fils, fichiers ouverts, connexions à la base.
+    memory_detail: memory.MemoryDetail | None = None
 
 
 def memory_alert(resources: Resources) -> int | None:
@@ -478,6 +482,7 @@ class ResourceMonitor:
 
     def __init__(self, data_dir: Path, database: sqlite3.Connection | None = None) -> None:
         self._data_dir = data_dir
+        self._database = database
         self._store = ResourceStore(database) if database is not None else None
         self._samples: deque[Sample] = deque(maxlen=HISTORY_S // INTERVAL_S + 1)
         start = _sample(data_dir)
@@ -565,6 +570,7 @@ class ResourceMonitor:
         found.written_day_bytes = sum(written) if written else None
         found.cpu_cores = cpu_cores()
         found.memory_limit_bytes, found.memory_limit_source = memory_limit()
+        found.memory_detail = memory.detail(open_connections(self._database))
         found.disk_used_bytes = directory_size(self._data_dir)
         found.disk_backup_bytes = BACKUP_MARGIN * (
             directory_size(self._data_dir / GRAPH_DIRNAME)
