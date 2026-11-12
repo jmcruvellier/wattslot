@@ -24,6 +24,9 @@ from wattslot.resources import disk_low_free, memory_alert
 from wattslot.setup import Setup, StepState
 
 STALE_PLAN = timedelta(hours=2)
+# Statistique externe suivie (« linky:… ») : publiée la veille d'ordinaire ; au-delà de deux jours
+# sans nouvelle heure, l'intégration ne publie plus.
+STATISTIC_STALE = timedelta(days=2)
 PENDING_MAX = 1000
 # Ressources : seuils dans ``resources`` (ligne rouge des courbes). Toutes « à surveiller » : les
 # autres gravités parlent du plan.
@@ -110,20 +113,31 @@ def _sensor_problems(
     found = []
     states = client.snapshot.states if client is not None else None
     silent = set(silent_entities(diagnostic.ingestion, diagnostic.today, diagnostic.generated_at))
+    followed = diagnostic.aggregation.statistics_until if diagnostic.aggregation else {}
     for device in home.devices:
         for sensor in device.sensors:
             params = {"device": device.name, "role": sensor.role.value, "entity": sensor.entity_id}
             if not is_entity_id(sensor.entity_id):
                 # Statistique externe du tableau Énergie (« linky:… ») : jamais dans les états de
-                # HA, et sans relevé en direct ; son historique est repris quand même.
-                found.append(
-                    Problem(
-                        code="sensor_statistic",
-                        severity=Severity.WATCH,
-                        params=params,
-                        target="home",
+                # HA ; ses heures sont relues dans les statistiques, souvent avec un jour de retard.
+                until = followed.get(sensor.entity_id)
+                if until is not None and diagnostic.generated_at - until > STATISTIC_STALE:
+                    found.append(
+                        Problem(
+                            code="statistic_stale",
+                            severity=Severity.DEGRADED,
+                            params={**params, "since": until.isoformat()},
+                        )
                     )
-                )
+                else:
+                    found.append(
+                        Problem(
+                            code="sensor_statistic",
+                            severity=Severity.WATCH,
+                            params=params,
+                            target="home",
+                        )
+                    )
                 continue
             if states is not None and sensor.entity_id not in states:
                 found.append(

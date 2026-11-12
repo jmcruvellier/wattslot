@@ -396,3 +396,62 @@ def test_actual_day_two_solar_installations(tmp_path: Path) -> None:
     production = found["production_reelle_horaire"]
     assert all(production.get(h, 0.0) == 0.0 for h in range(7))
     assert sum(production.values()) == pytest.approx(1.1 + 0.5)
+
+
+class _StatisticReader:
+    """Agrégats horaires d'une statistique externe, reçus jusqu'à une heure donnée."""
+
+    def __init__(self, entity_id: str, hours: dict[int, float]) -> None:
+        self.entity_id, self.hours = entity_id, hours
+
+    def read(self, entity_id: str, period: str, start: datetime, end: datetime) -> list[Any]:
+        from wattslot.aggregation import Aggregate
+
+        if entity_id != self.entity_id:
+            return []
+        found = [
+            Aggregate(entity_id=entity_id, period=period, start=at(hour), energy_kwh=kwh)
+            for hour, kwh in self.hours.items()
+        ]
+        return [a for a in found if start <= a.start < end]
+
+
+def test_actual_day_reads_an_external_statistic_and_skips_hours_not_yet_received(
+    tmp_path: Path,
+) -> None:
+    """Soutirage donné par une statistique externe (« linky:… », issue #224) : ses heures
+    viennent des agrégats repris de HA ; une heure pas encore reçue n'est pas une consommation
+    réduite à la production, elle est écartée."""
+    model = HomeModel(
+        devices=[
+            HomeDevice(
+                key="solar",
+                kind=DeviceKind.SOLAR,
+                name="solar",
+                sensors=[HomeSensor(entity_id="sensor.pv_energy", role=Role.ENERGY_PRODUCED)],
+            ),
+            HomeDevice(
+                key="grid",
+                kind=DeviceKind.GRID,
+                name="grid",
+                sensors=[HomeSensor(entity_id="linky:import", role=Role.ENERGY_IMPORTED)],
+            ),
+        ]
+    )
+    raw = RawStores(tmp_path, "Europe/Paris")
+    raw.write(
+        [
+            reading("solar", "sensor.pv_energy", 100.0, at(-1)),
+            reading("solar", "sensor.pv_energy", 101.0, at(10)),
+            reading("solar", "sensor.pv_energy", 102.0, at(12)),
+        ]
+    )
+    reader = _StatisticReader("linky:import", {hour: 0.5 for hour in range(9)})
+
+    found: dict[str, Any] = actual_day(model, raw, DAY, at(12.5), reader=reader)
+
+    assert found["reseau_reel_soutire_horaire"] == {hour: 0.5 for hour in range(9)}
+    consumption = found["consommation_reelle_horaire"]
+    assert set(consumption) == set(range(9))  # 9 h à 12 h : soutirage pas encore reçu
+    production = found["production_reelle_horaire"]
+    assert all(consumption[h] == pytest.approx(production[h] + 0.5) for h in range(9))

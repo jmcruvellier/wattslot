@@ -35,10 +35,12 @@ from wattslot import configuration as config
 from wattslot.aggregation import CounterState
 from wattslot.configuration import Behavior, Configuration
 from wattslot.detection import DeviceKind, Role
+from wattslot.home_assistant import is_entity_id
 from wattslot.home_model import LINES, HomeModel, counted_sensors, sensor_iri
 from wattslot.planning.appliances import DEFAULT_RULES, RULES, SHORT_GAP_MIN, Observation
 from wattslot.planning.inputs import V1_POOL
 from wattslot.planning.journal import appliances, real_cycles
+from wattslot.planning.past import AggregateReader
 from wattslot.planning.plan import POOL
 from wattslot.runtime_settings import MEASURED_SPEED
 from wattslot.storage.raw import RawStores
@@ -353,6 +355,35 @@ def _iris(model: HomeModel, roles: Iterable[Role]) -> dict[Role, list[str]]:
     return found
 
 
+def _statistics(model: HomeModel, roles: Iterable[Role]) -> list[tuple[Role, str]]:
+    """Statistiques externes (« linky:… ») comptées dans ces rôles : (rôle, identifiant)."""
+    wanted = set(roles)
+    return [
+        (sensor.role, sensor.entity_id)
+        for device in model.devices
+        for sensor in counted_sensors(device)
+        if sensor.role in wanted and not is_entity_id(sensor.entity_id)
+    ]
+
+
+def _statistic_hourly(
+    reader: AggregateReader | None,
+    entity_id: str,
+    midnight: datetime,
+    until: datetime,
+    zone: ZoneInfo,
+) -> dict[int, float]:
+    """Énergie par heure locale d'une statistique externe, depuis ses agrégats horaires."""
+    if reader is None:
+        return {}
+    found: dict[int, float] = {}
+    for aggregate in reader.read(entity_id, "PT1H", midnight, until):
+        if aggregate.energy_kwh is not None:
+            hour = aggregate.start.astimezone(zone).hour
+            found[hour] = found.get(hour, 0.0) + aggregate.energy_kwh
+    return found
+
+
 def actual_day(
     model: HomeModel,
     raw: RawStores,
@@ -360,8 +391,13 @@ def actual_day(
     until: datetime,
     manual: bool = False,
     configuration: Configuration | None = None,
+    reader: AggregateReader | None = None,
 ) -> dict[str, Any]:
-    """Données réelles de ``day`` jusqu'à ``until`` (fin de journée au plus), format de la v1."""
+    """Données réelles de ``day`` jusqu'à ``until`` (fin de journée au plus), format de la v1.
+
+    Statistiques externes (« linky:… ») : pas de brut, leurs heures viennent des agrégats repris
+    de HA (``reader``), souvent la veille seulement ; une heure pas encore reçue n'entre pas dans
+    la consommation mesurée, au lieu d'y compter pour 0."""
     zone = raw.zone
     midnight = datetime.combine(day, time(), zone)
     until = min(until, midnight + timedelta(days=1))
@@ -414,7 +450,22 @@ def actual_day(
     production = hourly(Role.ENERGY_PRODUCED)
     imported, exported = hourly(Role.ENERGY_IMPORTED), hourly(Role.ENERGY_EXPORTED)
     charged, discharged = hourly(Role.ENERGY_CHARGED), hourly(Role.ENERGY_DISCHARGED)
+    flows = {
+        Role.ENERGY_PRODUCED: production,
+        Role.ENERGY_IMPORTED: imported,
+        Role.ENERGY_EXPORTED: exported,
+        Role.ENERGY_CHARGED: charged,
+        Role.ENERGY_DISCHARGED: discharged,
+    }
+    received: set[int] | None = None  # heures reçues de toutes les statistiques externes
+    for role, entity_id in _statistics(model, flows):
+        hours_of = _statistic_hourly(reader, entity_id, midnight, until, zone)
+        for hour, kwh in hours_of.items():
+            flows[role][hour] = flows[role].get(hour, 0.0) + kwh
+        received = set(hours_of) if received is None else received & set(hours_of)
     hours = set(production) | set(imported) | set(exported) | set(charged) | set(discharged)
+    if received is not None:
+        hours &= received
     # L'onduleur se tait la nuit : les heures mesurées de la maison (réseau, batterie) sans
     # relevé du compteur de production comptent 0 kWh - la courbe mesurée descend au
     # coucher du soleil au lieu de s'arrêter à la fin de la production.

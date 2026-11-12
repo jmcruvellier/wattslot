@@ -361,6 +361,23 @@ describe("DiagnosticScreen", () => {
     expect(screen.getAllByRole("listitem").filter((item) => item.classList.contains("problem"))).toHaveLength(3);
   });
 
+  it("date la dernière heure reçue d'une statistique externe qui ne publie plus", async () => {
+    mockApi(HEALTHY, [
+      {
+        code: "statistic_stale",
+        severity: "degraded",
+        params: { device: "Grid", role: "EnergyImported", entity: "linky:grid_import", since: "2026-10-14T22:00:00+00:00" },
+        target: null,
+        doc: null,
+      },
+    ]);
+    renderScreen();
+
+    const problem = await screen.findByText(/Grid: no new hour of the statistic linky:grid_import since/);
+    expect(problem).not.toHaveTextContent("2026-10-14T22");
+    expect(problem).toHaveTextContent(/10\/1[45]\/2026/);
+  });
+
   it("nomme le saut de compteur derrière un jour non calculé", async () => {
     mockApi(HEALTHY, [
       {
