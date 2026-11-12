@@ -8,6 +8,7 @@ exemple).
 
 import asyncio
 import json
+import string
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from typing import Any
@@ -19,6 +20,7 @@ from wattslot.runtime import HomeAssistantTarget
 
 TOKEN = "jeton-de-test"
 VERSION = "2026.10.1"
+ENTITY_CHARACTERS = frozenset(string.ascii_lowercase + string.digits + "_")
 
 ENERGY_PREFERENCES: dict[str, object] = {
     "energy_sources": [{"type": "solar", "stat_energy_from": "sensor.solar_energy"}],
@@ -45,6 +47,12 @@ def default_responses() -> dict[str, Any]:
 
 
 Handler = Callable[[ServerConnection], Awaitable[None]]
+
+
+def _is_entity_id(identifier: str) -> bool:
+    """« domaine.nom » en minuscules, chiffres et « _ » (règle simplifiée de HA)."""
+    domain, dot, name = identifier.partition(".")
+    return bool(dot and domain and name) and set(domain + name) <= ENTITY_CHARACTERS
 
 
 class Subscriptions:
@@ -76,8 +84,14 @@ def fake_home_assistant(
             message = json.loads(raw)
             reply: dict[str, Any] = {"id": message["id"], "type": "result"}
             if message["type"] == "subscribe_entities":
-                await websocket.send(json.dumps(reply | {"success": True, "result": None}))
                 wanted = set(message.get("entity_ids") or [])
+                if not all(_is_entity_id(entity_id) for entity_id in wanted):
+                    # Comme HA (``cv.entity_ids``) : tout l'abonnement est refusé pour un seul
+                    # identifiant qui n'est pas une entité (statistique externe « linky:… »).
+                    error = {"code": "invalid_format", "message": "invalid entity ID"}
+                    await websocket.send(json.dumps(reply | {"success": False, "error": error}))
+                    continue
+                await websocket.send(json.dumps(reply | {"success": True, "result": None}))
                 states = {
                     s["entity_id"]: {
                         "s": s["state"],

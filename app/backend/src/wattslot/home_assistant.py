@@ -14,6 +14,7 @@ import asyncio
 import contextlib
 import json
 import logging
+import re
 from collections.abc import Awaitable, Callable, Sequence
 from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass, field
@@ -33,6 +34,10 @@ COMMAND_TIMEOUT_S = 60.0
 # Désabonnement (arrêt, rechargement) : au mieux, sans attendre une connexion à demi ouverte ;
 # le Supervisor laisse 30 s pour vider les écritures avant de tuer l'extension.
 UNSUBSCRIBE_TIMEOUT_S = 5.0
+# Identifiant d'entité valide pour HA (``homeassistant.core.valid_entity_id``). Le tableau Énergie
+# accepte aussi des statistiques externes d'une intégration (« linky:… ») : ce ne sont pas des
+# entités, et un seul de ces identifiants dans ``subscribe_entities`` fait refuser l'abonnement.
+VALID_ENTITY_ID = re.compile(r"^(?!.+__)(?!_)[\da-z_]+(?<!_)\.(?!_)[\da-z_]+(?<!_)$")
 # Message lu dans un fil au-delà de cette taille (historique de la reprise : plusieurs Mo) :
 # décodé dans la boucle, il la bloquerait plusieurs secondes sur un Raspberry Pi.
 LARGE_MESSAGE_BYTES = 1_000_000
@@ -121,6 +126,12 @@ class _Subscription:
     params: dict[str, Any]
     callback: EventCallback
     message_id: int | None = None  # identifiant de l'abonnement sur la connexion en cours
+    error: str | None = None  # refus de HA à la dernière activation
+
+
+def is_entity_id(identifier: str) -> bool:
+    """Vrai pour une entité de HA, faux pour une statistique externe (« linky:… »)."""
+    return VALID_ENTITY_ID.match(identifier) is not None
 
 
 def _default_connect(url: str) -> AbstractAsyncContextManager[WebSocket]:
@@ -281,10 +292,17 @@ class HomeAssistantClient:
         subscription.message_id = message_id
         try:
             await self.command(subscription.command, **subscription.params)
-        except Exception:
+        except Exception as exc:
             self._events.pop(message_id, None)
             subscription.message_id = None
+            subscription.error = f"{type(exc).__name__}: {exc}"
             raise
+        subscription.error = None
+
+    def subscription_error(self, name: str) -> str | None:
+        """Refus de HA à la dernière activation de cet abonnement (None : actif ou en attente)."""
+        subscription = self._subscriptions.get(name)
+        return subscription.error if subscription is not None else None
 
     async def refresh_snapshot(self) -> HomeSnapshot:
         """Relit configuration, tableau Énergie, états et registres."""

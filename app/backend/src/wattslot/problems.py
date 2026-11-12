@@ -17,7 +17,7 @@ from pydantic import BaseModel
 from wattslot import configuration
 from wattslot.configuration import Configuration
 from wattslot.diagnostic import Diagnostic
-from wattslot.home_assistant import HomeAssistantClient
+from wattslot.home_assistant import HomeAssistantClient, is_entity_id
 from wattslot.home_model import HomeModel
 from wattslot.ingestion import silent_entities
 from wattslot.resources import disk_low_free, memory_alert
@@ -113,6 +113,18 @@ def _sensor_problems(
     for device in home.devices:
         for sensor in device.sensors:
             params = {"device": device.name, "role": sensor.role.value, "entity": sensor.entity_id}
+            if not is_entity_id(sensor.entity_id):
+                # Statistique externe du tableau Énergie (« linky:… ») : jamais dans les états de
+                # HA, et sans relevé en direct ; son historique est repris quand même.
+                found.append(
+                    Problem(
+                        code="sensor_statistic",
+                        severity=Severity.WATCH,
+                        params=params,
+                        target="home",
+                    )
+                )
+                continue
             if states is not None and sensor.entity_id not in states:
                 found.append(
                     Problem(
@@ -162,6 +174,17 @@ def _component_problems(diagnostic: Diagnostic, home: HomeModel) -> list[Problem
                     error=error,
                 )
             )
+    if ingestion is not None and ingestion.subscription_error:
+        # Abonnement refusé par HA : aucun relevé en direct, pour aucun capteur.
+        found.append(
+            _problem(
+                "live_readings_refused",
+                Severity.DEGRADED,
+                target="home",
+                doc=DOCS["issues"],
+                error=ingestion.subscription_error,
+            )
+        )
     if ingestion is not None and ingestion.pending > PENDING_MAX:
         found.append(_problem("writes_behind", Severity.WATCH, count=str(ingestion.pending)))
     if aggregation is not None and aggregation.history.without_statistics:
@@ -305,8 +328,8 @@ def _dashboard_problems(diagnostic: Diagnostic, home: HomeModel) -> list[Problem
             (item.key is not None and item.key not in names) or (entity and entity not in used)
         ):
             continue
-        if item.issue.code == "entity_missing" and entity in used:
-            continue  # déjà signalé par « sensor_missing », avec son geste
+        if item.issue.code in ("entity_missing", "external_statistic") and entity in used:
+            continue  # déjà signalé par « sensor_missing » ou « sensor_statistic », avec son geste
         found.append(
             Problem(
                 code="energy_dashboard_issue",

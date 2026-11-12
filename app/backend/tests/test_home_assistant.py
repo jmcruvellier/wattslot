@@ -282,3 +282,38 @@ def test_large_messages_are_decoded_outside_the_event_loop(monkeypatch: pytest.M
 
     assert client.status.state is ConnectionState.CONNECTED
     assert client.snapshot.config["time_zone"] == "Europe/Paris"
+
+
+def test_a_refused_subscription_keeps_its_error_until_it_is_accepted() -> None:
+    async def scenario() -> tuple[str | None, str | None]:
+        def ignore(event: dict[str, Any]) -> None:
+            return None
+
+        async with running_client(fake_home_assistant()) as client:
+            with pytest.raises(CommandError):
+                await client.subscribe(
+                    "states", "subscribe_entities", ignore, entity_ids=["linky:grid_import"]
+                )
+            refused = client.subscription_error("states")
+            await client.subscribe(
+                "states", "subscribe_entities", ignore, entity_ids=["sensor.solar_energy"]
+            )
+            return refused, client.subscription_error("states")
+
+    refused, accepted = asyncio.run(scenario())
+
+    assert refused is not None and "invalid_format" in refused
+    assert accepted is None
+
+
+@pytest.mark.parametrize(
+    ("identifier", "expected"),
+    [
+        ("sensor.grid_import", True),
+        ("linky:grid_import", False),
+        ("sensor.bad__name", False),
+        ("sensor", False),
+    ],
+)
+def test_is_entity_id(identifier: str, expected: bool) -> None:
+    assert home_assistant.is_entity_id(identifier) is expected
