@@ -1778,7 +1778,11 @@
       "loading": "Lecture des modèles…",
       "apply": "Utiliser ce modèle",
       "later": "Je réglerai plus tard",
-      "entities": "Ce modèle a besoin d'entités de Home Assistant (couleur du jour, prix) : réglez-le dans"
+      "entities": "Ce modèle a besoin d'entités de Home Assistant (prix du moment) : réglez-le dans",
+      "none": "Aucun",
+      "other_entity": "Autre entité…",
+      "entity_id": "Identifiant de l'entité",
+      "no_candidate": "Aucune entité de Home Assistant ne ressemble au jour annoncé de ce contrat : saisissez l'identifiant du capteur."
     },
     "first_plan": {
       "title": "Tout est prêt",

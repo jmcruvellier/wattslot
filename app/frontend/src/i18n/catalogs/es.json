@@ -1778,7 +1778,11 @@
       "loading": "Leyendo las plantillas…",
       "apply": "Usar esta plantilla",
       "later": "Lo ajustaré más tarde",
-      "entities": "Esta plantilla necesita entidades de Home Assistant (color del día, precio): ajústela en"
+      "entities": "Esta plantilla necesita entidades de Home Assistant (precio del momento): configúrela en",
+      "none": "Ninguno",
+      "other_entity": "Otra entidad…",
+      "entity_id": "Identificador de la entidad",
+      "no_candidate": "Ninguna entidad de Home Assistant se parece al día anunciado de este contrato: escriba el identificador del sensor."
     },
     "first_plan": {
       "title": "Todo listo",

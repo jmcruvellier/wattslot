@@ -1778,7 +1778,11 @@
       "loading": "Reading the templates…",
       "apply": "Use this template",
       "later": "I'll set it later",
-      "entities": "This template needs Home Assistant entities (day colour, price): set it up in"
+      "entities": "This template needs Home Assistant entities (current price): set it up in",
+      "none": "None",
+      "other_entity": "Other entity…",
+      "entity_id": "Entity ID",
+      "no_candidate": "No Home Assistant entity looks like the announced day of this contract: type the sensor's ID."
     },
     "first_plan": {
       "title": "All set",

@@ -128,3 +128,43 @@ def test_api(tmp_path: Path) -> None:
         assert saved["tariff"]["color_entity"] == "sensor.tempo_today"
         ev = next(d for d in saved["devices"] if d["key"] == "ev")
         assert ev["behavior"] == "EnergyByDeadlineBehavior" and not ev["default"]
+
+
+def test_day_entities_of_tempo_and_ejp() -> None:
+    """Premiers pas : entités qui donnent le jour annoncé, celles du jour d'abord ; un simple
+    interrupteur (« on ») n'est pas un jour EJP, une entité qui le dit dans son nom, si."""
+
+    def state(value: str, name: str | None = None) -> dict[str, object]:
+        return {"state": value, "attributes": {"friendly_name": name} if name else {}}
+
+    states = {
+        "sensor.rte_tempo_prochaine_couleur": state("unknown", "Prochaine couleur Tempo"),
+        "sensor.rte_tempo_couleur_actuelle": state("Bleu", "Couleur Tempo actuelle"),
+        "sensor.couleur_demain": state("Blanc"),
+        "sensor.temperature": state("12.5"),
+        "binary_sensor.door": state("on"),
+        "binary_sensor.ejp_today": state("off", "Jour EJP"),
+        "sensor.ejp_tomorrow": state("Non EJP"),
+        "light.red": state("Rouge"),
+    }
+
+    tempo = templates.day_entities(templates.load("tempo"), states)
+    assert [(e.entity_id, e.tomorrow) for e in tempo] == [
+        ("sensor.rte_tempo_couleur_actuelle", False),
+        ("sensor.couleur_demain", True),
+        ("sensor.rte_tempo_prochaine_couleur", True),
+    ]
+    assert tempo[0].name == "Couleur Tempo actuelle" and tempo[0].state == "Bleu"
+
+    ejp = templates.day_entities(templates.load("ejp"), states)
+    assert [(e.entity_id, e.tomorrow) for e in ejp] == [
+        ("binary_sensor.ejp_today", False),
+        ("sensor.ejp_tomorrow", True),
+    ]
+    assert templates.day_entities(templates.load("off_peak"), states) == []
+
+
+def test_day_entities_api_without_home_assistant(tmp_path: Path) -> None:
+    with TestClient(create_app(_settings(tmp_path))) as api:
+        assert api.get("/api/templates/tempo/entities").json() == []
+        assert api.get("/api/templates/unknown/entities").status_code == 404
