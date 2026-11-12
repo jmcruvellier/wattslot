@@ -303,3 +303,33 @@ def test_the_meter_jump_behind_an_impossible_baseline_is_found() -> None:
     assert found.start == datetime.combine(jump_day, time(20), PARIS)
     assert baseline(MODEL, reader, friday, TODAY, PARIS)[20] > 10000  # la base en dépend
     assert spike(MODEL, reader, friday, 20, TODAY, PARIS, limit_kwh=1e6) is None
+
+
+def test_hours_of_an_external_statistic_not_yet_received_are_not_counted_as_zero() -> None:
+    """Soutirage donné par une statistique externe (« linky:… », issue #224), publiée la veille :
+    les journées et les heures pas encore reçues sont écartées, pas comptées à 0 kWh."""
+    model = HomeModel(
+        devices=[
+            device("solar", DeviceKind.SOLAR, ("sensor.pv", Role.ENERGY_PRODUCED)),
+            device(
+                "grid",
+                DeviceKind.GRID,
+                ("linky:import", Role.ENERGY_IMPORTED),
+                ("sensor.exp", Role.ENERGY_EXPORTED),
+            ),
+        ]
+    )
+    reader = FakeReader()
+    days = days_back(14)
+    for day in days:
+        for hour in range(24):
+            reader.add("sensor.pv", day, hour, energy_kwh=0.2)
+            reader.add("sensor.exp", day, hour, energy_kwh=0.0)
+            received = day not in days[:2] and not (day == days[2] and hour >= 20)
+            if received:
+                reader.add("linky:import", day, hour, energy_kwh=0.6)
+
+    result = baseline(model, reader, TODAY, TODAY, PARIS)
+
+    assert sorted(result) == list(range(24))
+    assert all(v == pytest.approx(0.8) for v in result.values())  # jamais 0,2 (soutirage à 0)

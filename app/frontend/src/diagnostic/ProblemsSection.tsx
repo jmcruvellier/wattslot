@@ -12,7 +12,7 @@ import { useI18n } from "../i18n/I18nProvider";
 import { statusLevel } from "../nav/status";
 import { longDate } from "../plan/format";
 import { useShowMore, VISIBLE_ITEMS } from "../ui/ShowMore";
-import { formatNumber } from "./format";
+import { formatDate, formatNumber } from "./format";
 
 export interface Problem {
   code: string;
@@ -77,6 +77,13 @@ export default function ProblemsSection({ version, onNavigate, checking, onCheck
           source_kwh: formatNumber(language, Number(params.source_kwh), 0),
           until: longDate(params.until, language),
         }),
+      });
+    }
+    if (problem.code === "statistic_stale") {
+      // Statistique externe qui ne publie plus : date de la dernière heure reçue.
+      return t("problems.code.statistic_stale", {
+        ...params,
+        since: formatDate(language, params.since ?? null),
       });
     }
     if (RESOURCE_CODES.has(problem.code)) {

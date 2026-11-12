@@ -16,7 +16,8 @@ The **Resources** section shows the processor (average over 15 minutes and peak,
 | Your home is not saved yet | **My home**: check the proposed devices, then save |
 | No solar forecast | Add a forecast to the Energy dashboard (Forecast.Solar, Solcast, Open-Meteo…), or describe your panels in **My home** |
 | A sensor no longer exists / is unavailable / has sent nothing for a day | Replace it in **My home**, or check the device and its integration in Home Assistant |
-| A sensor is a statistic from an integration | The Energy dashboard can use a statistic of an integration (its identifier contains `:`) instead of an entity: WattSlot imports its history but receives no live readings from it. If the integration also has an entity for the same meter, choose it in **My home** |
+| A sensor is a statistic from an integration | The Energy dashboard can use a statistic of an integration (its identifier contains `:`, a Linky meter for example) instead of an entity. WattSlot reads its hours from the Home Assistant statistics every quarter of an hour; they often arrive a day late, and hours not yet received are left out of the calculations instead of counting as zero. If the integration also has an entity for the same meter, choosing it in **My home** gives live readings |
+| No new hour of a statistic since a date | The integration that provides this statistic has published nothing for more than two days: check it in Home Assistant |
 | Home Assistant refused to send the sensor readings | No live measurement reaches WattSlot. Re-read Home Assistant in **My home** and save your home; if the error persists, attach the report to a bug report |
 | No history in Home Assistant for some sensors | They have no statistics (no `state_class`): the plan starts from their live measurements only |
 | No plan could be computed for more than 2 hours | Look at the other problems, or **Compute** from the title bar of **Today**, **Planning** or **Curves** |

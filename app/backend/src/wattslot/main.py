@@ -342,6 +342,7 @@ def _scheduler(
             now,
             configuration.load(graph),
             manual=False,
+            reader=aggregator,
         )
 
     def settings() -> tuple[bool, int, int]:
@@ -1169,6 +1170,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 state.database,
                 now,
                 configuration.load(state.graph),
+                reader=state.aggregator,
             )
             if found is not None:
                 return found

@@ -425,7 +425,7 @@ async def next_day_of(
 def _actual(ctx: Context, day: date, until: datetime, manual: bool = False) -> Any:
     """Données réelles du jour ; un échec n'empêche pas le calcul (le dashboard s'en passe)."""
     try:
-        return actual_day(ctx.model, ctx.raw, day, until, manual, ctx.configuration)
+        return actual_day(ctx.model, ctx.raw, day, until, manual, ctx.configuration, ctx.reader)
     except Exception:
         logger.exception("Données réelles du %s illisibles", day)
         return None
@@ -454,6 +454,7 @@ def refresh_actual(
     now: datetime,
     configuration: Configuration | None = None,
     manual: bool = True,
+    reader: AggregateReader | None = None,
 ) -> dict[str, Any] | None:
     """Bouton « Rafraîchir » (``manual``) ou relecture périodique du planificateur : données
     réelles du plan du jour relues sur le brut, sans calcul ; ``None`` si le plan gardé ne porte
@@ -463,7 +464,9 @@ def refresh_actual(
     current = store.load("today")
     if current is None or current.day != today:
         return None
-    actual = actual_day(model, raw, today, now, manual=manual, configuration=configuration)
+    actual = actual_day(
+        model, raw, today, now, manual=manual, configuration=configuration, reader=reader
+    )
     content = {**current.content, "donnees_reelles_cache": actual}
     store.save("today", today, content, current.seconds, current.manual)
     return actual

@@ -14,6 +14,12 @@ redémarrage ou une reprise après coupure (lot 1.2) ne laisse pas de période f
 relevé connu avant une période y est reporté (une puissance constante n'envoie aucun changement).
 L'état de l'agrégation (prochaine période, valeur reportée) est gardé en base.
 
+Statistiques externes du tableau Énergie (« linky:… », issue #224) : pas d'entité, donc pas de
+relevé brut. Leurs agrégats viennent des statistiques de HA, relues régulièrement depuis la
+dernière période reçue (``follow_statistics``) ; une intégration qui publie la veille (Linky)
+remplit ses heures en retard. Une heure pas encore reçue n'a pas d'agrégat : elle n'est pas
+comptée nulle.
+
 Périodes alignées sur l'heure locale de la maison. Stockage dans le magasin principal, un graphe
 nommé par période et par mois (organisation retenue par le banc du lot 0.5) ::
 
@@ -27,6 +33,7 @@ nommé par période et par mois (organisation retenue par le banc du lot 0.5) ::
 """
 
 import asyncio
+import json
 import logging
 import sqlite3
 import time as time_module
@@ -41,7 +48,7 @@ from pydantic import BaseModel
 from wattslot import history
 from wattslot.corrections import CorrectionStore, apply
 from wattslot.detection import ENERGY_ROLES, Role, slug
-from wattslot.home_assistant import ConnectionState, HomeAssistantClient
+from wattslot.home_assistant import ConnectionState, HomeAssistantClient, is_entity_id
 from wattslot.ingestion import Ingestor, Target
 from wattslot.ontology import BASE, HOME, VOCAB
 from wattslot.storage.graph import GraphStore
@@ -78,6 +85,14 @@ DECIMALS = 6  # efface le bruit des calculs en virgule flottante (0.290000000000
 # 8,9 Go. Le chargeur en masse prend environ 0,9 Mo de mémoire par millier de quadruplets (6 à 7
 # par agrégat) : 360 Mo de plus au plus fort de la reprise.
 IMPORT_BATCH = 100_000
+# Statistiques externes : relues tous les quarts d'heure, sur les derniers jours (une heure
+# complétée après coup par l'intégration est reprise) ; la première fois, tout l'historique.
+FOLLOW_INTERVAL = timedelta(minutes=15)
+FOLLOW_LOOKBACK = timedelta(days=3)
+# Fin de la dernière période reçue, par statistique externe et par période (JSON dans
+# ``app_settings``). À part de ``aggregation_state`` : le calcul sur le brut y faisait avancer
+# le curseur de ces identifiants sans rien écrire, il aurait fait sauter des heures.
+FOLLOW_KEY = "statistics_follow"
 RDF_TYPE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
 
 
@@ -142,6 +157,8 @@ class AggregationStatus(BaseModel):
     complete_until: dict[str, datetime] = {}  # par période : fin de la dernière période calculée
     last_error: str | None = None
     history: HistoryStatus = HistoryStatus()
+    # Statistiques externes suivies : fin de la dernière heure reçue de HA (absente : aucune).
+    statistics_until: dict[str, datetime] = {}
 
 
 def period_start(moment: datetime, length: timedelta, zone: ZoneInfo) -> datetime:
@@ -330,6 +347,11 @@ def aggregate_nquads(
     return "\n".join(lines) + "\n"
 
 
+def live(targets: dict[str, Target]) -> dict[str, Target]:
+    """Entités suivies qui ont des relevés bruts : toutes sauf les statistiques externes."""
+    return {entity_id: target for entity_id, target in targets.items() if is_entity_id(entity_id)}
+
+
 class Aggregator:
     def __init__(
         self,
@@ -353,6 +375,7 @@ class Aggregator:
         # entités sont reprises au démarrage suivant, sans doublon (agrégats existants sautés).
         self._spool: list[str] = []
         self._spooled: list[tuple[str, int, dict[str, tuple[int, datetime | None]]]] = []
+        self._followed_at: datetime | None = None  # dernière relecture des statistiques externes
 
     def start(self) -> None:
         self._task = asyncio.create_task(self._loop())
@@ -371,6 +394,7 @@ class Aggregator:
                 # Une entité par tour : le calcul sur le brut n'attend jamais la fin de toute
                 # la reprise (1 h 25 pour la maison de référence sur le N150).
                 imported = await self.import_history(limit=1)
+                await self.follow_statistics()
             except Exception as exc:  # nouvel essai au tour suivant
                 self._status.last_error = f"{type(exc).__name__}: {exc}"
                 logger.exception("Agrégation impossible")
@@ -381,7 +405,7 @@ class Aggregator:
         """Calcule les périodes closes ; renvoie le nombre d'agrégats écrits."""
         if not self._ingestor.ready:
             return 0
-        targets = self._ingestor.targets
+        targets = live(self._ingestor.targets)
         if not targets:
             return 0
         moment = now or datetime.now(UTC)
@@ -547,7 +571,7 @@ class Aggregator:
         client = self._client
         if client is None or client.status.state is not ConnectionState.CONNECTED:
             return 0
-        targets = self._ingestor.targets
+        targets = live(self._ingestor.targets)  # statistiques externes : ``follow_statistics``
         done = await asyncio.to_thread(self._imported)
         done |= {entity_id for entity_id, _, _ in self._spooled}
         state = await asyncio.to_thread(self._state)
@@ -583,6 +607,130 @@ class Aggregator:
         if self._spooled and not any(ready(entity_id) for entity_id in targets):
             await asyncio.to_thread(self._write_spool, len(self._spool))  # dernières entités
         return count
+
+    async def follow_statistics(self, now: datetime | None = None, force: bool = False) -> int:
+        """Relit les statistiques de HA des statistiques externes suivies, au plus tous les
+        ``FOLLOW_INTERVAL`` (``force`` : tout de suite) ; renvoie le nombre d'agrégats écrits.
+
+        Depuis la dernière période reçue moins ``FOLLOW_LOOKBACK`` (tout l'historique la
+        première fois), périodes closes seulement, agrégats existants sautés. La première
+        relecture d'une statistique est notée comme sa reprise de l'historique."""
+        client = self._client
+        if client is None or client.status.state is not ConnectionState.CONNECTED:
+            return 0
+        moment = now or datetime.now(UTC)
+        if (
+            not force
+            and self._followed_at is not None
+            and moment - self._followed_at < FOLLOW_INTERVAL
+        ):
+            return 0
+        followed = {e: t for e, t in self._ingestor.targets.items() if not is_entity_id(e)}
+        self._followed_at = moment
+        if not followed:
+            return 0
+        cursors = await asyncio.to_thread(self._follow_cursors)
+        imported = await asyncio.to_thread(self._imported)
+        written = 0
+        for entity_id, target in followed.items():
+            summary: dict[str, tuple[int, datetime | None]] = {}
+            for period, length in PERIODS.items():
+                cursor = cursors.get(entity_id, {}).get(period)
+                start = cursor - FOLLOW_LOOKBACK if cursor is not None else history.SINCE
+                # Un quart d'heure est fait de trois statistiques à 5 minutes, publiées chacune un
+                # peu après sa fin : il n'est repris qu'un quart d'heure plus tard, complet (il ne
+                # serait plus corrigé). Une statistique horaire est d'un seul tenant.
+                delay = length if period == QUARTER else timedelta()
+                closed = period_start(moment - delay, length, self._raw.zone)
+                lines, summary[period], end = await self._statistics_period(
+                    client, entity_id, target, period, length, start, closed
+                )
+                if lines:
+                    await asyncio.to_thread(self._write_statistics, lines)
+                    written += len(lines)
+                if end is not None and (cursor is None or end > cursor):
+                    cursors.setdefault(entity_id, {})[period] = end
+            await asyncio.to_thread(self._save_follow_cursors, cursors)
+            if entity_id not in imported:
+                await asyncio.to_thread(self._record_import, entity_id, summary)
+        self._status.written += written
+        self._status.statistics_until = {
+            entity_id: periods[HOUR]
+            for entity_id, periods in cursors.items()
+            if entity_id in followed and HOUR in periods
+        }
+        if written:
+            logger.info("Statistiques externes : %s agrégats repris de HA", written)
+        return written
+
+    def _follow_cursors(self) -> dict[str, dict[str, datetime]]:
+        row = self._database.execute(
+            "SELECT value FROM app_settings WHERE key = ?", (FOLLOW_KEY,)
+        ).fetchone()
+        saved: dict[str, dict[str, str]] = json.loads(row[0]) if row else {}
+        return {
+            entity_id: {period: datetime.fromisoformat(end) for period, end in periods.items()}
+            for entity_id, periods in saved.items()
+        }
+
+    def _save_follow_cursors(self, cursors: dict[str, dict[str, datetime]]) -> None:
+        value = {
+            entity_id: {period: end.isoformat() for period, end in periods.items()}
+            for entity_id, periods in cursors.items()
+        }
+        with self._database:
+            self._database.execute(
+                "INSERT INTO app_settings VALUES (?, ?) "
+                "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+                (FOLLOW_KEY, json.dumps(value)),
+            )
+
+    def _write_statistics(self, lines: list[str]) -> None:
+        """Agrégats d'une statistique externe : chargement en masse pour tout un historique
+        (première relecture), écriture ordinaire pour les dernières heures."""
+        if len(lines) > IMPORT_BATCH // 10:
+            self._graph.bulk_add_nquads(lines)
+        else:
+            self._graph.add_nquads("".join(lines), deferred=True)
+
+    async def _statistics_period(
+        self,
+        client: HomeAssistantClient,
+        entity_id: str,
+        target: Target,
+        period: str,
+        length: timedelta,
+        start: datetime,
+        before: datetime,
+    ) -> tuple[list[str], tuple[int, datetime | None], datetime | None]:
+        """Agrégats d'une statistique externe sur ``[start, before)`` pas encore écrits (N-Quads),
+        leur nombre et le plus ancien, et la fin de la dernière période reçue."""
+        zone = self._raw.zone
+        counter = target.role in ENERGY_ROLES
+        rows = await history.statistics(client, entity_id, period, before, counter, start)
+        grouped = history.group(rows, counter, lambda m: period_start(m, length, zone), before)
+        if not grouped:
+            return [], (0, None), None
+        earliest, latest = min(grouped), max(grouped)
+        existing = {
+            aggregate.start
+            for aggregate in await asyncio.to_thread(
+                self.read, entity_id, period, earliest, latest + length, False
+            )
+        }
+        nquads = [
+            aggregate_nquads(
+                entity_id,
+                target,
+                period,
+                moment,
+                Values(energy_kwh=energy, mean=mean, maximum=maximum),
+                graph_iri(period, moment, zone),
+            )
+            for moment, (energy, mean, maximum) in sorted(grouped.items())
+            if moment not in existing
+        ]
+        return nquads, (len(nquads), earliest if nquads else None), latest + length
 
     async def _import_period(
         self,

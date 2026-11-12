@@ -439,3 +439,113 @@ def test_nothing_is_closed_until_the_raw_readings_are_complete(tmp_path: Path) -
     assert after > 0
     energy = aggregator.read(ENERGY.entity_id, QUARTER, T0, at(30))
     assert [a.energy_kwh for a in energy] == [0.0, 0.5]
+
+
+# --- Statistiques externes du tableau Énergie (issue #224) ------------------------------------
+
+LINKY = Target("linky:grid_import", "urn:sensor:linky", Role.ENERGY_IMPORTED)
+
+
+class StubIngestorWithStatistic:
+    ready = True
+    targets: ClassVar[dict[str, Target]] = {ENERGY.entity_id: ENERGY, LINKY.entity_id: LINKY}
+
+
+def test_external_statistics_are_followed_hour_after_hour(tmp_path: Path) -> None:
+    """Pas de brut pour une statistique externe : ses agrégats viennent des statistiques de HA,
+    relues régulièrement depuis la dernière heure reçue ; une heure publiée en retard (Linky,
+    la veille) est reprise, une heure pas encore reçue reste sans agrégat."""
+    graph = GraphStore(tmp_path)
+    raw = RawStores(tmp_path, "Europe/Paris")
+    raw.write([Reading(ENERGY.entity_id, ENERGY.sensor_iri, 1.0, at(0))])
+    published = [_stat(-180, change=0.5), _stat(-120, change=0.7)]
+    requests: list[dict[str, object]] = []
+
+    def statistics(message: dict[str, object]) -> dict[str, object]:
+        requests.append(message)
+        (entity_id,) = cast(list[str], message["statistic_ids"])
+        if entity_id != LINKY.entity_id or message["period"] != "hour":
+            return {entity_id: []}
+        start = datetime.fromisoformat(cast(str, message["start_time"]))
+        rows = [r for r in published if r["start"] >= start.timestamp() * 1000]
+        return {entity_id: rows}
+
+    responses = default_responses()
+    responses["recorder/statistics_during_period"] = statistics
+
+    async def scenario() -> tuple[int, int, int, int, Aggregator]:
+        async with running_client(fake_home_assistant(responses)) as client:
+            aggregator = Aggregator(
+                cast(Ingestor, StubIngestorWithStatistic()),
+                raw,
+                graph,
+                open_database(tmp_path),
+                client,
+            )
+            await aggregator.step(at(61.5))  # le brut ne fait pas avancer la statistique
+            first = await aggregator.follow_statistics(at(61.5))
+            soon = await aggregator.follow_statistics(at(65))  # moins d'un quart d'heure après
+            published.append(_stat(-60, change=0.9))  # heure publiée en retard
+            late = await aggregator.follow_statistics(at(80))
+            again = await aggregator.follow_statistics(at(100))
+            return first, soon, late, again, aggregator
+
+    first, soon, late, again, aggregator = asyncio.run(scenario())
+
+    assert (first, soon, late, again) == (2, 0, 1, 0)
+    hours = aggregator.read(LINKY.entity_id, HOUR, at(-240), at(60))
+    assert [(a.start, a.energy_kwh) for a in hours] == [
+        (at(-180), 0.5),
+        (at(-120), 0.7),
+        (at(-60), 0.9),
+    ]
+    assert aggregator.read(LINKY.entity_id, HOUR, at(0), at(60)) == []  # pas encore reçue
+    linky = [r for r in requests if r["statistic_ids"] == [LINKY.entity_id]]
+    assert cast(str, linky[0]["start_time"]).startswith(
+        "2000-"
+    )  # première fois : tout l'historique
+    lookback = datetime.fromisoformat(cast(str, linky[-1]["start_time"]))
+    assert lookback == at(0) - aggregation.FOLLOW_LOOKBACK  # depuis la dernière heure reçue
+    status = aggregator.status()
+    assert status.statistics_until == {LINKY.entity_id: at(0)}
+    assert LINKY.entity_id not in status.history.pending  # reprise notée à la première relecture
+    state = aggregator._state()
+    assert (LINKY.entity_id, HOUR) not in state and (ENERGY.entity_id, HOUR) in state
+
+
+def test_a_quarter_of_an_external_statistic_waits_for_its_three_statistics(
+    tmp_path: Path,
+) -> None:
+    """Statistiques à 5 minutes d'une statistique externe : un quart d'heure n'est repris qu'un
+    quart d'heure après sa fin, quand ses trois statistiques sont publiées."""
+    graph = GraphStore(tmp_path)
+    raw = RawStores(tmp_path, "Europe/Paris")
+    published = [_stat(0, change=0.1), _stat(5, change=0.1)]  # la troisième pas encore là
+
+    def statistics(message: dict[str, object]) -> dict[str, object]:
+        (entity_id,) = cast(list[str], message["statistic_ids"])
+        if entity_id != LINKY.entity_id or message["period"] != "5minute":
+            return {entity_id: []}
+        return {entity_id: list(published)}
+
+    responses = default_responses()
+    responses["recorder/statistics_during_period"] = statistics
+
+    async def scenario() -> Aggregator:
+        async with running_client(fake_home_assistant(responses)) as client:
+            aggregator = Aggregator(
+                cast(Ingestor, StubIngestorWithStatistic()),
+                raw,
+                graph,
+                open_database(tmp_path),
+                client,
+            )
+            assert await aggregator.follow_statistics(at(16)) == 0  # quart d'heure tout juste clos
+            published.append(_stat(10, change=0.1))
+            assert await aggregator.follow_statistics(at(31)) == 1
+            return aggregator
+
+    aggregator = asyncio.run(scenario())
+
+    quarters = aggregator.read(LINKY.entity_id, QUARTER, at(0), at(30))
+    assert [(a.start, a.energy_kwh) for a in quarters] == [(at(0), 0.3)]

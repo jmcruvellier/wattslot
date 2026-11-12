@@ -482,3 +482,26 @@ def test_a_refused_subscription_degrades_the_plan() -> None:
     refused = next(p for p in found if p.code == "live_readings_refused")
     assert refused.severity is Severity.DEGRADED
     assert refused.params["error"] == "CommandError: invalid_format"
+
+
+def test_an_external_statistic_that_stops_publishing_is_reported() -> None:
+    """Statistique externe suivie (issue #224) : publiée la veille, rien à dire ; plus de deux
+    jours sans nouvelle heure, l'intégration ne publie plus."""
+    grid = HomeDevice(
+        key="grid",
+        kind=DeviceKind.GRID,
+        name="Compteur",
+        sensors=[HomeSensor(entity_id="linky:grid_import", role=Role.ENERGY_IMPORTED)],
+    )
+    home = HomeModel(devices=[grid])
+
+    def found_with(until: datetime) -> list[Problem]:
+        aggregation = AggregationStatus(running=True, statistics_until={"linky:grid_import": until})
+        diagnostic = Diagnostic(generated_at=NOW, aggregation=aggregation)
+        return collect(_ready(), diagnostic, home, Configuration(), None)
+
+    assert codes(found_with(NOW - timedelta(hours=30))) == ["sensor_statistic"]
+    stale = found_with(NOW - timedelta(days=3))
+    assert codes(stale) == ["statistic_stale"]
+    assert stale[0].severity is Severity.DEGRADED
+    assert stale[0].params["since"] == (NOW - timedelta(days=3)).isoformat()

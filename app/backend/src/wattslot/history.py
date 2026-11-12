@@ -34,11 +34,18 @@ def statistic_time(value: Any) -> datetime:
 
 
 async def statistics(
-    client: HomeAssistantClient, entity_id: str, period: str, end: datetime, counter: bool
+    client: HomeAssistantClient,
+    entity_id: str,
+    period: str,
+    end: datetime,
+    counter: bool,
+    start: datetime = SINCE,
 ) -> list[dict[str, Any]]:
+    """Statistiques de ``[start, end)`` : tout l'historique par défaut (reprise), les derniers
+    jours pour le suivi d'une statistique externe."""
     result = await client.command(
         "recorder/statistics_during_period",
-        start_time=SINCE.isoformat(),
+        start_time=start.isoformat(),
         end_time=end.isoformat(),
         statistic_ids=[entity_id],
         period=STATISTICS_PERIODS[period],

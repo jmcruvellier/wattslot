@@ -15,7 +15,9 @@ horaires des compteurs d'énergie** du modèle de la maison au lieu des relevés
   la journée.
 
 Une heure n'entre dans la ligne de base que si le réseau et la batterie y ont un agrégat (la
-production absente vaut 0 : la nuit, elle est réellement nulle).
+production absente vaut 0 : la nuit, elle est réellement nulle), et, pour une statistique externe
+du tableau Énergie (« linky:… », publiée la veille), que si elle a été reçue : une heure ou une
+journée pas encore reçue n'est pas comptée nulle.
 """
 
 import itertools
@@ -28,6 +30,7 @@ from zoneinfo import ZoneInfo
 
 from wattslot.aggregation import HOUR, Aggregate
 from wattslot.detection import DeviceKind, Role
+from wattslot.home_assistant import is_entity_id
 from wattslot.home_model import LINES, HomeModel, Phase, Supply, counted_sensors, line_shares
 from wattslot.planning.forecast_quality import BaselineQuality, spread_percent
 
@@ -238,8 +241,42 @@ def baseline_detail(
         discharged=read([Role.ENERGY_DISCHARGED]),
         appliances=appliances,
         has_battery=bool(sensors(model, [Role.ENERGY_CHARGED, Role.ENERGY_DISCHARGED])),
+        received=received(reader, model, start, end, zone),
     )
     return _typical_detail(flows, target, occurrences)
+
+
+FLOW_ROLES = (
+    Role.ENERGY_PRODUCED,
+    Role.ENERGY_IMPORTED,
+    Role.ENERGY_EXPORTED,
+    Role.ENERGY_CHARGED,
+    Role.ENERGY_DISCHARGED,
+)
+
+
+def statistic_sensors(model: HomeModel) -> list[str]:
+    """Statistiques externes (« linky:… ») parmi les flux de la maison : pas de relevé brut,
+    des heures reçues de HA avec retard."""
+    return [entity_id for entity_id in sensors(model, FLOW_ROLES) if not is_entity_id(entity_id)]
+
+
+def received(
+    reader: AggregateReader, model: HomeModel, start: datetime, end: datetime, zone: ZoneInfo
+) -> DaySeries | None:
+    """Heures reçues de toutes les statistiques externes des flux ; None sans statistique."""
+    found: DaySeries | None = None
+    for entity_id in statistic_sensors(model):
+        hours = series(reader, [entity_id], start, end, zone)
+        found = (
+            hours
+            if found is None
+            else {
+                day: {h: 0.0 for h in set(found[day]) & set(hours[day])}
+                for day in set(found) & set(hours)
+            }
+        )
+    return found
 
 
 @dataclass(frozen=True)
@@ -253,6 +290,8 @@ class _Flows:
     discharged: DaySeries
     appliances: DaySeries  # équipements planifiés, retirés de la consommation de base
     has_battery: bool
+    # Heures reçues des statistiques externes parmi ces flux (None : aucune statistique externe).
+    received: DaySeries | None = None
 
 
 def _typical(flows: _Flows, target: date, occurrences: int) -> dict[int, float]:
@@ -267,6 +306,8 @@ def _typical_detail(flows: _Flows, target: date, occurrences: int) -> BaselineDe
     charged, discharged, appliances = flows.charged, flows.discharged, flows.appliances
     has_battery = flows.has_battery
     available = set(imported) | set(exported)
+    if flows.received is not None:
+        available &= set(flows.received)
     same_weekday = sorted(
         (d for d in available if d.weekday() == target.weekday() and d != target), reverse=True
     )
@@ -280,6 +321,8 @@ def _typical_detail(flows: _Flows, target: date, occurrences: int) -> BaselineDe
         grid_hours = set(imported.get(day, {})) | set(exported.get(day, {}))
         battery_hours = set(charged.get(day, {})) | set(discharged.get(day, {}))
         hours = grid_hours & battery_hours if has_battery else grid_hours
+        if flows.received is not None:
+            hours &= set(flows.received.get(day, {}))
         day_total = 0.0
         for hour in hours:
             house = (
