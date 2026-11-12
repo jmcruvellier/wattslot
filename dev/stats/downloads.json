@@ -1,9 +1,9 @@
 {
   "repo": "jmcruvellier/wattslot",
-  "total_downloads": 1515,
+  "total_downloads": 1520,
   "image": {
     "package": "ghcr.io/jmcruvellier/wattslot",
-    "total": 1515
+    "total": 1520
   },
   "asset_downloads": 0,
   "releases": [
@@ -11,8 +11,8 @@
       "tag": "v0.9.8",
       "name": "0.9.8",
       "published_at": "2026-11-08T21:52:51Z",
-      "downloads": 145,
-      "image_downloads": 145,
+      "downloads": 147,
+      "image_downloads": 147,
       "asset_downloads": 0,
       "assets": []
     },
