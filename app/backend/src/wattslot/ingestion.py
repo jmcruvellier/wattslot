@@ -27,7 +27,7 @@ from zoneinfo import ZoneInfoNotFoundError
 from pydantic import BaseModel
 
 from wattslot.detection import ENERGY_ROLES, POWER_ROLES, Role
-from wattslot.home_assistant import ConnectionState, HomeAssistantClient
+from wattslot.home_assistant import ConnectionState, HomeAssistantClient, is_entity_id
 from wattslot.home_model import HomeModel, sensor_iri
 from wattslot.storage.raw import RawStores, Reading
 
@@ -164,6 +164,9 @@ class EntityStatus(BaseModel):
     last_seen: datetime | None = None
     received: int = 0  # relevés reçus de HA
     kept: int = 0  # relevés retenus par le filtre (écrits ou en file)
+    # Faux pour une statistique externe du tableau Énergie (« linky:… ») : pas une entité, donc
+    # aucun relevé en direct ; seul son historique est repris des statistiques de HA.
+    live: bool = True
 
 
 class IngestionStatus(BaseModel):
@@ -177,6 +180,8 @@ class IngestionStatus(BaseModel):
     days: list[str] = []
     backfilled: int = 0  # relevés repris de l'historique de HA après une coupure
     last_backfill_at: datetime | None = None
+    # Abonnement aux entités refusé par HA : aucun relevé n'arrive, pour aucune entité.
+    subscription_error: str | None = None
 
 
 SILENT_AFTER = timedelta(days=1)
@@ -203,7 +208,7 @@ def silent_entities(
     }
     found = []
     for entity in status.entities:
-        if today.get(entity.entity_id, 0) > 0:
+        if not entity.live or today.get(entity.entity_id, 0) > 0:
             continue
         last = entity.last_seen or entity.last_time
         if last is not None and now - last <= SILENT_AFTER:
@@ -389,18 +394,27 @@ class Ingestor:
         self._targets = targets(model)
         self._counters.entities = {
             entity_id: self._counters.entities.get(entity_id)
-            or EntityStatus(entity_id=entity_id, role=target.role, device=target.device)
+            or EntityStatus(
+                entity_id=entity_id,
+                role=target.role,
+                device=target.device,
+                live=is_entity_id(entity_id),
+            )
             for entity_id, target in self._targets.items()
         }
-        if not self._targets:
+        # Statistiques externes (« linky:… ») laissées hors de l'abonnement : HA refuserait tout
+        # l'abonnement pour une seule d'entre elles. Elles restent suivies pour la reprise de
+        # leur historique (``Aggregator.import_history``).
+        entity_ids = sorted(e for e in self._targets if is_entity_id(e))
+        if not entity_ids:
             await self._client.unsubscribe(SUBSCRIPTION)
             return
-        await self._client.subscribe(
-            SUBSCRIPTION,
-            "subscribe_entities",
-            self.on_event,
-            entity_ids=sorted(self._targets),
-        )
+        try:
+            await self._client.subscribe(
+                SUBSCRIPTION, "subscribe_entities", self.on_event, entity_ids=entity_ids
+            )
+        except Exception as exc:  # noqa: BLE001 — rapporté dans l'état ; nouvel essai à la reconnexion
+            logger.warning("Abonnement aux entités refusé par Home Assistant : %s", exc)
 
     def on_event(self, event: dict[str, Any]) -> None:
         for entity_id, state in (event.get("a") or {}).items():
@@ -531,4 +545,5 @@ class Ingestor:
             days=[day.isoformat() for day in self._stores.days()],
             backfilled=counters.backfilled,
             last_backfill_at=counters.last_backfill_at,
+            subscription_error=self._client.subscription_error(SUBSCRIPTION),
         )

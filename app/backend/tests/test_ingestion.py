@@ -317,7 +317,9 @@ def test_a_stable_value_still_counts_as_a_sign_of_life(tmp_path: Path) -> None:
         },
         "sensor.meter": {"entity_id": "sensor.meter", "last_updated": "pas une date"},
     }
-    client = SimpleNamespace(snapshot=HomeSnapshot(states=states))
+    client = SimpleNamespace(
+        snapshot=HomeSnapshot(states=states), subscription_error=lambda name: None
+    )
     ingestor = Ingestor(client, RawStores(tmp_path))  # type: ignore[arg-type]
     ingestor._counters.entities = {
         "sensor.plug_power": EntityStatus(
@@ -475,3 +477,80 @@ def test_the_queue_does_not_grow_without_limit(
     asyncio.run(ingestor._flush_queue())
 
     assert [r.value for r in ingestor._queue] == [3.0, 4.0, 5.0, 6.0, 7.0]
+
+
+# --- Statistiques externes du tableau Énergie (issue #224) -----------------------------------
+
+STATISTIC = "linky:grid_import"
+MODEL_WITH_STATISTIC = HomeModel(
+    devices=[
+        *MODEL.devices,
+        HomeDevice(
+            key="grid",
+            kind=DeviceKind.GRID,
+            name="Grid",
+            sensors=[HomeSensor(entity_id=STATISTIC, role=Role.ENERGY_IMPORTED)],
+        ),
+    ]
+)
+
+
+def test_an_external_statistic_stays_out_of_the_subscription(tmp_path: Path) -> None:
+    """HA refuse tout ``subscribe_entities`` pour un seul identifiant qui n'est pas une entité :
+    la statistique externe n'y est pas, les autres capteurs reçoivent leurs relevés, et elle
+    reste suivie pour la reprise de son historique."""
+
+    async def scenario() -> object:
+        async with running_client(fake_home_assistant(_responses())) as client:
+            ingestor = Ingestor(client, RawStores(tmp_path))
+            await ingestor.start(MODEL_WITH_STATISTIC)
+            async with asyncio.timeout(5):
+                while ingestor.status().received < 2:
+                    await asyncio.sleep(0.01)
+            assert STATISTIC in ingestor.targets
+            await ingestor.stop()
+            return ingestor.status()
+
+    status = asyncio.run(scenario())
+
+    by_entity = {e.entity_id: e for e in status.entities}  # type: ignore[attr-defined]
+    assert not by_entity[STATISTIC].live
+    assert by_entity["sensor.pv_power"].live
+    assert status.subscription_error is None  # type: ignore[attr-defined]
+
+
+def test_a_refused_subscription_is_reported_without_failing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Abonnement refusé (ici, une statistique tenue pour une entité) : l'enregistrement de la
+    maison n'échoue pas, et le refus est dans l'état de l'ingestion."""
+    import wattslot.ingestion as ingestion
+
+    monkeypatch.setattr(ingestion, "is_entity_id", lambda identifier: True)
+
+    async def scenario() -> object:
+        async with running_client(fake_home_assistant(_responses())) as client:
+            ingestor = Ingestor(client, RawStores(tmp_path))
+            await ingestor.start(MODEL)
+            await ingestor.reload(MODEL_WITH_STATISTIC)  # PUT /api/home, HA connecté
+            status = ingestor.status()
+            await ingestor.stop()
+            return status
+
+    status = asyncio.run(scenario())
+
+    assert "invalid_format" in (status.subscription_error or "")  # type: ignore[attr-defined]
+
+
+def test_an_external_statistic_is_never_silent() -> None:
+    from wattslot.ingestion import EntityStatus, IngestionStatus, silent_entities
+
+    status = IngestionStatus(
+        running=True,
+        entities=[EntityStatus(entity_id=STATISTIC, role=Role.ENERGY_IMPORTED, live=False)],
+        received=0,
+        written=0,
+        pending=0,
+    )
+
+    assert silent_entities(status, {}, T0) == []

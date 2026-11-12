@@ -436,3 +436,49 @@ def test_a_slow_plan_computation_is_to_watch() -> None:
     assert "plan_slow" not in _resource_codes(with_seconds(20, 40))
     slow = _resource_codes(with_seconds(300, 420))
     assert slow["plan_slow"].params == {"minutes": "12"}
+
+
+def test_an_external_statistic_is_not_a_missing_sensor() -> None:
+    """Statistique externe du tableau Énergie (« linky:… », issue #224) : pas « sensor_missing »
+    mais « sensor_statistic », une seule fois même avec l'anomalie de la détection."""
+    grid = HomeDevice(
+        key="grid",
+        kind=DeviceKind.GRID,
+        name="Compteur",
+        sensors=[HomeSensor(entity_id="linky:grid_import", role=Role.ENERGY_IMPORTED)],
+    )
+    home = HomeModel(devices=[grid])
+    issue = Issue(code="external_statistic", params={"entity": "linky:grid_import"})
+    diagnostic = Diagnostic(
+        generated_at=NOW,
+        issues=[DeviceIssue(device="Grid", key="grid", entity_id="linky:grid_import", issue=issue)],
+    )
+
+    async def scenario() -> list[Problem]:
+        async with running_client(fake_home_assistant()) as client:
+            return collect(_ready(), diagnostic, home, Configuration(), client)
+
+    found = asyncio.run(scenario())
+
+    assert codes(found) == ["sensor_statistic"]
+    assert found[0].severity is Severity.WATCH and found[0].params["device"] == "Compteur"
+
+
+def test_a_refused_subscription_degrades_the_plan() -> None:
+    diagnostic = Diagnostic(
+        generated_at=NOW,
+        ingestion=IngestionStatus(
+            running=True,
+            entities=[],
+            received=0,
+            written=0,
+            pending=0,
+            subscription_error="CommandError: invalid_format",
+        ),
+    )
+
+    found = collect(_ready(), diagnostic, HOME, Configuration(), None)
+
+    refused = next(p for p in found if p.code == "live_readings_refused")
+    assert refused.severity is Severity.DEGRADED
+    assert refused.params["error"] == "CommandError: invalid_format"

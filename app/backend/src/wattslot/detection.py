@@ -23,7 +23,7 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from wattslot.home_assistant import HomeSnapshot
+from wattslot.home_assistant import HomeSnapshot, is_entity_id
 
 ENERGY_UNITS = {"Wh", "kWh", "MWh"}
 POWER_UNITS = {"W", "kW"}
@@ -242,7 +242,11 @@ class _Detector:
         unit = attributes.get("unit_of_measurement")
         device_class = attributes.get("device_class")
         issues: list[Issue] = []
-        if entity_id not in self.snapshot.states:
+        if not is_entity_id(entity_id):
+            # Statistique externe d'une intégration (« linky:… ») dans le tableau Énergie : pas
+            # d'état dans HA ni de relevé en direct, mais un historique repris des statistiques.
+            issues.append(Issue(code="external_statistic", params={"entity": entity_id}))
+        elif entity_id not in self.snapshot.states:
             issues.append(Issue(code="entity_missing", params={"entity": entity_id}))
         elif role in ENERGY_ROLES:
             if unit not in ENERGY_UNITS:

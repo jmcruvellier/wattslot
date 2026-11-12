@@ -354,3 +354,17 @@ def test_an_appliance_takes_the_name_of_its_device_before_that_of_its_meter() ->
     names = [device.name for device in propose(snapshot).devices]
 
     assert names == ["Lave-linge", "Compteur voie 1", "Compteur voie 2", "Congélateur Énergie"]
+
+
+def test_an_external_statistic_of_the_grid_is_named_as_such() -> None:
+    """Statistique d'une intégration dans le tableau Énergie (« linky:… », issue #224) : ni
+    entité ni état dans HA, mais pas un capteur disparu."""
+    preferences = {
+        "energy_sources": [{"type": "grid", "stat_energy_from": "linky:grid_import"}],
+        "device_consumption": [],
+    }
+    proposal = propose(HomeSnapshot(energy_preferences=preferences))
+
+    sensors = [s for d in proposal.devices for s in d.sensors]
+    statistic = next(s for s in sensors if s.entity_id == "linky:grid_import")
+    assert _codes(statistic.issues) == ["external_statistic"]
