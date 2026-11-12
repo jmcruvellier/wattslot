@@ -189,3 +189,28 @@ def test_close_closes_the_connections_of_every_thread(tmp_path: Path) -> None:
         with pytest.raises(sqlite3.ProgrammingError):
             connection.execute("SELECT 1")
     assert db.execute("SELECT 1").fetchone() == (1,)  # rouverte au besoin
+
+
+def test_connection_of_a_finished_thread_is_closed(tmp_path: Path) -> None:
+    """La connexion d'un fil arrêté est fermée à l'ouverture de la suivante : gardées jusqu'à
+    l'arrêt, elles s'accumulaient à chaque rafale de requêtes (fils de l'API arrêtés après 10 s
+    sans requête)."""
+    db = open_database(tmp_path)
+    assert database.open_connections(db) == 1  # celle du fil principal (migrations)
+
+    orphan = _in_thread(lambda: db.execute("SELECT 1").connection)  # fil arrêté au retour
+    assert database.open_connections(db) == 2
+
+    for _ in range(5):
+        _in_thread(lambda: db.execute("SELECT COUNT(*) FROM app_settings").fetchone())
+    assert database.open_connections(db) == 2  # le fil principal et le dernier fil
+    with pytest.raises(sqlite3.ProgrammingError):
+        orphan.execute("SELECT 1")  # fermée
+
+    db.execute("SELECT 1")  # celle du fil principal sert toujours
+    db.close()
+
+
+def test_open_connections_is_unknown_for_a_plain_connection() -> None:
+    assert database.open_connections(sqlite3.connect(":memory:")) is None
+    assert database.open_connections(None) is None

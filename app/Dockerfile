@@ -21,7 +21,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     WATTSLOT_DATA_DIR=/data \
-    WATTSLOT_STATIC_DIR=/app/static
+    WATTSLOT_STATIC_DIR=/app/static \
+    MALLOC_ARENA_MAX=2
+# MALLOC_ARENA_MAX : glibc ouvre un tas par fil (jusqu'à 8 par cœur) et ne rend au système que
+# le haut de chacun ; l'application travaille par à-coups dans de nombreux fils (calcul, API,
+# RocksDB), et la mémoire libérée restait éparpillée dans ces tas. Deux tas suffisent ici.
 WORKDIR /app
 COPY backend/pyproject.toml backend/
 COPY backend/src backend/src
