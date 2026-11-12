@@ -38,7 +38,7 @@ from pydantic import BaseModel, Field
 from wattslot import notification_events as events
 from wattslot.home_assistant import HomeAssistantClient
 from wattslot.languages import Language
-from wattslot.planning.recommendation import recommendation, signature, title
+from wattslot.planning.recommendation import has_appliances, recommendation, signature, title
 from wattslot.planning.sources import load_settings
 from wattslot.planning.store import PlanStore
 from wattslot.views.week import WeekView
@@ -79,7 +79,9 @@ class Rule(BaseModel):
 
 
 class RecommendationRule(Rule):
-    cadence: Cadence = "every_run"  # comme la v1 (n8n, chaque heure)
+    # « Quand le plan change » par défaut : « à chaque calcul » (la v1, n8n chaque heure) envoyait
+    # une vingtaine de messages par jour, surtout « aucun appareil à lancer » (issue #224).
+    cadence: Cadence = "when_changed"
     daily_at: time = time(7, 0)  # rythme « une fois par jour »
 
 
@@ -169,12 +171,19 @@ def record(
 
 
 def due(
-    rule: RecommendationRule, previous: tuple[str, str] | None, local: datetime, message: str
+    rule: RecommendationRule,
+    previous: tuple[str, str] | None,
+    local: datetime,
+    message: str,
+    appliances: bool = True,
 ) -> bool:
     """La recommandation part-elle à ce calcul, selon son rythme ? ``message`` : ce qui est
-    comparé au dernier envoi pour « quand le plan change » (la signature du plan)."""
+    comparé au dernier envoi (la signature du plan) ; ``appliances`` : le plan place au moins un
+    équipement."""
     if rule.cadence == "every_run":
-        return True
+        # « Aucun équipement à placer » n'est pas répété à chaque calcul : renvoyé seulement si
+        # le plan a changé depuis (jour, plages, avertissements) ; issue #224.
+        return appliances or previous is None or previous[1] != _fingerprint(message)
     if rule.cadence == "when_changed":
         return previous is None or previous[1] != _fingerprint(message)
     return local.time() >= rule.daily_at and (
@@ -317,7 +326,8 @@ async def dispatch(
         message = recommendation(today, lang)
         # « Quand le plan change » : jugé sur ce qu'il y a à faire, pas sur le texte entier.
         mark = signature(today)
-        if due(rule, last_sent(database, "recommendation", "plan"), local, mark):
+        previous = last_sent(database, "recommendation", "plan")
+        if due(rule, previous, local, mark, has_appliances(today)):
             try:
                 await deliver(
                     "recommendation", "plan", local.date().isoformat(), message, service, mark

@@ -97,6 +97,12 @@ def test_settings_before_lot_5_6_still_apply(database: sqlite3.Connection) -> No
     assert not load(database).recommendation.enabled
 
 
+def test_the_recommendation_is_sent_when_the_plan_changes_by_default() -> None:
+    """« À chaque calcul » envoyait une vingtaine de messages par jour (issue #224)."""
+    assert RecommendationRule().cadence == "when_changed"
+    assert NotificationSettings().recommendation.cadence == "when_changed"
+
+
 def test_every_run_sends_each_time_like_the_v1(database: sqlite3.Connection) -> None:
     save(database, _with(cadence="every_run"))
     client = FakeHA()
@@ -293,3 +299,38 @@ def test_when_changed_ignores_figures_that_ask_nothing_new(database: sqlite3.Con
     PlanStore(database).save("today", date(2026, 10, 16), moved, 1.0, False)
     _run(client, database, _at(12))
     assert len(client.sent) == 2
+
+
+def _without_appliances(changed: bool = False) -> dict[str, Any]:
+    state = _plan(changed)
+    state["planning"] = [i for i in state["planning"] if i.get("debut_min") is None]
+    return state
+
+
+def test_every_run_does_not_repeat_a_plan_without_appliances(
+    database: sqlite3.Connection,
+) -> None:
+    """« Aucun équipement à placer » part une fois, pas à chaque calcul (issue #224) ; il repart
+    quand le plan change, et un plan avec des équipements part à chaque calcul."""
+    from wattslot.planning.recommendation import has_appliances
+
+    empty = _without_appliances()
+    assert not has_appliances(empty) and has_appliances(_plan())
+    assert "Aucun équipement à placer" in recommendation(empty, "fr")
+    save(database, _with(cadence="every_run"))
+    PlanStore(database).save("today", date(2026, 10, 16), empty, 1.0, False)
+    client = FakeHA()
+
+    _run(client, database, _at(10))
+    _run(client, database, _at(11))
+    assert len(client.sent) == 1  # le même plan vide n'est pas répété
+
+    changed = _without_appliances(changed=True)
+    PlanStore(database).save("today", date(2026, 10, 16), changed, 1.0, False)
+    _run(client, database, _at(12))
+    assert len(client.sent) == 2  # un avertissement de plus : le plan a changé
+
+    PlanStore(database).save("today", date(2026, 10, 16), _plan(), 1.0, False)
+    _run(client, database, _at(13))
+    _run(client, database, _at(14))
+    assert len(client.sent) == 4  # des équipements à lancer : à chaque calcul, comme avant

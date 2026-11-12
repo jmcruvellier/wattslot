@@ -138,6 +138,12 @@ def title(lang: str = "fr") -> str:
     return _text(lang, "title")
 
 
+def has_appliances(state: Mapping[str, Any]) -> bool:
+    """Un départ d'équipement au moins ; sinon la recommandation dit « Aucun équipement à
+    placer »."""
+    return any(isinstance(item, Slot) for item in DayPlan.from_v1(dict(state)).items)
+
+
 def signature(state: Mapping[str, Any]) -> str:
     """Ce que le plan demande de faire, sans ses chiffres : jour, départ de chaque équipement,
     plages des durées à placer, reports et avertissements. La recommandation envoyée « quand le
