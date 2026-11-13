@@ -20,6 +20,7 @@ from wattslot.planning.merge import merge_plans
 from wattslot.planning.plan import BATTERY, Plan
 from wattslot.planning.store import dumps, loads
 from wattslot.storage.raw import RawStores
+from wattslot.views.day import battery_curves
 from wattslot.views.timeline import build_timeline
 
 
@@ -304,3 +305,123 @@ def test_the_single_battery_row_lists_every_battery() -> None:
     # Plan sur le total (monophasé, ou triphasé sans calcul par phase) : toutes sous la ligne.
     assert [b.key for b in battery_row(actual).batteries] == ["garage", "cellar"]
     assert battery_row(None).batteries == []
+
+
+# --- Courbes par groupe et par batterie -----------------------------------------------------------
+
+
+def test_the_plan_keeps_the_level_of_each_group() -> None:
+    groups = {group["phase"]: group for group in battery_item(stored(two_phases()))["groupes"]}
+
+    assert groups[2]["capacite_kwh"] == 5.0 and groups[3]["capacite_kwh"] == 5.0
+    # Phase 2 : vide au départ, elle charge 1,3 kWh à 10 h. Phase 3 : pleine, elle se vide.
+    assert groups[2]["soc_horaire_kwh"][9] == 0.0
+    assert groups[2]["soc_horaire_kwh"][10] == pytest.approx(1.3)
+    assert groups[3]["soc_horaire_kwh"][0] == pytest.approx(4.7)
+
+
+def test_the_level_of_each_group_is_merged_hour_by_hour() -> None:
+    old, new = stored(two_phases(sun_kwh=1.5)), stored(two_phases(sun_kwh=3.0))
+
+    merged = battery_item(merge_plans(new, old, 11))
+
+    level = next(g for g in merged["groupes"] if g["phase"] == 2)["soc_horaire_kwh"]
+    assert level[10] == pytest.approx(1.3)  # avant 11 h : l'ancien plan
+    assert level[11] == new_level(new)[11]  # ensuite : le nouveau
+
+
+def new_level(plan: dict[str, Any]) -> dict[int, float]:
+    groups = battery_item(plan)["groupes"]
+    found: dict[int, float] = next(g for g in groups if g["phase"] == 2)["soc_horaire_kwh"]
+    return found
+
+
+def test_real_level_of_each_battery(tmp_path: Path) -> None:
+    def level(key: str) -> HomeSensor:
+        return HomeSensor(entity_id=f"sensor.{key}_soc", role=Role.STATE_OF_CHARGE)
+
+    model = MODEL.model_copy(
+        update={
+            "devices": [
+                d.model_copy(update={"sensors": [*d.sensors, level(d.key)]})
+                for d in MODEL.devices[:2]
+            ]
+        }
+    )
+    raw = RawStores(tmp_path, "Europe/Paris")
+    raw.write(
+        [
+            reading("garage", "sensor.garage_soc", 40.0, at(-1)),
+            reading("garage", "sensor.garage_soc", 55.0, at(10.5)),
+            reading("cellar", "sensor.cellar_soc", 90.0, at(9.25)),
+        ]
+    )
+
+    found = actual_day(model, raw, DAY, at(12), configuration=SETTINGS)
+
+    garage, cellar = found["batterie_reelle_segments_par_batterie"]
+    assert garage["capacite_kwh"] == 5.0 and garage["soc_pct_minuit"] == 40.0
+    assert garage["soc_pct_fin_heure"] == {10: 55.0, 11: 55.0, 12: 55.0}
+    # Sans relevé la veille : le premier du jour vaut pour minuit, comme pour la maison.
+    assert cellar["soc_pct_minuit"] == 90.0
+    assert cellar["soc_pct_fin_heure"] == {9: 90.0, 10: 90.0, 11: 90.0, 12: 90.0}
+
+
+def _level(key: str, phase: int, capacity: float, by_hour: dict[int, float]) -> dict[str, Any]:
+    return {
+        "cle": key,
+        "nom": key.capitalize(),
+        "phase": phase,
+        "capacite_kwh": capacity,
+        "soc_pct_fin_heure": by_hour,
+        "soc_pct_minuit": by_hour.get(0),
+        "segments": [],
+    }
+
+
+def test_curves_of_each_group_then_of_its_batteries() -> None:
+    plan = stored(two_phases())
+    actual = {
+        "batterie_reelle_segments_par_batterie": [
+            _level("garage", 2, 6.0, {0: 10.0, 1: 20.0}),
+            _level("shed", 2, 2.0, {0: 50.0}),
+            _level("cellar", 3, 5.0, {0: 80.0, 1: 70.0}),
+        ]
+    }
+
+    curves = battery_curves(plan, actual)
+
+    assert [(c.phase, c.key) for c in curves] == [
+        (2, None),
+        (None, "garage"),
+        (None, "shed"),
+        (3, None),
+    ]
+    phase_2, garage, _, phase_3 = curves
+    # Prévu du groupe, en % de sa capacité ; mesuré : ses batteries pondérées par leur capacité,
+    # rien pour une heure où l'une d'elles n'a pas de relevé.
+    assert phase_2.planned is not None and phase_2.planned[10] == pytest.approx(26.0)
+    assert phase_2.actual[:2] == [20.0, None] and phase_2.midnight_percent == 20.0
+    # Une batterie n'a que son mesuré.
+    assert garage.planned is None and garage.name == "Garage" and garage.actual[:2] == [10.0, 20.0]
+    # Groupe d'une seule batterie : sa courbe est celle de la batterie, sans ligne de plus.
+    assert phase_3.actual[:2] == [80.0, 70.0]
+    # Sans mesure (demain) : le prévu de chaque groupe seulement.
+    later = battery_curves(plan, None)
+    assert [(c.phase, c.actual) for c in later] == [(2, [None] * 24), (3, [None] * 24)]
+
+
+def test_curves_of_each_battery_on_the_whole_home() -> None:
+    whole = stored(replace(home(BASE, sun_kwh=1.5), battery=battery(5.0, 2.0)))
+    two = [_level("garage", 0, 5.0, {0: 10.0}), _level("cellar", 0, 5.0, {0: 80.0})]
+
+    curves = battery_curves(whole, {"batterie_reelle_segments_par_batterie": two})
+
+    # Plan sur le total : la courbe de la maison garde le prévu, chaque batterie a son mesuré.
+    assert [(c.phase, c.key, c.planned) for c in curves] == [
+        (None, "garage", None),
+        (None, "cellar", None),
+    ]
+    # Une seule batterie, ou pas de mesure : rien de plus que la courbe de la maison.
+    assert battery_curves(whole, {"batterie_reelle_segments_par_batterie": two[:1]}) == []
+    assert battery_curves(whole, None) == []
