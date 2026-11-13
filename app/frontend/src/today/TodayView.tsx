@@ -22,14 +22,12 @@ import { BatteryList } from "../plan/BatteryList";
 import DiscardedNote from "../plan/DiscardedNote";
 import ProvisionalNote from "../plan/ProvisionalNote";
 import { useHomeFeatures } from "../home/features";
-import type { DayView, LineKey, NextAction, Now } from "../plan/types";
+import type { DayView, LineKey, Now } from "../plan/types";
 import Button from "../ui/Button";
 import Card from "../ui/Card";
 import StateMessage from "../ui/StateMessage";
 
 export const REFRESH_MS = 60_000;
-// « C'est lancé » : l'action reste cachée jusqu'au calcul suivant, sur ce navigateur.
-export const LAUNCHED_KEY = "today.launched";
 
 type Load =
   | { status: "loading" }
@@ -37,18 +35,6 @@ type Load =
   | { status: "error" }
   // ``stale`` : le dernier rafraîchissement a échoué, la vue affichée est la précédente.
   | { status: "ready"; view: DayView; stale?: boolean };
-
-function launchedKey(view: DayView, action: NextAction): string {
-  return `${view.computed_at ?? ""}|${action.device}|${action.start_min}`;
-}
-
-function readLaunched(): string | null {
-  try {
-    return window.localStorage.getItem(LAUNCHED_KEY);
-  } catch {
-    return null;
-  }
-}
 
 function readingHour(view: DayView): number | null {
   if (!view.actual_updated_at) return null;
@@ -217,13 +203,14 @@ function NextActionCard({
   const { language, t } = useI18n();
   const features = useHomeFeatures();
   const action = view.next_action ?? null;
-  const [launched, setLaunched] = useState(readLaunched);
+  const [launching, setLaunching] = useState(false);
+  const [launchFailed, setLaunchFailed] = useState(false);
   const [reminded, setReminded] = useState(false);
   const [failed, setFailed] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [cancelFailed, setCancelFailed] = useState(false);
 
-  if (action === null || launched === launchedKey(view, action)) {
+  if (action === null) {
     // Aucun appareil placé par le calcul (tableau Énergie sans appareil) : rien ne sera jamais à
     // lancer tant qu'on n'en ajoute pas un.
     const noAppliance = features.appliances === 0;
@@ -239,14 +226,19 @@ function NextActionCard({
     );
   }
 
-  const markLaunched = () => {
-    const key = launchedKey(view, action);
+  // « C'est lancé » : noté par le serveur pour la journée, donc sur tous les navigateurs et après
+  // un nouveau calcul ; la vue relue donne l'appareil suivant, s'il y en a un.
+  const markLaunched = async () => {
+    setLaunchFailed(false);
+    setLaunching(true);
     try {
-      window.localStorage.setItem(LAUNCHED_KEY, key);
+      await postJson("api/planning/launched", { device: action.device });
+      onChanged();
     } catch {
-      // Stockage indisponible : caché pour cette visite seulement.
+      setLaunchFailed(true);
+    } finally {
+      setLaunching(false);
     }
-    setLaunched(key);
   };
 
   const remind = async () => {
@@ -287,7 +279,7 @@ function NextActionCard({
         {action.explanation && <> {action.explanation}</>}
       </p>
       <div className="next-action-buttons">
-        <Button variant="primary" icon="check" onClick={markLaunched}>
+        <Button variant="primary" icon="check" disabled={launching} onClick={() => void markLaunched()}>
           {t("today.next.launched")}
         </Button>
         {action.can_remind && (
@@ -300,6 +292,7 @@ function NextActionCard({
           {t("today.next.cancel")}
         </Button>
       </div>
+      {launchFailed && <p role="alert">{t("today.next.launched_failed")}</p>}
       {failed && <p role="alert">{t("today.next.remind_failed")}</p>}
       {cancelFailed && <p role="alert">{t("today.next.cancel_failed")}</p>}
       <OtherStarts

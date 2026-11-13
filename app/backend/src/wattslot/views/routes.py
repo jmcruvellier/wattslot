@@ -17,7 +17,7 @@ from wattslot import configuration, home_model, notifications, quality, reminder
 from wattslot.corrections import CorrectionStore
 from wattslot.languages import language_of
 from wattslot.objective_settings import Preset
-from wattslot.planning import cancelled
+from wattslot.planning import cancelled, declared
 from wattslot.planning.engine import Objective
 from wattslot.planning.journal import cycle_appliances
 from wattslot.planning.sources import has_production, load_settings
@@ -206,7 +206,8 @@ async def day_view_of(state: Any, kind: DayKind, lang: str = "fr") -> DayView | 
     moment = datetime.now(UTC)
     explanations = {e.device: e.text for e in view.explanations}
     details = {e.device: e.explanation for e in view.explanations}
-    action = next_action(view.timeline, explanations, moment, context, details)
+    launched = declared.load(state.database, plan.day)
+    action = next_action(view.timeline, explanations, moment, context, details, launched)
     if action is not None:
         action = action.model_copy(
             update={

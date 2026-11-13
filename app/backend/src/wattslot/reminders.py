@@ -25,6 +25,7 @@ from wattslot import notification_events as events
 from wattslot import notifications
 from wattslot.home_assistant import ConnectionState, HomeAssistantClient
 from wattslot.languages import Language, number
+from wattslot.planning import declared
 from wattslot.planning.store import PlanStore
 from wattslot.views.day import build_day
 from wattslot.views.display import Context
@@ -119,8 +120,11 @@ async def send_due(
     to_send, launched = await asyncio.to_thread(
         due, plan.content, waiting, local, zone, settings.language
     )
-    for device in launched:
+    # Lancement déclaré (« C'est lancé ») : rappel fermé sans envoi, comme pour un cycle reconnu.
+    said = declared.load(database, local.date())
+    for device in {*launched, *(said & waiting)}:
         _close(database, device, local.date(), now)
+    to_send = [found for found in to_send if found.device not in said]
     sent: list[str] = []
     for found in to_send:
         await notifications.send(client, service, "device_now", found.message, settings.language)

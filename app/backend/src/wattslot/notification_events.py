@@ -16,7 +16,7 @@ Le planning de la semaine (``week``) n'a pas de condition : c'est un texte, une 
 venir de la vue Semaine, envoyé les jours choisis (``notifications``).
 """
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Set
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from typing import Any
@@ -249,12 +249,17 @@ def _today_view(state: Mapping[str, Any], zone: Any, lang: str) -> Any:
 
 
 def device_now(
-    state: Mapping[str, Any], local: datetime, lang: str, next_run_min: int | None = None
+    state: Mapping[str, Any],
+    local: datetime,
+    lang: str,
+    next_run_min: int | None = None,
+    declared: Set[str] = frozenset(),
 ) -> list[Candidate]:
     """Cycles à lancer d'ici une heure. ``next_run_min`` : minutes d'ici le prochain calcul ; un
     cycle qui part après lui attend ce calcul, plus proche de son heure (le calcul de 0 h 01
     disait « maintenant » pour un cycle de 1 h, que celui de 0 h 59 annonce une minute avant).
-    Un départ à plus de ``NOW_MIN`` minutes dit son heure, pas « maintenant »."""
+    Un départ à plus de ``NOW_MIN`` minutes dit son heure, pas « maintenant ». ``declared`` :
+    appareils déclarés lancés par l'utilisateur (« C'est lancé »), qui ne sont plus à annoncer."""
     view = _today_view(state, local.tzinfo, lang)
     cycles = {row.device for row in view.timeline.rows if row.kind == "cycle"}
     now_min = local.hour * 60 + local.minute
@@ -273,6 +278,7 @@ def device_now(
         )
         for status in view.timeline.statuses
         if status.device in cycles
+        and status.device not in declared
         and status.status == "planned"
         and now_min < status.planned_start_min <= now_min + window
     ]

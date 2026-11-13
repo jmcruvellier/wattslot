@@ -17,6 +17,7 @@ from wattslot import notifications, reminders
 from wattslot.home_assistant import ConnectionState, HomeAssistantClient
 from wattslot.main import create_app
 from wattslot.notifications import NotificationSettings
+from wattslot.planning import declared
 from wattslot.planning.store import PlanStore
 from wattslot.storage.database import open_database, schema_version
 
@@ -97,6 +98,20 @@ def test_sent_once_at_its_time_even_with_the_notification_disabled(tmp_path: Pat
     assert reminders.pending(database, DAY) == set()
     # La notification « appareil à lancer » ne repartira pas en double.
     assert notifications.already_sent(database, "device_now", "Lave-linge@660", "2025-10-15")
+
+
+def test_a_declared_launch_closes_the_reminder_without_sending(tmp_path: Path) -> None:
+    database = open_database(tmp_path)
+    PlanStore(database).save("today", DAY, state_of(LINGE), 1.0, False)
+    notifications.save(database, NotificationSettings(service="notify.mobile_app_phone"))
+    reminders.ask(database, "Lave-linge", DAY, at(9))
+    declared.declare(database, DAY, "Lave-linge", at(10))  # « C'est lancé »
+    client = RecordingClient()
+    sent = asyncio.run(
+        reminders.send_due(cast(HomeAssistantClient, client), database, at(11, 1), PARIS)
+    )
+    assert sent == [] and client.calls == []
+    assert reminders.pending(database, DAY) == set()
 
 
 def test_kept_until_a_notification_service_is_chosen(tmp_path: Path) -> None:

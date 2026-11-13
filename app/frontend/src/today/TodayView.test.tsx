@@ -9,7 +9,7 @@ import { I18nProvider } from "../i18n/I18nProvider";
 import { RUN_EVENT } from "../plan/planView";
 import { TODAY } from "../plan/testViews";
 import type { DayView, NextAction, Now } from "../plan/types";
-import TodayView, { LAUNCHED_KEY } from "./TodayView";
+import TodayView from "./TodayView";
 
 const NOW: Now = {
   since: "2026-10-17T10:00:00Z",
@@ -109,15 +109,44 @@ describe("TodayView", () => {
     expect(screen.getByText("Lancez le lave-linge à 13 h.")).toBeInTheDocument();
   });
 
-  it("propose la prochaine action, la cache une fois lancée", async () => {
-    mockApi({ ...TODAY, now: NOW, next_action: ACTION });
+  it("« C'est lancé » est noté par le serveur, et l'appareil suivant prend la place", async () => {
+    // Le serveur garde le lancement déclaré : la vue relue donne l'appareil suivant, puis plus rien.
+    const NEXT: NextAction = { ...ACTION, device: "Lave-vaisselle", start_min: 1320, end_min: 1400 };
+    const launched: string[] = [];
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url.startsWith("api/views/today")) {
+        const next_action = [ACTION, NEXT].find((action) => !launched.includes(action.device)) ?? null;
+        return Response.json({ ...TODAY, now: NOW, next_action });
+      }
+      if (url === "api/planning/launched" && init?.method === "POST") {
+        launched.push(JSON.parse(String(init.body)).device);
+        return Response.json(JSON.parse(String(init.body)), { status: 201 });
+      }
+      return new Response(null, { status: 404 });
+    });
     renderView();
     expect(await screen.findByRole("heading", { name: "Lancez Lave-linge" })).toBeInTheDocument();
     expect(screen.getByText(/Entre 13h00 et 15h00\. Au plus fort du soleil\./)).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: "C'est lancé" }));
-    expect(screen.getByRole("heading", { name: "Rien à lancer d'ici ce soir" })).toBeInTheDocument();
-    expect(window.localStorage.getItem(LAUNCHED_KEY)).toContain("Lave-linge");
+    expect(await screen.findByRole("heading", { name: "Lancez Lave-vaisselle" })).toBeInTheDocument();
+    expect(launched).toEqual(["Lave-linge"]);
+
+    await userEvent.click(screen.getByRole("button", { name: "C'est lancé" }));
+    expect(await screen.findByRole("heading", { name: "Rien à lancer d'ici ce soir" })).toBeInTheDocument();
+    expect(launched).toEqual(["Lave-linge", "Lave-vaisselle"]);
+    // Plus rien dans le navigateur : le lancement vaut aussi sur un autre appareil.
+    expect(window.localStorage.length).toBe(0);
+    expect(fetchMock).toHaveBeenCalled();
+  });
+
+  it("dit quand « C'est lancé » n'a pas pu être enregistré, et garde l'action", async () => {
+    mockApi({ ...TODAY, now: NOW, next_action: ACTION }); // la route du lancement répond 404
+    renderView();
+    await userEvent.click(await screen.findByRole("button", { name: "C'est lancé" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Le lancement n'a pas pu être enregistré.");
+    expect(screen.getByRole("heading", { name: "Lancez Lave-linge" })).toBeInTheDocument();
   });
 
   it("pose un rappel, et n'en propose pas sans service de notification", async () => {

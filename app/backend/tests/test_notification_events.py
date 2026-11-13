@@ -85,6 +85,11 @@ def test_device_now_only_for_a_cycle_starting_within_the_hour() -> None:
     assert english.startswith("Start the Lave-linge now: its cycle is planned at 11:00")
 
 
+def test_device_now_skips_a_device_declared_launched() -> None:
+    found = events.device_now(_today(), _local(10, 59), "fr", declared={"Lave-linge"})
+    assert found == []
+
+
 def test_device_now_skips_a_cycle_already_running() -> None:
     state = {**_today(), "donnees_reelles_cache": actual_of(_today(), 12)}  # lave-linge lancé
     assert [c.key for c in events.device_now(state, _local(10, 30), "fr")] == []
