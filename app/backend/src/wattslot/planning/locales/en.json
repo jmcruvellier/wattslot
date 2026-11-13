@@ -41,6 +41,8 @@
   "reason.announced_kept": "Time already announced, kept: another start would not save enough to change it.",
   "assistant.request": "Run “{device}” at the best time: shall I file the request?",
   "assistant.request_by": "Run “{device}” at the best time, by {date} at the latest: shall I file the request?",
+  "assistant.request_another": "“{device}” already has a pending request. Add one more cycle, at the best time: shall I file the request?",
+  "assistant.request_another_by": "“{device}” already has a pending request. Add one more cycle, at the best time, by {date} at the latest: shall I file the request?",
   "assistant.not_planned": "Not planned that day: nothing was requested and nothing is due.",
   "assistant.can_request": "It can be requested: it will then run at the best time.",
   "assistant.no_next": "No appliance left to start today.",

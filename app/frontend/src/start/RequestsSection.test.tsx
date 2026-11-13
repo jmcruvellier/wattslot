@@ -70,6 +70,24 @@ describe("RequestsSection", () => {
     });
   });
 
+  it("propose de changer la date ou d'ajouter un cycle pour un appareil déjà demandé", async () => {
+    const user = userEvent.setup();
+    const calls = mockApi(DEVICES, [{ ...OPEN, device: "washer" }]);
+    renderSection();
+
+    // Le lave-linge a une demande en attente : deux boutons, et l'aide qui les explique.
+    await user.click(await screen.findByRole("button", { name: "Ajouter un cycle" }));
+    expect(screen.queryByRole("button", { name: "Demander" })).toBeNull();
+    expect(screen.getByText(/a déjà une demande en attente/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Changer la date" }));
+
+    const posted = calls.filter((call) => call.method === "POST").map((call) => call.body);
+    expect(posted).toEqual([
+      { device: "washer", latest: null, another: true },
+      { device: "washer", latest: null },
+    ]);
+  });
+
   it("marque une demande faite ou l'annule", async () => {
     const user = userEvent.setup();
     const calls = mockApi(DEVICES, [OPEN, { ...OPEN, id: 2, device: "washer", status: "done", closed_at: "2026-10-16T20:00:00Z" }]);

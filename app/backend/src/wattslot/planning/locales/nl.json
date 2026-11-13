@@ -41,6 +41,8 @@
   "reason.announced_kept": "Al aangekondigd tijdstip, behouden: een andere start zou niet genoeg opleveren om het te wijzigen.",
   "assistant.request": "„{device}” op het beste moment laten draaien: zal ik het verzoek indienen?",
   "assistant.request_by": "„{device}” op het beste moment laten draaien, uiterlijk op {date}: zal ik het verzoek indienen?",
+  "assistant.request_another": "Voor „{device}” staat al een verzoek open. Nog een cyclus toevoegen op het beste moment: zal ik het verzoek indienen?",
+  "assistant.request_another_by": "Voor „{device}” staat al een verzoek open. Nog een cyclus toevoegen op het beste moment, uiterlijk op {date}: zal ik het verzoek indienen?",
   "assistant.not_planned": "Die dag niet gepland: er is niets aangevraagd en niets is vervallen.",
   "assistant.can_request": "Het kan worden aangevraagd: het draait dan op het beste moment.",
   "assistant.no_next": "Vandaag hoeft er geen apparaat meer te starten.",

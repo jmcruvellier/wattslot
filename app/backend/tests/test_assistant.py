@@ -471,10 +471,22 @@ def test_request_device_files_a_request_like_my_requests(api: TestClient) -> Non
     home_model.save(api.app.state.graph, HOME)  # type: ignore[attr-defined]
     asked = _request(api, {"device": "lave linge"})
     assert asked["device"] == "Lave-linge" and asked["latest_date"] is None
-    later = _request(api, {"device": "Lave-linge", "latest_date": "2099-01-31"})
-    assert later["latest_date"] == "2099-01-31"
+    assert asked["another_cycle"] is False
+    # Déjà une demande en attente : la question annonce un cycle de plus, et la demande
+    # s'ajoute à la première (deux lessives) au lieu d'en changer la date.
+    question = _call(api, "request_device", {"device": "Lave-linge", "latest_date": "2099-01-31"})
+    assert question["another_cycle"] is True
+    assert question["question"].startswith("« Lave-linge » a déjà une demande en attente.")
+    assert "2099" in question["question"]
+    later = _call(
+        api,
+        "request_device",
+        {"device": "Lave-linge", "latest_date": "2099-01-31", "confirm": True},
+    )
+    assert later["latest_date"] == "2099-01-31" and later["another_cycle"] is True
+    assert "one more cycle" in later["note"]
     opened = [r for r in api.get("/api/requests").json() if r["status"] == "open"]
-    assert len(opened) == 1 and opened[0]["latest"] == "2099-01-31"  # une seule, redatée
+    assert sorted(r["latest"] or "" for r in opened) == ["", "2099-01-31"]
 
     unknown = _call(api, "request_device", {"device": "voiture"})
     assert unknown["error"] == "unknown_device" and "Lave-linge" in unknown["devices"]

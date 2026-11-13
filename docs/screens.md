@@ -33,6 +33,7 @@ The plan in detail, for **Yesterday**, **Today**, **Tomorrow**, the following da
 - **Plan indicators** (cost, purchases, surplus, self-consumption…): for the whole day, measured for the hours already past, planned for the rest.
   - In its corner, the **forecast quality** (reliable, fair or uncertain) tells how far to trust the planned production and consumption, from the data the calculation had: days of history behind the usual consumption, its regularity, the source of the solar forecast, how many days ahead the weather is forecast. Tap it for the reason behind each criterion.
 - **My requests** (under each tab): the appliances you asked for, with or without a deadline, to mark done or cancel.
+  - The same appliance can run **several times in a day** (two loads of laundry, two heats of the water heater): ask for it again. If it already has a pending request, choose **Add a cycle** rather than **Change the date**. Each cycle gets its own slot, after the previous one; the second one is named with its rank (*Washing machine #2*) in **Next action**, the agenda and the notifications, and has its own departure choice, **Cancel** and **It's started**. A dryer set to start after the washing machine follows the load of the same rank.
 - **Week**: the coming days as an agenda, one line per day with what is planned; tap a day to open it.
 
 ![Planning in the dark theme](images/en/planning-desktop-dark.png)

@@ -41,6 +41,8 @@
   "reason.announced_kept": "Heure déjà annoncée, gardée : un autre départ ne ferait pas gagner assez pour la changer.",
   "assistant.request": "Faire tourner « {device} » au meilleur moment : je dépose la demande ?",
   "assistant.request_by": "Faire tourner « {device} » au meilleur moment, au plus tard le {date} : je dépose la demande ?",
+  "assistant.request_another": "« {device} » a déjà une demande en attente. Ajouter un cycle de plus, au meilleur moment : je dépose la demande ?",
+  "assistant.request_another_by": "« {device} » a déjà une demande en attente. Ajouter un cycle de plus, au meilleur moment, au plus tard le {date} : je dépose la demande ?",
   "assistant.not_planned": "Pas prévu ce jour-là : rien n'a été demandé ni n'arrive à échéance.",
   "assistant.can_request": "Il peut être demandé : il tournera alors au meilleur moment.",
   "assistant.no_next": "Plus aucun appareil à lancer aujourd'hui.",

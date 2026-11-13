@@ -41,6 +41,8 @@
   "reason.announced_kept": "Hora ya anunciada, mantenida: otro inicio no ahorraría lo suficiente para cambiarla.",
   "assistant.request": "Poner «{device}» en el mejor momento: ¿presento la solicitud?",
   "assistant.request_by": "Poner «{device}» en el mejor momento, a más tardar el {date}: ¿presento la solicitud?",
+  "assistant.request_another": "«{device}» ya tiene una solicitud pendiente. Añadir un ciclo más en el mejor momento: ¿presento la solicitud?",
+  "assistant.request_another_by": "«{device}» ya tiene una solicitud pendiente. Añadir un ciclo más en el mejor momento, a más tardar el {date}: ¿presento la solicitud?",
   "assistant.not_planned": "No previsto ese día: no se ha solicitado nada ni vence nada.",
   "assistant.can_request": "Se puede solicitar: funcionará entonces en el mejor momento.",
   "assistant.no_next": "Hoy no queda ningún aparato por poner en marcha.",

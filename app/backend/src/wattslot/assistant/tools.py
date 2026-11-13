@@ -943,8 +943,10 @@ def _pending(state: Any) -> dict[tuple[str, date | None], datetime]:
 def request_device(
     state: Any, device: str, latest_date: str | None = None, confirm: bool = False
 ) -> dict[str, Any]:
-    """Demande pour un équipement (lot 4.5), au plus tard ``latest_date`` (AAAA-MM-JJ) ; une
-    demande déjà ouverte pour lui change seulement de date. Le calcul suivant la place.
+    """Demande pour un équipement (lot 4.5), au plus tard ``latest_date`` (AAAA-MM-JJ). Le
+    calcul suivant la place. Si l'équipement a déjà une demande en attente, c'est un cycle de
+    plus qui est demandé (deux lessives le même jour) : la question le dit, et la demande
+    s'ajoute à la première au lieu d'en changer la date.
 
     En deux temps : sans ``confirm``, rien n'est déposé, l'outil rend la question à poser et la
     retient ; la demande n'est déposée qu'avec ``confirm`` après cette question, et dans les
@@ -977,19 +979,23 @@ def request_device(
     key = next(a.key for a in requestable if a.name == name)
     now = datetime.now(UTC)
     pending = _pending(state)
+    another = user_requests.waiting(state.database, key)
     if not confirm:
         pending[(key, latest)] = now
         lang = language(state)
         texts = catalog(lang)
+        # Demande déjà en attente pour lui : la question annonce un cycle de plus.
+        text = "assistant.request_another" if another else "assistant.request"
         question = (
-            texts["assistant.request_by"].format(device=name, date=long_date(latest, lang))
+            texts[f"{text}_by"].format(device=name, date=long_date(latest, lang))
             if latest
-            else texts["assistant.request"].format(device=name)
+            else texts[text].format(device=name)
         )
         return {
             "device": name,
             "latest_date": latest.isoformat() if latest else None,
             "filed": False,
+            "another_cycle": another,
             "question": question,
             "next": "Nothing filed yet. Ask the user this question as it is. Only if they agree, "
             "call again with the same device and latest_date and confirm true.",
@@ -1001,13 +1007,15 @@ def request_device(
             "hint": "Nothing filed. Call request_device without confirm, ask the user the "
             "question it returns and wait for their answer.",
         }
-    found = user_requests.ask(state.database, key, latest, now)
+    found = user_requests.ask(state.database, key, latest, now, another=another)
     return {
         "device": name,
         "latest_date": found.latest.isoformat() if found.latest else None,
         "filed": True,
+        "another_cycle": another,
         "status": found.status.value,
-        "note": "Filed. The next computation of the plan places it at the best time.",
+        "note": "Filed. The next computation of the plan places it at the best time."
+        + (" It is one more cycle, placed after the one already requested." if another else ""),
     }
 
 

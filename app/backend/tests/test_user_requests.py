@@ -120,7 +120,10 @@ def test_another_request_for_the_same_device_is_one_more_cycle(tmp_path: Path) -
     """Deux lessives le même jour : la seconde demande s'ajoute à la première, chacune devient
     une tâche du calcul, et le lancement de l'une ne marque pas l'autre."""
     database = open_database(tmp_path)
+    assert not user_requests.waiting(database, "washer")
     first = user_requests.ask(database, "washer", None, CREATED)
+    assert user_requests.waiting(database, "washer")
+    assert not user_requests.waiting(database, "dryer")
     second = user_requests.ask(database, "washer", None, NOW, another=True)
     assert second.id != first.id
     assert [r.id for r in user_requests.open_requests(database)] == [first.id, second.id]
@@ -135,6 +138,9 @@ def test_another_request_for_the_same_device_is_one_more_cycle(tmp_path: Path) -
     assert user_requests.mark_launched(database, {f"app-{first.id}"}, TODAY) == []
     found = user_requests.get(database, second.id)
     assert found is not None and found.launched_on is None
+    # Une demande lancée n'est plus en attente : seule la seconde l'est encore.
+    user_requests.mark_launched(database, {f"app-{second.id}"}, TODAY)
+    assert not user_requests.waiting(database, "washer")
 
 
 def _input(tmp_path: Path, items: list[dict[str, Any]], with_requests: bool) -> PlanningInput:

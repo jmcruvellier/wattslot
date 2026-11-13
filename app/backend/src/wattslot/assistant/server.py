@@ -109,9 +109,9 @@ def build(state: Callable[[], Any], problems: Callable[[], Awaitable[Sequence[An
     def request_device(
         device: str, latest_date: str | None = None, confirm: bool = False
     ) -> dict[str, Any]:
-        """Run an appliance at the best time, by latest_date (today, tomorrow or YYYY-MM-DD).
-        Call first without confirm: nothing is filed, ask the user the question returned; call
-        again with confirm true if they agree."""
+        """Run an appliance at the best time, by latest_date (today, tomorrow, YYYY-MM-DD); one
+        more cycle if already requested. First without confirm: nothing is filed, ask the user
+        the returned question; then confirm true."""
         return tools.request_device(state(), device, latest_date, confirm)
 
     return server

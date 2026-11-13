@@ -13,19 +13,25 @@ export interface RequestDevice {
 
 interface RequestFormProps {
   devices: RequestDevice[];
+  // Appareils (clés) qui ont déjà une demande en attente, pas encore lancée : le formulaire
+  // propose alors de changer sa date ou d'ajouter un cycle (deux lessives le même jour).
+  waiting?: string[];
   onAsked: () => void;
 }
 
-export default function RequestForm({ devices, onAsked }: RequestFormProps) {
+export default function RequestForm({ devices, waiting = [], onAsked }: RequestFormProps) {
   const { t } = useI18n();
   const [device, setDevice] = useState("");
   const [latest, setLatest] = useState("");
   const [failed, setFailed] = useState(false);
+  const selected = device || devices[0].key;
+  const pending = waiting.includes(selected);
 
-  const ask = async () => {
+  const ask = async (another = false) => {
     setFailed(false);
     try {
-      await postJson("api/requests", { device: device || devices[0].key, latest: latest || null });
+      // « another » : un cycle de plus, au lieu de changer la date de la demande en attente.
+      await postJson("api/requests", { device: selected, latest: latest || null, ...(another ? { another: true } : {}) });
       setLatest("");
       onAsked();
     } catch {
@@ -38,7 +44,7 @@ export default function RequestForm({ devices, onAsked }: RequestFormProps) {
       <p className="request-form">
         <label>
           {t("requests.device")}{" "}
-          <select value={device || devices[0].key} onChange={(event) => setDevice(event.target.value)}>
+          <select value={selected} onChange={(event) => setDevice(event.target.value)}>
             {devices.map((d) => (
               <option key={d.key} value={d.key}>
                 {d.name}
@@ -50,11 +56,22 @@ export default function RequestForm({ devices, onAsked }: RequestFormProps) {
           {t("requests.latest")}{" "}
           <input type="date" value={latest} onChange={(event) => setLatest(event.target.value)} />
         </label>{" "}
-        <button type="button" onClick={() => void ask()}>
-          {t("requests.ask")}
-        </button>
+        {pending ? (
+          <>
+            <button type="button" onClick={() => void ask()}>
+              {t("requests.change_date")}
+            </button>{" "}
+            <button type="button" onClick={() => void ask(true)}>
+              {t("requests.add_cycle")}
+            </button>
+          </>
+        ) : (
+          <button type="button" onClick={() => void ask()}>
+            {t("requests.ask")}
+          </button>
+        )}
         <br />
-        <small>{t("requests.hint")}</small>
+        <small>{pending ? t("requests.waiting_hint") : t("requests.hint")}</small>
       </p>
       {failed && <p role="alert">{t("requests.failed")}</p>}
     </>
