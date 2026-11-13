@@ -685,3 +685,36 @@ def test_the_report_tells_the_supply_and_the_phases() -> None:
     )
     assert single["home"]["supply"] == "SinglePhaseSupply"
     assert single["home"]["devices"][0]["phase"] is None
+
+
+def test_a_home_that_produces_without_an_export_sensor_is_told_so() -> None:
+    def grid(*roles: Role) -> HomeDevice:
+        return HomeDevice(
+            key="grid",
+            kind=DeviceKind.GRID,
+            name="Réseau",
+            sensors=[
+                HomeSensor(entity_id=f"sensor.grid_{n}", role=role) for n, role in enumerate(roles)
+            ],
+        )
+
+    def found(*devices: HomeDevice) -> list[Problem]:
+        every = collect(
+            _ready(),
+            Diagnostic(generated_at=NOW),
+            HomeModel(devices=list(devices)),
+            Configuration(),
+            None,
+        )
+        return [p for p in every if p.code == "export_sensor_missing"]
+
+    solar = SOLAR.model_copy(update={"sensors": SOLAR.sensors[:1]})
+    # Deux capteurs de soutirage (heures pleines et creuses), aucun d'injection : cas du premier
+    # rapport d'une installation réelle.
+    (missing,) = found(solar, grid(Role.ENERGY_IMPORTED, Role.ENERGY_IMPORTED))
+    assert missing.severity is Severity.WATCH and missing.target == "home#device-grid"
+    assert missing.params == {}
+    # Avec un capteur d'injection, sans production, ou sans raccordement mesuré : rien.
+    assert found(solar, grid(Role.ENERGY_IMPORTED, Role.ENERGY_EXPORTED)) == []
+    assert found(grid(Role.ENERGY_IMPORTED)) == []
+    assert found(solar) == [] and found(solar, grid()) == []

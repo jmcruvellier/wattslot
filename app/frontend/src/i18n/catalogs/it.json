@@ -1371,6 +1371,7 @@
       "phase_unknown": "Il piano non è calcolato fase per fase, ma sul totale della casa: la fase non è indicata per {devices}.",
       "phase_history_short": "Il piano non è ancora calcolato fase per fase: il consumo abituale di ogni fase non è ancora noto per tutte le ore.",
       "battery_not_counted": "{device} non è contata nel calcolo: il suo livello di carica non è leggibile in Home Assistant.",
+      "export_sensor_missing": "La sua casa ha dei pannelli, ma nessun sensore di immissione sull'allacciamento alla rete: il surplus inviato in rete è contato come consumo, e il piano sottostima il sole disponibile.",
       "energy_dashboard_issue": "{device}: {issue}",
       "impossible_data": "Previsioni interrotte prima del {day}: il sensore «{device}» ({entity}) ha contato {source_kwh} kWh in un'ora il {when} alle {when_hour}, probabilmente un'interruzione del sensore. Il consumo previsto alle {hour} ({kwh} kWh) supera ciò che la casa può prelevare ({limit} kWh); le previsioni di questo giorno della settimana restano falsate fino al {until}.",
       "impossible_data_unknown": "Previsioni interrotte prima del {day}: il consumo previsto alle {hour} ({kwh} kWh) supera ciò che la casa può prelevare in un'ora ({limit} kWh)."
@@ -1400,6 +1401,7 @@
       "phase_unknown": "Indichi la fase nella scheda dell'apparecchio.",
       "phase_history_short": "Niente da fare: WattSlot lo impara dallo storico dei sensori per fase.",
       "battery_not_counted": "Verifichi il sensore del livello di carica nella scheda della batteria.",
+      "export_sensor_missing": "Se il suo contatore misura l'energia immessa in rete, aggiunga quel sensore nella scheda dell'allacciamento alla rete. Se il suo impianto non immette mai, non c'è niente da fare.",
       "configuration_issue": "Corregga l'impostazione in La mia casa.",
       "impossible_data": "Controlli lo storico di questo sensore in Home Assistant a quell'ora.",
       "impossible_data_unknown": "Probabilmente un salto del contatore falsa il consumo di base: controlli lo storico dei contatori di energia in Home Assistant."
