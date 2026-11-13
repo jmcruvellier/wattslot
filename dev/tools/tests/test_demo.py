@@ -2,6 +2,7 @@
 capteurs que la détection et le journal des cycles de l'application savent lire."""
 
 from datetime import UTC, datetime, time, timedelta
+from pathlib import Path
 
 import pytest
 
@@ -10,14 +11,18 @@ from tools.demo import (
     ENERGY_PREFERENCES,
     Clock,
     FrozenDatetime,
+    _Targets,
     ha_states,
+    history_imported,
     planned_starts,
     registries,
     solar_forecast,
 )
+from wattslot.aggregation import Aggregator
 from wattslot.detection import DeviceKind, Role, propose
 from wattslot.home_assistant import HomeSnapshot
 from wattslot.planning.appliances import measure_cycles
+from wattslot.storage.database import open_database
 
 
 def simulate(day: h.date, starts: dict[str, datetime]) -> list[tuple[datetime, dict[str, float]]]:
@@ -233,3 +238,17 @@ def test_a_meter_that_counts_each_phase_apart_does_not_net_them() -> None:
     # La même journée coûte plus de soutirage qu'avec un compteur qui additionne.
     summed = summed_last[h.GRID_IMPORT] - summed_first[h.GRID_IMPORT]
     assert delta(h.GRID_IMPORT) > summed + 1
+
+
+def test_the_history_is_imported_before_the_first_plan(tmp_path: Path) -> None:
+    """Sans cela, les plans de la démonstration sont calculés « pendant la reprise de
+    l'historique » et gardés comme provisoires (bandeau « Plan provisoire » dans les vues)."""
+    database = open_database(tmp_path)
+    followed = {"sensor.demo_grid_import": object(), "sensor.demo_solar": object()}
+    aggregator = Aggregator(_Targets(followed), None, None, database)  # type: ignore[arg-type]
+    assert aggregator._history_status().pending == sorted(followed)
+
+    history_imported(database, followed, datetime(2026, 6, 15, 14, 30, tzinfo=UTC))
+
+    assert aggregator._history_status().pending == []
+    database.close()

@@ -622,6 +622,10 @@ async def generate(
             followed = targets(model)
             by_entity = {t.entity_id: t for t in followed.values()}
             aggregator = Aggregator(_Targets(followed), raw, graph, database, client)  # type: ignore[arg-type]
+            # Avant le premier calcul : un plan calculé « pendant la reprise » est enregistré
+            # comme provisoire (bandeau, fiabilité dégradée), ce que la maison de
+            # démonstration, censée tourner depuis 31 jours, n'est pas.
+            history_imported(database, followed, NOW)
             names = {NAMES[language][a]: a for a in APPLIANCES}
             keys = {
                 a: d.key for d in model.devices for a in APPLIANCES if d.name == NAMES[language][a]
@@ -714,11 +718,9 @@ async def generate(
     return summary
 
 
-def finish(
-    database: Any, followed: dict[str, Any], values: dict[str, float], now: datetime
-) -> None:
-    """Historique de HA repris (étape « Historique » de la mise en route) et dernier relevé écrit
-    par entité (reprise après coupure de l'ingestion), comme après 31 jours de service."""
+def history_imported(database: Any, followed: dict[str, Any], now: datetime) -> None:
+    """Historique de HA repris (étape « Historique » de la mise en route), comme après 31 jours
+    de service."""
     since = (now - timedelta(days=house_data.HISTORY_DAYS)).astimezone(UTC)
     with database:
         database.executemany(
@@ -728,6 +730,13 @@ def finish(
                 for entity_id in followed
             ],
         )
+
+
+def finish(
+    database: Any, followed: dict[str, Any], values: dict[str, float], now: datetime
+) -> None:
+    """Dernier relevé écrit par entité (reprise après coupure de l'ingestion)."""
+    with database:
         database.executemany(
             "INSERT INTO ingestion_state (entity_id, last_time, last_value) VALUES (?, ?, ?) "
             "ON CONFLICT(entity_id) DO UPDATE SET last_time = excluded.last_time, "
