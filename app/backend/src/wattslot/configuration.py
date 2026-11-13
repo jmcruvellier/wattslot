@@ -243,6 +243,19 @@ def battery_line(
     return None if settings.all_phases else device.phase
 
 
+def by_phase_expected(home: HomeModel, configuration: Configuration | None) -> bool:
+    """La maison demande un plan calculé phase par phase : en triphasé, une batterie au moins
+    ne compense que sa phase, ou le compteur compte chaque phase à part."""
+    if home.supply is not Supply.THREE:
+        return False
+    return not home.meter_sums_phases or any(
+        device.kind is DeviceKind.BATTERY
+        and device.capacity_kwh
+        and battery_line(home, configuration, device) is not None
+        for device in home.devices
+    )
+
+
 def tariff_of(configuration: Configuration | None) -> Tariff:
     """Tarif de la maison, ou celui par défaut s'il n'est pas configuré."""
     if configuration is None or configuration.tariff is None:

@@ -35,6 +35,8 @@ In a **three-phase** home (see [Your home and its rules](your-home.md#three-phas
 
 Batteries on the same phase are seen as one, with their own content; the batteries that offset the total come after them. Otherwise, all batteries are calculated on the total of the home, as before.
 
+When one of these conditions is not met, WattSlot says so instead of silently falling back to the total: the **By phase** card of **Planning** tells what is missing (an import sensor for a phase, the phase of a battery or a solar installation, or simply a few more days of history for the per-phase sensors), and the same reason is listed under **Settings › App status**. A battery whose charge level cannot be read in Home Assistant is left out of the calculation; it is listed there too.
+
 The **appliance schedule** then has one line per phase ("Battery phase 2", "Battery phase 3"), each with its own planned and measured charges and discharges, and a "Battery (total)" line for the batteries that offset the total. The curves still show all your batteries together. Beyond today, the plan only knows their total content and shares it between them according to their capacity.
 
 ## What you see

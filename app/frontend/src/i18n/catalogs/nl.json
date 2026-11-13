@@ -1362,6 +1362,10 @@
       "plan_slow": "De laatste berekening van het plan duurde {minutes} minuten, veel langer dan gewoonlijk.",
       "no_statistics": "Geen geschiedenis in Home Assistant voor: {devices}.",
       "plan_stale": "Al meer dan 2 uur kon er geen plan worden berekend.",
+      "phase_meters_missing": "Het plan wordt niet fase per fase berekend, maar op het totaal van het huis: er is geen afnamesensor voor elke fase (fasen zonder sensor: {phases}).",
+      "phase_unknown": "Het plan wordt niet fase per fase berekend, maar op het totaal van het huis: de fase is niet ingevuld voor {devices}.",
+      "phase_history_short": "Het plan wordt nog niet fase per fase berekend: het gebruikelijke verbruik van elke fase is nog niet voor elk uur bekend.",
+      "battery_not_counted": "{device} wordt niet meegeteld in de berekening: het laadniveau is niet leesbaar in Home Assistant.",
       "energy_dashboard_issue": "{device}: {issue}",
       "impossible_data": "Prognoses gestopt vóór {day}: de sensor \"{device}\" ({entity}) telde {source_kwh} kWh in één uur op {when} om {when_hour}, waarschijnlijk een storing van de sensor. Het verwachte verbruik om {hour} ({kwh} kWh) is meer dan het huis kan afnemen ({limit} kWh); de prognoses voor deze weekdag blijven onjuist tot {until}.",
       "impossible_data_unknown": "Prognoses gestopt vóór {day}: het verwachte verbruik om {hour} ({kwh} kWh) is meer dan het huis in een uur kan afnemen ({limit} kWh)."
@@ -1387,6 +1391,10 @@
       "plan_slow": "Als het aanhoudt, voeg het rapport toe aan een melding.",
       "no_statistics": "Deze sensoren hebben geen statistieken in Home Assistant: het plan gaat niet uit van hun geschiedenis.",
       "plan_stale": "Bekijk de andere problemen, of start een berekening vanaf de startpagina.",
+      "phase_meters_missing": "Als Home Assistant ze heeft (driefasige meter, een stroomklem per fase), voeg dan een afnamesensor voor elke fase toe in de fiche van de netaansluiting.",
+      "phase_unknown": "Vul de fase in op de fiche van het apparaat.",
+      "phase_history_short": "Niets te doen: WattSlot leert het uit de geschiedenis van de sensoren per fase.",
+      "battery_not_counted": "Controleer de laadniveausensor op de fiche van de batterij.",
       "configuration_issue": "Corrigeer de instelling in Mijn huis.",
       "impossible_data": "Controleer de geschiedenis van deze sensor in Home Assistant op dat tijdstip.",
       "impossible_data_unknown": "Waarschijnlijk vertekent een metersprong het basisverbruik: controleer de geschiedenis van uw energiemeters in Home Assistant."
@@ -1888,6 +1896,11 @@
   },
   "phases": {
     "title": "Per fase",
+    "gap": {
+      "meters": "Het plan wordt niet fase per fase berekend: uw batterijen en de kosten worden op het totaal van het huis berekend. Er is een afnamesensor voor elke fase nodig (fasen zonder sensor: {phases}); voeg ze toe in de fiche van de netaansluiting (Mijn huis › Apparaten).",
+      "devices": "Het plan wordt niet fase per fase berekend: uw batterijen en de kosten worden op het totaal van het huis berekend. De fase is niet ingevuld voor {devices}; vul ze in op de bijbehorende fiche (Mijn huis › Apparaten).",
+      "history": "Het plan wordt nog niet fase per fase berekend: WattSlot leert het gebruikelijke verbruik van elke fase uit de geschiedenis van uw sensoren per fase. Tot dan worden uw batterijen en de kosten op het totaal van het huis berekend."
+    },
     "note": "Wat elke fase volgens het plan over de dag van het net afneemt en eraan levert.",
     "note_measured": "Wat elke fase van het net afneemt en eraan levert: gepland over de dag en tot nu toe gemeten.",
     "phase": "Fase {number}",

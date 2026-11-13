@@ -31,7 +31,15 @@ from zoneinfo import ZoneInfo
 from wattslot.aggregation import HOUR, Aggregate
 from wattslot.detection import DeviceKind, Role
 from wattslot.home_assistant import is_entity_id
-from wattslot.home_model import LINES, HomeModel, Phase, Supply, counted_sensors, line_shares
+from wattslot.home_model import (
+    LINES,
+    HomeModel,
+    Phase,
+    Supply,
+    counted_sensors,
+    line_shares,
+    phase_gaps,
+)
 from wattslot.planning.forecast_quality import BaselineQuality, spread_percent
 
 SAME_WEEKDAY_OCCURRENCES = 6
@@ -383,7 +391,7 @@ def baseline_by_phase(
     Vide quand elle ne se mesure pas : maison en monophasé, une phase sans capteur de
     soutirage, ou une installation solaire ou une batterie dont la phase n'est pas connue (sa
     production ou sa décharge manquerait au bilan d'une phase)."""
-    if model.supply is not Supply.THREE:
+    if model.supply is not Supply.THREE or any(phase_gaps(model)):
         return {}
     grid = [
         sensor
@@ -392,18 +400,6 @@ def baseline_by_phase(
         for sensor in device.sensors
         if sensor.phase in LINES
     ]
-    measured = {s.phase for s in grid if s.role is Role.ENERGY_IMPORTED}
-    sources = {
-        Role.ENERGY_PRODUCED: DeviceKind.SOLAR,
-        Role.ENERGY_CHARGED: DeviceKind.BATTERY,
-        Role.ENERGY_DISCHARGED: DeviceKind.BATTERY,
-    }
-    unknown = any(
-        device.phase is None and any(sources.get(s.role) is device.kind for s in device.sensors)
-        for device in model.devices
-    )
-    if measured != set(LINES) or unknown:
-        return {}
     start, end = window(today, (occurrences + SAFETY_WEEKS) * 7, zone)
 
     def flow(line: Phase, role: Role, keys: Collection[str] | None = None) -> DaySeries:

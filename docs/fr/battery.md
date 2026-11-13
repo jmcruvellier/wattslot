@@ -35,6 +35,8 @@ Dans une maison en **triphasé** (voir [Votre maison et ses règles](your-home.m
 
 Les batteries d'une même phase sont vues comme une seule, avec leur propre contenu ; celles qui compensent le total passent après elles. Sinon, toutes les batteries sont calculées sur le total de la maison, comme avant.
 
+Quand l'une de ces conditions n'est pas remplie, WattSlot le dit au lieu de retomber sans rien dire sur le total : la carte **Par phase** de **Planning** indique ce qui manque (un capteur de soutirage pour une phase, la phase d'une batterie ou d'une installation solaire, ou simplement quelques jours d'historique de plus pour les capteurs par phase), et la même raison figure dans **Réglages › État de l'application**. Une batterie dont le niveau de charge est illisible dans Home Assistant est écartée du calcul ; elle y est signalée aussi.
+
 Le **Planning des équipements** a alors une ligne par phase (« Batterie phase 2 », « Batterie phase 3 »), chacune avec ses propres charges et décharges, prévues et mesurées, et une ligne « Batterie (total) » pour les batteries qui compensent le total. Les courbes montrent toujours toutes vos batteries ensemble. Au-delà d'aujourd'hui, le plan ne connaît que leur contenu total et le répartit entre elles selon leur capacité.
 
 ## Ce que vous voyez

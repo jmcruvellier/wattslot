@@ -16,9 +16,10 @@ from pydantic import BaseModel
 
 from wattslot import configuration
 from wattslot.configuration import Configuration
+from wattslot.detection import DeviceKind, Role
 from wattslot.diagnostic import Diagnostic
 from wattslot.home_assistant import HomeAssistantClient, is_entity_id
-from wattslot.home_model import HomeModel
+from wattslot.home_model import HomeModel, line_numbers, phase_gaps
 from wattslot.ingestion import silent_entities
 from wattslot.resources import disk_low_free, memory_alert
 from wattslot.setup import Setup, StepState
@@ -360,6 +361,73 @@ def _dashboard_problems(diagnostic: Diagnostic, home: HomeModel) -> list[Problem
     return found
 
 
+def _phase_problems(home: HomeModel, saved: Configuration, diagnostic: Diagnostic) -> list[Problem]:
+    """Maison en triphasé qui demande un plan phase par phase (batterie qui ne compense que sa
+    phase, compteur qui compte chaque phase à part) : ce qui l'empêche. Sans cela le calcul
+    retombe, sans le dire, sur le total de la maison."""
+    if not configuration.by_phase_expected(home, saved):
+        return []
+    lines, unknown = phase_gaps(home)
+    found = []
+    if lines:
+        grid = next((d for d in home.devices if d.kind is DeviceKind.GRID), None)
+        found.append(
+            _problem(
+                "phase_meters_missing",
+                # Home Assistant n'a pas toujours ces compteurs : à savoir, sans alarmer.
+                Severity.WATCH,
+                target=f"home#device-{grid.key}" if grid is not None else "home",
+                phases=line_numbers(lines),
+            )
+        )
+    if unknown:
+        found.append(
+            _problem(
+                "phase_unknown",
+                Severity.DEGRADED,
+                target=f"home#device-{unknown[0].key}",
+                devices=", ".join(device.name for device in unknown),
+            )
+        )
+    report = diagnostic.planning.last_report if diagnostic.planning else None
+    if not found and report is not None and report.by_phase is False:
+        # Capteurs et phases en place : il manque encore la consommation habituelle de chaque
+        # phase à toute heure (capteurs par phase ajoutés depuis peu).
+        found.append(_problem("phase_history_short", Severity.WATCH))
+    return found
+
+
+def _battery_problems(home: HomeModel, client: HomeAssistantClient | None) -> list[Problem]:
+    """Batteries que le calcul ne compte pas (``assemble.battery_state``) : sans capteur de
+    niveau de charge, ou dont l'état n'est pas un nombre dans Home Assistant."""
+    states = client.snapshot.states if client is not None else None
+    if not states:  # pas connecté : rien à en dire, « ha_disconnected » le signale
+        return []
+
+    def readable(entity_id: str) -> bool:
+        try:
+            float(str((states.get(entity_id) or {}).get("state")))
+        except (TypeError, ValueError):
+            return False
+        return True
+
+    found = []
+    for device in home.devices:
+        if device.kind is not DeviceKind.BATTERY or not device.capacity_kwh:
+            continue
+        levels = [s.entity_id for s in device.sensors if s.role is Role.STATE_OF_CHARGE]
+        if not any(readable(entity_id) for entity_id in levels):
+            found.append(
+                _problem(
+                    "battery_not_counted",
+                    Severity.DEGRADED,
+                    target=f"home#device-{device.key}",
+                    device=device.name,
+                )
+            )
+    return found
+
+
 ORDER = {Severity.BLOCKING: 0, Severity.DEGRADED: 1, Severity.WATCH: 2}
 
 
@@ -377,6 +445,8 @@ def collect(
         + _component_problems(diagnostic, home)
         + _resource_problems(diagnostic)
         + _configuration_problems(home, saved)
+        + _phase_problems(home, saved, diagnostic)
+        + _battery_problems(home, client)
         + _dashboard_problems(diagnostic, home)
     )
     return sorted(found, key=lambda p: ORDER[p.severity])

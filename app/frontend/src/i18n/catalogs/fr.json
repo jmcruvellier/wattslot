@@ -1362,6 +1362,10 @@
       "plan_slow": "Le dernier calcul du plan a pris {minutes} minutes, bien plus que d'habitude.",
       "no_statistics": "Pas d'historique dans Home Assistant pour : {devices}.",
       "plan_stale": "Aucun plan n'a pu être calculé depuis plus de 2 heures.",
+      "phase_meters_missing": "Le plan n'est pas calculé phase par phase, mais sur le total de la maison : il n'y a pas de capteur de soutirage pour chaque phase (phases sans capteur : {phases}).",
+      "phase_unknown": "Le plan n'est pas calculé phase par phase, mais sur le total de la maison : la phase n'est pas renseignée pour {devices}.",
+      "phase_history_short": "Le plan n'est pas encore calculé phase par phase : la consommation habituelle de chaque phase n'est pas encore connue à toute heure.",
+      "battery_not_counted": "{device} n'est pas comptée dans le calcul : son niveau de charge est illisible dans Home Assistant.",
       "energy_dashboard_issue": "{device} : {issue}",
       "impossible_data": "Prévisions arrêtées avant le {day} : le capteur « {device} » ({entity}) a compté {source_kwh} kWh en une heure le {when} à {when_hour}, sans doute une coupure du capteur. La consommation prévue à {hour} ({kwh} kWh) dépasse ce que la maison peut tirer ({limit} kWh) ; les prévisions de ce jour de la semaine restent faussées jusqu'au {until}.",
       "impossible_data_unknown": "Prévisions arrêtées avant le {day} : la consommation prévue à {hour} ({kwh} kWh) dépasse ce que la maison peut tirer en une heure ({limit} kWh)."
@@ -1387,6 +1391,10 @@
       "plan_slow": "Si cela dure, joignez le rapport à un signalement.",
       "no_statistics": "Ces capteurs n'ont pas de statistiques dans Home Assistant : le calcul ne part pas de leur historique.",
       "plan_stale": "Regardez les autres problèmes, ou lancez un calcul depuis l'accueil.",
+      "phase_meters_missing": "Si Home Assistant en a (compteur triphasé, pince sur chaque phase), ajoutez un capteur de soutirage pour chaque phase dans la fiche du raccordement au réseau.",
+      "phase_unknown": "Indiquez la phase dans la fiche de l'équipement.",
+      "phase_history_short": "Rien à faire : WattSlot l'apprend dans l'historique des capteurs par phase.",
+      "battery_not_counted": "Vérifiez le capteur de niveau de charge dans la fiche de la batterie.",
       "configuration_issue": "Corrigez le réglage dans Ma maison.",
       "impossible_data": "Vérifiez l'historique de ce capteur dans Home Assistant à cette heure-là.",
       "impossible_data_unknown": "Un saut de compteur fausse sans doute la consommation de base : vérifiez l'historique de vos compteurs d'énergie dans Home Assistant."
@@ -1888,6 +1896,11 @@
   },
   "phases": {
     "title": "Par phase",
+    "gap": {
+      "meters": "Le plan n'est pas calculé phase par phase : vos batteries et le coût sont calculés sur le total de la maison. Il faut un capteur de soutirage pour chaque phase (phases sans capteur : {phases}) ; ajoutez-les dans la fiche du raccordement au réseau (Ma maison › Appareils).",
+      "devices": "Le plan n'est pas calculé phase par phase : vos batteries et le coût sont calculés sur le total de la maison. La phase n'est pas renseignée pour {devices} ; indiquez-la dans sa fiche (Ma maison › Appareils).",
+      "history": "Le plan n'est pas encore calculé phase par phase : WattSlot apprend la consommation habituelle de chaque phase dans l'historique de vos capteurs par phase. D'ici là, vos batteries et le coût sont calculés sur le total de la maison."
+    },
     "note": "Ce que chaque phase achète et vend au réseau sur la journée, d'après le plan.",
     "note_measured": "Ce que chaque phase achète et vend au réseau : prévu sur la journée, et mesuré jusqu'ici.",
     "phase": "Phase {number}",

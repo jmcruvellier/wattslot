@@ -178,6 +178,9 @@ class RunReport(BaseModel):
     errors: list[str] = []
     # Jours non calculés à cause d'une consommation impossible (lot 7.3), avec son origine.
     impossible: list[ImpossibleData] = []
+    # Le plan du jour distingue les phases (batteries par phase, ou compteur qui compte chaque
+    # phase à part) ; ``None`` : compte rendu d'avant ce champ.
+    by_phase: bool | None = None
 
 
 def frozen_cycles(old: Plan | None, first_hour: int) -> tuple[FrozenCycle, ...]:
@@ -693,7 +696,11 @@ async def run(ctx: Context, now: datetime, manual: bool = False) -> RunReport:
     except Exception:
         logger.exception("Journal des calculs : écriture impossible")
     report = RunReport(
-        day=today, started_at=now, manual=manual, seconds_today=round(seconds_today, 2)
+        day=today,
+        started_at=now,
+        manual=manual,
+        seconds_today=round(seconds_today, 2),
+        by_phase=bool(merged.get("batteries_par_phase") or merged.get("compteur_par_phase")),
     )
     logger.info("Calcul du jour : %.1f s", seconds_today)
 

@@ -203,6 +203,12 @@ export interface BatteryNow {
   power_w: number | null; // positive en charge, négative en décharge
 }
 
+// Plan demandé phase par phase mais calculé sur le total (backend : views.now.PhaseGap).
+export interface PhaseGap {
+  code: "meters" | "devices" | "history";
+  params: Record<string, string>;
+}
+
 export interface Now {
   since: string | null;
   until: string | null;
@@ -212,6 +218,7 @@ export interface Now {
   grid_w: number | null; // positive à l'achat, négative au surplus
   soc_percent: number | null; // plusieurs batteries : leur moyenne pondérée par la capacité
   batteries?: BatteryNow[]; // chaque batterie de la maison
+  phase_gap?: PhaseGap | null; // ce qui empêche le plan d'être calculé phase par phase
   off_peak: boolean;
   sentence: string | null;
 }
