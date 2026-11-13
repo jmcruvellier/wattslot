@@ -41,6 +41,8 @@
   "reason.announced_kept": "Bereits angekündigte Uhrzeit, beibehalten: Ein anderer Start würde nicht genug einsparen, um sie zu ändern.",
   "assistant.request": "„{device}“ zur besten Zeit laufen lassen: Soll ich den Auftrag stellen?",
   "assistant.request_by": "„{device}“ zur besten Zeit laufen lassen, spätestens am {date}: Soll ich den Auftrag stellen?",
+  "assistant.request_another": "Für „{device}“ gibt es bereits einen offenen Auftrag. Einen weiteren Zyklus zur besten Zeit hinzufügen: Soll ich den Auftrag stellen?",
+  "assistant.request_another_by": "Für „{device}“ gibt es bereits einen offenen Auftrag. Einen weiteren Zyklus zur besten Zeit hinzufügen, spätestens am {date}: Soll ich den Auftrag stellen?",
   "assistant.not_planned": "An diesem Tag nicht geplant: Es wurde nichts beantragt und nichts ist fällig.",
   "assistant.can_request": "Es kann beantragt werden: Es läuft dann zur besten Zeit.",
   "assistant.no_next": "Heute ist kein Gerät mehr zu starten.",

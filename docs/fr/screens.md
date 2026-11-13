@@ -33,6 +33,7 @@ Le plan en détail, pour **Hier**, **Aujourd'hui**, **Demain**, les jours suivan
 - **Indicateurs du plan** (coût, achat, surplus, autoconsommation…) : sur la journée entière, mesurés pour les heures déjà passées, prévus pour la suite.
   - Dans son coin, la **qualité des prévisions** (fiables, moyennes ou incertaines) dit à quel point se fier à la production et à la consommation prévues, d'après les données dont disposait le calcul : jours d'historique derrière la consommation habituelle, sa régularité, source de la prévision solaire, nombre de jours d'avance de la météo. Touchez-la pour la raison de chaque critère.
 - **Mes demandes** (sous chaque onglet) : les appareils que vous avez demandés, avec ou sans échéance, à marquer faits ou à annuler.
+  - Un même appareil peut tourner **plusieurs fois dans la journée** (deux lessives, deux chauffes du chauffe-eau) : redemandez-le. S'il a déjà une demande en attente, choisissez **Ajouter un cycle** plutôt que **Changer la date**. Chaque cycle a son propre créneau, après le précédent ; le second porte son rang (*Lave-linge #2*) dans **Prochaine action**, l'agenda et les notifications, et il a son propre choix de départ, son **Annuler** et son **C'est lancé**. Un sèche-linge réglé pour démarrer après le lave-linge suit la lessive du même rang.
 - **Semaine** : les jours à venir en agenda, une ligne par jour avec ce qui est prévu ; touchez un jour pour l'ouvrir.
 
 ![Planning en thème sombre](../images/fr/planning-desktop-dark.png)

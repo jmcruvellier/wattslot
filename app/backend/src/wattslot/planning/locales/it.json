@@ -41,6 +41,8 @@
   "reason.announced_kept": "Orario già annunciato, mantenuto: un altro avvio non farebbe risparmiare abbastanza per cambiarlo.",
   "assistant.request": "Far funzionare «{device}» nel momento migliore: inoltro la richiesta?",
   "assistant.request_by": "Far funzionare «{device}» nel momento migliore, entro il {date}: inoltro la richiesta?",
+  "assistant.request_another": "«{device}» ha già una richiesta in attesa. Aggiungere un altro ciclo nel momento migliore: inoltro la richiesta?",
+  "assistant.request_another_by": "«{device}» ha già una richiesta in attesa. Aggiungere un altro ciclo nel momento migliore, entro il {date}: inoltro la richiesta?",
   "assistant.not_planned": "Non previsto quel giorno: non è stato richiesto nulla e nulla è in scadenza.",
   "assistant.can_request": "Si può richiedere: funzionerà allora nel momento migliore.",
   "assistant.no_next": "Oggi non resta nessun apparecchio da avviare.",

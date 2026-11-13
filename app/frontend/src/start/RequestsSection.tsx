@@ -82,7 +82,13 @@ export default function RequestsSection() {
     <section aria-labelledby="requests-title">
       <h2 id="requests-title">{t("requests.title")}</h2>
       <p>{t("requests.intro")}</p>
-      <RequestForm devices={devices} onAsked={() => setVersion((count) => count + 1)} />
+      <RequestForm
+        devices={devices}
+        // Demandes en attente, pas encore lancées : le formulaire propose d'en changer la date
+        // ou d'ajouter un cycle.
+        waiting={opened.filter((r) => !r.launched_on).map((r) => r.device)}
+        onAsked={() => setVersion((count) => count + 1)}
+      />
       {failed && <p role="alert">{t("requests.failed")}</p>}
       {opened.length === 0 ? (
         <p>{t("requests.none")}</p>

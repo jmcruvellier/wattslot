@@ -123,6 +123,16 @@ def ask(
     return request
 
 
+def waiting(database: sqlite3.Connection, device: str) -> bool:
+    """``device`` a-t-il une demande ouverte pas encore lancée : redemander change alors sa
+    date, sauf à ajouter un cycle (``ask`` avec ``another``)."""
+    row = database.execute(
+        "SELECT 1 FROM requests WHERE device = ? AND status = 'open' AND launched_on IS NULL",
+        (device,),
+    ).fetchone()
+    return row is not None
+
+
 def get(database: sqlite3.Connection, request_id: int) -> UserRequest | None:
     row = database.execute(f"SELECT {COLUMNS} FROM requests WHERE id = ?", (request_id,)).fetchone()
     return _row(row) if row else None

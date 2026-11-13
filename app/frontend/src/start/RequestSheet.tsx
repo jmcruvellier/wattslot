@@ -14,7 +14,7 @@ import RequestForm, { type RequestDevice } from "./RequestForm";
 type Load =
   | { status: "loading" }
   | { status: "error" }
-  | { status: "ready"; devices: RequestDevice[] }
+  | { status: "ready"; devices: RequestDevice[]; waiting: string[] }
   | { status: "asked" };
 
 export default function RequestSheet({ onClose }: { onClose: () => void }) {
@@ -23,8 +23,21 @@ export default function RequestSheet({ onClose }: { onClose: () => void }) {
 
   useEffect(() => {
     const controller = new AbortController();
-    getJson<RequestDevice[]>("api/requests/devices", controller.signal)
-      .then((devices) => setLoad({ status: "ready", devices }))
+    // Les demandes en attente aussi : pour un appareil déjà demandé, le formulaire propose de
+    // changer la date ou d'ajouter un cycle. Si elles ne se lisent pas, la feuille s'ouvre
+    // quand même, avec le seul bouton « Demander ».
+    type Asked = { device: string; status: string; launched_on: string | null };
+    Promise.all([
+      getJson<RequestDevice[]>("api/requests/devices", controller.signal),
+      getJson<Asked[]>("api/requests", controller.signal).catch((): Asked[] => []),
+    ])
+      .then(([devices, requests]) =>
+        setLoad({
+          status: "ready",
+          devices,
+          waiting: requests.filter((r) => r.status === "open" && !r.launched_on).map((r) => r.device),
+        }),
+      )
       .catch(() => {
         if (!controller.signal.aborted) setLoad({ status: "error" });
       });
@@ -41,7 +54,7 @@ export default function RequestSheet({ onClose }: { onClose: () => void }) {
         ) : (
           <>
             <p>{t("requests.intro")}</p>
-            <RequestForm devices={load.devices} onAsked={() => setLoad({ status: "asked" })} />
+            <RequestForm devices={load.devices} waiting={load.waiting} onAsked={() => setLoad({ status: "asked" })} />
           </>
         ))}
       {load.status === "asked" && (
