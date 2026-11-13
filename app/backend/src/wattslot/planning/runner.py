@@ -326,8 +326,8 @@ def with_past(
         frozen=tuple(
             cycle
             for cycle in frozen_cycles(previous, data.first_hour)
-            if cycle.name not in data.chosen_starts
-            or data.chosen_starts[cycle.name] < data.first_hour * 60
+            if cycle.ident not in data.chosen_starts
+            or data.chosen_starts[cycle.ident] < data.first_hour * 60
         ),
         planned_reasons=planned_reasons(previous),
         # Rang de chaque tâche dans le plan précédent : elle le garde d'un calcul à l'autre.
@@ -615,9 +615,10 @@ async def run(ctx: Context, now: datetime, manual: bool = False) -> RunReport:
     data = with_past(data, old, now, ctx)
     # Planifications annulées pour aujourd'hui (bouton « Annuler ») : ni tâche, ni besoin, ni
     # durée à placer ; le calcul de demain les reprendra.
-    data = cancelled.without_cancelled(data, cancelled.load(ctx.database, today))
-    # Plusieurs cycles d'un même équipement : chaque tâche du jour prend son rang.
+    # Plusieurs cycles d'un même équipement : chaque tâche du jour prend son rang, avant les
+    # annulations, qui désignent un cycle par ce rang (les autres gardent le leur).
     data = numbered(data)
+    data = cancelled.without_cancelled(data, cancelled.load(ctx.database, today))
     data, reports = await with_assignments(data, forecasts, ctx, store)
     user_requests.mark_launched(ctx.database, launched_uids(data), today)
     try:

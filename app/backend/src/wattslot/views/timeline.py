@@ -13,6 +13,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel
 
+from wattslot.planning.reference import ident
 from wattslot.views.display import BATTERY, Context, find_item, is_runtime
 
 SHIFT_MIN = 15  # écart de démarrage toléré (« à l'heure »)
@@ -29,6 +30,10 @@ class Bar(BaseModel):
     # Fin d'un cycle commencé la veille avant minuit (débordement) : de 0 h à sa fin, rien à
     # lancer. Un cycle qui déborde a, lui, ``end_hour`` au-delà de 24.
     carried: bool = False
+    # Barre prévue d'un cycle : son identité (``reference.ident``), le nom de l'équipement ou,
+    # à partir de son deuxième cycle de la journée, ce nom et son rang (« Lave-linge #2 »).
+    # C'est elle que prennent le départ choisi, « Annuler » et « C'est lancé ».
+    cycle: str | None = None
 
 
 class TimelineRow(BaseModel):
@@ -42,9 +47,12 @@ class TimelineRow(BaseModel):
 
 
 class DeviceStatus(BaseModel):
-    """Bilan d'un équipement prévu, au dernier relevé."""
+    """Bilan d'un cycle prévu, au dernier relevé. ``device`` : l'identité du cycle, le nom de
+    l'équipement ou, à partir de son deuxième cycle de la journée, ce nom et son rang ;
+    ``appliance`` : le nom de l'équipement (sa ligne de la frise)."""
 
     device: str
+    appliance: str | None = None
     status: Literal["on_time", "shifted", "no_cycle", "planned"]
     planned_start_min: int
     planned_end_min: int
@@ -111,8 +119,13 @@ def battery_blocks(movements: Sequence[Mapping[str, Any]]) -> list[dict[str, Any
     return blocks
 
 
+def _device(plan: Mapping[str, Any]) -> str:
+    """Nom de l'équipement d'un cycle prévu (``planned_devices``)."""
+    return str(plan.get("equipement", plan["nom"]))
+
+
 def _count(planned: Sequence[Mapping[str, Any]], name: str) -> int:
-    return sum(1 for plan in planned if plan["nom"] == name)
+    return sum(1 for plan in planned if _device(plan) == name)
 
 
 def cycle_bounds(item: Mapping[str, Any]) -> tuple[int, int]:
@@ -144,8 +157,17 @@ def planned_devices(
         else:
             start, end = cycle_bounds(item)
             energy = item.get("energie_kwh", 0.0)
+        # Identité du cycle : l'équipement et, à partir de son deuxième cycle de la journée,
+        # son rang ; le nom de l'équipement est alors donné à part.
+        cycle = ident(name, item.get("rang"))
         found.append(
-            {"nom": name, "debut_min": start, "fin_min": end, "energie_kwh": round(energy, 3)}
+            {
+                "nom": cycle,
+                **({"equipement": name} if cycle != name else {}),
+                "debut_min": start,
+                "fin_min": end,
+                "energie_kwh": round(energy, 3),
+            }
         )
     return sorted(found, key=lambda p: p["debut_min"])
 
@@ -199,12 +221,13 @@ def statuses(
     judged = shifted = 0
     # Plusieurs cycles du même équipement : chacun avec son cycle réel, dans l'ordre de la
     # journée (le premier prévu avec le premier mesuré) ; un seul, le plus proche de son départ.
-    several = {name for name in {p["nom"] for p in planned} if _count(planned, name) > 1}
+    several = {name for name in {_device(p) for p in planned} if _count(planned, name) > 1}
     position: dict[str, int] = {}
     for plan in planned:
-        segments = measured.get(plan["nom"]) or []
+        device = _device(plan)
+        segments = measured.get(device) or []
         cycle: dict[str, Any] | None = None
-        if plan["nom"] in runtime_names:
+        if device in runtime_names:
             if segments:
                 cycle = {
                     "start": _minutes(segments[0]["debut_iso"], context),
@@ -221,9 +244,9 @@ def statuses(
                 )
                 or s.get("en_cours")
             ]
-            if plan["nom"] in several:
-                index = position.get(plan["nom"], 0)
-                position[plan["nom"]] = index + 1
+            if device in several:
+                index = position.get(device, 0)
+                position[device] = index + 1
                 recognized.sort(key=lambda s: _minutes(s["debut_iso"], context))
                 recognized = recognized[index : index + 1]
             else:
@@ -238,6 +261,7 @@ def statuses(
                 }
         common = {
             "device": plan["nom"],
+            "appliance": device,
             "planned_start_min": plan["debut_min"],
             "planned_end_min": plan["fin_min"],
             "planned_kwh": plan["energie_kwh"],
@@ -268,7 +292,7 @@ def statuses(
             found.append(DeviceStatus(**common, status="no_cycle"))
         else:
             found.append(DeviceStatus(**common, status="planned"))
-    names = {p["nom"] for p in planned}
+    names = {_device(p) for p in planned}
     unplanned = [
         Unplanned(
             device=name,
@@ -350,6 +374,7 @@ def build_timeline(
             start_hour=start / 60,
             end_hour=end / 60,
             energy_kwh=round(item.get("energie_kwh", 0.0), 3),
+            cycle=ident(item["equipement"], item.get("rang")),
         )
         # Plusieurs cycles du même équipement dans la journée : une seule ligne, une barre
         # par cycle, dans l'ordre de la journée.

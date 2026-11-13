@@ -41,15 +41,17 @@ def restore(database: sqlite3.Connection, day: date, device: str) -> bool:
 
 
 def without_cancelled(data: PlanningInput, names: Iterable[str]) -> PlanningInput:
-    """Entrée du calcul sans les équipements annulés du jour : la tâche reste dans la liste de
-    Home Assistant, le calcul de demain la replacera."""
+    """Entrée du calcul sans les planifications annulées du jour : la tâche reste dans la liste
+    de Home Assistant, le calcul de demain la replacera. Un cycle est désigné par son identité
+    (``TaskRequest.ident`` : l'équipement, et son rang à partir de son deuxième cycle du jour) :
+    annuler le second cycle laisse le premier."""
     cancelled = set(names)
     if not cancelled:
         return data
     return replace(
         data,
-        due_tasks=tuple(t for t in data.due_tasks if t.name not in cancelled),
-        waiting_tasks=tuple(t for t in data.waiting_tasks if t.name not in cancelled),
+        due_tasks=tuple(t for t in data.due_tasks if t.ident not in cancelled),
+        waiting_tasks=tuple(t for t in data.waiting_tasks if t.ident not in cancelled),
         needs=tuple(n for n in data.needs if n.name not in cancelled),
         runtimes=tuple(r for r in data.runtimes if r.name not in cancelled),
     )

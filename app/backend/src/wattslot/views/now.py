@@ -299,7 +299,7 @@ def _to_start(timeline: Timeline, now_min: int) -> list[DeviceStatus]:
     return [
         status
         for status in timeline.statuses
-        if status.device in cycles
+        if (status.appliance or status.device) in cycles
         and status.status == "planned"
         and status.planned_end_min > now_min
     ]

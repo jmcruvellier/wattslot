@@ -31,17 +31,22 @@ export function startChoices(view: DayView): Record<string, StartChoice> {
   const choices: Record<string, StartChoice> = {};
   for (const row of view.timeline.rows) {
     if (row.kind !== "cycle") continue;
-    const explanation = explained.get(row.device)?.explanation;
-    choices[row.device] = {
-      alternatives: (explanation?.alternatives ?? [])
-        .filter((other) => other.debut_min > nowMin)
-        .map((other) => ({
-          start_min: other.debut_min,
-          cost_eur_delta: other.ecart_cout_eur,
-          import_kwh_delta: other.ecart_soutirage_kwh,
-        })),
-      chosen: explanation?.choisi ?? false,
-    };
+    // Un équipement peut avoir plusieurs cycles dans la journée : chacun a ses propres départs,
+    // sous son identité (celle de sa barre et de son explication).
+    const cycles = row.planned.filter((bar) => !bar.carried).map((bar) => bar.cycle ?? row.device);
+    for (const cycle of cycles.length > 0 ? cycles : [row.device]) {
+      const explanation = explained.get(cycle)?.explanation;
+      choices[cycle] = {
+        alternatives: (explanation?.alternatives ?? [])
+          .filter((other) => other.debut_min > nowMin)
+          .map((other) => ({
+            start_min: other.debut_min,
+            cost_eur_delta: other.ecart_cout_eur,
+            import_kwh_delta: other.ecart_soutirage_kwh,
+          })),
+        chosen: explanation?.choisi ?? false,
+      };
+    }
   }
   return choices;
 }
