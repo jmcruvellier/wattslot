@@ -25,7 +25,7 @@ from wattslot.planning.store import PlanStore
 from wattslot.tariff import off_peak_ranges
 from wattslot.views.day import LATER_KINDS, DayView, Kind, LaterKind, build_day
 from wattslot.views.display import Context, recalculated_production
-from wattslot.views.now import measure_now, next_action
+from wattslot.views.now import declared_pending, measure_now, next_action
 from wattslot.views.week import WeekView, build_week
 
 router = APIRouter()
@@ -220,6 +220,7 @@ async def day_view_of(state: Any, kind: DayKind, lang: str = "fr") -> DayView | 
         update={
             "now": await asyncio.to_thread(measure_now, state, moment, context, language),
             "next_action": action,
+            "declared_launches": declared_pending(view.timeline, moment, context, launched),
             # Planifications annulées pour aujourd'hui, rétablies depuis la frise.
             "timeline": view.timeline.model_copy(
                 update={"cancelled": sorted(cancelled.load(state.database, plan.day))}

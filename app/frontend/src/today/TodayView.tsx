@@ -6,7 +6,7 @@
 
 import { useEffect, useState } from "react";
 
-import { ApiError, getJson, postJson } from "../api";
+import { ApiError, deleteRequest, getJson, postJson } from "../api";
 import { useI18n } from "../i18n/I18nProvider";
 import { hourOfDay, zoned } from "../i18n/homeTime";
 import { clock, kwh, percent } from "../plan/format";
@@ -191,6 +191,42 @@ function NowCard({ now, recommendation }: { now: Now | null; recommendation: str
   );
 }
 
+/** Appareils marqués « C'est lancé » dont le cycle n'est pas encore reconnu dans les mesures :
+ * un clic par erreur se reprend, l'appareil redevient la prochaine action. */
+function DeclaredLaunches({ devices, onChanged }: { devices: string[]; onChanged: () => void }) {
+  const { t } = useI18n();
+  const [undoing, setUndoing] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
+  if (devices.length === 0) return null;
+
+  const undo = async (device: string) => {
+    setFailed(false);
+    setUndoing(device);
+    try {
+      await deleteRequest(`api/planning/launched/${encodeURIComponent(device)}`);
+      onChanged();
+    } catch {
+      setFailed(true);
+    } finally {
+      setUndoing(null);
+    }
+  };
+
+  return (
+    <div className="declared-launches">
+      {devices.map((device) => (
+        <p key={device} className="other-starts-buttons">
+          {t("today.next.declared", { device })}{" "}
+          <Button icon="refresh" disabled={undoing !== null} onClick={() => void undo(device)}>
+            {t("today.next.undo")}
+          </Button>
+        </p>
+      ))}
+      {failed && <p role="alert">{t("today.next.undo_failed")}</p>}
+    </div>
+  );
+}
+
 function NextActionCard({
   view,
   onChanged,
@@ -203,6 +239,7 @@ function NextActionCard({
   const { language, t } = useI18n();
   const features = useHomeFeatures();
   const action = view.next_action ?? null;
+  const declared = <DeclaredLaunches devices={view.declared_launches ?? []} onChanged={onChanged} />;
   const [launching, setLaunching] = useState(false);
   const [launchFailed, setLaunchFailed] = useState(false);
   const [reminded, setReminded] = useState(false);
@@ -222,6 +259,7 @@ function NextActionCard({
             {t("today.next.add_appliance")}
           </Button>
         )}
+        {declared}
       </Card>
     );
   }
@@ -301,6 +339,7 @@ function NextActionCard({
         chosen={action.chosen ?? false}
         onChanged={onChanged}
       />
+      {declared}
     </section>
   );
 }

@@ -191,6 +191,8 @@ class DayView(BaseModel):
     # Aujourd'hui (lot 6b.3) : le moment et le prochain appareil à lancer, ajoutés par les routes.
     now: Now | None = None
     next_action: NextAction | None = None
+    # « C'est lancé » sur lequel on peut encore revenir (cycle pas reconnu dans les mesures).
+    declared_launches: list[str] = []
 
 
 def _value(values: Mapping[Any, Any] | None, h: int) -> float | None:

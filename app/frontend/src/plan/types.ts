@@ -265,6 +265,7 @@ export interface DayView {
   cards: Cards | null;
   now?: Now | null; // Aujourd'hui seulement
   next_action?: NextAction | null;
+  declared_launches?: string[]; // « C'est lancé » sur lequel on peut encore revenir
 }
 
 export type QualityLevel = "good" | "fair" | "poor";

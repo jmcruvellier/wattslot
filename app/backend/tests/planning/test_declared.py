@@ -22,6 +22,9 @@ def test_declared_launches_are_kept_for_the_day_only(tmp_path: Path) -> None:
 
     assert declared.load(database, date(2026, 10, 21)) == {"Lave-linge"}
     assert declared.load(database, date(2026, 10, 20)) == set()  # jour passé : oublié
+    assert declared.withdraw(database, date(2026, 10, 21), "Lave-linge")  # retour en arrière
+    assert not declared.withdraw(database, date(2026, 10, 21), "Lave-linge")
+    assert declared.load(database, date(2026, 10, 21)) == set()
 
 
 def test_routes(tmp_path: Path) -> None:
@@ -33,3 +36,6 @@ def test_routes(tmp_path: Path) -> None:
         assert api.get("/api/planning/launched").json() == []
         assert api.post("/api/planning/launched", json={"device": "Lave-linge"}).status_code == 201
         assert api.get("/api/planning/launched").json() == [{"device": "Lave-linge"}]
+        assert api.delete("/api/planning/launched/Lave-linge").status_code == 204
+        assert api.delete("/api/planning/launched/Lave-linge").status_code == 404
+        assert api.get("/api/planning/launched").json() == []

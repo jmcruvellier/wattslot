@@ -24,7 +24,7 @@ from wattslot.home_model import Phase
 from wattslot.languages import Language
 from wattslot.planning.plan import Explanation
 from wattslot.views.display import Context
-from wattslot.views.timeline import Timeline
+from wattslot.views.timeline import DeviceStatus, Timeline
 
 QUARTER_LENGTH = PERIODS[QUARTER]
 # Au-delà, le dernier quart d'heure clos ne dit plus le moment (agrégation arrêtée, HA coupé).
@@ -293,6 +293,28 @@ def _soc(batteries: list[BatteryNow], levels: list[tuple[str | None, float]]) ->
     return round(total / sum(weights))
 
 
+def _to_start(timeline: Timeline, now_min: int) -> list[DeviceStatus]:
+    """Appareils à cycle pas encore lancés d'après les mesures, dont la plage n'est pas finie."""
+    cycles = {row.device for row in timeline.rows if row.kind == "cycle"}
+    return [
+        status
+        for status in timeline.statuses
+        if status.device in cycles
+        and status.status == "planned"
+        and status.planned_end_min > now_min
+    ]
+
+
+def declared_pending(
+    timeline: Timeline, moment: datetime, context: Context, declared: Set[str]
+) -> list[str]:
+    """Appareils déclarés lancés (« C'est lancé ») sur lesquels on peut encore revenir : leur
+    cycle n'est pas reconnu dans les mesures, et leur plage n'est pas finie."""
+    local = moment.astimezone(context.zone)
+    pending = _to_start(timeline, local.hour * 60 + local.minute)
+    return sorted({status.device for status in pending if status.device in declared})
+
+
 def next_action(
     timeline: Timeline,
     explanations: Mapping[str, str],
@@ -306,15 +328,7 @@ def next_action(
     (« C'est lancé »), avant que les mesures ne le montrent ; le suivant prend leur place."""
     local = moment.astimezone(context.zone)
     now_min = local.hour * 60 + local.minute
-    cycles = {row.device for row in timeline.rows if row.kind == "cycle"}
-    upcoming = [
-        status
-        for status in timeline.statuses
-        if status.device in cycles
-        and status.device not in declared
-        and status.status == "planned"
-        and status.planned_end_min > now_min
-    ]
+    upcoming = [s for s in _to_start(timeline, now_min) if s.device not in declared]
     if not upcoming:
         return None
     first = min(upcoming, key=lambda status: status.planned_start_min)
