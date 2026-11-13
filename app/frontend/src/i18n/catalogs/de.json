@@ -300,7 +300,7 @@
       "measured": "Gemessen",
       "forecast": "Prognose",
       "at_reading": "Bei der Messung",
-      "day": "Tag"
+      "day": "Tag (erste Prognose)"
     },
     "timeline": {
       "title": "Geräteplanung",
