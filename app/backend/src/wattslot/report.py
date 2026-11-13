@@ -71,7 +71,11 @@ class Anonymizer:
 
 
 def _home(home: HomeModel, names: Anonymizer) -> dict[str, Any]:
+    """Maison sous ses alias. Alimentation et phases comprises (rien de personnel) : sans elles,
+    un rapport ne dit pas si un plan devrait être calculé phase par phase, ni ce qui l'empêche."""
     return {
+        "supply": home.supply.value,
+        "meter_sums_phases": home.meter_sums_phases,
         "devices": [
             {
                 "key": names.key(device.key),
@@ -80,8 +84,14 @@ def _home(home: HomeModel, names: Anonymizer) -> dict[str, Any]:
                 if device.custom_type
                 else None,
                 "capacity_kwh": device.capacity_kwh,
+                "phase": device.phase.value if device.phase else None,
                 "sensors": [
-                    {"role": s.role.value, "resets_daily": s.resets_daily} for s in device.sensors
+                    {
+                        "role": s.role.value,
+                        "resets_daily": s.resets_daily,
+                        "phase": s.phase.value if s.phase else None,
+                    }
+                    for s in device.sensors
                 ],
             }
             for device in home.devices
@@ -159,6 +169,9 @@ def _components(diagnostic: Diagnostic, names: Anonymizer) -> dict[str, Any]:
             if planning.last_success_at
             else None,
             "last_error": names.text(planning.last_error),
+            # Dernier plan du jour calculé phase par phase ; ``None`` : pas de calcul depuis le
+            # démarrage.
+            "by_phase": planning.last_report.by_phase if planning.last_report else None,
         },
     }
 

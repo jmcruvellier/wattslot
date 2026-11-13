@@ -641,3 +641,47 @@ def test_a_battery_whose_level_cannot_be_read_is_said_left_out(tmp_path: Path) -
     # Sans Home Assistant, rien n'est dit des batteries : la connexion est déjà signalée.
     offline = collect(_ready(), Diagnostic(generated_at=NOW), _three_phase(), Configuration(), None)
     assert "battery_not_counted" not in codes(offline)
+
+
+def test_the_report_tells_the_supply_and_the_phases() -> None:
+    """Sans alimentation ni phases, un rapport ne disait pas pourquoi un plan en triphasé
+    n'était pas calculé phase par phase (premier rapport d'une installation réelle)."""
+    home = _three_phase(lines=(home_model.Phase.L2,), meter_sums_phases=False)
+    saved = Configuration(battery=BatterySettings(all_phases=True))
+
+    found = report.build(
+        mode="addon",
+        ha_version="2026.11.1",
+        ha_state="connected",
+        diagnostic=_planned(by_phase=False),
+        problems=[],
+        home=home,
+        saved=saved,
+        settings=PlanningSettings(),
+    )
+
+    described = found["home"]
+    assert described["supply"] == "ThreePhaseSupply" and described["meter_sums_phases"] is False
+    devices = {device["key"]: device for device in described["devices"]}
+    assert devices["Battery_1"]["phase"] == "PhaseL2" and devices["Battery_2"]["phase"] == "PhaseL3"
+    # Le raccordement n'a pas de phase ; ses capteurs disent celle qu'ils mesurent.
+    assert devices["GridConnection_1"]["phase"] is None
+    assert [sensor["phase"] for sensor in devices["GridConnection_1"]["sensors"]] == [
+        None,
+        "PhaseL2",
+    ]
+    assert found["configuration"]["battery"]["all_phases"] is True
+    assert found["components"]["planning"]["by_phase"] is False
+    # Une maison en monophasé le dit aussi, sans phase nulle part.
+    single = report.build(
+        mode="addon",
+        ha_version=None,
+        ha_state="connected",
+        diagnostic=Diagnostic(generated_at=NOW),
+        problems=[],
+        home=HOME,
+        saved=Configuration(),
+        settings=PlanningSettings(),
+    )
+    assert single["home"]["supply"] == "SinglePhaseSupply"
+    assert single["home"]["devices"][0]["phase"] is None
