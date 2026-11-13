@@ -93,7 +93,9 @@ export function socPoints(hours: HourPoint[], readingHour: number | null, midnig
     if (enCours) data.push({ x: readingHour, soc: null, socActual: h.soc_actual_percent });
   }
   if (midnight !== null) {
-    const plan = hours.some((h) => h.soc_percent !== null);
+    // Le prévu part de minuit s'il couvre la première heure : la courbe d'un groupe de batteries
+    // dont le plan ne connaît que les heures à venir ne se prolonge pas jusqu'à 0 h.
+    const plan = hours.some((h) => h.hour === 0 && h.soc_percent !== null);
     const actual = hours.some((h) => h.soc_actual_percent !== null);
     data.push({ x: 0, soc: plan ? midnight : null, socActual: actual ? midnight : null });
   }

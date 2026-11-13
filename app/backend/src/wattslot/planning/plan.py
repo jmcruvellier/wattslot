@@ -99,6 +99,10 @@ class BatteryGroup(_V1):
 
     phase: int
     movements: list[Movement] = _v1_key("mouvements", default=[])
+    # Contenu prévu à la fin de chaque heure et capacité du groupe, pour sa courbe ; absents
+    # d'un plan d'avant ces champs.
+    soc_kwh: dict[int, float] = _v1_key("soc_horaire_kwh", default={})
+    capacity_kwh: float | None = _v1_key("capacite_kwh", default=None)
 
 
 class BatteryPlan(_V1):

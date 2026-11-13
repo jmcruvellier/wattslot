@@ -113,6 +113,17 @@ def _merge_battery(
                 if m["heure"] < first_hour
             ]
             + [m for m in group.get("mouvements", []) if m["heure"] >= first_hour],
+            **(
+                {
+                    "soc_horaire_kwh": merge_hourly(
+                        before.get(group["phase"], {}).get("soc_horaire_kwh", {}),
+                        group["soc_horaire_kwh"],
+                        first_hour,
+                    )
+                }
+                if "soc_horaire_kwh" in group
+                else {}
+            ),
         }
         for group in new.get("groupes") or []
     ]

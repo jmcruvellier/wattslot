@@ -151,6 +151,17 @@ export interface BatteryTrack {
   actual: Bar[];
 }
 
+// Courbe d'état de charge d'un groupe de batteries (plan calculé par phase) ou d'une seule
+// batterie (backend : views.day.BatteryCurve). Valeurs en %, à la fin de chaque heure.
+export interface BatteryCurve {
+  phase: number | null; // groupe : 1, 2, 3, ou 0 pour le total ; null : une batterie
+  key: string | null;
+  name: string | null;
+  planned: (number | null)[] | null; // un groupe seulement : pas de prévision par batterie
+  actual: (number | null)[];
+  midnight_percent: number | null;
+}
+
 export interface TimelineRow {
   device: string;
   kind: "battery" | "cycle" | "runtime";
@@ -264,6 +275,7 @@ export interface DayView {
   battery_capacity_kwh: number | null;
   battery_floor_percent: number | null;
   hours: HourPoint[];
+  battery_curves?: BatteryCurve[]; // plusieurs batteries : chaque groupe, chaque batterie
   summary: DaySummary;
   initial_forecast: DaySummary | null;
   timeline: Timeline;

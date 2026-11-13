@@ -555,6 +555,7 @@ def actual_day(
     lines: dict[int, dict[Role, list[list[Observation]]]] = {}
     # Chaque batterie : son groupe et ses propres compteurs, pour la frise par batterie.
     each: list[tuple[HomeDevice, int, dict[Role, list[list[Observation]]]]] = []
+    own_levels: dict[str, list[Observation]] = {}  # état de charge de chacune, par clé
     for device in model.devices:
         if device.kind is not DeviceKind.BATTERY:
             continue
@@ -567,6 +568,8 @@ def actual_day(
                 points = by_sensor.get(sensor_iri(device.key, sensor.entity_id), [])
                 group.setdefault(sensor.role, []).append(points)
                 own.setdefault(sensor.role, []).append(points)
+            elif sensor.role is Role.STATE_OF_CHARGE and device.key not in own_levels:
+                own_levels[device.key] = by_sensor.get(sensor_iri(device.key, sensor.entity_id), [])
         each.append((device, number, own))
 
     def group_counter(group: dict[Role, list[list[Observation]]], role: Role) -> list[Observation]:
@@ -590,12 +593,22 @@ def actual_day(
     # groupe, comme ci-dessus), montrées sous la ligne de la batterie ou de son groupe. La
     # prévision, elle, n'existe que par groupe : le partage entre batteries d'une même phase
     # dépend de leurs régulateurs.
+    def own_level(device: HomeDevice) -> dict[str, Any]:
+        """État de charge mesuré d'une batterie : fin de chaque heure, et départ à minuit."""
+        before, today = together(own_levels.get(device.key, []))
+        return {
+            "capacite_kwh": device.capacity_kwh,
+            "soc_pct_fin_heure": soc_end_of_hour(today, until, zone),
+            "soc_pct_minuit": soc_at_midnight(before, today),
+        }
+
     if len(each) > 1:
         battery_lines["batterie_reelle_segments_par_batterie"] = [
             {
                 "cle": device.key,
                 "nom": device.name,
                 "phase": number,
+                **own_level(device),
                 "segments": battery_segments(
                     group_counter(own, Role.ENERGY_CHARGED),
                     group_counter(own, Role.ENERGY_DISCHARGED),

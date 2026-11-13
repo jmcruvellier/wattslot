@@ -968,13 +968,21 @@ def day_plan(problem: Problem, plan: Plan, run: BatteryRun) -> DayPlan:
 
     # Calcul par phase : la prévision de chaque groupe de batteries, pour une ligne de la frise
     # chacune ; celles qui compensent le total (phase 0) seulement s'il y en a.
+    def group(phase: int, found: BatteryRun, capacity_kwh: float) -> BatteryGroup:
+        return BatteryGroup(
+            phase=phase,
+            movements=planned(found),
+            soc_kwh={hour: round(v, 3) for hour, v in found.soc_kwh.items()},
+            capacity_kwh=round(capacity_kwh, 3),
+        )
+
     groups = [
-        BatteryGroup(phase=LINES.index(line) + 1, movements=planned(run.lines[line]))
+        group(LINES.index(line) + 1, run.lines[line], problem.line_batteries[line].capacity_kwh)
         for line in LINES
         if line in run.lines
     ]
     if groups and run.shared is not None and problem.total_battery.capacity_kwh > 0:
-        groups.append(BatteryGroup(phase=0, movements=planned(run.shared)))
+        groups.append(group(0, run.shared, problem.total_battery.capacity_kwh))
     charges = [m for m in run.movements if m.action == "charge"]
     discharges = [m for m in run.movements if m.action == "decharge"]
     whole = BatteryPlan(

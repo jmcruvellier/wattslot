@@ -469,6 +469,27 @@ pre {
   height: 16rem;
 }
 
+/* Courbe d'un groupe de batteries ou d'une seule batterie, sous celle de la maison. */
+.chart-small {
+  height: 9rem;
+}
+
+.battery-curves {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.5rem 1rem;
+  margin-top: 0.75rem;
+}
+
+.battery-curves figure {
+  margin: 0;
+  min-width: 0;
+}
+
+.battery-curves figcaption {
+  font-size: 0.85rem;
+}
+
 /* Vues du plan (lot 5.3) : en-tête, bandeaux, cartes de résumé. */
 .view-header {
   display: flex;
@@ -3549,4 +3570,18 @@ p[role="status"]:not(.state-message) {
 }
 .battery-table th[scope="row"] {
   white-space: normal;
+}
+
+/* Carte étroite (téléphone) : colonnes resserrées, et « charge 708 W » peut passer à la ligne
+   plutôt que de pousser le tableau hors de la carte. */
+@media (max-width: 40rem) {
+  .battery-table th,
+  .battery-table td {
+    padding-left: 0.4rem;
+  }
+
+  .battery-table th[scope="col"]:last-child,
+  .battery-table td:last-child {
+    white-space: normal;
+  }
 }

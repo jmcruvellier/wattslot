@@ -59,6 +59,36 @@ describe("cartes d'une vue de jour", () => {
     expect(within(indicators).queryByText("Énergie passée par la batterie")).toBeNull();
   });
 
+  it("plusieurs batteries : une petite courbe par groupe, puis par batterie", async () => {
+    const empty = Array.from({ length: 24 }, () => null);
+    const curve = { key: null, name: null, planned: null, actual: empty, midnight_percent: null };
+    renderCards({
+      ...TODAY,
+      battery_curves: [
+        { ...curve, phase: 2, planned: empty },
+        { ...curve, phase: null, key: "garage", name: "Batterie du garage" },
+        { ...curve, phase: null, key: "cellar", name: "Batterie du cellier" },
+        { ...curve, phase: 0, planned: empty },
+      ],
+    });
+    const card = screen.getByRole("article", { name: "Batterie (SoC)" });
+    // La courbe de la maison, puis celles des groupes et de leurs batteries.
+    expect(await within(card).findAllByText("soc")).toHaveLength(5);
+    expect(within(card).getAllByRole("figure").map((figure) => figure.getAttribute("aria-label"))).toEqual([
+      "Batterie phase 2",
+      "Batterie du garage (mesuré)",
+      "Batterie du cellier (mesuré)",
+      "Batterie (total)",
+    ]);
+  });
+
+  it("une seule batterie : la courbe de la maison, sans rien de plus", async () => {
+    renderCards(TODAY);
+    const card = screen.getByRole("article", { name: "Batterie (SoC)" });
+    expect(await within(card).findAllByText("soc")).toHaveLength(1);
+    expect(within(card).queryByRole("figure")).toBeNull();
+  });
+
   it("sans piscine : pas de ligne de filtration dans la frise", () => {
     const rows = TODAY.timeline.rows.filter((row) => row.kind !== "runtime");
     renderCards({ ...TODAY, timeline: { ...TODAY.timeline, rows } });

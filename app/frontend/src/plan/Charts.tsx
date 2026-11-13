@@ -111,13 +111,22 @@ export function EnergyChart({ hours, readingHour }: ChartProps) {
   );
 }
 
-export function SocChart({ hours, readingHour, floor, midnight }: ChartProps & { floor: number | null; midnight: number | null }) {
+/** `small` : courbe d'un groupe de batteries ou d'une seule batterie, sous celle de la maison,
+ * plus basse et sans légende (celle de la maison, juste au-dessus, vaut pour toutes). */
+export function SocChart({
+  hours,
+  readingHour,
+  floor,
+  midnight,
+  small = false,
+}: ChartProps & { floor: number | null; midnight: number | null; small?: boolean }) {
   const { language, t } = useI18n();
-  const [legends] = useChartLegends();
+  const [shown] = useChartLegends();
+  const legends = shown && !small;
   const lang = language === "fr" ? "fr" : "en";
   const data = socPoints(hours, readingHour, midnight);
   return (
-    <div className="chart">
+    <div className={small ? "chart chart-small" : "chart"}>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data} margin={MARGIN}>
           {offPeakRanges(hours).map(([start, end]) => (

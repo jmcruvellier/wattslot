@@ -5,6 +5,7 @@ import { Fragment, type ReactNode, Suspense } from "react";
 
 import { useI18n } from "../i18n/I18nProvider";
 import { hourOfDay } from "../i18n/homeTime";
+import { batteryLabel } from "./batteryLabel";
 import { ExplanationsCard, IndicatorsCard } from "./InsightCards";
 import { availableDayCards, type DayCardId, type IndicatorLayout, shownCards, type ViewLayout } from "./layout";
 import { EnergyChart, GridChart, SocChart } from "./lazyCharts";
@@ -55,6 +56,29 @@ function useRenderers(
     soc: (view) => (
       <ChartCard label={t("plan.cards.soc")} icon="battery">
         <SocChart hours={view.hours} readingHour={readingHour(view)} floor={view.battery_floor_percent} midnight={view.departure?.soc_percent ?? null} />
+        {/* Plusieurs batteries : une petite courbe par groupe (prévu et mesuré), puis par batterie
+         * (mesuré seulement), sous celle de la maison. */}
+        {(view.battery_curves ?? []).length > 0 && (
+          <div className="battery-curves">
+            {(view.battery_curves ?? []).map((curve) => {
+              const title =
+                curve.phase !== null
+                  ? batteryLabel(curve.phase, t)
+                  : t("plan.timeline.battery_measured", { name: curve.name ?? "" });
+              const hours = view.hours.map((h) => ({
+                ...h,
+                soc_percent: curve.planned?.[h.hour] ?? null,
+                soc_actual_percent: curve.actual[h.hour] ?? null,
+              }));
+              return (
+                <figure key={curve.key ?? `phase-${curve.phase}`} aria-label={title}>
+                  <figcaption>{title}</figcaption>
+                  <SocChart small hours={hours} readingHour={readingHour(view)} floor={null} midnight={curve.midnight_percent} />
+                </figure>
+              );
+            })}
+          </div>
+        )}
       </ChartCard>
     ),
     grid: (view) => (

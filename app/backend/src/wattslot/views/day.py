@@ -5,7 +5,7 @@ prévision du premier calcul du jour), horodatages. La frise, les bandeaux, les 
 les explications viennent compléter la vue dans les PR suivantes du lot.
 """
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from datetime import date, datetime
 from typing import Any, Literal
 
@@ -129,6 +129,89 @@ class PhaseDay(BaseModel):
     export_actual_kwh: float | None = None
 
 
+class BatteryCurve(BaseModel):
+    """Courbe d'état de charge d'un groupe de batteries (plan calculé par phase) ou d'une seule
+    batterie, à côté de celle de toutes les batteries de la maison. Valeurs en %, à la fin de
+    chaque heure du jour ; ``None`` : pas de valeur."""
+
+    # Groupe : 1, 2 ou 3, ou 0 pour les batteries qui compensent le total. ``None`` : une
+    # batterie, nommée par ``name``.
+    phase: int | None = None
+    key: str | None = None
+    name: str | None = None
+    # Prévu : pour un groupe seulement, le plan n'ayant pas de prévision par batterie.
+    planned: list[float | None] | None = None
+    actual: list[float | None] = []
+    midnight_percent: float | None = None  # départ mesuré à minuit
+
+
+def battery_curves(
+    state: Mapping[str, Any], actual: Mapping[str, Any] | None
+) -> list[BatteryCurve]:
+    """Courbes par groupe et par batterie : chaque groupe d'un plan calculé par phase (prévu,
+    et mesuré d'après ses batteries, pondérées par leur capacité), suivi de ses batteries s'il
+    en réunit plusieurs ; sans groupe, chaque batterie d'une maison qui en a plusieurs. Aucune
+    avec une seule batterie : la courbe de la maison est la sienne."""
+    measured = list((actual or {}).get("batterie_reelle_segments_par_batterie") or [])
+
+    def levels(one: Mapping[str, Any]) -> list[float | None]:
+        return [_value(one.get("soc_pct_fin_heure"), h) for h in range(24)]
+
+    def single(one: Mapping[str, Any]) -> BatteryCurve:
+        return BatteryCurve(
+            key=str(one.get("cle")),
+            name=str(one.get("nom")),
+            actual=levels(one),
+            midnight_percent=one.get("soc_pct_minuit"),
+        )
+
+    def together(members: Sequence[Mapping[str, Any]]) -> tuple[list[float | None], float | None]:
+        """(état de charge du groupe à chaque heure, départ à minuit) : celui de ses batteries,
+        pondéré par leur capacité ; rien pour une heure où l'une d'elles n'a pas de relevé."""
+        weights = [float(one.get("capacite_kwh") or 0.0) for one in members]
+        if not members or any(weight <= 0 for weight in weights):
+            return [None] * 24, None
+
+        def mean(values: Sequence[float | None]) -> float | None:
+            if any(value is None for value in values):
+                return None
+            total = sum(w * (v or 0.0) for w, v in zip(weights, values, strict=True))
+            return round(total / sum(weights), 1)
+
+        each = [levels(one) for one in members]
+        return (
+            [mean([found[h] for found in each]) for h in range(24)],
+            mean([one.get("soc_pct_minuit") for one in members]),
+        )
+
+    battery = find_item(state.get("planning", []), BATTERY)
+    groups = (battery or {}).get("groupes") or []
+    if not groups:
+        return [single(one) for one in measured] if len(measured) > 1 else []
+    found = []
+    for group in sorted(groups, key=lambda g: g["phase"] or 9):
+        capacity = group.get("capacite_kwh")
+        soc = group.get("soc_horaire_kwh")
+        members = [one for one in measured if one.get("phase") == group["phase"]]
+        hourly, midnight = together(members)
+        found.append(
+            BatteryCurve(
+                phase=group["phase"],
+                planned=[
+                    round(value / capacity * 100, 1) if value is not None else None
+                    for value in (_value(soc, h) for h in range(24))
+                ]
+                if soc and capacity
+                else None,
+                actual=hourly,
+                midnight_percent=midnight,
+            )
+        )
+        if len(members) > 1:
+            found += [single(one) for one in members]
+    return found
+
+
 def phase_days(state: Mapping[str, Any], actual: Mapping[str, Any] | None) -> list[PhaseDay]:
     """Les trois phases d'un plan calculé par phase ; aucune sinon."""
     found = []
@@ -188,6 +271,8 @@ class DayView(BaseModel):
     recommendation: str | None = None  # texte du plan, dans la langue demandée
     cards: Cards | None = None  # Aujourd'hui et Hier : estimé et mesuré au relevé
     phases: list[PhaseDay] = []  # triphasé, plan calculé par phase : échanges de chacune
+    # Plusieurs batteries : état de charge de chaque groupe (calcul par phase) et de chacune.
+    battery_curves: list[BatteryCurve] = []
     # Aujourd'hui (lot 6b.3) : le moment et le prochain appareil à lancer, ajoutés par les routes.
     now: Now | None = None
     next_action: NextAction | None = None
@@ -393,4 +478,5 @@ def build_day(
         recommendation=recommendation(as_stored(state), lang) if state.get("planning") else None,
         cards=cards,
         phases=phase_days(state, actual),
+        battery_curves=battery_curves(state, actual),
     )
