@@ -43,6 +43,7 @@ export default function DeviceSettings({
               constraints: CONSTRAINED.includes(behavior) ? settings.constraints : [],
               after: behavior === "CycleBehavior" ? settings.after : null,
               max_delay_days: behavior === "CycleBehavior" ? settings.max_delay_days : null,
+              after_max_hours: behavior === "CycleBehavior" ? settings.after_max_hours : null,
               recurrence: behavior === "CycleBehavior" ? settings.recurrence : null,
             });
           }}
@@ -79,6 +80,7 @@ export default function DeviceSettings({
         <CycleEditor
           after={settings.after ?? null}
           maxDelayDays={settings.max_delay_days ?? null}
+          afterMaxHours={settings.after_max_hours ?? null}
           name={name}
           others={others}
           recurrence={settings.recurrence ?? null}

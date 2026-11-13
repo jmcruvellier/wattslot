@@ -637,6 +637,10 @@ wattslot:startsAfterKey a owl:DatatypeProperty ;
 	rdfs:domain wattslot:DeviceSettings ;
 	rdfs:label "démarre après la fin du cycle de (clé de l'équipement)"@fr , "starts after the cycle of (device key)"@en ;
 	rdfs:range xsd:string .
+wattslot:startsWithinHours a owl:DatatypeProperty ;
+	rdfs:domain wattslot:DeviceSettings ;
+	rdfs:label "démarre au plus tard (heures) après la fin du cycle suivi"@fr , "starts at the latest (hours) after the end of the cycle it follows"@en ;
+	rdfs:range xsd:integer .
 wattslot:steps a owl:DatatypeProperty ;
 	rdfs:domain wattslot:EnergyNeed ;
 	rdfs:label "in steps (all or nothing)"@en , "par paliers (tout ou rien)"@fr ;

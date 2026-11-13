@@ -7,6 +7,7 @@
     "heures_insuffisantes_du": "{equipement} is due today but there is not enough time left for a full cycle ({duree_min} from {debut_min}): not scheduled. If it has already run, check off the task in Home Assistant.",
     "profil_indisponible_attente": "{equipement} is pending but its profile is unavailable (status={status}): not scheduled.",
     "dependance_non_placee": "{equipement} must follow {depend_de}, which could not be scheduled today: not scheduled.",
+    "delai_apres_depasse": "{equipement} starts {attente_min} after the end of {apres}, instead of {delai_min} at most: no closer slot was possible.",
     "heures_insuffisantes_attente": "{equipement} is pending but there is not enough time left for a full cycle ({duree_min} from {debut_min}): not scheduled.",
     "contrainte_impossible": "{equipement}: no time slot meets its time constraints ({contraintes}): not scheduled or minimum runtime not met.",
     "contrainte_non_respectee": "{equipement}: soft constraint not met ({contraintes}) to keep the rest of the plan.",

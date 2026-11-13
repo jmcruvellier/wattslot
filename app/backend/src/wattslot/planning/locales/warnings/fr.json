@@ -7,6 +7,7 @@
     "heures_insuffisantes_du": "{equipement} est dû aujourd'hui mais il ne reste pas assez de temps pour un cycle complet ({duree_min} à partir de {debut_min}) : non placé. S'il a déjà tourné, cochez la tâche dans Home Assistant.",
     "profil_indisponible_attente": "{equipement} est en attente mais son profil est indisponible (status={status}) : non placé.",
     "dependance_non_placee": "{equipement} doit suivre {depend_de}, qui n'a pas pu être placé aujourd'hui : non placé.",
+    "delai_apres_depasse": "{equipement} démarre {attente_min} après la fin de {apres}, au lieu de {delai_min} au plus : aucun créneau plus proche n'était possible.",
     "heures_insuffisantes_attente": "{equipement} est en attente mais il ne reste pas assez de temps pour un cycle complet ({duree_min} à partir de {debut_min}) : non placé.",
     "contrainte_impossible": "{equipement} : aucun créneau ne respecte ses contraintes horaires ({contraintes}) : non placé ou durée minimale non tenue.",
     "contrainte_non_respectee": "{equipement} : contrainte souple non respectée ({contraintes}) pour tenir le reste du plan.",

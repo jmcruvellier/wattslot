@@ -197,9 +197,23 @@ def test_task_rules_validation_and_saved_settings(tmp_path: Path) -> None:
         ("after_unknown", "washer"),
     ]
     graph = GraphStore(tmp_path)
-    saved = Configuration(devices=[cycle("dryer", after="washer", max_delay_days=0)])
+    saved = Configuration(
+        devices=[cycle("dryer", after="washer", max_delay_days=0, after_max_hours=2)]
+    )
     configuration.save(graph, saved)
     assert configuration.load(graph) == saved
+
+
+def test_the_longest_wait_after_the_followed_device() -> None:
+    """« Au plus tard N heures après » : donné au calcul en minutes, pour la tâche qui suit ;
+    sans « démarre après », le réglage ne sert pas."""
+    data = replace(state(), waiting_tasks=(WASHING, replace(DRYING, depends_on=None)))
+    settings = Configuration(devices=[cycle("dryer", after="washer", after_max_hours=2)])
+    assert configured(data, HOME, settings).after_max_min == {"Sèche-linge": 120}
+
+    unused = Configuration(devices=[cycle("dryer", after_max_hours=2)])
+    assert configured(data, HOME, unused).after_max_min == {}
+    assert configured(data, HOME, Configuration(devices=[])).after_max_min == {}
 
 
 # --- Tolérance de report ---------------------------------------------------------------------

@@ -213,6 +213,9 @@ class PlanningInput:
     constraints: Mapping[str, tuple[TimeConstraint, ...]] = field(default_factory=dict)
     # Tolérance de report (jours) des tâches en attente, par nom (lot 3.5) ; sinon 2 jours.
     max_delay_days: Mapping[str, int] = field(default_factory=dict)
+    # Tâche qui en suit une autre (``depends_on``) : départ au plus tard ce nombre de minutes
+    # après la fin de l'autre cycle, par nom ; absente : pas de limite.
+    after_max_min: Mapping[str, int] = field(default_factory=dict)
     # Tarif de la maison (lot 3.2) ; celui de la v1 par défaut (entrée au format de la v1).
     tariff: Tariff = field(default_factory=lambda: V1_TARIFF)
     tariff_context: TariffContext = field(default_factory=TariffContext)  # lu dans HA
