@@ -133,8 +133,41 @@ def test_merge_same_as_v1(seed: int) -> None:
 
     expected = v1("fusion_planning.fusionner_etats", new, old, first_hour, raw)
     actual = merge_plans(new, old, first_hour, segments(raw))
+    # Écart à la v1 : l'échange prévu de l'heure du calcul reste celui du plan précédent.
+    kept = (old or {}).get("residu_reseau_horaire", {})
+    if old and old["date_cible"] == new["date_cible"] and first_hour in kept:
+        expected["residu_reseau_horaire"][first_hour] = kept[first_hour]
 
     assert by_name(actual) == by_name(expected)
+
+
+def test_the_planned_exchange_of_the_hour_being_computed_is_kept() -> None:
+    """Calcul de 10 h 59 : il compte pour 10 h la prévision de l'heure entière (0,8 kWh de
+    surplus) moins la charge mesurée de la batterie (0,28 kWh), soit 0,52 kWh d'injection que
+    le plan de 9 h 59 (tout le surplus dans la batterie) n'a jamais prévue."""
+    old = {
+        "date_cible": DAY,
+        "residu_reseau_horaire": {9: -0.3, 10: 0.0, 11: 0.0},
+        "residu_reseau_par_phase": {1: {9: -0.3, 10: 0.0, 11: 0.0}},
+    }
+    new = {
+        "date_cible": DAY,
+        "residu_reseau_horaire": {10: 0.52, 11: 0.1},
+        "residu_reseau_par_phase": {1: {10: 0.52, 11: 0.1}},
+    }
+
+    merged = merge_plans(new, old, 10)
+
+    assert merged["residu_reseau_horaire"] == {9: -0.3, 10: 0.0, 11: 0.1}
+    assert merged["residu_reseau_par_phase"] == {1: {9: -0.3, 10: 0.0, 11: 0.1}}
+
+
+def test_the_planned_exchange_of_the_first_computation_of_the_day_is_the_new_one() -> None:
+    """Pas de plan précédent pour cette heure (redémarrage, premier calcul) : celui du calcul."""
+    old = {"date_cible": DAY, "residu_reseau_horaire": {}}
+    new = {"date_cible": DAY, "residu_reseau_horaire": {10: 0.52, 11: 0.1}}
+
+    assert merge_plans(new, old, 10)["residu_reseau_horaire"] == {10: 0.52, 11: 0.1}
 
 
 def test_an_old_warning_about_a_device_now_placed_is_dropped() -> None:

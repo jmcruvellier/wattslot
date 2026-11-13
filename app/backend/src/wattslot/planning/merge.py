@@ -32,8 +32,10 @@ HOURLY_FIELDS = (
     "net_horaire_signe",
     "production_solaire_horaire",
     "consommation_baseline_horaire",
-    "residu_reseau_horaire",
 )
+
+# Échange prévu avec le réseau : fusionné à part (``merge_exchange``).
+RESIDUAL = "residu_reseau_horaire"
 
 PHASE_RESIDUAL = "residu_reseau_par_phase"
 
@@ -47,6 +49,22 @@ def merge_hourly(
         **{h: v for h, v in (old or {}).items() if h < first_hour},
         **{h: v for h, v in (new or {}).items() if h >= first_hour},
     }
+
+
+def merge_exchange(
+    old: Mapping[int, Any] | None, new: Mapping[int, Any] | None, first_hour: int
+) -> dict[int, Any]:
+    """Échange prévu avec le réseau : comme ``merge_hourly``, sauf pour l'heure du calcul, gardée
+    du plan précédent quand il la chiffrait (écart à la v1). Le nouveau calcul compte pour elle
+    la prévision de l'heure entière moins l'échange de la batterie *mesuré* depuis son début
+    (``simulation.simulate``) : au calcul de :59, une heure moins ensoleillée ou plus chargée
+    que prévu donnait une injection « prévue » qui n'a jamais été dans aucun plan (0,8 kWh de
+    surplus prévu, 0,28 kWh chargé en vrai : 0,52 kWh d'injection, constaté le 13/11/2026). Le
+    prévu d'une heure passée reste ainsi celui d'avant son début."""
+    merged = merge_hourly(old, new, first_hour)
+    if old and first_hour in old:
+        merged[first_hour] = old[first_hour]
+    return merged
 
 
 def pool_modes(segments: list[dict[str, Any]] | None) -> dict[int, str]:
@@ -275,10 +293,11 @@ def merge_plans(
     merged = dict(new)
     for field in HOURLY_FIELDS:
         merged[field] = merge_hourly(old.get(field, {}), new.get(field, {}), first_hour)
+    merged[RESIDUAL] = merge_exchange(old.get(RESIDUAL, {}), new.get(RESIDUAL, {}), first_hour)
     if PHASE_RESIDUAL in new:  # échange de chaque phase : heure par heure, comme le total
         before = old.get(PHASE_RESIDUAL) or {}
         merged[PHASE_RESIDUAL] = {
-            phase: merge_hourly(before.get(phase), hourly, first_hour)
+            phase: merge_exchange(before.get(phase), hourly, first_hour)
             for phase, hourly in new[PHASE_RESIDUAL].items()
         }
     day = new.get("date_cible")
