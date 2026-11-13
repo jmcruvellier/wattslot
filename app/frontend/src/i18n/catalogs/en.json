@@ -1369,6 +1369,7 @@
       "phase_unknown": "The plan is not computed phase by phase but on the total of the home: the phase is not set for {devices}.",
       "phase_history_short": "The plan is not computed phase by phase yet: the usual consumption of each phase is not known for every hour yet.",
       "battery_not_counted": "{device} is not counted in the computation: its charge level cannot be read in Home Assistant.",
+      "export_sensor_missing": "Your home has panels but no export sensor on the grid connection: the surplus sent to the grid is counted as consumption, and the plan underestimates the sun available.",
       "energy_dashboard_issue": "{device}: {issue}",
       "impossible_data": "Forecasts stopped before {day}: the sensor \"{device}\" ({entity}) counted {source_kwh} kWh in one hour on {when} at {when_hour}, probably a sensor outage. The consumption expected at {hour} ({kwh} kWh) is more than the home can draw ({limit} kWh); forecasts for this weekday stay wrong until {until}.",
       "impossible_data_unknown": "Forecasts stopped before {day}: the consumption expected at {hour} ({kwh} kWh) is more than the home can draw in an hour ({limit} kWh)."
@@ -1398,6 +1399,7 @@
       "phase_unknown": "Set the phase in the sheet of the device.",
       "phase_history_short": "Nothing to do: WattSlot learns it from the history of the per-phase sensors.",
       "battery_not_counted": "Check the charge level sensor in the sheet of the battery.",
+      "export_sensor_missing": "If your meter measures the energy returned to the grid, add that sensor in the sheet of the grid connection. If your installation never exports, there is nothing to do.",
       "configuration_issue": "Fix the setting in My home.",
       "impossible_data": "Check the history of this sensor in Home Assistant at that time.",
       "impossible_data_unknown": "A meter jump probably distorts the base consumption: check the history of your energy meters in Home Assistant."

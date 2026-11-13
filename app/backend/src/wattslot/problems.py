@@ -397,6 +397,25 @@ def _phase_problems(home: HomeModel, saved: Configuration, diagnostic: Diagnosti
     return found
 
 
+def _export_problems(home: HomeModel) -> list[Problem]:
+    """Maison qui produit et dont le raccordement au réseau n'a aucun capteur d'injection : la
+    consommation de base (production + soutirage - injection…) compte alors le surplus envoyé
+    au réseau comme consommé, et le plan sous-estime le soleil disponible. À surveiller
+    seulement : une installation qui n'injecte jamais n'a rien à ajouter."""
+    produces = any(
+        device.kind is DeviceKind.SOLAR
+        and any(sensor.role is Role.ENERGY_PRODUCED for sensor in device.sensors)
+        for device in home.devices
+    )
+    grid = next((d for d in home.devices if d.kind is DeviceKind.GRID), None)
+    if not produces or grid is None:
+        return []
+    roles = {sensor.role for sensor in grid.sensors}
+    if Role.ENERGY_IMPORTED not in roles or Role.ENERGY_EXPORTED in roles:
+        return []
+    return [_problem("export_sensor_missing", Severity.WATCH, target=f"home#device-{grid.key}")]
+
+
 def _battery_problems(home: HomeModel, client: HomeAssistantClient | None) -> list[Problem]:
     """Batteries que le calcul ne compte pas (``assemble.battery_state``) : sans capteur de
     niveau de charge, ou dont l'état n'est pas un nombre dans Home Assistant."""
@@ -446,6 +465,7 @@ def collect(
         + _resource_problems(diagnostic)
         + _configuration_problems(home, saved)
         + _phase_problems(home, saved, diagnostic)
+        + _export_problems(home)
         + _battery_problems(home, client)
         + _dashboard_problems(diagnostic, home)
     )

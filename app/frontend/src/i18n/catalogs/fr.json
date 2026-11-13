@@ -1369,6 +1369,7 @@
       "phase_unknown": "Le plan n'est pas calculé phase par phase, mais sur le total de la maison : la phase n'est pas renseignée pour {devices}.",
       "phase_history_short": "Le plan n'est pas encore calculé phase par phase : la consommation habituelle de chaque phase n'est pas encore connue à toute heure.",
       "battery_not_counted": "{device} n'est pas comptée dans le calcul : son niveau de charge est illisible dans Home Assistant.",
+      "export_sensor_missing": "Votre maison a des panneaux, mais aucun capteur d'injection sur le raccordement au réseau : le surplus envoyé au réseau est compté comme de la consommation, et le plan sous-estime le soleil disponible.",
       "energy_dashboard_issue": "{device} : {issue}",
       "impossible_data": "Prévisions arrêtées avant le {day} : le capteur « {device} » ({entity}) a compté {source_kwh} kWh en une heure le {when} à {when_hour}, sans doute une coupure du capteur. La consommation prévue à {hour} ({kwh} kWh) dépasse ce que la maison peut tirer ({limit} kWh) ; les prévisions de ce jour de la semaine restent faussées jusqu'au {until}.",
       "impossible_data_unknown": "Prévisions arrêtées avant le {day} : la consommation prévue à {hour} ({kwh} kWh) dépasse ce que la maison peut tirer en une heure ({limit} kWh)."
@@ -1398,6 +1399,7 @@
       "phase_unknown": "Indiquez la phase dans la fiche de l'équipement.",
       "phase_history_short": "Rien à faire : WattSlot l'apprend dans l'historique des capteurs par phase.",
       "battery_not_counted": "Vérifiez le capteur de niveau de charge dans la fiche de la batterie.",
+      "export_sensor_missing": "Si votre compteur mesure l'énergie rendue au réseau, ajoutez ce capteur dans la fiche du raccordement au réseau. Si votre installation n'injecte jamais, il n'y a rien à faire.",
       "configuration_issue": "Corrigez le réglage dans Ma maison.",
       "impossible_data": "Vérifiez l'historique de ce capteur dans Home Assistant à cette heure-là.",
       "impossible_data_unknown": "Un saut de compteur fausse sans doute la consommation de base : vérifiez l'historique de vos compteurs d'énergie dans Home Assistant."
