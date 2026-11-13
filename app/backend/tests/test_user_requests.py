@@ -68,6 +68,7 @@ def test_requests_become_on_demand_tasks(tmp_path: Path) -> None:
             due=date(2026, 10, 18),
             on_demand=True,
             needed_since=CREATED.date(),
+            asked_at=CREATED,
         )
     ]
     assert [t.name for t in waiting] == ["Sèche-linge"]
@@ -83,7 +84,7 @@ def test_a_launched_request_closes_the_next_day(tmp_path: Path) -> None:
     database = open_database(tmp_path)
     request = user_requests.ask(database, "washer", None, CREATED)
 
-    assert user_requests.mark_launched(database, [WASHER], {"lavelinge"}, TODAY) == [request.id]
+    assert user_requests.mark_launched(database, {f"app-{request.id}"}, TODAY) == [request.id]
     assert user_requests.settle(database, TODAY, NOW) == []  # le plan du jour garde le cycle
     assert len(user_requests.tasks(database, [WASHER], [], TODAY)[1]) == 1
 
@@ -97,7 +98,7 @@ def test_a_new_request_after_a_launch_opens_another_one(tmp_path: Path) -> None:
     une nouvelle est ouverte ; clore la première ne touche plus à celle de demain."""
     database = open_database(tmp_path)
     tonight = user_requests.ask(database, "washer", None, CREATED)
-    user_requests.mark_launched(database, [WASHER], {"lavelinge"}, TODAY)
+    user_requests.mark_launched(database, {f"app-{tonight.id}"}, TODAY)
 
     tomorrow = user_requests.ask(database, "washer", TODAY + timedelta(days=1), NOW)
     assert tomorrow.id != tonight.id and tomorrow.latest == TODAY + timedelta(days=1)
@@ -106,13 +107,34 @@ def test_a_new_request_after_a_launch_opens_another_one(tmp_path: Path) -> None:
     assert user_requests.close(database, tonight.id, Status.DONE, NOW) == first
     assert [r.id for r in user_requests.open_requests(database)] == [tomorrow.id]
 
-    # Le lancement de cette nuit, encore vu aujourd'hui, ne compte pas pour la nouvelle demande.
-    assert user_requests.mark_launched(database, [WASHER], {"lavelinge"}, TODAY) == []
+    # Le lancement de cette nuit ne compte pas pour la nouvelle demande : un cycle réel n'est
+    # attribué qu'à une tâche, et celle de la demande close n'est plus dans le calcul.
+    assert user_requests.mark_launched(database, {f"app-{tonight.id}"}, TODAY) == []
     assert user_requests.settle(database, TODAY + timedelta(days=1), NOW) == []
     assert [r.id for r in user_requests.open_requests(database)] == [tomorrow.id]
-    # Un lancement d'un autre jour compte.
     later = TODAY + timedelta(days=1)
-    assert user_requests.mark_launched(database, [WASHER], {"lavelinge"}, later) == [tomorrow.id]
+    assert user_requests.mark_launched(database, {f"app-{tomorrow.id}"}, later) == [tomorrow.id]
+
+
+def test_another_request_for_the_same_device_is_one_more_cycle(tmp_path: Path) -> None:
+    """Deux lessives le même jour : la seconde demande s'ajoute à la première, chacune devient
+    une tâche du calcul, et le lancement de l'une ne marque pas l'autre."""
+    database = open_database(tmp_path)
+    first = user_requests.ask(database, "washer", None, CREATED)
+    second = user_requests.ask(database, "washer", None, NOW, another=True)
+    assert second.id != first.id
+    assert [r.id for r in user_requests.open_requests(database)] == [first.id, second.id]
+
+    waiting = user_requests.tasks(database, [WASHER], [], TODAY)[1]
+    assert [t.uid for t in waiting] == [f"app-{first.id}", f"app-{second.id}"]
+    assert [t.asked_at for t in waiting] == [first.created_at, second.created_at]
+
+    # Sans « un cycle de plus », redemander change la date de la plus récente pas encore lancée.
+    assert user_requests.ask(database, "washer", TODAY, NOW).id == second.id
+    assert user_requests.mark_launched(database, {f"app-{first.id}"}, TODAY) == [first.id]
+    assert user_requests.mark_launched(database, {f"app-{first.id}"}, TODAY) == []
+    found = user_requests.get(database, second.id)
+    assert found is not None and found.launched_on is None
 
 
 def _input(tmp_path: Path, items: list[dict[str, Any]], with_requests: bool) -> PlanningInput:
@@ -161,10 +183,11 @@ def test_requests_give_the_same_plan_as_the_home_assistant_list(tmp_path: Path) 
     from_app = _input(tmp_path / "app", [], with_requests=True)
 
     def without_uid(data: PlanningInput) -> PlanningInput:
+        # Sans ce qui désigne la demande : son uid et le moment où elle a été faite.
         return replace(
             data,
-            due_tasks=tuple(replace(t, uid=None) for t in data.due_tasks),
-            waiting_tasks=tuple(replace(t, uid=None) for t in data.waiting_tasks),
+            due_tasks=tuple(replace(t, uid=None, asked_at=None) for t in data.due_tasks),
+            waiting_tasks=tuple(replace(t, uid=None, asked_at=None) for t in data.waiting_tasks),
         )
 
     assert [t.name for t in from_app.due_tasks] == ["Lave-linge"]

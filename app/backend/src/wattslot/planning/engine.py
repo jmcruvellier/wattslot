@@ -241,27 +241,31 @@ def solve(problem: Problem, objective: Goal = Objective.COST, time_limit_s: floa
 
     # --- Tâches : un départ parmi les candidats, ou non placée ---------------------------
     by_key = {task.key: task for task in problem.tasks}
+    by_name = {task.name: task for task in problem.tasks}
     choices: dict[str, dict[int, Any]] = {}
     skips: dict[str, Any] = {}
     penalties: list[Any] = []  # contraintes souples violées (lot 3.5)
     for task in problem.tasks:
         candidates = set(task.candidates())
-        parent = by_key.get(task.depends_on or "")
+        # Cycles à finir avant : celui dont la tâche dépend (sèche-linge après lave-linge), et
+        # le cycle précédent du même équipement.
+        before = [by_key.get(task.depends_on or ""), by_name.get(task.follows or "")]
         # Départ choisi par l'utilisateur : lui seul ; sinon, aussi dès la fin de la précédente.
-        if parent is not None and task.chosen_min is None:
-            candidates |= {
-                s + parent.slot_min
-                for s in parent.candidates()
-                if s + parent.slot_min >= task.earliest_min
-                and s + parent.slot_min < 24 * 60
-                and s + parent.slot_min + task.slot_min <= 24 * 60 + task.overflow_min
-            }
+        for parent in before:
+            if parent is not None and task.chosen_min is None:
+                candidates |= {
+                    s + parent.slot_min
+                    for s in parent.candidates()
+                    if s + parent.slot_min >= task.earliest_min
+                    and s + parent.slot_min < 24 * 60
+                    and s + parent.slot_min + task.slot_min <= 24 * 60 + task.overflow_min
+                }
         allowed = {
-            s for s in candidates if not problem.hard_blocks(task.name, s, s + task.slot_min)
+            s for s in candidates if not problem.hard_blocks(task.label, s, s + task.slot_min)
         }
         choices[task.name] = {s: var(0, 1, True) for s in sorted(allowed)}
         for s, x in choices[task.name].items():
-            violated = problem.soft_violated(task.name, s, s + task.slot_min)
+            violated = problem.soft_violated(task.label, s, s + task.slot_min)
             if violated:
                 penalties.append(len(violated) * x)
         skips[task.name] = var(0, 1, True)
@@ -273,6 +277,16 @@ def solve(problem: Problem, objective: Goal = Objective.COST, time_limit_s: floa
             start = sum(s * x for s, x in choices[task.name].items())
             parent_end = sum((s + parent.slot_min) * x for s, x in choices[parent.name].items())
             h.addConstr(start >= parent_end - 24 * 60 * skips[task.name])
+        preceding = by_name.get(task.follows or "")
+        if preceding is not None:
+            # Un cycle à la fois : celui-ci après la fin du précédent, s'il est placé (un cycle
+            # non placé finit à 0) ; non placé lui-même, rien ne le retient.
+            start = sum(s * x for s, x in choices[task.name].items())
+            preceding_end = sum(
+                (s + preceding.slot_min) * x for s, x in choices[preceding.name].items()
+            )
+            limit = 24 * 60 + preceding.overflow_min
+            h.addConstr(start >= preceding_end - limit * skips[task.name])
 
     load: dict[int, Any] = {hour: problem.fixed_kwh.get(hour, 0.0) for hour in hours}
     night = problem.overnight
@@ -303,7 +317,7 @@ def solve(problem: Problem, objective: Goal = Objective.COST, time_limit_s: floa
             for hour, kwh in task.hourly_kwh(start).items():
                 if hour in load and kwh:
                     load[hour] = load[hour] + kwh * x
-                    on_phase(task.name, hour, kwh * x)
+                    on_phase(task.label, hour, kwh * x)
 
     # --- Durées à placer (filtration…) : arrêt ou une vitesse, heure par heure ---------------
     shortfalls: list[Any] = []
@@ -642,7 +656,7 @@ def _phase_drawn(
     by_name = {task.name: task for task in problem.tasks}
     for name, start in plan.starts.items():
         for hour, kwh in by_name[name].hourly_kwh(start).items():
-            on_phase(name, hour, kwh)
+            on_phase(by_name[name].label, hour, kwh)
     for runtime in problem.runtimes:
         for hour, mode in plan.runtimes.get(runtime.name, {}).items():
             on_phase(runtime.name, hour, runtime.kw(mode))
@@ -803,15 +817,21 @@ def _hhmm(minutes: int) -> str:
 def _justification(plan: Plan, parent: Task | None) -> str:
     if parent is not None and parent.name in plan.starts:
         end = _hhmm(plan.starts[parent.name] + parent.slot_min)
-        return f"Démarre après la fin de '{parent.name}' ({end}), le même jour."
+        return f"Démarre après la fin de '{parent.label}' ({end}), le même jour."
     return "Placé par l'optimiseur au meilleur moment de la journée."
+
+
+def _occurrence(rank: int, uid: str | None) -> dict[str, Any]:
+    """Rang d'un créneau (à partir du deuxième cycle de l'équipement) et tâche dont il est le
+    cycle : écrits seulement s'ils sont connus, le plan d'un seul cycle reste celui d'avant."""
+    return {**({"rank": rank} if rank > 1 else {}), **({"request": uid} if uid else {})}
 
 
 def _blocked(problem: Problem, task: Task) -> bool:
     """Tâche que ses contraintes dures empêchent de placer alors que le temps le permettait."""
     starts = task.candidates()
     return bool(starts) and all(
-        problem.hard_blocks(task.name, s, s + task.slot_min) for s in starts
+        problem.hard_blocks(task.label, s, s + task.slot_min) for s in starts
     )
 
 
@@ -850,7 +870,8 @@ def day_plan(problem: Problem, plan: Plan, run: BatteryRun) -> DayPlan:
         start_min = launched.start.hour * 60 + launched.start.minute
         items.append(
             Slot(
-                device=launched.name,
+                device=launched.label,
+                **_occurrence(launched.rank, launched.uid),
                 energy_kwh=launched.energy_kwh,
                 cycle_min=launched.cycle_min,
                 shape=list(launched.shape) if launched.shape is not None else None,
@@ -867,14 +888,14 @@ def day_plan(problem: Problem, plan: Plan, run: BatteryRun) -> DayPlan:
     for task in problem.tasks:
         start = plan.starts.get(task.name)
         if start is None and _blocked(problem, task):
-            warnings.append(_impossible(problem, task.name))
+            warnings.append(_impossible(problem, task.label))
             continue
         if start is None:
             warnings.append(
                 {
                     "code": "heures_insuffisantes_" + ("du" if task.priority == 1 else "attente"),
                     "params": {
-                        "equipement": task.name,
+                        "equipement": task.label,
                         "duree_min": task.slot_min,
                         "debut_min": task.earliest_min,
                     },
@@ -882,11 +903,12 @@ def day_plan(problem: Problem, plan: Plan, run: BatteryRun) -> DayPlan:
             )
             continue
         end = start + task.slot_min
-        _check_soft(problem, task.name, [(start, end)], warnings)
+        _check_soft(problem, task.label, [(start, end)], warnings)
         parent = by_key.get(task.depends_on or "")
         items.append(
             Slot(
-                device=task.name,
+                device=task.label,
+                **_occurrence(task.rank, task.uid),
                 start_hour=start // 60,
                 end_hour=math.ceil(end / 60),
                 start_min=start,

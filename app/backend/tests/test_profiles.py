@@ -3,6 +3,7 @@
 from dataclasses import replace
 from datetime import date, timedelta
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -60,7 +61,12 @@ def test_the_reference_configuration_changes_no_plan(path: Path) -> None:
     configured_data = configured(replace(data, due_tasks=tuple(tasks)), REFERENCE.home, reference)
     with_reference = plan_day(from_input(configured_data))
 
-    assert with_reference.output == plain.output
+    def without_request(output: dict[str, Any]) -> dict[str, Any]:
+        # « demande » : l'uid de la tâche de chaque créneau, celui de la récurrence ici.
+        planning = [{k: v for k, v in i.items() if k != "demande"} for i in output["planning"]]
+        return {**output, "planning": planning}
+
+    assert without_request(with_reference.output) == without_request(plain.output)
 
 
 def last_cycle(data: PlanningInput) -> date:

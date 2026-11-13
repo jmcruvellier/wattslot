@@ -15,6 +15,8 @@ from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Discriminator, Field, Tag
 
+from wattslot.planning.reference import ident
+
 BATTERY = "Batterie"
 POOL = "Piscine (filtration)"
 
@@ -75,6 +77,14 @@ class Slot(_V1):
     explanation: Explanation | None = _v1_key("explication", default=None)  # lot 3.7
     # Besoin d'énergie (lot 3.4) : énergie fournie à chaque heure, en kWh.
     hourly_kwh: dict[int, float] | None = _v1_key("energie_horaire_kwh", default=None)
+    # Plusieurs cycles du même équipement dans la journée : rang du cycle (absent : le premier)
+    # et tâche ou demande dont il est le cycle (absente : plan d'avant, ou tâche sans uid).
+    rank: int | None = _v1_key("rang", default=None)
+    request: str | None = _v1_key("demande", default=None)
+
+    @property
+    def ident(self) -> str:
+        return ident(self.device, self.rank)
 
 
 class Movement(_V1):

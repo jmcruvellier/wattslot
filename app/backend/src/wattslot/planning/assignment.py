@@ -28,9 +28,10 @@ from dataclasses import dataclass
 from datetime import date, timedelta
 from typing import Any
 
-from wattslot.planning.cycles import DAY_MIN, ran_around, recognized_segment
+from wattslot.planning.cycles import DAY_MIN, ran_around
 from wattslot.planning.inputs import PlanningInput, TaskRequest
-from wattslot.planning.problem import characteristics
+from wattslot.planning.occurrences import numbered, today_tasks
+from wattslot.planning.problem import characteristics, real_cycles
 from wattslot.planning.reference import REFERENCE, Reference, task_key
 
 DAY_PENALTY = 0.25
@@ -151,13 +152,21 @@ def coverage(surplus: Surplus, cycles: Sequence[Cycle], earliest_min: int) -> fl
 
 def _groups(tasks: Sequence[TaskRequest]) -> list[list[TaskRequest]]:
     """Un lave-linge et le sèche-linge en attente qui en dépend forment un groupe (le
-    lave-linge d'abord) ; les autres tâches sont seules."""
-    by_key = {task_key(t.name): t for t in tasks}
+    lave-linge d'abord) ; les autres tâches sont seules. Avec plusieurs cycles d'un même
+    équipement, ils sont appariés dans l'ordre : le premier sèche-linge en attente avec le
+    premier lave-linge en attente, le deuxième avec le deuxième."""
+    by_key: dict[str, list[TaskRequest]] = {}
+    for t in tasks:
+        by_key.setdefault(task_key(t.name), []).append(t)
     parents: dict[int, TaskRequest] = {}
+    taken: dict[tuple[str, str], int] = {}  # (équipement, équipement suivi) → déjà appariés
     for t in tasks:
         parent = task_key(t.depends_on or "")
         if parent and parent != task_key(t.name) and parent in by_key:
-            parents[id(t)] = by_key[parent]
+            index = taken.get((task_key(t.name), parent), 0)
+            taken[task_key(t.name), parent] = index + 1
+            if index < len(by_key[parent]):
+                parents[id(t)] = by_key[parent][index]
     groups: list[list[TaskRequest]] = []
     seen: set[int] = set()
     for t in tasks:
@@ -188,13 +197,17 @@ def decide(
     reference: Reference = REFERENCE,
     delays: Mapping[str, int] | None = None,
     pinned: Mapping[str, date] | None = None,
+    launched: set[str] | None = None,
 ) -> tuple[dict[str, Assignment], list[dict[str, Any]]]:
     """(affectations par uid, avertissements de report).
 
     ``cycles`` : (énergie, durée en minutes) par nom de tâche, pour celles qui ont un profil ;
     ``memory`` : affectations précédentes ; ``locked`` : clés des équipements lancés ;
     ``delays`` : tolérance de report par nom de tâche (lot 3.5), sinon ``MAX_DELAY_DAYS`` ;
-    ``pinned`` : jour du départ choisi par l'utilisateur, par nom de tâche.
+    ``pinned`` : jour du départ choisi par l'utilisateur, par nom de tâche ;
+    ``launched`` : uid des tâches lancées (``launched_uids``) — avec lui, une tâche n'est
+    verrouillée que si elle-même est lancée, pas une autre du même équipement ; celle qui en
+    suit une autre, sans tâche en attente à suivre, reste verrouillée par ``locked``.
     """
     assignments: dict[str, Assignment] = {}
     reports: list[dict[str, Any]] = []
@@ -217,8 +230,14 @@ def decide(
         scores = {
             d: c - DAY_PENALTY * (d - today).days for d, c in coverages.items() if c is not None
         }
+        keys = {task_key(t.name) for t in group}
         is_locked = any(
-            task_key(t.name) in locked or task_key(t.depends_on or "") in locked for t in group
+            (t.uid in launched if launched is not None else task_key(t.name) in locked)
+            or (
+                task_key(t.depends_on or "") in locked
+                and (launched is None or task_key(t.depends_on or "") not in keys)
+            )
+            for t in group
         )
         chosen_days = sorted((pinned or {})[t.name] for t in group if t.name in (pinned or {}))
         if is_locked or not scores:
@@ -279,34 +298,42 @@ def task_cycles(
     return found
 
 
-def launched_keys(data: PlanningInput, reference: Reference = REFERENCE) -> set[str]:
-    """Clés des équipements lancés aujourd'hui : bloc gelé d'une tâche active (pour un
-    appareil mesuré, seulement s'il a tourné autour du départ annoncé), ou cycle réel
-    reconnu d'une tâche en attente (même seuil que le recalage)."""
-    active = {t.name for t in data.due_tasks if t.due == data.day} | {
-        t.name for t in data.waiting_tasks
-    }
+def launched_tasks(data: PlanningInput, reference: Reference = REFERENCE) -> list[TaskRequest]:
+    """Tâches lancées aujourd'hui : bloc gelé d'une tâche active (pour un appareil mesuré,
+    seulement s'il a tourné autour du départ annoncé), ou cycle réel reconnu d'une tâche en
+    attente (même seuil que le recalage). Un cycle réel ne compte que pour une tâche : celle
+    d'un autre cycle du même équipement n'est pas lancée par lui."""
+    data = numbered(data)
+    active = {t.ident: t for t in today_tasks(data)}
+    blocks = [item for item in data.frozen if item.ident in active]
     now = data.real_updated_at
     if now is None or now.date() != data.day:
-        return {task_key(item.name) for item in data.frozen if item.name in active}
-    segments = {task_key(name): segs for name, segs in data.real_segments.items()}
+        return [active[item.ident] for item in blocks]
+    real = real_cycles(data, reference)
     # Appareil mesuré : un départ annoncé resté sans activité n'est pas un lancement.
-    keys = {
-        task_key(item.name)
-        for item in data.frozen
-        if item.name in active
-        and (
-            item.name not in data.measured
-            or ran_around(
-                segments.get(task_key(item.name), ()),
-                item.start_min if item.start_min is not None else item.start_hour * 60,
-                now,
-            )
+    found = [
+        active[item.ident]
+        for item in blocks
+        if item.name not in data.measured
+        or ran_around(
+            real.around(item.ident, item.name),
+            item.start_min if item.start_min is not None else item.start_hour * 60,
+            now,
         )
-    }
+    ]
+    seen = {task.ident for task in found}
     for task in data.waiting_tasks:
-        cycle = characteristics(task.name, data, reference)
-        key = task_key(task.name)
-        if cycle is not None and recognized_segment(segments.get(key, ()), cycle[0]) is not None:
-            keys.add(key)
-    return keys
+        if task.ident not in seen and real.of(task.ident) is not None:
+            found.append(task)
+            seen.add(task.ident)
+    return found
+
+
+def launched_keys(data: PlanningInput, reference: Reference = REFERENCE) -> set[str]:
+    """Clés des équipements lancés aujourd'hui (``launched_tasks``)."""
+    return {task_key(task.name) for task in launched_tasks(data, reference)}
+
+
+def launched_uids(data: PlanningInput, reference: Reference = REFERENCE) -> set[str]:
+    """Uid des tâches lancées aujourd'hui (``launched_tasks``)."""
+    return {task.uid for task in launched_tasks(data, reference) if task.uid}

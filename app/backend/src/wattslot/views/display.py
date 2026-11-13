@@ -26,6 +26,7 @@ from wattslot.planning.cycles import (
     remaining_hourly,
 )
 from wattslot.planning.inputs import V1_POOL
+from wattslot.planning.occurrences import Wanted, attribute
 from wattslot.planning.reference import task_key
 from wattslot.planning.simulation import simulate
 from wattslot.tariff import Tariff
@@ -125,6 +126,23 @@ def planned_devices_hourly(
         if now
         else {}
     )
+    # Plusieurs cycles du même équipement dans la journée : chacun recalé sur son propre cycle
+    # réel, attribué dans l'ordre des rangs comme dans le calcul (``occurrences.attribute``).
+    cycles: dict[str, list[Mapping[str, Any]]] = defaultdict(list)
+    for item in planning:
+        if item["equipement"] != BATTERY and not is_runtime(item):
+            cycles[task_key(item["equipement"])].append(item)
+    own: dict[int, list[Segment]] = {}
+    for key, items in cycles.items():
+        if len(items) < 2:
+            continue
+        items = sorted(items, key=lambda i: i.get("rang") or 1)
+        found = attribute(
+            measured.get(key, []),
+            [Wanted(str(index), i.get("energie_kwh", 0.0)) for index, i in enumerate(items)],
+        )
+        for index, i in enumerate(items):
+            own[id(i)] = [found[str(index)]] if str(index) in found else []
     for item in planning:
         if item["equipement"] == BATTERY:
             continue
@@ -136,7 +154,7 @@ def planned_devices_hourly(
                 for h in range(segment["heure_debut"], segment["heure_fin"]):
                     by_hour[h] += power
             continue
-        segments = measured.get(task_key(item["equipement"]), [])
+        segments = own.get(id(item), measured.get(task_key(item["equipement"]), []))
         start, end, cycle_min = _bounds(item)
         energy = item.get("energie_kwh", 0.0)
         shape = item.get("forme_quart_heure")

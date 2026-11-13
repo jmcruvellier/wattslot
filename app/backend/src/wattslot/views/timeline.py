@@ -111,6 +111,10 @@ def battery_blocks(movements: Sequence[Mapping[str, Any]]) -> list[dict[str, Any
     return blocks
 
 
+def _count(planned: Sequence[Mapping[str, Any]], name: str) -> int:
+    return sum(1 for plan in planned if plan["nom"] == name)
+
+
 def cycle_bounds(item: Mapping[str, Any]) -> tuple[int, int]:
     """(début, fin) du cycle en minutes (``bornes_minutes`` de la v1)."""
     cycle_min = item.get("duree_cycle_min") or (item["heure_fin"] - item["heure_debut"]) * 60
@@ -193,6 +197,10 @@ def statuses(
     now_min = reference_hour * 60
     found: list[DeviceStatus] = []
     judged = shifted = 0
+    # Plusieurs cycles du même équipement : chacun avec son cycle réel, dans l'ordre de la
+    # journée (le premier prévu avec le premier mesuré) ; un seul, le plus proche de son départ.
+    several = {name for name in {p["nom"] for p in planned} if _count(planned, name) > 1}
+    position: dict[str, int] = {}
     for plan in planned:
         segments = measured.get(plan["nom"]) or []
         cycle: dict[str, Any] | None = None
@@ -213,9 +221,15 @@ def statuses(
                 )
                 or s.get("en_cours")
             ]
-            recognized.sort(
-                key=lambda s: abs(_minutes(s["debut_iso"], context) - plan["debut_min"])
-            )
+            if plan["nom"] in several:
+                index = position.get(plan["nom"], 0)
+                position[plan["nom"]] = index + 1
+                recognized.sort(key=lambda s: _minutes(s["debut_iso"], context))
+                recognized = recognized[index : index + 1]
+            else:
+                recognized.sort(
+                    key=lambda s: abs(_minutes(s["debut_iso"], context) - plan["debut_min"])
+                )
             if recognized:
                 cycle = {
                     "start": _minutes(recognized[0]["debut_iso"], context),
@@ -332,17 +346,22 @@ def build_timeline(
         if item["equipement"] == BATTERY or is_runtime(item):
             continue
         start, end = cycle_bounds(item)
+        bar = Bar(
+            start_hour=start / 60,
+            end_hour=end / 60,
+            energy_kwh=round(item.get("energie_kwh", 0.0), 3),
+        )
+        # Plusieurs cycles du même équipement dans la journée : une seule ligne, une barre
+        # par cycle, dans l'ordre de la journée.
+        row = next((r for r in rows if r.kind == "cycle" and r.device == item["equipement"]), None)
+        if row is not None:
+            row.planned = sorted([*row.planned, bar], key=lambda b: b.start_hour)
+            continue
         rows.append(
             TimelineRow(
                 device=item["equipement"],
                 kind="cycle",
-                planned=[
-                    Bar(
-                        start_hour=start / 60,
-                        end_hour=end / 60,
-                        energy_kwh=round(item.get("energie_kwh", 0.0), 3),
-                    )
-                ],
+                planned=[bar],
                 actual=_actual_bars(measured.get(item["equipement"]) or [], context),
             )
         )

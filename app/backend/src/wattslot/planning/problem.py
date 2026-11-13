@@ -40,19 +40,20 @@ from wattslot.planning.cycles import (
     planned_hourly,
     ran_around,
     realign,
-    recognized_segment,
     remaining_hourly,
 )
 from wattslot.planning.inputs import Battery, FrozenCycle, PlanningInput, Runtime
+from wattslot.planning.occurrences import Wanted, attribute, numbered, paired, today_tasks
 from wattslot.planning.plan import Reason
-from wattslot.planning.reference import REFERENCE, Reference, task_key
+from wattslot.planning.reference import REFERENCE, Reference, cycle_key, task_key
 from wattslot.runtime_settings import season
 from wattslot.time_constraints import TimeConstraint
 
 
 @dataclass(frozen=True)
 class Task:
-    """Tâche à placer."""
+    """Tâche à placer. ``name`` : identité du cycle, unique dans le problème ; ``key`` : sa
+    clé (``reference.cycle_key``)."""
 
     name: str
     key: str
@@ -69,6 +70,18 @@ class Task:
     announced_min: int | None = None
     # Minutes permises après minuit (calcul prolongé, ``Overnight``) ; 0 : finir avant minuit.
     overflow_min: int = 0
+    # Plusieurs cycles du même équipement dans la journée : nom de l'équipement (None : celui
+    # de la tâche), rang du cycle, tâche ou demande dont il est le cycle, et identité du cycle
+    # précédent du même équipement s'il est aussi à placer (celui-ci démarre après sa fin).
+    device: str | None = None
+    rank: int = 1
+    uid: str | None = None
+    follows: str | None = None
+
+    @property
+    def label(self) -> str:
+        """Nom de l'équipement : celui de ses réglages (contraintes, phase) et des textes."""
+        return self.device or self.name
 
     def cycle(self, start_min: int) -> PlannedCycle:
         return PlannedCycle(start_min, start_min + self.slot_min, self.energy_kwh, self.shape)
@@ -110,6 +123,14 @@ class LaunchedCycle:
     end_min: int
     # Raisons de son placement dans le plan précédent (« passé gelé ») : gardées après « lancé ».
     planned: tuple[Reason, ...] = ()
+    # Comme ``Task`` : ``name`` est l'identité du cycle, ``device`` le nom de son équipement.
+    device: str | None = None
+    rank: int = 1
+    uid: str | None = None
+
+    @property
+    def label(self) -> str:
+        return self.device or self.name
 
 
 @dataclass(frozen=True)
@@ -410,17 +431,112 @@ def _cycle_min(item: FrozenCycle) -> float:
     return item.cycle_min or (item.end_hour - item.start_hour) * 60
 
 
+@dataclass(frozen=True)
+class RealCycles:
+    """Activité réelle du jour attribuée à chaque cycle (``occurrences.attribute``)."""
+
+    found: Mapping[str, Segment] = field(default_factory=dict)  # identité du cycle → activité
+    devices: Mapping[str, str] = field(default_factory=dict)  # identité → clé de l'équipement
+    segments: Mapping[str, tuple[Segment, ...]] = field(default_factory=dict)  # par équipement
+
+    def of(self, name: str) -> Segment | None:
+        return self.found.get(name)
+
+    def around(self, name: str, device: str) -> list[Segment]:
+        """Activités de l'équipement, sans celles attribuées à un autre de ses cycles."""
+        key = task_key(device)
+        others = [
+            segment
+            for other, segment in self.found.items()
+            if other != name and self.devices.get(other) == key
+        ]
+        return [s for s in self.segments.get(key, ()) if s not in others]
+
+
+def _fixed_names(data: PlanningInput) -> set[str]:
+    """Éléments du plan qui ne sont pas des cycles : besoins d'énergie, durées à placer."""
+    return {need.name for need in data.needs} | {runtime.name for runtime in data.runtimes}
+
+
+def real_cycles(data: PlanningInput, reference: Reference = REFERENCE) -> RealCycles:
+    """Activité réelle de chaque cycle du jour : blocs du plan précédent, puis tâches sans bloc,
+    dans l'ordre des rangs. Vide si les mesures ne sont pas celles du jour."""
+    data = numbered(data)
+    now = data.real_updated_at
+    if now is None or now.date() != data.day:
+        return RealCycles()
+    segments = {task_key(name): tuple(segs) for name, segs in data.real_segments.items()}
+    midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    requests = {task.ident: task for task in today_tasks(data)}
+    others = _fixed_names(data)
+    wanted: dict[str, list[tuple[int, Wanted]]] = defaultdict(list)
+    blocks = set()
+    for item in data.frozen:
+        if item.name in others:
+            continue
+        blocks.add(item.ident)
+        request = requests.get(item.ident)
+        closed_end = midnight + timedelta(minutes=_frozen_cycle(item).end_min)
+        wanted[task_key(item.name)].append(
+            (
+                item.rank,
+                Wanted(
+                    item.ident,
+                    item.energy_kwh,
+                    since=request.asked_at if request is not None else None,
+                    # Tâche close : son cycle a démarré pendant son créneau, pas après.
+                    before=None if request is not None else closed_end,
+                ),
+            )
+        )
+    for task in requests.values():
+        if task.ident in blocks:
+            continue
+        cycle = characteristics(task.name, data, reference)
+        if cycle is not None:
+            wanted[task_key(task.name)].append(
+                (task.rank or 1, Wanted(task.ident, cycle[0], since=task.asked_at))
+            )
+    found: dict[str, Segment] = {}
+    devices: dict[str, str] = {}
+    for key, cycles in wanted.items():
+        ordered = [cycle for _, cycle in sorted(cycles, key=lambda pair: pair[0])]
+        found.update(attribute(segments.get(key, ()), ordered))
+        devices.update({cycle.name: key for cycle in ordered})
+    return RealCycles(found, devices, segments)
+
+
+def _parents(data: PlanningInput) -> dict[str, tuple[str, int]]:
+    """Cycle à finir avant chaque tâche du jour qui en suit une autre (``depend_de``) : nom de
+    l'équipement à suivre et rang de son cycle (``occurrences.paired``). Absente : aucun cycle
+    de l'autre équipement ne lui correspond."""
+    requests = today_tasks(data)
+    others = _fixed_names(data)
+    ranks: dict[str, set[int]] = defaultdict(set)
+    for item in data.frozen:
+        if item.name not in others:
+            ranks[task_key(item.name)].add(item.rank)
+    for task in requests:
+        ranks[task_key(task.name)].add(task.rank or 1)
+    found: dict[str, tuple[str, int]] = {}
+    for task in requests:
+        parent = task_key(task.depends_on or "")
+        if not parent or parent == task_key(task.name):
+            continue
+        pairs = paired(ranks[task_key(task.name)], ranks.get(parent, ()))
+        if (task.rank or 1) in pairs:
+            found[task.ident] = (task.depends_on or "", pairs[task.rank or 1])
+    return found
+
+
 def _real_end(
-    name: str,
-    energy_kwh: float,
-    cycle_min: float,
-    segments: Mapping[str, tuple[Segment, ...]],
-    now: datetime | None,
+    name: str, energy_kwh: float, cycle_min: float, real: RealCycles, now: datetime | None
 ) -> int | None:
-    """Fin (minute) du cycle réel du jour de ``name`` recalé, None s'il n'a pas démarré."""
-    if now is None:
+    """Fin (minute) du cycle réel du jour du cycle ``name`` recalé, None s'il n'a pas démarré."""
+    segment = real.of(name)
+    if now is None or segment is None:
         return None
-    result = realign(energy_kwh, cycle_min, segments.get(task_key(name), ()), now)
+    result = realign(energy_kwh, cycle_min, [segment], now)
     return free_from_minute(result) if result is not None else None
 
 
@@ -440,36 +556,35 @@ def _earliest(first_hour: int, now: datetime | None, chosen_min: int | None) -> 
 def _released(
     frozen: Mapping[str, FrozenCycle],
     data: PlanningInput,
-    segments: Mapping[str, tuple[Segment, ...]],
+    real: RealCycles,
     now: datetime | None,
     reference: Reference,
+    parents: Mapping[str, tuple[str, int]],
 ) -> frozenset[str]:
-    """Blocs gelés à replacer : pas encore lancés, et la tâche à finir avant eux (``depend_de``)
+    """Blocs gelés à replacer : pas encore lancés, et le cycle à finir avant eux (``depend_de``)
     finit après leur départ prévu — un sèche-linge prévu à 10 h derrière un lave-linge qui
-    tourne encore à 11 h. Libérés, ils redeviennent des tâches à placer après elle."""
-    requests = [*data.waiting_tasks, *(t for t in data.due_tasks if t.on_demand)]
-    depends = {t.name: task_key(t.depends_on) for t in requests if t.depends_on}
-    names = {task_key(t.name): t.name for t in [*data.due_tasks, *data.waiting_tasks]}
-    frozen_by_key = {task_key(name): item for name, item in frozen.items()}
+    tourne encore à 11 h. Libérés, ils redeviennent des tâches à placer après lui."""
+    requests = {cycle_key(t.name, t.rank): t for t in today_tasks(data)}
+    frozen_by_key = {cycle_key(item.name, item.rank): item for item in frozen.values()}
     found = set()
     for name, item in frozen.items():
-        key = depends.get(name)
         if (
-            key is None
-            or _real_end(name, item.energy_kwh, _cycle_min(item), segments, now) is not None
+            name not in parents
+            or _real_end(name, item.energy_kwh, _cycle_min(item), real, now) is not None
         ):
             continue
+        key = cycle_key(*parents[name])
         end: int | None = None
         if key in frozen_by_key:
             dependency = frozen_by_key[key]
             end = _real_end(
-                dependency.name, dependency.energy_kwh, _cycle_min(dependency), segments, now
+                dependency.ident, dependency.energy_kwh, _cycle_min(dependency), real, now
             )
             end = _frozen_cycle(dependency).end_min if end is None else end
-        elif key in names:
-            characteristic = characteristics(names[key], data, reference)
+        elif key in requests:
+            characteristic = characteristics(requests[key].name, data, reference)
             if characteristic is not None:
-                end = _real_end(names[key], *characteristic, segments, now)
+                end = _real_end(requests[key].ident, *characteristic, real, now)
         if end is not None and end > _frozen_cycle(item).start_min:
             found.add(name)
     return frozenset(found)
@@ -478,38 +593,48 @@ def _released(
 def _unfollowed(
     frozen: Mapping[str, FrozenCycle],
     data: PlanningInput,
-    segments: Mapping[str, tuple[Segment, ...]],
+    real: RealCycles,
     now: datetime | None,
 ) -> frozenset[str]:
     """Blocs gelés d'une recommandation non suivie : l'appareil est mesuré, son départ annoncé
-    est passé d'au moins ``UNFOLLOWED_MIN`` et il n'a pas tourné. Tenus jusqu'ici pour commencés
-    (comme en v1), ils marquaient la demande « lancée » et la fermaient le lendemain, sans que
-    l'appareil ait tourné. Libérés, ils redeviennent des tâches à placer."""
+    est passé d'au moins ``UNFOLLOWED_MIN`` et il n'a pas tourné (l'activité d'un autre cycle du
+    même appareil ne compte pas). Tenus jusqu'ici pour commencés (comme en v1), ils marquaient
+    la demande « lancée » et la fermaient le lendemain, sans que l'appareil ait tourné.
+    Libérés, ils redeviennent des tâches à placer."""
     if now is None:
         return frozenset()
     minute = now.hour * 60 + now.minute
     found = set()
     for name, item in frozen.items():
         start = _frozen_cycle(item).start_min
-        if name not in data.measured or minute < start + UNFOLLOWED_MIN:
+        if item.name not in data.measured or minute < start + UNFOLLOWED_MIN:
             continue
-        if not ran_around(segments.get(task_key(name), ()), start, now):
+        if not ran_around(real.around(name, item.name), start, now):
             found.add(name)
     return frozenset(found)
 
 
 def from_input(data: PlanningInput, reference: Reference = REFERENCE) -> Problem:
+    data = numbered(data)
     day, first_hour = data.day, data.first_hour
     warnings: list[dict[str, Any]] = list(data.forecast_warnings)
     fixed: dict[int, float] = defaultdict(float)
     tail: dict[int, float] = defaultdict(float)  # cycles fixés : part du lendemain
-    ends: dict[str, int] = {}
+    ends: dict[str, int] = {}  # fin de chaque cycle fixé, par clé de cycle
+    # Cycles fixés (veille, gelés, lancés) : clé de l'équipement et fin, par identité.
+    occupied: dict[str, tuple[str, int]] = {}
     fixed_phase: dict[Phase, dict[int, float]] = {line: defaultdict(float) for line in LINES}
 
     def on_phase(name: str, hour: int, kwh: float) -> None:
         """Compte une consommation déjà décidée sur la phase de son équipement."""
         for line, share in line_shares(data.phases.get(name)).items():
             fixed_phase[line][hour] += kwh * share
+
+    def occupy(name: str, device: str, rank: int, end_min: int) -> None:
+        """Retient la fin d'un cycle fixé : pour le cycle qui en dépend, et pour le suivant du
+        même équipement."""
+        ends[cycle_key(device, rank)] = end_min
+        occupied[name] = (task_key(device), end_min)
 
     for carried in data.carried:  # fin d'un cycle commencé la veille avant minuit
         for hour, kwh in carried.hourly_kwh.items():
@@ -518,65 +643,92 @@ def from_input(data: PlanningInput, reference: Reference = REFERENCE) -> Problem
                 on_phase(carried.name, hour, kwh)
         key = task_key(carried.name)
         ends[key] = max(ends.get(key, 0), carried.end_min)
+        occupied[f"veille:{key}"] = (key, ends[key])
 
-    active_names = {t.name for t in data.due_tasks if t.due == day} | {
-        t.name for t in data.waiting_tasks
-    }
-    frozen = {item.name: item for item in data.frozen if item.name in active_names}
+    requests = today_tasks(data)
+    active = {t.ident for t in requests}
+    frozen = {item.ident: item for item in data.frozen if item.ident in active}
     for name, item in frozen.items():
-        ends[task_key(name)] = _frozen_cycle(item).end_min
+        occupy(name, item.name, item.rank, _frozen_cycle(item).end_min)
 
     now = data.real_updated_at
     if now is not None and now.date() != day:
         now = None
-    segments: dict[str, tuple[Segment, ...]] = (
-        {task_key(name): segs for name, segs in data.real_segments.items()} if now else {}
-    )
-    released = _released(frozen, data, segments, now, reference)
-    for name in released:
-        del frozen[name]
-        ends.pop(task_key(name), None)
-    unfollowed = _unfollowed(frozen, data, segments, now)
-    for name in unfollowed:
-        del frozen[name]
-        ends.pop(task_key(name), None)
+    real = real_cycles(data, reference)
+    parents = _parents(data)
+
+    def release(names: frozenset[str]) -> None:
+        for name in names:
+            item = frozen.pop(name)
+            ends.pop(cycle_key(item.name, item.rank), None)
+            occupied.pop(name, None)
+
+    released = _released(frozen, data, real, now, reference, parents)
+    release(released)
+    unfollowed = _unfollowed(frozen, data, real, now)
+    release(unfollowed)
     released |= unfollowed
 
     def launched_now(
-        name: str, energy_kwh: float, cycle_min: float, shape: Shape | None
+        name: str, device: str, rank: int, energy_kwh: float, cycle_min: float, shape: Shape | None
     ) -> datetime | None:
-        """Recale un cycle sur son démarrage réel : compte sa consommation restante (et celle
-        déjà mesurée dans l'heure en cours), retient sa fin. Renvoie le démarrage réel."""
-        if now is None:
+        """Recale le cycle ``name`` sur son démarrage réel : compte sa consommation restante (et
+        celle déjà mesurée dans l'heure en cours), retient sa fin. Renvoie le démarrage réel."""
+        segment = real.of(name)
+        if now is None or segment is None:
             return None
-        segs = segments.get(task_key(name), ())
-        result = realign(energy_kwh, cycle_min, segs, now)
+        result = realign(energy_kwh, cycle_min, [segment], now)
         if result is None:
             return None
         remaining = dict(remaining_hourly(result, now, shape))
         for hour, kwh in after_midnight(remaining_hourly(result, now, shape, days=2)).items():
             tail[hour] += kwh
-            on_phase(name, 24 + hour, kwh)
-        segment = recognized_segment(segs, energy_kwh)
-        measured = measured_hourly(result, segment, shape) if segment else {}
+            on_phase(device, 24 + hour, kwh)
+        measured = measured_hourly(result, segment, shape)
         remaining[first_hour] = remaining.get(first_hour, 0.0) + measured.get(first_hour, 0.0)
         for hour, kwh in remaining.items():
             if hour >= first_hour:
                 fixed[hour] += kwh
-                on_phase(name, hour, kwh)
-        ends[task_key(name)] = free_from_minute(result)
+                on_phase(device, hour, kwh)
+        occupy(name, device, rank, free_from_minute(result))
         launched_end_hours[name] = free_from_hour(result)
         # Fin réelle, après minuit pour un cycle lancé le soir qui déborde.
         launched_end_mins[name] = free_from_minute(result, capped=False)
         return result.start
 
+    def launched_cycle(
+        name: str,
+        device: str,
+        rank: int,
+        uid: str | None,
+        priority: int,
+        energy_kwh: float,
+        cycle_min: float,
+        shape: Shape | None,
+        started: datetime,
+    ) -> LaunchedCycle:
+        return LaunchedCycle(
+            name=name,
+            priority=priority,
+            energy_kwh=energy_kwh,
+            cycle_min=cycle_min,
+            shape=shape,
+            start=started,
+            end_hour=max(started.hour + 1, math.ceil(launched_end_mins[name] / 60)),
+            end_min=max(started.hour * 60 + started.minute, launched_end_mins[name]),
+            planned=data.planned_reasons.get(name, ()),
+            device=device,
+            rank=rank,
+            uid=uid,
+        )
+
     launched_end_hours: dict[str, int] = {}
     launched_end_mins: dict[str, int] = {}
     launched: list[LaunchedCycle] = []
-    for item in frozen.values():
+    for name, item in frozen.items():
         cycle = _frozen_cycle(item)
         cycle_min = item.cycle_min or (item.end_hour - item.start_hour) * 60
-        started = launched_now(item.name, item.energy_kwh, cycle_min, item.shape)
+        started = launched_now(name, item.name, item.rank, item.energy_kwh, cycle_min, item.shape)
         if started is None:
             for hour, kwh in planned_hourly(cycle).items():
                 if hour >= first_hour:
@@ -591,41 +743,43 @@ def from_input(data: PlanningInput, reference: Reference = REFERENCE) -> Problem
         # Bloc gelé dont le cycle réel a démarré : recalé à chaque calcul (démarrage réel, fin
         # repoussée tant qu'il tourne), le plan fusionné prend ce bloc plutôt que l'ancien.
         launched.append(
-            LaunchedCycle(
-                name=item.name,
-                priority=item.priority,
-                energy_kwh=item.energy_kwh,
-                cycle_min=cycle_min,
-                shape=item.shape,
-                start=started,
-                end_hour=max(started.hour + 1, math.ceil(launched_end_mins[item.name] / 60)),
-                end_min=max(started.hour * 60 + started.minute, launched_end_mins[item.name]),
-                planned=data.planned_reasons.get(item.name, ()),
+            launched_cycle(
+                name,
+                item.name,
+                item.rank,
+                item.uid,
+                item.priority,
+                item.energy_kwh,
+                cycle_min,
+                item.shape,
+                started,
             )
         )
     # Cycle lancé dont la tâche est close depuis (« Fait », tâche de HA cochée, nouvelle demande
     # du même équipement) : il a bien tourné aujourd'hui. Le plan le garde, recalé sur le réel,
     # sans le replacer : sinon son bloc et sa consommation prévue disparaîtraient de la journée.
     # Un bloc gelé jamais lancé (demande annulée) disparaît, lui, comme avant.
-    others = {need.name for need in data.needs} | {runtime.name for runtime in data.runtimes}
+    others = _fixed_names(data)
     for item in data.frozen:
-        if item.name in active_names or item.name in others or item.name in released:
+        if item.ident in active or item.name in others or item.ident in released:
             continue
         cycle_min = item.cycle_min or (item.end_hour - item.start_hour) * 60
-        started = launched_now(item.name, item.energy_kwh, cycle_min, item.shape)
+        started = launched_now(
+            item.ident, item.name, item.rank, item.energy_kwh, cycle_min, item.shape
+        )
         if started is None:
             continue
         launched.append(
-            LaunchedCycle(
-                name=item.name,
-                priority=item.priority,
-                energy_kwh=item.energy_kwh,
-                cycle_min=cycle_min,
-                shape=item.shape,
-                start=started,
-                end_hour=max(started.hour + 1, math.ceil(launched_end_mins[item.name] / 60)),
-                end_min=max(started.hour * 60 + started.minute, launched_end_mins[item.name]),
-                planned=data.planned_reasons.get(item.name, ()),
+            launched_cycle(
+                item.ident,
+                item.name,
+                item.rank,
+                item.uid,
+                item.priority,
+                item.energy_kwh,
+                cycle_min,
+                item.shape,
+                started,
             )
         )
 
@@ -638,12 +792,14 @@ def from_input(data: PlanningInput, reference: Reference = REFERENCE) -> Problem
         if t.uid is None or t.uid not in assignments or assignments[t.uid] == day
     ]
     recurring = [t for t in due_today if not t.on_demand]
-    waiting_keys = {task_key(t.name) for t in waiting}
+    waiting_keys = {cycle_key(t.name, t.rank) for t in waiting}
 
     tasks: list[Task] = []
+    chosen_for: set[str] = set()  # équipements dont le départ choisi est déjà pris par un cycle
     for priority, group, suffix in ((1, recurring, "du"), (3, waiting, "attente")):
-        for request in group:
-            if request.name in frozen:
+        for request in sorted(group, key=lambda t: t.rank or 1):
+            rank = request.rank or 1
+            if request.ident in frozen:
                 continue
             found = characteristics(request.name, data, reference)
             if found is None:
@@ -663,51 +819,61 @@ def from_input(data: PlanningInput, reference: Reference = REFERENCE) -> Problem
                 if request.name in data.cycle_profiles
                 else None
             )
-            start = launched_now(request.name, energy, cycle_min, shape)
+            start = launched_now(request.ident, request.name, rank, energy, cycle_min, shape)
             if start is not None:
                 launched.append(
-                    LaunchedCycle(
-                        name=request.name,
-                        priority=priority,
-                        energy_kwh=energy,
-                        cycle_min=cycle_min,
-                        shape=shape,
-                        start=start,
-                        end_hour=max(
-                            start.hour + 1, math.ceil(launched_end_mins[request.name] / 60)
-                        ),
-                        end_min=max(
-                            start.hour * 60 + start.minute, launched_end_mins[request.name]
-                        ),
-                        planned=data.planned_reasons.get(request.name, ()),
+                    launched_cycle(
+                        request.ident,
+                        request.name,
+                        rank,
+                        request.uid,
+                        priority,
+                        energy,
+                        cycle_min,
+                        shape,
+                        start,
                     )
                 )
                 continue
-            chosen = data.chosen_starts.get(request.name)
+            # Départ choisi pour l'équipement : il vaut pour son premier cycle encore à placer.
+            chosen = (
+                data.chosen_starts.get(request.name) if request.name not in chosen_for else None
+            )
+            chosen_for.add(request.name)
+            parent = parents.get(request.ident) if priority == 3 else None
             tasks.append(
                 Task(
-                    name=request.name,
-                    key=task_key(request.name),
+                    name=request.ident,
+                    key=cycle_key(request.name, rank),
                     energy_kwh=energy,
                     cycle_min=cycle_min,
                     slot_min=max(1, min(reference.cycle_max_hours * 60, round(cycle_min))),
                     shape=shape,
                     priority=priority,
                     earliest_min=_earliest(first_hour, now, chosen),
-                    depends_on=task_key(request.depends_on)
-                    if priority == 3 and request.depends_on
-                    else None,
+                    depends_on=cycle_key(*parent) if parent is not None else None,
                     chosen_min=chosen,
                     announced_min=None
                     if chosen is not None
-                    else data.announced_starts.get(request.name),
+                    else data.announced_starts.get(request.ident),
+                    device=request.name,
+                    rank=rank,
+                    uid=request.uid,
                 )
             )
+    # Un équipement ne fait qu'un cycle à la fois : pas avant la fin de ses cycles déjà fixés.
+    busy: dict[str, int] = {}
+    for device, end_min in occupied.values():
+        busy[device] = max(busy.get(device, 0), end_min)
+    tasks = [
+        replace(task, earliest_min=max(task.earliest_min, busy.get(task_key(task.label), 0)))
+        for task in tasks
+    ]
 
     overnight = _overnight(data, tasks, tail, reference)
     if overnight is not None:
         tasks = [replace(task, overflow_min=overnight.hours * 60) for task in tasks]
-    tasks = _resolve_dependencies(tasks, ends, waiting_keys, warnings)
+    tasks = _in_turn(_resolve_dependencies(tasks, ends, waiting_keys, warnings))
 
     drifting, priority_day = _context(data, reference)
     runtimes = []
@@ -877,7 +1043,7 @@ def _resolve_dependencies(
                 {
                     "code": "heures_insuffisantes_" + ("du" if task.priority == 1 else "attente"),
                     "params": {
-                        "equipement": task.name,
+                        "equipement": task.label,
                         "duree_min": task.slot_min,
                         "debut_min": earliest,
                     },
@@ -886,7 +1052,7 @@ def _resolve_dependencies(
             continue
         placeable.append(updated)
     keys = {task.key for task in placeable}
-    names = {task.key: task.name for task in tasks}
+    names = {task.key: task.label for task in tasks}
     resolved: list[Task] = []
     for task in placeable:
         if task.depends_on is not None and task.depends_on not in keys:
@@ -895,7 +1061,7 @@ def _resolve_dependencies(
                     {
                         "code": "dependance_non_placee",
                         "params": {
-                            "equipement": task.name,
+                            "equipement": task.label,
                             "depend_de": names.get(task.depends_on, task.depends_on),
                         },
                     }
@@ -904,3 +1070,15 @@ def _resolve_dependencies(
             task = Task(**{**task.__dict__, "depends_on": None})
         resolved.append(task)
     return resolved
+
+
+def _in_turn(tasks: list[Task]) -> list[Task]:
+    """Cycles à placer d'un même équipement : chacun après la fin du précédent (``follows``),
+    dans l'ordre des rangs."""
+    last: dict[str, str] = {}
+    found: dict[str, Task] = {}
+    for task in sorted(tasks, key=lambda t: t.rank):
+        device = task_key(task.label)
+        found[task.name] = replace(task, follows=last.get(device))
+        last[device] = task.name
+    return [found[task.name] for task in tasks]

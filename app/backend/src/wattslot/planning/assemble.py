@@ -342,6 +342,10 @@ def to_v1(data: PlanningInput) -> dict[str, Any]:
         found: dict[str, Any] = {"summary": t.name, "uid": t.uid, "description": description}
         if t.due:
             found["due"] = t.due.isoformat()
+        if t.rank is not None and t.rank > 1:
+            found["rang"] = t.rank
+        if t.asked_at is not None:
+            found["demandee_iso"] = t.asked_at.isoformat()
         return found
 
     battery = data.battery

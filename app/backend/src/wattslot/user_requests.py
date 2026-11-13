@@ -3,13 +3,16 @@
 « Faire tourner tel équipement », sans date ou au plus tard tel jour : ce que la liste de tâches
 de HA permet, sans avoir à en créer une. Une demande ouverte devient pour le calcul la même
 tâche « à la demande » qu'une tâche de HA (affectation à un jour, report toléré, « après » de la
-configuration). Une seule demande ouverte par équipement ; si la liste de HA demande déjà le même
-équipement, c'est elle qui compte. Quand un calcul constate le lancement de l'équipement, la demande
-reste ouverte jusqu'au lendemain (le plan du jour garde le cycle lancé, comme une tâche de HA pas
-encore cochée), puis devient faite ; on peut aussi la clore à la main. Une nouvelle demande pour un
-équipement dont la demande ouverte est déjà lancée clôt celle-ci (faite) et en ouvre une autre :
-sinon, la clore à la main effacerait aussi la nouvelle. Un lancement ne compte que pour une seule
-demande. Rien n'est écrit dans HA.
+configuration). Si la liste de HA demande déjà le même équipement, c'est elle qui compte. Quand
+un calcul constate le lancement d'une demande, elle reste ouverte jusqu'au lendemain (le plan du
+jour garde le cycle lancé, comme une tâche de HA pas encore cochée), puis devient faite ; on peut
+aussi la clore à la main. Rien n'est écrit dans HA.
+
+Plusieurs demandes peuvent être ouvertes pour le même équipement (deux lessives le même jour) :
+chacune est une tâche du calcul, qui les place l'une après l'autre et n'attribue un cycle réel
+qu'à une seule (``planning.occurrences``). Redemander un équipement change par défaut la date de
+sa demande ouverte pas encore lancée ; une demande de plus s'ouvre si toutes sont déjà lancées
+(elles sont alors faites), ou si on le demande (``another``).
 """
 
 import sqlite3
@@ -77,20 +80,32 @@ def recent(database: sqlite3.Connection, now: datetime) -> list[UserRequest]:
 
 
 def ask(
-    database: sqlite3.Connection, device: str, latest: date | None, now: datetime
+    database: sqlite3.Connection,
+    device: str,
+    latest: date | None,
+    now: datetime,
+    another: bool = False,
 ) -> UserRequest:
-    """Demande pour ``device`` ; une demande déjà ouverte pour lui change seulement de date,
-    sauf si son lancement a été constaté : elle est alors faite, et une nouvelle est ouverte."""
+    """Demande pour ``device`` ; sa demande ouverte pas encore lancée (la plus récente) change
+    seulement de date. Sinon, ou avec ``another`` (un cycle de plus), une demande est ouverte ;
+    sans ``another``, ses demandes déjà lancées sont alors faites : leur cycle a tourné, et
+    les clore à la main ne doit pas toucher à la nouvelle."""
     with database:
-        row = database.execute(
-            "SELECT id, launched_on FROM requests WHERE device = ? AND status = 'open'", (device,)
-        ).fetchone()
-        if row and row[1]:
+        row = (
+            None
+            if another
+            else database.execute(
+                "SELECT id FROM requests WHERE device = ? AND status = 'open' "
+                "AND launched_on IS NULL ORDER BY id DESC",
+                (device,),
+            ).fetchone()
+        )
+        if row is None and not another:
             database.execute(
-                "UPDATE requests SET status = ?, closed_at = ? WHERE id = ?",
-                (Status.DONE.value, now.isoformat(), row[0]),
+                "UPDATE requests SET status = ?, closed_at = ? "
+                "WHERE device = ? AND status = 'open' AND launched_on IS NOT NULL",
+                (Status.DONE.value, now.isoformat(), device),
             )
-            row = None
         if row:
             database.execute(
                 "UPDATE requests SET latest = ? WHERE id = ?",
@@ -147,31 +162,21 @@ def tasks(
             due=request.latest,
             on_demand=True,
             needed_since=min(request.created_at.date(), zone_today),
+            asked_at=request.created_at,
         )
         (due if request.latest is not None else waiting).append(task)
     return due, waiting
 
 
-def mark_launched(
-    database: sqlite3.Connection,
-    candidates: Sequence[Appliance],
-    launched: set[str],
-    today: date,
-) -> list[int]:
-    """Note le lancement constaté aujourd'hui (clés de ``launched_keys``) des équipements
-    demandés ; un lancement déjà compté aujourd'hui pour une autre demande du même équipement
-    (close depuis, par une nouvelle demande) ne compte pas une seconde fois."""
-    names = {a.key: task_key(a.name) for a in candidates}
-    counted = {
-        str(row[0])
-        for row in database.execute(
-            "SELECT device FROM requests WHERE launched_on = ?", (today.isoformat(),)
-        )
-    }
+def mark_launched(database: sqlite3.Connection, launched: Iterable[str], today: date) -> list[int]:
+    """Note le lancement constaté aujourd'hui des demandes ouvertes dont la tâche est lancée
+    (uid de ``assignment.launched_uids``) : le calcul n'attribue un cycle réel qu'à une seule
+    tâche, la demande suivante du même équipement n'est donc pas marquée par lui."""
+    uids = set(launched)
     found = [
         r.id
         for r in open_requests(database)
-        if r.launched_on is None and r.device not in counted and names.get(r.device) in launched
+        if r.launched_on is None and f"{UID_PREFIX}{r.id}" in uids
     ]
     with database:
         for request_id in found:

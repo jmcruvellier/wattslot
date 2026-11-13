@@ -51,7 +51,7 @@ from wattslot.planning import (
 )
 from wattslot.planning.actual import actual_day
 from wattslot.planning.assemble import build_input, to_v1
-from wattslot.planning.assignment import decide, launched_keys
+from wattslot.planning.assignment import decide, launched_keys, launched_uids
 from wattslot.planning.engine import (
     Goal,
     ImpossibleDataError,
@@ -68,8 +68,9 @@ from wattslot.planning.inputs import (
     RecentHistory,
     with_battery,
 )
-from wattslot.planning.journal import CycleJournal, cycle_appliances
+from wattslot.planning.journal import CycleJournal
 from wattslot.planning.merge import BATTERY, POOL, merge_plans, pool_modes, soc_at_hour_start
+from wattslot.planning.occurrences import numbered
 from wattslot.planning.past import AggregateReader
 from wattslot.planning.plan import Plan, Reason
 from wattslot.planning.problem import characteristics, from_input, with_corrected_forecast
@@ -194,6 +195,8 @@ def frozen_cycles(old: Plan | None, first_hour: int) -> tuple[FrozenCycle, ...]:
             cycle_min=slot.cycle_min,
             shape=tuple(slot.shape) if slot.shape is not None else None,
             priority=slot.priority if slot.priority is not None else 3,
+            rank=slot.rank or 1,
+            uid=slot.request,
         )
         for slot in old.slots
         if slot.start_hour is not None and slot.start_hour < first_hour
@@ -201,19 +204,19 @@ def frozen_cycles(old: Plan | None, first_hour: int) -> tuple[FrozenCycle, ...]:
 
 
 def announced_starts(old: Mapping[str, Any] | None) -> dict[str, int]:
-    """Départ de chaque appareil dans le plan précédent de la même journée : l'heure que
-    l'utilisateur a pu lire, gardée par le calcul sauf gain net."""
+    """Départ de chaque cycle (``Slot.ident``) dans le plan précédent de la même journée :
+    l'heure que l'utilisateur a pu lire, gardée par le calcul sauf gain net."""
     if not old:
         return {}
     return {
-        slot.device: slot.start_min
+        slot.ident: slot.start_min
         for slot in Plan.from_v1(dict(old)).slots
         if slot.start_min is not None
     }
 
 
 def planned_reasons(old: Plan | None) -> dict[str, tuple[Reason, ...]]:
-    """Raisons du placement de chaque appareil dans le plan précédent de la journée, sans
+    """Raisons du placement de chaque cycle (``Slot.ident``) dans le plan précédent, sans
     « lancé » : d'un recalcul à l'autre, un cycle lancé garde celles de son placement. Sans
     « heure gardée » non plus : elle parle d'un choix entre deux départs, qui n'a plus lieu
     d'être une fois l'appareil lancé."""
@@ -225,7 +228,7 @@ def planned_reasons(old: Plan | None) -> dict[str, tuple[Reason, ...]]:
             r for r in slot.explanation.reasons if r.code not in ("launched", "announced_kept")
         )
         if reasons:
-            found[slot.device] = reasons
+            found[slot.ident] = reasons
     return found
 
 
@@ -327,6 +330,12 @@ def with_past(
             or data.chosen_starts[cycle.name] < data.first_hour * 60
         ),
         planned_reasons=planned_reasons(previous),
+        # Rang de chaque tâche dans le plan précédent : elle le garde d'un calcul à l'autre.
+        ranks={
+            slot.request: slot.rank or 1
+            for slot in (previous.slots if previous else [])
+            if slot.request
+        },
         runtimes=tuple(
             replace(runtime, past=earlier.get(runtime.name, {})) for runtime in data.runtimes
         ),
@@ -385,6 +394,7 @@ async def with_assignments(
         launched_keys(data),
         delays=data.max_delay_days,
         pinned=pinned_days(ctx.database, today),
+        launched=launched_uids(data),
     )
     store.save_assignments(assignments)
     return replace(data, assignments={uid: a.day for uid, a in assignments.items()}), reports
@@ -395,7 +405,7 @@ def plan_state(
 ) -> dict[str, Any]:
     """Plan au format de la v1 : entrée, sortie du moteur, horodatage."""
     return {
-        **to_v1(data),
+        **to_v1(numbered(data)),  # les tâches avec leur rang, comme dans le calcul
         **result.output,
         "date_cible": data.day.isoformat(),
         "duree_calcul_s": round(result.seconds, 2),
@@ -606,10 +616,10 @@ async def run(ctx: Context, now: datetime, manual: bool = False) -> RunReport:
     # Planifications annulées pour aujourd'hui (bouton « Annuler ») : ni tâche, ni besoin, ni
     # durée à placer ; le calcul de demain les reprendra.
     data = cancelled.without_cancelled(data, cancelled.load(ctx.database, today))
+    # Plusieurs cycles d'un même équipement : chaque tâche du jour prend son rang.
+    data = numbered(data)
     data, reports = await with_assignments(data, forecasts, ctx, store)
-    user_requests.mark_launched(
-        ctx.database, cycle_appliances(ctx.model, ctx.configuration), launched_keys(data), today
-    )
+    user_requests.mark_launched(ctx.database, launched_uids(data), today)
     try:
         # Prévision recalée sur la production mesurée : calcul et plan enregistré la partagent.
         data = with_corrected_forecast(data)

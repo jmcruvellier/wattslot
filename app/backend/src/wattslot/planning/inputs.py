@@ -14,6 +14,7 @@ from wattslot.planning.co2_sources import Co2Context
 from wattslot.planning.cycles import Segment, Shape
 from wattslot.planning.forecast_quality import BaselineQuality
 from wattslot.planning.plan import POOL, Reason
+from wattslot.planning.reference import ident
 from wattslot.tariff import V1 as V1_TARIFF
 from wattslot.tariff import Tariff, TariffContext
 from wattslot.time_constraints import TimeConstraint
@@ -30,6 +31,14 @@ class TaskRequest:
     depends_on: str | None = None  # nom de la tâche à finir avant (sèche-linge)
     needed_since: date | None = None  # besoin détecté (affectation à un jour)
     rule: str | None = None  # règle de récurrence (RFC 5545) d'une tâche récurrente
+    # Rang du cycle parmi ceux du même équipement dans la journée (``occurrences.numbered``) ;
+    # None : pas encore numérotée.
+    rank: int | None = None
+    asked_at: datetime | None = None  # demande de l'application : moment où elle a été faite
+
+    @property
+    def ident(self) -> str:
+        return ident(self.name, self.rank)
 
 
 @dataclass(frozen=True)
@@ -64,6 +73,12 @@ class FrozenCycle:
     cycle_min: float | None = None
     shape: Shape | None = None
     priority: int = 3
+    rank: int = 1  # rang du cycle parmi ceux du même équipement dans la journée
+    uid: str | None = None  # tâche ou demande dont il est le cycle ; None : plan d'avant
+
+    @property
+    def ident(self) -> str:
+        return ident(self.name, self.rank)
 
 
 @dataclass(frozen=True)
@@ -179,6 +194,8 @@ class PlanningInput:
     daily_profiles: Mapping[str, DailyProfile | None] = field(default_factory=dict)
     profile_status: Mapping[str, str] = field(default_factory=dict)  # pour les avertissements
     frozen: tuple[FrozenCycle, ...] = ()
+    # Rang de chaque tâche (uid) dans le plan précédent de la journée : elle le garde.
+    ranks: Mapping[str, int] = field(default_factory=dict)
     # Raisons du placement de chaque appareil dans le plan précédent de la journée (sans
     # « lancé ») : un cycle lancé les garde, au lieu du seul « Lancé à 9h59 ».
     planned_reasons: Mapping[str, tuple[Reason, ...]] = field(default_factory=dict)
@@ -260,7 +277,16 @@ def _task(raw: Mapping[str, Any]) -> TaskRequest:
         depends_on=description.get("depend_de"),
         needed_since=_day_prefix(description.get("besoin_detecte")),
         rule=description.get("regle") if description.get("type") == "recurrent" else None,
+        rank=raw.get("rang"),
+        asked_at=_moment(raw.get("demandee_iso")),
     )
+
+
+def _moment(value: Any) -> datetime | None:
+    try:
+        return datetime.fromisoformat(value) if isinstance(value, str) and value else None
+    except ValueError:
+        return None
 
 
 def from_v1(state: Mapping[str, Any]) -> PlanningInput:
@@ -363,6 +389,8 @@ def from_v1(state: Mapping[str, Any]) -> PlanningInput:
                 cycle_min=item.get("duree_cycle_min"),
                 shape=item.get("forme_quart_heure"),
                 priority=item.get("priorite", 3),
+                rank=item.get("rang") or 1,
+                uid=item.get("demande"),
             )
             for item in state.get("equipements_geles") or []
         ),
