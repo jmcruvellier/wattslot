@@ -5,9 +5,18 @@ confirmé par le banc du lot 0.5 (``bench/``). Le reste du code ne passe que
 par ``GraphStore``.
 
 Règles : écritures par lots suivis d'un ``flush``, jamais de transaction
-de plusieurs millions de triplets ; graphes nommés explicitement dans les requêtes. Les petites
-écritures régulières (agrégats en temps réel) diffèrent leur ``flush`` comme le brut
-(``storage/raw.py``) : chaque ``flush`` crée de petits fichiers que RocksDB recompacte.
+de plusieurs millions de triplets ; graphes nommés explicitement dans les requêtes.
+
+Les petites écritures régulières (agrégats en temps réel) diffèrent leur ``flush`` : après
+``FLUSH_TRIPLES`` quadruplets ou ``FLUSH_INTERVAL``, un jour. Chaque ``flush`` crée de petits
+fichiers, et RocksDB réécrit aussitôt avec eux les données accumulées depuis le dernier
+compactage complet. Avec un ``flush`` par heure, une installation réelle écrivait 2 Go par jour
+pour 30 Mo d'agrégats nouveaux, en une rafale par heure qui grossissait de jour en jour (38 Mo
+le 10/11/2026, 80 Mo le 13/11) ; banc d'un graphe de 900 Mo : 220 à 560 Mo par jour avec un
+``flush`` par heure, 55 à 90 Mo avec un par jour. Entre deux ``flush``, les écritures sont dans
+le journal de RocksDB, relu à l'ouverture : une coupure du processus n'en perd aucune. En
+pratique, la maintenance de la nuit vide le graphe (``flush`` après ses suppressions) et remet
+le compte à zéro.
 
 Les remplacements de graphe (vider, puis remplir : deux transactions) et la copie de sauvegarde
 (``backup``) prennent le même verrou : une copie ne voit jamais un graphe à moitié remplacé.
@@ -17,13 +26,17 @@ import io
 import threading
 import time
 from collections.abc import Callable, Iterable, Iterator
+from datetime import timedelta
 from pathlib import Path
 
 import pyoxigraph
 
-from wattslot.storage.raw import FLUSH_INTERVAL, FLUSH_TRIPLES
+from wattslot.storage.raw import FLUSH_TRIPLES
 
 GRAPH_DIRNAME = "oxigraph"
+# Temps au plus entre deux flush des petites écritures (le brut garde le sien, une heure : ses
+# magasins d'une journée sont petits, leur réécriture ne coûte presque rien).
+FLUSH_INTERVAL = timedelta(hours=24)
 
 
 class GraphStore:
