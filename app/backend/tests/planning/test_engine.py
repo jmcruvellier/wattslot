@@ -166,7 +166,10 @@ def test_output_has_the_format_of_v1(path: Path) -> None:
     assert set(by_name) - realigned == set(expected_by_name)
     for name, item in by_name.items():
         if name not in realigned:
-            assert set(item) - {"explication"} == set(expected_by_name[name]), name  # lot 3.7
+            # « demande », « rang » : plusieurs cycles du même équipement dans la journée.
+            assert set(item) - {"explication", "demande", "rang"} == set(expected_by_name[name]), (
+                name
+            )  # lot 3.7
     assert sorted(by_name["Batterie"]["soc_horaire_kwh"]) == list(problem.hours)
     segments = by_name["Piscine (filtration)"]["segments"]
     assert segments[0]["heure_debut"] == problem.first_hour

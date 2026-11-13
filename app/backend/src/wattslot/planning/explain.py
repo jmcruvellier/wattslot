@@ -111,19 +111,23 @@ def _alternatives(
     le reste du plan inchangé, et si le meilleur d'entre eux note mieux que le départ du plan.
     Le départ choisi par l'utilisateur n'en retire aucun."""
     by_key = {t.key: t for t in problem.tasks}
-    parent = by_key.get(task.depends_on or "")
+    by_name = {t.name: t for t in problem.tasks}
     earliest = task.earliest_min
-    if parent is not None and parent.name in starts:
-        earliest = max(earliest, starts[parent.name] + parent.slot_min)
+    # Cycles à finir avant : celui dont il dépend, et le précédent du même équipement.
+    for parent in (by_key.get(task.depends_on or ""), by_name.get(task.follows or "")):
+        if parent is not None and parent.name in starts:
+            earliest = max(earliest, starts[parent.name] + parent.slot_min)
     children = [
-        starts[t.name] for t in problem.tasks if t.depends_on == task.key and t.name in starts
+        starts[t.name]
+        for t in problem.tasks
+        if (t.depends_on == task.key or t.follows == task.name) and t.name in starts
     ]
     latest_end = min(children) if children else math.inf
     found: list[tuple[float, int, Indicators]] = []
     for start in task.candidates(earliest, chosen=False):
         if start == starts[task.name] or start + task.slot_min > latest_end:
             continue
-        if problem.hard_blocks(task.name, start, start + task.slot_min):
+        if problem.hard_blocks(task.label, start, start + task.slot_min):
             continue
         indicators = evaluate({**starts, task.name: start})
         found.append((score(indicators), start, indicators))
@@ -196,12 +200,12 @@ def explain(
                 constraints = labels(problem.constraints[item.device])
                 reasons.append(Reason(code="constraints", params={"constraints": constraints}))
             explanation = Explanation(reasons=reasons)
-        elif isinstance(item, Slot) and item.device in launched:
-            moment = launched[item.device].start
+        elif isinstance(item, Slot) and item.ident in launched:
+            moment = launched[item.ident].start
             # Le démarrage réel, puis les raisons du placement d'origine (solaire, heures
             # creuses, départ choisi…) : sans elles, on ne savait plus pourquoi ce créneau.
             launch = Reason(code="launched", params={"time": f"{moment:%H}h{moment:%M}"})
-            explanation = Explanation(reasons=[launch, *launched[item.device].planned])
+            explanation = Explanation(reasons=[launch, *launched[item.ident].planned])
         elif isinstance(item, Slot) and item.hourly_kwh is not None and item.device in needs:
             need = needs[item.device]
             reasons = [
@@ -212,13 +216,13 @@ def explain(
                 *_common(item.device, item.hourly_kwh, problem, load, objective),
             ]
             explanation = Explanation(reasons=reasons)
-        elif isinstance(item, Slot) and item.device in tasks and item.device in starts:
-            task = tasks[item.device]
+        elif isinstance(item, Slot) and item.ident in tasks and item.ident in starts:
+            task = tasks[item.ident]
             hourly = task.hourly_kwh(starts[task.name])
-            reasons = _common(task.name, hourly, problem, load, objective)
+            reasons = _common(task.label, hourly, problem, load, objective)
             parent = by_key.get(task.depends_on or "")
             if parent is not None:
-                reasons.append(Reason(code="after", params={"device": parent.name}))
+                reasons.append(Reason(code="after", params={"device": parent.label}))
             alternatives, better = (
                 _alternatives(task, dict(starts), problem, base, evaluate, score)
                 if base is not None

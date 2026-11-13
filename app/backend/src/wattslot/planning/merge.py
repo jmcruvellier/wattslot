@@ -21,10 +21,11 @@ from collections.abc import Mapping
 from datetime import date
 from typing import Any
 
-from wattslot.planning.cycles import Segment, recognized_segment
+from wattslot.planning.cycles import RECOGNIZED_FRACTION, Segment
 from wattslot.planning.plan import BATTERY as BATTERY
 from wattslot.planning.plan import POOL as POOL
 from wattslot.planning.plan import Plan as DayPlan
+from wattslot.planning.reference import ident
 
 HOURLY_FIELDS = (
     "surplus_horaire",
@@ -160,14 +161,18 @@ def merge_planning(
 ) -> list[dict[str, Any]]:
     """Équipements du plan fusionné.
 
-    ``active_tasks`` : noms des tâches actives d'après la dernière lecture de HA (None : pas de
-    filtre). Une tâche retirée n'est plus gelée, sauf si son équipement a tourné aujourd'hui
-    (cycle réel reconnu dans ``real_segments``) : tâche terminée, pas annulée. ``chosen`` : noms
-    des équipements dont l'utilisateur a choisi le départ — leur ancien créneau passé n'est pas
-    gelé, le nouveau plan l'emporte.
+    Un élément est reconnu à son identité : le nom de son équipement, avec son rang à partir du
+    deuxième cycle du même équipement dans la journée (``reference.ident``).
+
+    ``active_tasks`` : identités des tâches actives d'après la dernière lecture de HA (None :
+    pas de filtre). Une tâche retirée n'est plus gelée, sauf si son équipement a tourné
+    aujourd'hui (cycle réel reconnu dans ``real_segments``, que ne prend pas déjà un autre
+    cycle lancé du même équipement) : tâche terminée, pas annulée. ``chosen`` : noms des
+    équipements dont l'utilisateur a choisi le départ, et identités des blocs libérés — leur
+    ancien créneau passé n'est pas gelé, le nouveau plan l'emporte.
     """
-    old_by_name = {item["equipement"]: item for item in old or []}
-    new_by_name = {item["equipement"]: item for item in new or []}
+    old_by_name = {_ident(item): item for item in old or []}
+    new_by_name = {_ident(item): item for item in new or []}
     merged: list[dict[str, Any]] = []
     battery = _merge_battery(old_by_name.get(BATTERY), new_by_name.get(BATTERY), first_hour)
     if battery:
@@ -187,19 +192,14 @@ def merge_planning(
         still_active = (
             active_tasks is None
             or name in active_tasks
-            or (
-                old_item is not None
-                and recognized_segment(
-                    (real_segments or {}).get(name, []), old_item.get("energie_kwh", 0.0)
-                )
-                is not None
-            )
+            or (old_item is not None and _ran(old_item, name, new_by_name, real_segments))
         )
+        device = (old_item or new_by_name[name])["equipement"]
         if (
             old_item
             and old_item["heure_debut"] < first_hour
             and still_active
-            and (chosen is None or name not in chosen)
+            and (chosen is None or (name not in chosen and device not in chosen))
             and name not in unfollowed
             and not _launched(new_by_name.get(name))
         ):
@@ -212,6 +212,33 @@ def merge_planning(
             merged.append(old_item)
         # sinon : tâche annulée dans HA, et plus proposée par le nouveau calcul
     return merged
+
+
+def _ident(item: Mapping[str, Any]) -> str:
+    return ident(item["equipement"], item.get("rang"))
+
+
+def _ran(
+    old_item: Mapping[str, Any],
+    name: str,
+    new_by_name: Mapping[str, Mapping[str, Any]],
+    real_segments: Mapping[str, list[Segment]] | None,
+) -> bool:
+    """L'équipement d'un ancien bloc a-t-il tourné pour lui : une activité reconnue (même
+    seuil que le recalage) de plus que celles déjà prises par ses autres cycles lancés."""
+    device = old_item["equipement"]
+    threshold = RECOGNIZED_FRACTION * (old_item.get("energie_kwh") or 0.0)
+    recognized = [
+        s
+        for s in (real_segments or {}).get(device, [])
+        if s.energy_kwh >= threshold and s.energy_kwh > 0
+    ]
+    others = sum(
+        1
+        for other, item in new_by_name.items()
+        if other != name and item.get("equipement") == device and _launched(item)
+    )
+    return len(recognized) > others
 
 
 def _launched(item: Mapping[str, Any] | None) -> bool:
@@ -245,9 +272,11 @@ def merge_plans(
         }
     day = new.get("date_cible")
     day_iso = day.isoformat() if isinstance(day, date) else day
-    active = {t["summary"] for t in new.get("taches_placees", []) if t.get("due") == day_iso} | {
-        t["summary"] for t in new.get("taches_en_attente", [])
-    }
+    active = {
+        ident(t["summary"], t.get("rang"))
+        for t in new.get("taches_placees", [])
+        if t.get("due") == day_iso
+    } | {ident(t["summary"], t.get("rang")) for t in new.get("taches_en_attente", [])}
     merged["planning"] = merge_planning(
         old.get("planning", []),
         new.get("planning", []),

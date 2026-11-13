@@ -38,7 +38,8 @@ def entry(
     """Ce que ce calcul dit de chaque équipement. ``plan`` : le plan fusionné du jour ;
     ``announced`` : les départs du calcul précédent ; ``launched`` : cycles réels reconnus ;
     ``unfollowed`` : recommandations non suivies, replacées."""
-    slots = {slot.device: slot for slot in Plan.from_v1(dict(plan)).slots}
+    # Par cycle (``Slot.ident``) : un équipement peut en avoir plusieurs dans la journée.
+    slots = {slot.ident: slot for slot in Plan.from_v1(dict(plan)).slots}
     found: dict[str, dict[str, Any]] = {}
     for device in sorted(set(slots) | set(announced)):
         slot = slots.get(device)

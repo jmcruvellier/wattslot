@@ -243,6 +243,8 @@ class RequestableDevice(BaseModel):
 class NewRequest(BaseModel):
     device: str  # clé de l'équipement
     latest: date | None = None  # au plus tard ; aucun : dès que possible
+    # Un cycle de plus : une demande s'ajoute à celle déjà ouverte, au lieu d'en changer la date.
+    another: bool = False
 
 
 class TemplateSummary(BaseModel):
@@ -1462,12 +1464,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.post("/api/requests")
     def post_request(request: Request, asked: NewRequest) -> user_requests.UserRequest:
-        """Demande pour un équipement ; une demande déjà ouverte pour lui change de date. 422
-        pour un équipement qu'on ne peut pas demander."""
+        """Demande pour un équipement ; une demande déjà ouverte pour lui, pas encore lancée,
+        change de date, sauf ``another`` (un cycle de plus le même jour). 422 pour un équipement
+        qu'on ne peut pas demander."""
         if asked.device not in {d.key for d in requestable(request)}:
             raise HTTPException(status_code=422, detail="device_not_requestable")
         return user_requests.ask(
-            request.app.state.database, asked.device, asked.latest, datetime.now(UTC)
+            request.app.state.database,
+            asked.device,
+            asked.latest,
+            datetime.now(UTC),
+            asked.another,
         )
 
     def close_request(

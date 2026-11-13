@@ -18,6 +18,18 @@ def task_key(text: str) -> str:
     return without_accents.lower().replace("-", "").replace("_", "").replace(" ", "")
 
 
+def ident(name: str, rank: int | None = None) -> str:
+    """Identité d'un cycle dans le plan d'une journée : le nom de son équipement, suivi de son
+    rang à partir du deuxième cycle du même équipement (« Lave-linge », « Lave-linge #2 »)."""
+    return name if rank is None or rank <= 1 else f"{name} #{rank}"
+
+
+def cycle_key(name: str, rank: int | None = None) -> str:
+    """Clé d'un cycle (``task_key`` de son équipement, et son rang à partir du deuxième)."""
+    key = task_key(name)
+    return key if rank is None or rank <= 1 else f"{key}#{rank}"
+
+
 @dataclass(frozen=True)
 class Reference:
     # Batterie (plancher, plage active, puissances et charge complète périodique : réglages de la

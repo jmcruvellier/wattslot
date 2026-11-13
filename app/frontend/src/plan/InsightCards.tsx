@@ -89,8 +89,9 @@ export function ExplanationsCard({ view, onChanged }: { view: DayView; onChanged
       </h3>
       {view.explanations.length > 0 && (
         <ul className="explanations">
-          {view.explanations.map((item) => (
-            <li key={item.device}>
+          {view.explanations.map((item, index) => (
+            // Un équipement peut avoir plusieurs cycles dans la journée : la clé porte son rang.
+            <li key={`${item.device}-${index}`}>
               <strong>{item.device}</strong> {item.text}
               {choosable && (
                 <OtherStarts

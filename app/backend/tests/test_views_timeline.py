@@ -194,3 +194,30 @@ def test_a_cycle_carried_from_the_day_before_starts_the_timeline() -> None:
     heater = rows["Chauffe-eau"].planned
     assert heater[0].carried and heater[0].end_hour == 1.0
     assert all(not bar.carried for bar in heater[1:])
+
+
+def test_several_cycles_of_one_device_share_a_row() -> None:
+    """Deux lessives le même jour : une ligne « Lave-linge », une barre par cycle, et chaque
+    cycle prévu jugé sur son propre cycle réel."""
+    washer = {"equipement": "Lave-linge", "energie_kwh": 1.0, "duree_cycle_min": 90}
+    state = {
+        "planning": [
+            {**washer, "heure_debut": 14, "heure_fin": 16, "debut_min": 840, "fin_min": 930}
+            | {"rang": 2},
+            {**washer, "heure_debut": 10, "heure_fin": 12, "debut_min": 600, "fin_min": 690},
+        ]
+    }
+    timeline = build_timeline(state, None, 12.0, 10.0, 8.0, Context(zone=PARIS))
+    rows = [row for row in timeline.rows if row.device == "Lave-linge"]
+    assert len(rows) == 1
+    assert [(bar.start_hour, bar.end_hour) for bar in rows[0].planned] == [(10, 11.5), (14, 15.5)]
+
+    # À 13 h, seul le premier cycle a tourné : il n'est pas compté aussi pour le second.
+    planned = [
+        {"nom": "Lave-linge", "debut_min": 600, "fin_min": 690, "energie_kwh": 1.0},
+        {"nom": "Lave-linge", "debut_min": 840, "fin_min": 930, "energie_kwh": 1.0},
+    ]
+    actual = {"equipements_reels_horaire": {"Lave-linge": [segment(iso(10, 5), iso(11, 30), 1.0)]}}
+    found, _, badge = statuses(planned, actual, 13.0, set(), Context(zone=PARIS))
+    assert [(s.status, s.actual_start_min) for s in found] == [("on_time", 605), ("planned", None)]
+    assert badge == "on_time"
