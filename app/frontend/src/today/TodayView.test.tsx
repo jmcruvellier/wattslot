@@ -117,7 +117,11 @@ describe("TodayView", () => {
       const url = String(input);
       if (url.startsWith("api/views/today")) {
         const next_action = [ACTION, NEXT].find((action) => !launched.includes(action.device)) ?? null;
-        return Response.json({ ...TODAY, now: NOW, next_action });
+        return Response.json({ ...TODAY, now: NOW, next_action, declared_launches: [...launched] });
+      }
+      if (url.startsWith("api/planning/launched/") && init?.method === "DELETE") {
+        launched.splice(launched.indexOf(decodeURIComponent(url.split("/").pop() ?? "")), 1);
+        return new Response(null, { status: 204 });
       }
       if (url === "api/planning/launched" && init?.method === "POST") {
         launched.push(JSON.parse(String(init.body)).device);
@@ -139,6 +143,21 @@ describe("TodayView", () => {
     // Plus rien dans le navigateur : le lancement vaut aussi sur un autre appareil.
     expect(window.localStorage.length).toBe(0);
     expect(fetchMock).toHaveBeenCalled();
+
+    // Clic par erreur : « Pas encore lancé » rend l'appareil à la prochaine action.
+    expect(screen.getByText(/Lave-linge : marqué comme lancé\./)).toBeInTheDocument();
+    await userEvent.click(screen.getAllByRole("button", { name: "Pas encore lancé" })[0]);
+    expect(await screen.findByRole("heading", { name: "Lancez Lave-linge" })).toBeInTheDocument();
+    expect(launched).toEqual(["Lave-vaisselle"]);
+    expect(screen.getByText(/Lave-vaisselle : marqué comme lancé\./)).toBeInTheDocument();
+  });
+
+  it("dit quand le retour en arrière n'a pas abouti", async () => {
+    mockApi({ ...TODAY, now: NOW, next_action: null, declared_launches: ["Lave-linge"] }); // DELETE : 404
+    renderView();
+    await userEvent.click(await screen.findByRole("button", { name: "Pas encore lancé" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Le retour en arrière n'a pas abouti.");
+    expect(screen.getByText(/Lave-linge : marqué comme lancé\./)).toBeInTheDocument();
   });
 
   it("dit quand « C'est lancé » n'a pas pu être enregistré, et garde l'action", async () => {

@@ -23,7 +23,7 @@ from wattslot.planning.store import PlanStore
 from wattslot.storage.database import open_database
 from wattslot.storage.graph import GraphStore
 from wattslot.views.display import Context
-from wattslot.views.now import TEXTS, measure_now, next_action, sentence
+from wattslot.views.now import TEXTS, declared_pending, measure_now, next_action, sentence
 from wattslot.views.timeline import Timeline
 
 ZONE = ZoneInfo("Europe/Paris")
@@ -392,6 +392,19 @@ def test_next_action_skips_a_device_declared_launched() -> None:
     assert found is not None and found.device == "Lave-vaisselle"
     both = {"Lave-linge", "Lave-vaisselle"}
     assert next_action(timeline, {}, NOON, CONTEXT, declared=both) is None
+
+
+def test_a_declared_launch_can_be_withdrawn_until_its_cycle_is_seen() -> None:
+    timeline = _timeline(
+        ("Lave-vaisselle", "on_time", 600, 700),  # cycle reconnu : plus rien à reprendre
+        ("Lave-linge", "planned", 780, 900),
+        ("Piscine", "planned", 700, 900),  # pas un cycle
+    )
+    said = {"Lave-vaisselle", "Lave-linge", "Piscine"}
+    assert declared_pending(timeline, NOON, CONTEXT, said) == ["Lave-linge"]
+    assert declared_pending(timeline, NOON, CONTEXT, set()) == []
+    late = datetime(2026, 10, 15, 14, 0, tzinfo=UTC)  # 16 h, plage finie
+    assert declared_pending(timeline, late, CONTEXT, said) == []
 
 
 # --- Route ------------------------------------------------------------------------------------

@@ -2,13 +2,14 @@
 n'est plus à lancer ce jour-là. « Prochaine action » passe à l'appareil suivant, sur tous les
 navigateurs et après chaque nouveau calcul ; ni rappel ni notification « à lancer » ne partent
 plus pour lui. Le plan n'en est pas changé : seul un cycle reconnu dans les mesures cale son
-créneau. Gardé en base jusqu'au jour suivant (``declared_launches``).
+créneau. Gardé en base jusqu'au jour suivant (``declared_launches``) ; un retour en arrière
+rend l'appareil à « Prochaine action » tant que son cycle n'est pas reconnu.
 """
 
 import sqlite3
 from datetime import UTC, date, datetime
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, HTTPException, Request, Response
 from pydantic import BaseModel
 
 
@@ -27,6 +28,15 @@ def declare(database: sqlite3.Connection, day: date, device: str, now: datetime)
             "INSERT INTO declared_launches VALUES (?, ?, ?) ON CONFLICT(day, device) DO NOTHING",
             (day.isoformat(), device, now.astimezone(UTC).isoformat()),
         )
+
+
+def withdraw(database: sqlite3.Connection, day: date, device: str) -> bool:
+    """Retour en arrière : l'appareil est de nouveau à lancer ; False s'il n'était pas déclaré."""
+    with database:
+        cursor = database.execute(
+            "DELETE FROM declared_launches WHERE day = ? AND device = ?", (day.isoformat(), device)
+        )
+    return cursor.rowcount > 0
 
 
 # --- Routes ------------------------------------------------------------------------------------
@@ -56,3 +66,11 @@ def add_declared(request: Request, body: Declared) -> Declared:
     """« C'est lancé » : l'appareil n'est plus proposé aujourd'hui par « Prochaine action »."""
     declare(request.app.state.database, _today(request), body.device, datetime.now(UTC))
     return body
+
+
+@router.delete("/api/planning/launched/{device}", status_code=204)
+def remove_declared(request: Request, device: str) -> Response:
+    """Retour en arrière après un « C'est lancé » ; 404 si l'appareil n'était pas déclaré."""
+    if not withdraw(request.app.state.database, _today(request), device):
+        raise HTTPException(status_code=404, detail="not_declared")
+    return Response(status_code=204)
