@@ -88,7 +88,8 @@ def test_the_exchange_of_each_phase_is_merged_hour_by_hour() -> None:
 
     phase = merged["residu_reseau_par_phase"][2]
     assert phase[10] == pytest.approx(1.3)  # avant midi : l'ancien plan
-    assert phase[12] == pytest.approx(2.8)  # ensuite : le nouveau
+    assert phase[12] == pytest.approx(1.3)  # l'heure du calcul : encore l'ancien
+    assert phase[13] == pytest.approx(2.8)  # ensuite : le nouveau
 
 
 def test_the_day_view_lists_the_three_phases() -> None:
