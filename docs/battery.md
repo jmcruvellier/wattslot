@@ -39,6 +39,8 @@ When one of these conditions is not met, WattSlot says so instead of silently fa
 
 The **appliance schedule** then has one line per phase ("Battery phase 2", "Battery phase 3"), each with its own planned and measured charges and discharges, and a "Battery (total)" line for the batteries that offset the total. The curves still show all your batteries together. Beyond today, the plan only knows their total content and shares it between them according to their capacity.
 
+**Each battery, measured.** When a battery line of the appliance schedule groups several batteries (all of them in a single-phase home, or those of one phase), a thinner line under it shows, for each battery, its measured charges and discharges. The forecast stays that of the group: how batteries connected at the same place share the work depends on their own controllers, and WattSlot cannot predict it. These lines make it visible when one battery discharges into another.
+
 ## What you see
 
 - **Today**: the charge now, its highest point and its level at midnight. With several batteries, the charge of the home is their mean, weighted by capacity, and each battery is listed below with its own charge, its content and what it is doing right now. The percentage is the last reading; the powers are averaged over the last quarter of an hour.

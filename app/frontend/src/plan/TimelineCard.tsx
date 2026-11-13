@@ -4,13 +4,15 @@
 // Deux couloirs par piste (lot 7.1) : le prévu en haut, le réel en bas, chaque bloc portant son
 // énergie, centrée sur sa plus grande partie visible, s'il lui reste assez de place libre ; pas de
 // légende, le détail est dans l'info-bulle.
+// Une ligne de batterie qui en réunit plusieurs (toutes, ou celles d'une phase) est suivie d'une
+// ligne fine par batterie, avec son seul mesuré : la prévision n'existe que pour l'ensemble.
 // Sur la vue Aujourd'hui, le clic sur un bloc prévu d'un équipement — à venir, en cours ou
 // passé — ouvre la feuille des autres départs (OtherStarts) et du bouton « Annuler » : changer
 // de créneau, annuler la planification du jour ou y revenir, sans quitter l'écran. Sur Demain et
 // les jours suivants (`day`), la feuille propose les autres départs et une heure libre ; pas
 // d'annulation, qui ne vaut que pour aujourd'hui.
 
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 
 import { useI18n } from "../i18n/I18nProvider";
 import { minuteOfDay } from "../i18n/homeTime";
@@ -193,14 +195,33 @@ export default function TimelineCard({
       ) : (
         <div className="tl">
           {timeline.rows.map((row, index) => (
-            <div key={row.device} className="tl-row" aria-label={rowLabel(row, t)}>
-              <span className="tl-label">{rowLabel(row, t)}</span>
-              <div className="tl-track" ref={index === 0 ? measureTrack : undefined}>
-                {bars(row, row.planned, false)}
-                {bars(row, row.actual, true)}
-                {readingHour !== null && <span className="tl-now" style={{ left: `${(readingHour / 24) * 100}%` }} />}
+            <Fragment key={row.device}>
+              <div className="tl-row" aria-label={rowLabel(row, t)}>
+                <span className="tl-label">{rowLabel(row, t)}</span>
+                <div className="tl-track" ref={index === 0 ? measureTrack : undefined}>
+                  {bars(row, row.planned, false)}
+                  {bars(row, row.actual, true)}
+                  {readingHour !== null && <span className="tl-now" style={{ left: `${(readingHour / 24) * 100}%` }} />}
+                </div>
               </div>
-            </div>
+              {/* Ligne qui réunit plusieurs batteries : le mesuré de chacune dessous, sur un seul
+               * couloir. La prévision n'existe que pour l'ensemble. */}
+              {(row.batteries ?? []).map((battery) => (
+                <div
+                  key={battery.key}
+                  className="tl-row"
+                  aria-label={t("plan.timeline.battery_measured", { name: battery.name })}
+                >
+                  <span className="tl-label tl-sub-label" title={t("plan.timeline.battery_measured", { name: battery.name })}>
+                    {battery.name}
+                  </span>
+                  <div className="tl-track tl-track-single">
+                    {bars(row, battery.actual, true)}
+                    {readingHour !== null && <span className="tl-now" style={{ left: `${(readingHour / 24) * 100}%` }} />}
+                  </div>
+                </div>
+              ))}
+            </Fragment>
           ))}
           <div className="tl-row" aria-hidden="true">
             <span />
