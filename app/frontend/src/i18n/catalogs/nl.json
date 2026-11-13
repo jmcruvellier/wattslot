@@ -1669,6 +1669,7 @@
       "eyebrow": "Zon",
       "title": "{kwh} kWh verwacht vandaag",
       "done": "{kwh} kWh al opgewekt.",
+      "at_reading": "{kwh} kWh verwacht op dit moment.",
       "none": "Nog geen opwekking gemeten."
     },
     "trend": "Verschil met de voorspelling bij de meting"

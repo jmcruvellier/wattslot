@@ -1669,6 +1669,7 @@
       "eyebrow": "Sonne",
       "title": "{kwh} kWh heute erwartet",
       "done": "{kwh} kWh bereits erzeugt.",
+      "at_reading": "{kwh} kWh bis jetzt erwartet.",
       "none": "Noch keine Erzeugung gemessen."
     },
     "trend": "Abweichung von der Prognose bei der Messung"

@@ -1669,6 +1669,7 @@
       "eyebrow": "Soleil",
       "title": "{kwh} kWh prévus aujourd'hui",
       "done": "{kwh} kWh déjà produits.",
+      "at_reading": "{kwh} kWh prévus à cette heure.",
       "none": "Pas encore de production mesurée."
     },
     "trend": "Écart avec la prévision au relevé"

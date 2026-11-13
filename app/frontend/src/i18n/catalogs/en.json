@@ -1669,6 +1669,7 @@
       "eyebrow": "Sun",
       "title": "{kwh} kWh expected today",
       "done": "{kwh} kWh already produced.",
+      "at_reading": "{kwh} kWh forecast by this time.",
       "none": "No production measured yet."
     },
     "trend": "Difference from the forecast at the reading"

@@ -262,6 +262,8 @@ describe("TodayView", () => {
     expect(screen.getByText("Au plus haut vers 16h00 : 98 %.")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "16,5 kWh prévus aujourd'hui" })).toBeInTheDocument();
     expect(screen.getByText("14,0 kWh déjà produits.")).toBeInTheDocument();
+    // La référence de la pastille (+8 % : 6,5 kWh mesurés pour 6,0 prévus au relevé) est dite.
+    expect(screen.getByText("6,0 kWh prévus à cette heure.")).toBeInTheDocument();
     // Tendances de TODAY : SoC +25 %, production +8 %, en pilule en tête de chaque carte.
     expect(screen.getAllByTitle("Écart avec la prévision au relevé")).toHaveLength(2);
     expect(screen.getByText("▲ +25%")).toHaveClass("trend-pill");
@@ -275,6 +277,7 @@ describe("TodayView", () => {
     expect(await screen.findByRole("heading", { name: "64 % en ce moment" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "9,5 kWh prévus aujourd'hui" })).toBeInTheDocument();
     expect(screen.queryByText(/[▲▼●]/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/prévus à cette heure/)).not.toBeInTheDocument();
   });
 
   it("sans solaire : pas de carte Soleil", async () => {
