@@ -204,14 +204,15 @@ describe("TodayView", () => {
   });
 
   it("dit que l'heure prévue est passée, sans heure de fin", async () => {
+    // Heure fixée : le choix « Autre heure de départ » propose les heures à venir de l'horloge
+    // réelle. Chercher « 15h00 » dans toute la page faisait échouer le test de minuit à 15 h.
+    vi.setSystemTime(new Date("2026-10-17T13:30:00"));
     mockApi({ ...TODAY, now: NOW, next_action: { ...ACTION, late: true } });
     renderView();
     expect(await screen.findByRole("heading", { name: "Lancez Lave-linge" })).toBeInTheDocument();
     expect(screen.getByText("Prochaine action · maintenant")).toBeInTheDocument();
-    expect(
-      screen.getByText(/Le départ prévu à 13h00 est passé : lancez-le dès que possible\. Au plus fort/),
-    ).toBeInTheDocument();
-    expect(screen.queryByText(/15h00/)).not.toBeInTheDocument();
+    const sentence = screen.getByText(/Le départ prévu à 13h00 est passé : lancez-le dès que possible\. Au plus fort/);
+    expect(sentence).not.toHaveTextContent("15h00");
   });
 
   it("ne garde pas « Rappel prévu » pour l'appareil suivant", async () => {
