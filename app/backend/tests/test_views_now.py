@@ -11,7 +11,7 @@ from fastapi.testclient import TestClient
 
 from tests.test_health import _settings
 from tests.test_views_day import state_of
-from tests.v1_oracle import STATES
+from tests.v1_oracle import STATES, state_named
 from wattslot import home_model
 from wattslot.aggregation import QUARTER
 from wattslot.detection import DeviceKind, Role
@@ -382,7 +382,33 @@ def test_next_action_while_its_slot_is_running_then_none() -> None:
     assert next_action(timeline, {}, late, CONTEXT) is None
 
 
+def test_next_action_skips_a_device_declared_launched() -> None:
+    """« C'est lancé » : l'appareil suivant prend la place, sans attendre les mesures."""
+    timeline = _timeline(
+        ("Lave-linge", "planned", 780, 900),
+        ("Lave-vaisselle", "planned", 1320, 1400),
+    )
+    found = next_action(timeline, {}, NOON, CONTEXT, declared={"Lave-linge"})
+    assert found is not None and found.device == "Lave-vaisselle"
+    both = {"Lave-linge", "Lave-vaisselle"}
+    assert next_action(timeline, {}, NOON, CONTEXT, declared=both) is None
+
+
 # --- Route ------------------------------------------------------------------------------------
+
+
+def test_a_declared_launch_reaches_the_today_view(tmp_path: Path) -> None:
+    """Gardé par le serveur : vrai pour tous les navigateurs, et après un nouveau calcul."""
+    today = {**state_of(state_named("tomorrow_laundry")), "date_cible": date.today()}
+    with TestClient(create_app(_settings(tmp_path))) as client:
+        PlanStore(open_database(tmp_path / "data")).save(
+            "today", today["date_cible"], today, 1.0, False
+        )
+        for device in ("Lave-linge", "Sèche-linge"):
+            created = client.post("/api/planning/launched", json={"device": device})
+            assert created.status_code == 201
+        found = client.get("/api/views/today").json()
+    assert found["next_action"] is None
 
 
 def test_today_view_carries_now_and_next_action_other_days_do_not(tmp_path: Path) -> None:

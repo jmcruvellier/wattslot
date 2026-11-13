@@ -28,7 +28,7 @@ Les réglages sont gardés dans ``app_settings`` ; sans réglage enregistré, ce
 import hashlib
 import json
 import sqlite3
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Set
 from datetime import datetime, time
 from typing import Annotated, Any, Literal, get_args
 from zoneinfo import ZoneInfo
@@ -38,6 +38,7 @@ from pydantic import BaseModel, Field
 from wattslot import notification_events as events
 from wattslot.home_assistant import HomeAssistantClient
 from wattslot.languages import Language
+from wattslot.planning import declared
 from wattslot.planning.recommendation import has_appliances, recommendation, signature, title
 from wattslot.planning.sources import load_settings
 from wattslot.planning.store import PlanStore
@@ -260,13 +261,14 @@ def candidates(
     local: datetime,
     lang: str,
     next_run_min: int | None = None,
+    declared: Set[str] = frozenset(),
 ) -> list[events.Candidate]:
     if kind == "forecast_drop":
         return events.forecast_drop(tomorrow, reference, lang) if tomorrow else []
     if today is None:
         return []
     if kind == "device_now":
-        return events.device_now(today, local, lang, next_run_min)
+        return events.device_now(today, local, lang, next_run_min, declared)
     if kind == "plan_gap":
         return events.plan_gap(today, local, lang)
     return events.battery_full(today, local, lang)
@@ -342,7 +344,14 @@ async def dispatch(
             continue
         try:
             for found in candidates(
-                kind, today, tomorrow, reference, local, lang, _next_run(database, local)
+                kind,
+                today,
+                tomorrow,
+                reference,
+                local,
+                lang,
+                _next_run(database, local),
+                declared.load(database, local.date()),
             ):
                 if not already_sent(database, kind, found.key, found.day):
                     await deliver(kind, found.key, found.day, found.message, service)

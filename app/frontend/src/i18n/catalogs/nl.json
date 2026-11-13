@@ -1617,6 +1617,7 @@
       "title": "Start {device}",
       "slot": "Tussen {start} en {end}.",
       "launched": "Is gestart",
+      "launched_failed": "De start kon niet worden opgeslagen.",
       "remind": "Herinner me",
       "reminder_set": "Herinnering gepland",
       "remind_failed": "De herinnering kon niet worden opgeslagen.",

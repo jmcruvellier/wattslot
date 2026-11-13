@@ -11,7 +11,7 @@ La prochaine action est le prochain appareil à cycle encore à venir dans le pl
 son explication (« Pourquoi ce plan »).
 """
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Set
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -299,9 +299,11 @@ def next_action(
     moment: datetime,
     context: Context,
     details: Mapping[str, Explanation] | None = None,
+    declared: Set[str] = frozenset(),
 ) -> NextAction | None:
     """Prochain appareil à cycle à lancer d'après le plan du jour : pas encore lancé, et dont la
-    plage n'est pas finie."""
+    plage n'est pas finie. ``declared`` : appareils que l'utilisateur a déclarés lancés
+    (« C'est lancé »), avant que les mesures ne le montrent ; le suivant prend leur place."""
     local = moment.astimezone(context.zone)
     now_min = local.hour * 60 + local.minute
     cycles = {row.device for row in timeline.rows if row.kind == "cycle"}
@@ -309,6 +311,7 @@ def next_action(
         status
         for status in timeline.statuses
         if status.device in cycles
+        and status.device not in declared
         and status.status == "planned"
         and status.planned_end_min > now_min
     ]

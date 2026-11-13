@@ -1617,6 +1617,7 @@
       "title": "Ponga {device}",
       "slot": "Entre {start} y {end}.",
       "launched": "Ya está en marcha",
+      "launched_failed": "No se ha podido guardar el arranque.",
       "remind": "Recuérdamelo",
       "reminder_set": "Recordatorio previsto",
       "remind_failed": "No se pudo guardar el recordatorio.",

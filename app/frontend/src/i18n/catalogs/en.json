@@ -1617,6 +1617,7 @@
       "title": "Start the {device}",
       "slot": "Between {start} and {end}.",
       "launched": "It's started",
+      "launched_failed": "The start could not be saved.",
       "remind": "Remind me",
       "reminder_set": "Reminder set",
       "remind_failed": "The reminder could not be saved.",

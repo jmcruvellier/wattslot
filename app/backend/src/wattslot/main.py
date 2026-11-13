@@ -85,6 +85,7 @@ from wattslot.planning.assemble import TaskRules, build_input, rules_from_tasks,
 from wattslot.planning.cancelled import router as cancelled_routes
 from wattslot.planning.choices import router as choices_routes
 from wattslot.planning.cycles import Segment
+from wattslot.planning.declared import router as declared_routes
 from wattslot.planning.explain import catalog as explain_catalog
 from wattslot.planning.journal import CycleJournal, cycle_appliances
 from wattslot.planning.runner import Context, RunReport, refresh_actual, run, stored_plan
@@ -550,6 +551,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(quality_routes)
     app.include_router(choices_routes)
     app.include_router(cancelled_routes)
+    app.include_router(declared_routes)
 
     @app.get("/api/assistant/connection")
     def assistant_connection(request: Request) -> assistant_prompts.AssistantConnection:

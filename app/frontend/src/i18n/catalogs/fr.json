@@ -1617,6 +1617,7 @@
       "title": "Lancez {device}",
       "slot": "Entre {start} et {end}.",
       "launched": "C'est lancé",
+      "launched_failed": "Le lancement n'a pas pu être enregistré.",
       "remind": "Me le rappeler",
       "reminder_set": "Rappel prévu",
       "remind_failed": "Le rappel n'a pas pu être enregistré.",

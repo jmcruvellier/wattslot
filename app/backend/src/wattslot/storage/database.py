@@ -231,6 +231,16 @@ MIGRATIONS: tuple[str, ...] = (
         devices TEXT NOT NULL
     )
     """,
+    # 24 : lancements déclarés par l'utilisateur (« C'est lancé » de « Prochaine action ») :
+    # l'appareil n'est plus proposé ce jour-là, sur aucun navigateur ni après un nouveau calcul.
+    """
+    CREATE TABLE declared_launches (
+        day TEXT NOT NULL,
+        device TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        PRIMARY KEY (day, device)
+    )
+    """,
 )
 
 
