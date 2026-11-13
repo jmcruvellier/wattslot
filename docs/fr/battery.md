@@ -39,6 +39,8 @@ Quand l'une de ces conditions n'est pas remplie, WattSlot le dit au lieu de reto
 
 Le **Planning des équipements** a alors une ligne par phase (« Batterie phase 2 », « Batterie phase 3 »), chacune avec ses propres charges et décharges, prévues et mesurées, et une ligne « Batterie (total) » pour les batteries qui compensent le total. Les courbes montrent toujours toutes vos batteries ensemble. Au-delà d'aujourd'hui, le plan ne connaît que leur contenu total et le répartit entre elles selon leur capacité.
 
+**Chaque batterie, mesurée.** Quand une ligne de batterie du Planning des équipements réunit plusieurs batteries (toutes dans une maison en monophasé, ou celles d'une même phase), une ligne plus fine montre dessous, pour chaque batterie, ses charges et ses décharges mesurées. La prévision reste celle du groupe : le partage entre des batteries branchées au même endroit dépend de leurs régulateurs, et WattSlot ne peut pas le prévoir. Ces lignes rendent visible une batterie qui se décharge dans une autre.
+
 ## Ce que vous voyez
 
 - **Aujourd'hui** : la charge maintenant, son point le plus haut et son niveau à minuit. Avec plusieurs batteries, la charge de la maison est leur moyenne, pondérée par la capacité, et chaque batterie est listée dessous avec sa propre charge, son contenu et ce qu'elle fait en ce moment. Le pourcentage est le dernier relevé ; les puissances sont des moyennes sur le dernier quart d'heure.

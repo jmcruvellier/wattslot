@@ -143,6 +143,14 @@ export interface Bar {
   cycle?: string | null;
 }
 
+// Une batterie sous la ligne qui en réunit plusieurs : son mesuré seulement, le plan n'ayant de
+// prévision que par groupe (backend : views.timeline.BatteryTrack).
+export interface BatteryTrack {
+  key: string;
+  name: string;
+  actual: Bar[];
+}
+
 export interface TimelineRow {
   device: string;
   kind: "battery" | "cycle" | "runtime";
@@ -151,6 +159,7 @@ export interface TimelineRow {
   // Batteries d'une même phase (calcul par phase) : 1, 2 ou 3 ; 0 : celles qui compensent le
   // total ; absent ou null : la batterie de la maison, ou un autre équipement.
   phase?: number | null;
+  batteries?: BatteryTrack[]; // ligne qui réunit plusieurs batteries : le mesuré de chacune
 }
 
 export interface Timeline {

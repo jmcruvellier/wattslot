@@ -309,6 +309,7 @@
       "tip_planned": "Gepland {start} → {end}: {what}, {kwh} kWh",
       "tip_carried": "Vervolg van de vorige dag {start} → {end}: {what}, {kwh} kWh",
       "tip_actual": "Werkelijk {start} → {end}: {what}, {kwh} kWh",
+      "battery_measured": "{name} (gemeten)",
       "no_surplus": "Geen zonne-overschot verwacht (productie {production} kWh, verbruik {consumption} kWh): geen apparaat gepland.",
       "nothing": "Geen apparaat gepland op deze dag.",
       "choice_title": "Start van {device}",

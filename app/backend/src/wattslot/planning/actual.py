@@ -36,7 +36,7 @@ from wattslot.aggregation import CounterState
 from wattslot.configuration import Behavior, Configuration
 from wattslot.detection import DeviceKind, Role
 from wattslot.home_assistant import is_entity_id
-from wattslot.home_model import LINES, HomeModel, counted_sensors, sensor_iri
+from wattslot.home_model import LINES, HomeDevice, HomeModel, counted_sensors, sensor_iri
 from wattslot.planning.appliances import DEFAULT_RULES, RULES, SHORT_GAP_MIN, Observation
 from wattslot.planning.inputs import V1_POOL
 from wattslot.planning.journal import appliances, real_cycles
@@ -553,16 +553,21 @@ def actual_day(
     # Batteries qui ne compensent que leur phase : charges et décharges réelles de chaque
     # groupe (phase 1 à 3 ; 0 : celles qui compensent le total), pour la frise par phase.
     lines: dict[int, dict[Role, list[list[Observation]]]] = {}
+    # Chaque batterie : son groupe et ses propres compteurs, pour la frise par batterie.
+    each: list[tuple[HomeDevice, int, dict[Role, list[list[Observation]]]]] = []
     for device in model.devices:
         if device.kind is not DeviceKind.BATTERY:
             continue
         line = config.battery_line(model, configuration, device)
-        group = lines.setdefault(LINES.index(line) + 1 if line is not None else 0, {})
+        number = LINES.index(line) + 1 if line is not None else 0
+        group = lines.setdefault(number, {})
+        own: dict[Role, list[list[Observation]]] = {}
         for sensor in device.sensors:
             if sensor.role in (Role.ENERGY_CHARGED, Role.ENERGY_DISCHARGED):
-                group.setdefault(sensor.role, []).append(
-                    by_sensor.get(sensor_iri(device.key, sensor.entity_id), [])
-                )
+                points = by_sensor.get(sensor_iri(device.key, sensor.entity_id), [])
+                group.setdefault(sensor.role, []).append(points)
+                own.setdefault(sensor.role, []).append(points)
+        each.append((device, number, own))
 
     def group_counter(group: dict[Role, list[list[Observation]]], role: Role) -> list[Observation]:
         before, today = together(combined(group.get(role, [])))
@@ -580,6 +585,27 @@ def actual_day(
             )
             for phase, group in sorted(lines.items())
         }
+
+    # Plusieurs batteries : les charges et décharges réelles de chacune (``phase`` : son
+    # groupe, comme ci-dessus), montrées sous la ligne de la batterie ou de son groupe. La
+    # prévision, elle, n'existe que par groupe : le partage entre batteries d'une même phase
+    # dépend de leurs régulateurs.
+    if len(each) > 1:
+        battery_lines["batterie_reelle_segments_par_batterie"] = [
+            {
+                "cle": device.key,
+                "nom": device.name,
+                "phase": number,
+                "segments": battery_segments(
+                    group_counter(own, Role.ENERGY_CHARGED),
+                    group_counter(own, Role.ENERGY_DISCHARGED),
+                    midnight,
+                    until,
+                    zone,
+                ),
+            }
+            for device, number, own in each
+        ]
 
     return {
         **by_phase,

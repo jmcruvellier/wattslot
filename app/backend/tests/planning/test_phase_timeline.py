@@ -201,3 +201,106 @@ def test_real_battery_segments_of_each_group(tmp_path: Path) -> None:
     ]
     # En monophasé, aucune batterie n'est sur une phase : rien par phase.
     assert "batterie_reelle_segments_par_phase" not in single
+
+
+# --- Mesuré par batterie --------------------------------------------------------------------------
+
+
+def test_real_battery_segments_of_each_battery(tmp_path: Path) -> None:
+    raw = RawStores(tmp_path, "Europe/Paris")
+    raw.write(
+        [
+            reading("garage", "sensor.garage_in", 10.0, at(-1)),
+            reading("garage", "sensor.garage_in", 10.0, at(10)),
+            reading("garage", "sensor.garage_in", 11.5, at(11)),
+            reading("cellar", "sensor.cellar_out", 4.0, at(-1)),
+            reading("cellar", "sensor.cellar_out", 4.0, at(11)),
+            reading("cellar", "sensor.cellar_out", 4.6, at(12)),
+        ]
+    )
+
+    found = actual_day(MODEL, raw, DAY, at(13), configuration=SETTINGS)
+    single = actual_day(
+        MODEL.model_copy(update={"supply": Supply.SINGLE}), raw, DAY, at(13), configuration=SETTINGS
+    )
+    alone = actual_day(HomeModel(devices=MODEL.devices[:1]), raw, DAY, at(13))
+
+    def each(day: dict[str, Any]) -> list[tuple[str, int, list[tuple[str, float]]]]:
+        return [
+            (b["cle"], b["phase"], [(s["action"], s["energie_kwh"]) for s in b["segments"]])
+            for b in day["batterie_reelle_segments_par_batterie"]
+        ]
+
+    # Chacune avec son groupe : sa phase, ou 0 pour celle qui compense le total.
+    assert each(found) == [
+        ("garage", 2, [("charge", 1.5)]),
+        ("cellar", 3, [("decharge", 0.6)]),
+        ("meter", 0, []),
+    ]
+    # En monophasé aussi, dès qu'il y a plusieurs batteries : toutes dans le même groupe.
+    assert [(key, phase) for key, phase, _ in each(single)] == [
+        ("garage", 0),
+        ("cellar", 0),
+        ("meter", 0),
+    ]
+    # Une seule batterie : sa ligne suffit.
+    assert "batterie_reelle_segments_par_batterie" not in alone
+
+
+def _measured(key: str, phase: int, hour: int, action: str = "charge") -> dict[str, Any]:
+    return {
+        "cle": key,
+        "nom": key.capitalize(),
+        "phase": phase,
+        "segments": [
+            {
+                "action": action,
+                "debut_iso": at(hour).isoformat(),
+                "fin_iso": at(hour + 1).isoformat(),
+                "energie_kwh": 0.5,
+            }
+        ],
+    }
+
+
+def test_the_row_of_a_group_lists_its_batteries_when_it_has_several() -> None:
+    plan = stored(two_phases())
+    actual = {
+        "batterie_reelle_segments_par_batterie": [
+            _measured("garage", 2, 10),
+            _measured("shed", 2, 10, "decharge"),
+            _measured("cellar", 3, 11),
+        ]
+    }
+
+    rows = {
+        row.phase: row
+        for row in build_timeline(plan, actual, 15.0, 6.0, 24.0, V1_CONTEXT).rows
+        if row.kind == "battery"
+    }
+
+    # Phase 2 : deux batteries, chacune avec son mesuré (ici l'une se vide dans l'autre).
+    assert [(b.key, b.name, [bar.action for bar in b.actual]) for b in rows[2].batteries] == [
+        ("garage", "Garage", ["charge"]),
+        ("shed", "Shed", ["discharge"]),
+    ]
+    # Phase 3 : une seule batterie, la ligne du groupe est déjà la sienne.
+    assert rows[3].batteries == []
+
+
+def test_the_single_battery_row_lists_every_battery() -> None:
+    whole = stored(replace(home(BASE, sun_kwh=1.5), battery=battery(5.0, 2.0)))
+    actual = {
+        "batterie_reelle_segments_par_batterie": [
+            _measured("garage", 2, 10),
+            _measured("cellar", 0, 11),
+        ]
+    }
+
+    def battery_row(measured: dict[str, Any] | None) -> Any:
+        rows = build_timeline(whole, measured, 15.0, 6.0, 24.0, V1_CONTEXT).rows
+        return next(row for row in rows if row.kind == "battery")
+
+    # Plan sur le total (monophasé, ou triphasé sans calcul par phase) : toutes sous la ligne.
+    assert [b.key for b in battery_row(actual).batteries] == ["garage", "cellar"]
+    assert battery_row(None).batteries == []

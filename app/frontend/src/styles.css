@@ -698,6 +698,20 @@ pre {
   bottom: 0.15rem;
 }
 
+/* Une batterie sous la ligne de son groupe : un seul couloir, le mesuré. */
+.tl-track-single {
+  height: 1.7rem;
+}
+
+.tl-track-single > .tl-actual {
+  top: 0.15rem;
+}
+
+.tl-sub-label {
+  padding-left: 0.9rem;
+  font-size: 0.8rem;
+}
+
 .tl-planned {
   background: transparent;
   border: 2px dashed var(--bar, var(--cycle));

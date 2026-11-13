@@ -62,6 +62,39 @@ describe("batteries par phase", () => {
     expect(screen.getByLabelText("Batterie")).toBeInTheDocument();
   });
 
+  it("montre sous une ligne qui réunit plusieurs batteries le mesuré de chacune", () => {
+    const measured = (action: "charge" | "discharge") => [
+      { start_hour: 19, end_hour: 20, energy_kwh: 0.6, action, mode: null },
+    ];
+    const rows: TimelineRow[] = [
+      {
+        ...group(2, "charge", 10),
+        batteries: [
+          { key: "garage", name: "Batterie du garage", actual: measured("charge") },
+          { key: "cellar", name: "Batterie du cellier", actual: measured("discharge") },
+        ],
+      },
+      group(3, "discharge", 19),
+    ];
+    render(
+      <I18nProvider>
+        <TimelineCard timeline={{ ...TODAY.timeline, rows }} readingHour={20.5} />
+      </I18nProvider>,
+    );
+
+    const card = screen.getByRole("article", { name: "Planning des équipements" });
+    // Une batterie qui se vide dans l'autre, sur la même phase : chacune a sa ligne.
+    const garage = within(card).getByLabelText("Batterie du garage (mesuré)");
+    const cellar = within(card).getByLabelText("Batterie du cellier (mesuré)");
+    expect(within(garage).getByRole("button", { name: "Réel 19h → 20h : charge, 0,60 kWh" })).toBeInTheDocument();
+    expect(within(cellar).getByRole("button", { name: "Réel 19h → 20h : décharge, 0,60 kWh" })).toBeInTheDocument();
+    // Pas de prévision par batterie : la ligne du groupe garde la sienne, seule.
+    expect(within(garage).queryByRole("button", { name: /^Prévu/ })).toBeNull();
+    expect(within(within(card).getByLabelText("Batterie phase 2")).getByRole("button", { name: /^Prévu/ })).toBeInTheDocument();
+    // Un groupe d'une seule batterie n'a pas de ligne de plus.
+    expect(within(card).getAllByLabelText(/\(mesuré\)$/)).toHaveLength(2);
+  });
+
   it("dit dans l'agenda quelle batterie charge ou prend le relais", () => {
     expect(agenda(BY_PHASE).filter((entry) => entry.kind !== "battery_max")).toEqual([
       { kind: "battery_charge", minute: 600, end: 720, phase: 2 },

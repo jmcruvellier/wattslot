@@ -36,6 +36,15 @@ class Bar(BaseModel):
     cycle: str | None = None
 
 
+class BatteryTrack(BaseModel):
+    """Une batterie sous la ligne de la batterie de la maison, ou de son groupe : ses charges
+    et décharges mesurées. Pas de prévision : le plan n'en a que par groupe."""
+
+    key: str
+    name: str
+    actual: list[Bar]
+
+
 class TimelineRow(BaseModel):
     device: str  # nom de l'équipement dans le plan
     kind: Literal["battery", "cycle", "runtime"]
@@ -44,6 +53,8 @@ class TimelineRow(BaseModel):
     # Batteries d'une même phase (calcul par phase) : 1, 2 ou 3 ; 0 : celles qui compensent
     # le total. ``None`` : la batterie de la maison, ou un autre équipement.
     phase: int | None = None
+    # Ligne d'une batterie qui en réunit plusieurs : le mesuré de chacune. Vide sinon.
+    batteries: list[BatteryTrack] = []
 
 
 class DeviceStatus(BaseModel):
@@ -336,6 +347,20 @@ def build_timeline(
             if b["energie_kwh"] >= MIN_BATTERY_BAR_KWH
         ]
 
+    def tracks(phase: int | None) -> list[BatteryTrack]:
+        """Batteries réunies sur une ligne (``phase`` : leur groupe ; ``None`` : toutes), avec
+        le mesuré de chacune ; aucune quand la ligne n'en réunit qu'une."""
+        found = [
+            BatteryTrack(
+                key=str(one.get("cle")),
+                name=str(one.get("nom")),
+                actual=_actual_bars(one.get("segments") or [], context),
+            )
+            for one in (actual or {}).get("batterie_reelle_segments_par_batterie") or []
+            if phase is None or one.get("phase") == phase
+        ]
+        return found if len(found) > 1 else []
+
     groups = (battery or {}).get("groupes") or []
     if battery is not None and groups:
         # Calcul par phase : une ligne par groupe de batteries, avec sa propre prévision et ses
@@ -354,6 +379,7 @@ def build_timeline(
                     planned=battery_bars(group.get("mouvements", [])),
                     actual=_actual_bars(measured_by_phase.get(group["phase"]) or [], context),
                     phase=group["phase"],
+                    batteries=tracks(group["phase"]),
                 )
             )
     elif battery is not None:
@@ -363,6 +389,7 @@ def build_timeline(
                 kind="battery",
                 planned=battery_bars(battery.get("mouvements", [])),
                 actual=_actual_bars((actual or {}).get("batterie_reelle_segments") or [], context),
+                batteries=tracks(None),
             )
         )
     rendered = set()
