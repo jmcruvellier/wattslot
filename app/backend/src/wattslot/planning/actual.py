@@ -397,7 +397,10 @@ def actual_day(
 
     Statistiques externes (« linky:… ») : pas de brut, leurs heures viennent des agrégats repris
     de HA (``reader``), souvent la veille seulement ; une heure pas encore reçue n'entre pas dans
-    la consommation mesurée, au lieu d'y compter pour 0."""
+    la consommation mesurée, au lieu d'y compter pour 0.
+
+    Compteur sans relevé la veille (jour de l'installation) : ses heures d'avant son premier
+    relevé viennent aussi de ces agrégats."""
     zone = raw.zone
     midnight = datetime.combine(day, time(), zone)
     until = min(until, midnight + timedelta(days=1))
@@ -422,10 +425,31 @@ def actual_day(
         ),
     )
 
+    entities = {
+        sensor_iri(device.key, sensor.entity_id): sensor.entity_id
+        for device in model.devices
+        for sensor in device.sensors
+    }
+
+    def earlier(iri: str, before: list[Observation], today: list[Observation]) -> dict[int, float]:
+        """Heures du jour d'avant le premier relevé d'un compteur suivi depuis aujourd'hui
+        seulement (jour de l'installation, capteur ajouté dans la journée) : celles que la
+        reprise de l'historique de HA a données. Sans elles, la production d'une journée
+        ensoleillée se lisait 0 kWh le soir de l'installation."""
+        entity_id = entities.get(iri)
+        if before or reader is None or entity_id is None or not is_entity_id(entity_id):
+            return {}
+        first = today[0][0].astimezone(zone) if today else until.astimezone(zone)
+        end = first.replace(minute=0, second=0, microsecond=0)
+        return _statistic_hourly(reader, entity_id, midnight, end, zone) if end > midnight else {}
+
     def hourly(role: Role) -> dict[int, float]:
         total: dict[int, float] = defaultdict(float)
         for iri in iris.get(role, []):
-            for hour, kwh in (counter_hourly(*split(iri), midnight, zone) or {}).items():
+            before, today = split(iri)
+            for hour, kwh in (counter_hourly(before, today, midnight, zone) or {}).items():
+                total[hour] += kwh
+            for hour, kwh in earlier(iri, before, today).items():
                 total[hour] += kwh
         return dict(total)
 
