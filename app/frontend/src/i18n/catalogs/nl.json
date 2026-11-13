@@ -1621,7 +1621,9 @@
     "next": {
       "eyebrow": "Volgende actie",
       "title": "Start {device}",
-      "slot": "Tussen {start} en {end}.",
+      "slot": "Start om {start}, klaar rond {end}.",
+      "slot_late": "De geplande start om {start} is voorbij: start zo snel mogelijk.",
+      "now": "nu",
       "launched": "Is gestart",
       "launched_failed": "De start kon niet worden opgeslagen.",
       "declared": "{device}: gemarkeerd als gestart.",

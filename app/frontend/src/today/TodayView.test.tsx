@@ -131,7 +131,7 @@ describe("TodayView", () => {
     });
     renderView();
     expect(await screen.findByRole("heading", { name: "Lancez Lave-linge" })).toBeInTheDocument();
-    expect(screen.getByText(/Entre 13h00 et 15h00\. Au plus fort du soleil\./)).toBeInTheDocument();
+    expect(screen.getByText(/Départ à 13h00, fin vers 15h00\. Au plus fort du soleil\./)).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: "C'est lancé" }));
     expect(await screen.findByRole("heading", { name: "Lancez Lave-vaisselle" })).toBeInTheDocument();
@@ -166,6 +166,39 @@ describe("TodayView", () => {
     await userEvent.click(await screen.findByRole("button", { name: "C'est lancé" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Le lancement n'a pas pu être enregistré.");
     expect(screen.getByRole("heading", { name: "Lancez Lave-linge" })).toBeInTheDocument();
+  });
+
+  it("dit que l'heure prévue est passée, sans heure de fin", async () => {
+    mockApi({ ...TODAY, now: NOW, next_action: { ...ACTION, late: true } });
+    renderView();
+    expect(await screen.findByRole("heading", { name: "Lancez Lave-linge" })).toBeInTheDocument();
+    expect(screen.getByText("Prochaine action · maintenant")).toBeInTheDocument();
+    expect(
+      screen.getByText(/Le départ prévu à 13h00 est passé : lancez-le dès que possible\. Au plus fort/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/15h00/)).not.toBeInTheDocument();
+  });
+
+  it("ne garde pas « Rappel prévu » pour l'appareil suivant", async () => {
+    let device = "Lave-linge";
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url.startsWith("api/views/today")) {
+        return Response.json({ ...TODAY, now: NOW, next_action: { ...ACTION, device } });
+      }
+      if (url === "api/reminders" && init?.method === "POST") return Response.json({}, { status: 201 });
+      if (url === "api/planning/launched" && init?.method === "POST") {
+        device = "Lave-vaisselle";
+        return Response.json({}, { status: 201 });
+      }
+      return new Response(null, { status: 404 });
+    });
+    renderView();
+    await userEvent.click(await screen.findByRole("button", { name: "Me le rappeler" }));
+    expect(screen.getByRole("button", { name: "Rappel prévu" })).toBeDisabled();
+    await userEvent.click(screen.getByRole("button", { name: "C'est lancé" }));
+    expect(await screen.findByRole("heading", { name: "Lancez Lave-vaisselle" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Me le rappeler" })).toBeEnabled();
   });
 
   it("pose un rappel, et n'en propose pas sans service de notification", async () => {

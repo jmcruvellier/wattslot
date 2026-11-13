@@ -1621,7 +1621,9 @@
     "next": {
       "eyebrow": "Próxima acción",
       "title": "Ponga {device}",
-      "slot": "Entre {start} y {end}.",
+      "slot": "Inicio a las {start}, fin hacia las {end}.",
+      "slot_late": "La hora prevista ({start}) ya ha pasado: póngalo en marcha en cuanto pueda.",
+      "now": "ahora",
       "launched": "Ya está en marcha",
       "launched_failed": "No se ha podido guardar el arranque.",
       "declared": "{device}: marcado como en marcha.",

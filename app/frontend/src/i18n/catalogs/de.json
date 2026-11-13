@@ -1621,7 +1621,9 @@
     "next": {
       "eyebrow": "Nächste Aktion",
       "title": "Starten Sie {device}",
-      "slot": "Zwischen {start} und {end}.",
+      "slot": "Start um {start}, Ende gegen {end}.",
+      "slot_late": "Der geplante Start um {start} ist vorbei: Starten Sie so bald wie möglich.",
+      "now": "jetzt",
       "launched": "Ist gestartet",
       "launched_failed": "Der Start konnte nicht gespeichert werden.",
       "declared": "{device}: als gestartet markiert.",

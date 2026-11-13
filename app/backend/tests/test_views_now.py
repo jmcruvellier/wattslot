@@ -354,6 +354,7 @@ def test_next_action_is_the_next_cycle_still_to_start() -> None:
     assert found is not None
     assert (found.device, found.start_min, found.end_min) == ("Lave-linge", 780, 900)
     assert found.explanation == "Au plus fort du soleil."
+    assert not found.late  # 13 h, il est midi
 
 
 def test_next_action_offers_the_other_starts_still_to_come() -> None:
@@ -378,6 +379,7 @@ def test_next_action_while_its_slot_is_running_then_none() -> None:
     timeline = _timeline(("Lave-linge", "planned", 700, 760))  # 11 h 40 - 12 h 40
     found = next_action(timeline, {}, NOON, CONTEXT)
     assert found is not None and found.explanation is None
+    assert found.late  # départ prévu à 11 h 40, il est midi et le cycle n'est pas vu
     late = datetime(2026, 10, 15, 11, 0, tzinfo=UTC)  # 13 h, plage finie
     assert next_action(timeline, {}, late, CONTEXT) is None
 

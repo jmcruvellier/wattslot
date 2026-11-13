@@ -221,6 +221,7 @@ export interface NextAction {
   start_min: number;
   end_min: number;
   explanation: string | null;
+  late?: boolean; // heure de départ prévue dépassée, cycle pas encore vu
   reminder: boolean;
   can_remind: boolean;
   // Autres départs à venir, proposés par le plan, et départ choisi par l'utilisateur.

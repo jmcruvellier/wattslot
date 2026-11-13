@@ -242,7 +242,9 @@ function NextActionCard({
   const declared = <DeclaredLaunches devices={view.declared_launches ?? []} onChanged={onChanged} />;
   const [launching, setLaunching] = useState(false);
   const [launchFailed, setLaunchFailed] = useState(false);
-  const [reminded, setReminded] = useState(false);
+  // Appareil dont le rappel vient d'être posé ici : le bloc peut passer à un autre appareil
+  // sans rechargement, et son rappel à lui n'est pas posé.
+  const [reminded, setReminded] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [cancelFailed, setCancelFailed] = useState(false);
@@ -283,7 +285,7 @@ function NextActionCard({
     setFailed(false);
     try {
       await postJson("api/reminders", { device: action.device });
-      setReminded(true);
+      setReminded(action.device);
     } catch {
       setFailed(true);
     }
@@ -303,17 +305,23 @@ function NextActionCard({
     }
   };
 
-  const reminder = action.reminder || reminded;
+  const reminder = action.reminder || reminded === action.device;
+  const start = clock(action.start_min, language);
+  // Heure prévue dépassée, cycle pas encore vu : on ne dit plus « à 13:00 » comme si c'était
+  // à venir, ni une heure de fin qui ne vaut plus.
+  const late = action.late ?? false;
   return (
     <section className="next-action" aria-labelledby="next-action-title">
       <p className="ui-eyebrow">
-        {t("today.next.eyebrow")} · {clock(action.start_min, language)}
+        {t("today.next.eyebrow")} · {late ? t("today.next.now") : start}
       </p>
       <h3 id="next-action-title" className="ui-card-title">
         {t("today.next.title", { device: action.device })}
       </h3>
       <p>
-        {t("today.next.slot", { start: clock(action.start_min, language), end: clock(action.end_min, language) })}
+        {late
+          ? t("today.next.slot_late", { start })
+          : t("today.next.slot", { start, end: clock(action.end_min, language) })}
         {action.explanation && <> {action.explanation}</>}
       </p>
       <div className="next-action-buttons">
