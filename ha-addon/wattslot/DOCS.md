@@ -53,7 +53,7 @@ Changes apply when the add-on restarts. The hourly history is kept without limit
 ## Data and backups
 
 Everything stays local, in the add-on folder. A nightly maintenance (3:30, local time) removes
-expired data and compacts the store.
+expired data; the store is compacted when a whole month of quarter-hours is removed.
 
 Home Assistant backups include the house model, the aggregated history (quarter-hours and hours)
 and the settings. Raw readings are left out: they are large and change all the time. Backups are
