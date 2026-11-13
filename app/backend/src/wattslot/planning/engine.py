@@ -59,6 +59,10 @@ FULL_BONUS = 0.0001  # batterie pleine dans la journée : départage seulement (
 FULL_PRIORITY_BONUS = 2.0  # charge complète hebdomadaire due
 SKIP_PENALTY = 100.0  # tâche non placée : seulement si elle ne tient plus
 SOFT_PENALTY = 1.0  # contrainte souple violée, par heure (ou par créneau d'une tâche)
+# Départ après le délai maximal derrière le cycle suivi (sèche-linge après lave-linge), par
+# heure de retard : bien plus que ce qu'un autre créneau fait gagner, bien moins qu'une tâche
+# non placée. Le cycle part alors au plus près, avec un avertissement.
+LATE_PENALTY = 5.0
 # Par kWh soutiré au-delà de la puissance souscrite (lot 7.3) : plus qu'une tâche non placée,
 # le disjoncteur coupant toute la maison ; souple, le problème reste toujours soluble.
 CONTRACT_PENALTY = 1000.0
@@ -245,6 +249,7 @@ def solve(problem: Problem, objective: Goal = Objective.COST, time_limit_s: floa
     choices: dict[str, dict[int, Any]] = {}
     skips: dict[str, Any] = {}
     penalties: list[Any] = []  # contraintes souples violées (lot 3.5)
+    lateness: list[Any] = []  # minutes de retard sur le délai maximal après le cycle suivi
     for task in problem.tasks:
         candidates = set(task.candidates())
         # Cycles à finir avant : celui dont la tâche dépend (sèche-linge après lave-linge), et
@@ -277,6 +282,17 @@ def solve(problem: Problem, objective: Goal = Objective.COST, time_limit_s: floa
             start = sum(s * x for s, x in choices[task.name].items())
             parent_end = sum((s + parent.slot_min) * x for s, x in choices[parent.name].items())
             h.addConstr(start >= parent_end - 24 * 60 * skips[task.name])
+        if task.within_min is not None and (parent is not None or task.after_end_min is not None):
+            # Délai maximal après la fin du cycle suivi : le retard (minutes) est pénalisé.
+            start = sum(s * x for s, x in choices[task.name].items())
+            after_end: Any = (
+                sum((s + parent.slot_min) * x for s, x in choices[parent.name].items())
+                if parent is not None
+                else task.after_end_min
+            )
+            late = var()
+            h.addConstr(late >= start - after_end - task.within_min - 48 * 60 * skips[task.name])
+            lateness.append(late)
         preceding = by_name.get(task.follows or "")
         if preceding is not None:
             # Un cycle à la fois : celui-ci après la fin du précédent, s'il est placé (un cycle
@@ -552,6 +568,7 @@ def solve(problem: Problem, objective: Goal = Objective.COST, time_limit_s: floa
         + SKIP_PENALTY * sum(skips.values())
         + SKIP_PENALTY * sum(shortfalls)  # par kWh manquant : seulement s'il ne tient plus
         + SOFT_PENALTY * sum(penalties)
+        + LATE_PENALTY / 60 * sum(lateness)
         + CONTRACT_PENALTY * sum(over_contract)
         + PHASE_PENALTY * sum(over_phase)
         + battery_cost(problem, objective) * sum(throughput)
@@ -905,6 +922,27 @@ def day_plan(problem: Problem, plan: Plan, run: BatteryRun) -> DayPlan:
         end = start + task.slot_min
         _check_soft(problem, task.label, [(start, end)], warnings)
         parent = by_key.get(task.depends_on or "")
+        after_end = (
+            plan.starts[parent.name] + parent.slot_min
+            if parent is not None and parent.name in plan.starts
+            else task.after_end_min
+        )
+        if (
+            task.within_min is not None
+            and after_end is not None
+            and start > after_end + task.within_min
+        ):
+            warnings.append(
+                {
+                    "code": "delai_apres_depasse",
+                    "params": {
+                        "equipement": task.label,
+                        "apres": task.after_label or "",
+                        "delai_min": task.within_min,
+                        "attente_min": start - after_end,
+                    },
+                }
+            )
         items.append(
             Slot(
                 device=task.label,

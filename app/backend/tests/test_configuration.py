@@ -147,6 +147,7 @@ def test_configuration_api(tmp_path: Path) -> None:
             "constraints": [],
             "after": None,
             "max_delay_days": None,
+            "after_max_hours": None,
             "recurrence": None,
             "battery": None,
         }

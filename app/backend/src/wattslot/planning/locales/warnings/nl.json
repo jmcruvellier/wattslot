@@ -7,6 +7,7 @@
     "heures_insuffisantes_du": "{equipement} is vandaag aan de beurt, maar er blijft niet genoeg tijd over voor een volledige cyclus ({duree_min} vanaf {debut_min}): niet ingepland. Als het al gedraaid heeft, vink de taak dan af in Home Assistant.",
     "profil_indisponible_attente": "{equipement} wacht, maar het profiel is niet beschikbaar (status={status}): niet ingepland.",
     "dependance_non_placee": "{equipement} moet na {depend_de} komen, dat vandaag niet ingepland kon worden: niet ingepland.",
+    "delai_apres_depasse": "{equipement} start {attente_min} na het einde van {apres}, in plaats van hoogstens {delai_min}: een dichterbij gelegen tijdvak was niet mogelijk.",
     "heures_insuffisantes_attente": "{equipement} wacht, maar er blijft niet genoeg tijd over voor een volledige cyclus ({duree_min} vanaf {debut_min}): niet ingepland.",
     "contrainte_impossible": "{equipement}: geen tijdvak voldoet aan de tijdsbeperkingen ({contraintes}): niet ingepland of minimale looptijd niet gehaald.",
     "contrainte_non_respectee": "{equipement}: zachte beperking niet nageleefd ({contraintes}) om de rest van het plan te halen.",

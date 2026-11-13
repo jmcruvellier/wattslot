@@ -1219,7 +1219,10 @@
     },
     "rule": "Rule",
     "replaces_tasks": "The recurring Home Assistant tasks of this device are then ignored; a missed occurrence stays due until the next cycle.",
-    "after_hint": "For instance the dryer after the washing machine: it is placed after the other one ends, the same day."
+    "after_hint": "For instance the dryer after the washing machine: it is placed after the other one ends, the same day.",
+    "after_max": "At the latest",
+    "after_max_hours": "hours after it ends (empty: no limit)",
+    "after_max_hint": "So that wet laundry does not wait: the dryer starts within this time after the washing machine ends. If that is not possible, it is placed as close as it can be and the plan says so."
   },
   "constraint": {
     "title": "Time constraints of {device}",

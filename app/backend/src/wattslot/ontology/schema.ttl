@@ -283,6 +283,9 @@
         "starts after the cycle of (device key)"@en .
 <#maxDelayDays> a owl:DatatypeProperty ; rdfs:domain <#DeviceSettings> ; rdfs:range xsd:integer ;
     rdfs:label "tolérance de report (jours)"@fr, "postponement tolerance (days)"@en .
+<#startsWithinHours> a owl:DatatypeProperty ; rdfs:domain <#DeviceSettings> ; rdfs:range xsd:integer ;
+    rdfs:label "démarre au plus tard (heures) après la fin du cycle suivi"@fr,
+        "starts at the latest (hours) after the end of the cycle it follows"@en .
 <#FloorRange> a owl:Class ;
     rdfs:label "Plage de plancher de la batterie"@fr, "Battery floor range"@en .
 <#hasFloorRange> a owl:ObjectProperty ; rdfs:domain <#BatterySettings> ; rdfs:range <#FloorRange> ;

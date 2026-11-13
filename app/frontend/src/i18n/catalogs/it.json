@@ -1219,7 +1219,10 @@
     },
     "rule": "Regola",
     "replaces_tasks": "Le attività ricorrenti di Home Assistant di questo apparecchio vengono allora ignorate; un'occorrenza mancata resta dovuta fino al ciclo successivo.",
-    "after_hint": "Per esempio l'asciugatrice dopo la lavatrice: è collocata dopo la fine dell'altra, nello stesso giorno."
+    "after_hint": "Per esempio l'asciugatrice dopo la lavatrice: è collocata dopo la fine dell'altra, nello stesso giorno.",
+    "after_max": "Al più tardi",
+    "after_max_hours": "ore dopo la sua fine (vuoto: nessun limite)",
+    "after_max_hint": "Perché il bucato bagnato non aspetti: l'asciugatrice parte entro questo tempo dalla fine della lavatrice. Se non è possibile, viene collocata il più vicino possibile e il piano lo segnala."
   },
   "constraint": {
     "title": "Vincoli orari di {device}",

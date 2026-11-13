@@ -7,6 +7,7 @@
     "heures_insuffisantes_du": "{equipement} è da fare oggi, ma non resta abbastanza tempo per un ciclo completo ({duree_min} dalle {debut_min}): non collocato. Se ha già funzionato, spunti l'attività in Home Assistant.",
     "profil_indisponible_attente": "{equipement} è in attesa, ma il suo profilo non è disponibile (status={status}): non collocato.",
     "dependance_non_placee": "{equipement} deve seguire {depend_de}, che oggi non è stato possibile collocare: non collocato.",
+    "delai_apres_depasse": "{equipement} parte {attente_min} dopo la fine di {apres}, invece di {delai_min} al massimo: non era possibile una fascia più vicina.",
     "heures_insuffisantes_attente": "{equipement} è in attesa, ma non resta abbastanza tempo per un ciclo completo ({duree_min} dalle {debut_min}): non collocato.",
     "contrainte_impossible": "{equipement}: nessuna fascia rispetta i suoi vincoli orari ({contraintes}): non collocato o durata minima non rispettata.",
     "contrainte_non_respectee": "{equipement}: vincolo flessibile non rispettato ({contraintes}) per mantenere il resto del piano.",

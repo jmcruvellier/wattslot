@@ -443,12 +443,19 @@ describe("réglages de Ma maison", () => {
     const dryer = within(sheet).getByRole("group", { name: "Règles du cycle de Sèche-linge" });
     const select = within(dryer).getByLabelText("Démarre après la fin de") as HTMLSelectElement;
     expect([...select.options].map((o) => o.textContent)).toEqual(["aucun équipement", "Lave-linge"]);
+    // Le délai après la fin de l'autre cycle n'est proposé qu'avec un équipement à suivre.
+    expect(within(dryer).queryByLabelText(/Au plus tard/)).toBeNull();
     await userEvent.selectOptions(select, "washer");
+    await userEvent.type(within(dryer).getByLabelText(/Au plus tard/), "2");
     await userEvent.type(within(dryer).getByLabelText(/Peut être reporté de/), "1");
     await save(sheet);
 
     await saved();
-    expect(sent[0].devices.find((d) => d.key === "dryer")).toMatchObject({ after: "washer", max_delay_days: 1 });
+    expect(sent[0].devices.find((d) => d.key === "dryer")).toMatchObject({
+      after: "washer",
+      after_max_hours: 2,
+      max_delay_days: 1,
+    });
     expect(sent[0].devices.find((d) => d.key === "washer")!.after).toBeUndefined(); // inchangé
   });
 

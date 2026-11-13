@@ -1219,7 +1219,10 @@
     },
     "rule": "Regla",
     "replaces_tasks": "Las tareas recurrentes de Home Assistant de este aparato se ignoran entonces; una vez saltada sigue pendiente hasta el siguiente ciclo.",
-    "after_hint": "Por ejemplo, la secadora después de la lavadora: se coloca tras el final de la otra, el mismo día."
+    "after_hint": "Por ejemplo, la secadora después de la lavadora: se coloca tras el final de la otra, el mismo día.",
+    "after_max": "A más tardar",
+    "after_max_hours": "horas después de su final (vacío: sin límite)",
+    "after_max_hint": "Para que la ropa mojada no espere: la secadora empieza dentro de este plazo tras el final de la lavadora. Si no es posible, se coloca lo más cerca posible y el plan lo indica."
   },
   "constraint": {
     "title": "Restricciones horarias de {device}",

@@ -26,15 +26,17 @@ const dailyRule = (interval: number) => (interval > 1 ? `FREQ=DAILY;INTERVAL=${i
 const weeklyRule = (days: string[]) =>
   `FREQ=WEEKLY;BYDAY=${WEEKDAYS.filter((d) => days.includes(d)).join(",") || "MO"}`;
 
-export default function CycleEditor({ after, maxDelayDays, recurrence, name, others, onChange }: {
+export default function CycleEditor({ after, maxDelayDays, afterMaxHours, recurrence, name, others, onChange }: {
   after: string | null;
   maxDelayDays: number | null;
+  afterMaxHours: number | null; // avec « after » : délai maximal après la fin de l'autre cycle
   recurrence: Recurrence | null;
   name: string; // nom de l'équipement, pour les noms accessibles
   others: { key: string; name: string }[]; // autres équipements à cycles
   onChange: (change: {
     after?: string | null;
     max_delay_days?: number | null;
+    after_max_hours?: number | null;
     recurrence?: Recurrence | null;
   }) => void;
 }) {
@@ -54,7 +56,13 @@ export default function CycleEditor({ after, maxDelayDays, recurrence, name, oth
       <p>
         <label>
           {t("cycle.after")}{" "}
-          <select value={after ?? ""} onChange={(event) => onChange({ after: event.target.value || null })}>
+          <select
+            value={after ?? ""}
+            onChange={(event) =>
+              // Plus d'équipement à suivre : le délai après sa fin ne sert plus.
+              onChange(event.target.value ? { after: event.target.value } : { after: null, after_max_hours: null })
+            }
+          >
             <option value="">{t("cycle.no_after")}</option>
             {others.map((other) => (
               <option key={other.key} value={other.key}>
@@ -65,6 +73,23 @@ export default function CycleEditor({ after, maxDelayDays, recurrence, name, oth
         </label>
         <Hint text={t("cycle.after_hint")} />
       </p>
+      {after !== null && (
+        <p>
+          <label>
+            {t("cycle.after_max")}{" "}
+            <NumberInput
+              nullable
+              min={0}
+              max={24}
+              integer
+              value={afterMaxHours}
+              onChange={(after_max_hours) => onChange({ after_max_hours })}
+            />{" "}
+            {t("cycle.after_max_hours")}
+          </label>
+          <Hint text={t("cycle.after_max_hint")} />
+        </p>
+      )}
       <Advanced modified={recurrence !== null || maxDelayDays !== null}>
       <p>
         <label>

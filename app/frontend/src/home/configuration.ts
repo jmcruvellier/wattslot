@@ -108,6 +108,9 @@ export interface DeviceSettings {
   constraints?: TimeConstraint[]; // contraintes horaires (lot 3.5)
   after?: string | null; // cycle : après la fin du cycle de cet équipement (clé), lot 3.5
   max_delay_days?: number | null; // cycle : tolérance de report ; null : 2 jours
+  // Avec « after » : départ au plus tard ce nombre d'heures après la fin de l'autre cycle ;
+  // null : pas de limite.
+  after_max_hours?: number | null;
   recurrence?: Recurrence | null; // cycle : récurrence (lot 3.5) ; null : tâches de HA
 }
 

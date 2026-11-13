@@ -1219,7 +1219,10 @@
     },
     "rule": "Regel",
     "replaces_tasks": "Die wiederkehrenden Home-Assistant-Aufgaben dieses Geräts werden dann ignoriert; ein verpasster Termin bleibt bis zum nächsten Zyklus fällig.",
-    "after_hint": "Zum Beispiel der Trockner nach der Waschmaschine: Er wird nach deren Ende eingeplant, am selben Tag."
+    "after_hint": "Zum Beispiel der Trockner nach der Waschmaschine: Er wird nach deren Ende eingeplant, am selben Tag.",
+    "after_max": "Spätestens",
+    "after_max_hours": "Stunden nach dessen Ende (leer: keine Grenze)",
+    "after_max_hint": "Damit nasse Wäsche nicht wartet: Der Trockner startet innerhalb dieser Zeit nach dem Ende der Waschmaschine. Ist das nicht möglich, wird er so nah wie möglich eingeplant und der Plan weist darauf hin."
   },
   "constraint": {
     "title": "Zeitvorgaben von {device}",

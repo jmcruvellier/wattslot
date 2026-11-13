@@ -1219,7 +1219,10 @@
     },
     "rule": "Regel",
     "replaces_tasks": "De terugkerende Home Assistant-taken van dit apparaat worden dan genegeerd; een gemiste keer blijft verschuldigd tot de volgende cyclus.",
-    "after_hint": "Bijvoorbeeld de droger na de wasmachine: hij wordt ingepland na het einde van de andere, op dezelfde dag."
+    "after_hint": "Bijvoorbeeld de droger na de wasmachine: hij wordt ingepland na het einde van de andere, op dezelfde dag.",
+    "after_max": "Uiterlijk",
+    "after_max_hours": "uur na het einde ervan (leeg: geen limiet)",
+    "after_max_hint": "Zodat natte was niet blijft liggen: de droger start binnen deze tijd na het einde van de wasmachine. Als dat niet kan, wordt hij zo dichtbij mogelijk gepland en meldt het plan dit."
   },
   "constraint": {
     "title": "Tijdsbeperkingen van {device}",

@@ -77,6 +77,13 @@ class Task:
     rank: int = 1
     uid: str | None = None
     follows: str | None = None
+    # Tâche qui en suit une autre (``depends_on``) : départ au plus tard ``within_min`` minutes
+    # après la fin de l'autre cycle (None : pas de limite), dont l'équipement est
+    # ``after_label`` ; ``after_end_min`` : cette fin, quand l'autre cycle est déjà fixé (gelé
+    # ou lancé) et que ``depends_on`` ne le désigne plus.
+    within_min: int | None = None
+    after_label: str | None = None
+    after_end_min: int | None = None
 
     @property
     def label(self) -> str:
@@ -854,6 +861,8 @@ def from_input(data: PlanningInput, reference: Reference = REFERENCE) -> Problem
                     device=request.name,
                     rank=rank,
                     uid=request.uid,
+                    within_min=data.after_max_min.get(request.name) if parent is not None else None,
+                    after_label=parent[0] if parent is not None else None,
                 )
             )
     # Un équipement ne fait qu'un cycle à la fois : pas avant la fin de ses cycles déjà fixés.
@@ -1030,9 +1039,19 @@ def _resolve_dependencies(
     for task in tasks:
         earliest = task.earliest_min
         depends = task.depends_on
+        after_end = None
         if depends is not None and depends in ends:
-            earliest, depends = max(earliest, ends[depends]), None
-        updated = Task(**{**task.__dict__, "earliest_min": earliest, "depends_on": depends})
+            # Cycle suivi déjà fixé : sa fin sert aussi au délai maximal (``within_min``).
+            after_end = ends[depends]
+            earliest, depends = max(earliest, after_end), None
+        updated = Task(
+            **{
+                **task.__dict__,
+                "earliest_min": earliest,
+                "depends_on": depends,
+                "after_end_min": after_end,
+            }
+        )
         if not updated.candidates():
             warnings.append(
                 {
@@ -1063,6 +1082,8 @@ def _resolve_dependencies(
                 )
                 continue
             task = Task(**{**task.__dict__, "depends_on": None})
+        if task.depends_on is None and task.after_end_min is None:
+            task = replace(task, within_min=None)  # plus de cycle à suivre : pas de délai
         resolved.append(task)
     return resolved
 

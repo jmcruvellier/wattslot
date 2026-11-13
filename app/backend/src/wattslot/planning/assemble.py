@@ -547,6 +547,13 @@ def configured(
             if (settings := _settings_of(task, effective, every)) is not None
             and settings.max_delay_days is not None
         },
+        after_max_min={
+            task.name: settings.after_max_hours * 60
+            for task in pool
+            if (settings := _settings_of(task, effective, every)) is not None
+            and settings.after is not None
+            and settings.after_max_hours is not None
+        },
         cycle_profiles={k: v for k, v in data.cycle_profiles.items() if k not in left_out},
         real_segments={k: v for k, v in data.real_segments.items() if k not in left_out},
         profile_status={

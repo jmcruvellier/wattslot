@@ -31,6 +31,7 @@ A cycle (washing machine…) is placed on a day when something asks for it:
 Other cycle rules:
 
 - **Starts after the end of** another device: the dryer after the washing machine, the same day.
+  - **At the latest** so many hours after it ends: so that wet laundry does not wait. The calculation keeps the two cycles close; if the limit cannot be kept, the device is placed as close as it can be and a warning of the plan says so. Empty: no limit.
 - **May be postponed by** N days at most (2 by default): a waiting cycle can move to a sunnier day.
 
 ## Time constraints

@@ -7,6 +7,7 @@
     "heures_insuffisantes_du": "{equipement} ist heute fällig, aber die verbleibende Zeit reicht nicht für einen vollen Zyklus ({duree_min} ab {debut_min}): nicht eingeplant. Wenn es schon gelaufen ist, haken Sie die Aufgabe in Home Assistant ab.",
     "profil_indisponible_attente": "{equipement} wartet, aber sein Profil ist nicht verfügbar (status={status}): nicht eingeplant.",
     "dependance_non_placee": "{equipement} muss nach {depend_de} laufen, das heute nicht eingeplant werden konnte: nicht eingeplant.",
+    "delai_apres_depasse": "{equipement} startet {attente_min} nach dem Ende von {apres} statt höchstens {delai_min}: Kein näherer Zeitraum war möglich.",
     "heures_insuffisantes_attente": "{equipement} wartet, aber die verbleibende Zeit reicht nicht für einen vollen Zyklus ({duree_min} ab {debut_min}): nicht eingeplant.",
     "contrainte_impossible": "{equipement}: kein Zeitfenster erfüllt seine Zeitvorgaben ({contraintes}): nicht eingeplant oder Mindestlaufzeit nicht erreicht.",
     "contrainte_non_respectee": "{equipement}: weiche Vorgabe nicht eingehalten ({contraintes}), um den restlichen Plan zu halten.",

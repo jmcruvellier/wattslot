@@ -132,6 +132,9 @@ class DeviceSettings(BaseModel):
     # tolérance de report d'une tâche en attente (jours ; aucune : 2).
     after: str | None = None
     max_delay_days: int | None = Field(default=None, ge=0, le=14)
+    # Avec ``after`` : départ au plus tard ce nombre d'heures après la fin de l'autre cycle
+    # (le linge mouillé n'attend pas le sèche-linge) ; aucun : pas de limite.
+    after_max_hours: int | None = Field(default=None, ge=0, le=24)
     # Cycle à démarrer (lot 3.5) : récurrence ; les tâches récurrentes de HA sont alors ignorées.
     recurrence: Recurrence | None = None
     # Batterie : ses propres réglages ; aucun : ceux de la maison (``Configuration.battery``).
@@ -410,6 +413,14 @@ def to_triples(configuration: Configuration) -> list[Triple]:
                     Literal(str(settings.max_delay_days), datatype=XSD_INTEGER),
                 )
             )
+        if settings.after_max_hours is not None:
+            triples.append(
+                Triple(
+                    node,
+                    vocab("startsWithinHours"),
+                    Literal(str(settings.after_max_hours), datatype=XSD_INTEGER),
+                )
+            )
     return triples
 
 
@@ -452,6 +463,7 @@ def load(graph: GraphStore) -> Configuration:
             after=row.get("after"),
             recurrence=load_recurrence(graph, GRAPH_CONFIGURATION, row["settings"], VOCAB),
             max_delay_days=int(row["delay"]) if "delay" in row else None,
+            after_max_hours=int(row["within"]) if "within" in row else None,
             battery=load_battery(
                 graph, GRAPH_CONFIGURATION, NamedNode(row["settings"]), VOCAB, own=True
             ),
@@ -459,7 +471,8 @@ def load(graph: GraphStore) -> Configuration:
         for row in graph.select(
             f"""
             PREFIX wattslot: <{VOCAB}>
-            SELECT ?settings ?key ?behavior ?automation ?planned ?after ?delay WHERE {{
+            SELECT ?settings ?key ?behavior ?automation ?planned ?after ?delay ?within
+            WHERE {{
               GRAPH <{GRAPH_CONFIGURATION}> {{
                 <{CONFIGURATION_IRI.value}> wattslot:hasDeviceSettings ?settings .
                 ?settings wattslot:key ?key ; wattslot:behavior ?behavior ;
@@ -467,6 +480,7 @@ def load(graph: GraphStore) -> Configuration:
                   wattslot:planned ?planned .
                 OPTIONAL {{ ?settings wattslot:startsAfterKey ?after }}
                 OPTIONAL {{ ?settings wattslot:maxDelayDays ?delay }}
+                OPTIONAL {{ ?settings wattslot:startsWithinHours ?within }}
               }}
             }}
             """

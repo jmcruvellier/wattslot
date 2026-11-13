@@ -7,6 +7,7 @@
     "heures_insuffisantes_du": "{equipement} toca hoy, pero no queda tiempo suficiente para un ciclo completo ({duree_min} a partir de las {debut_min}): no colocado. Si ya ha funcionado, marque la tarea en Home Assistant.",
     "profil_indisponible_attente": "{equipement} está pendiente, pero su perfil no está disponible (status={status}): no colocado.",
     "dependance_non_placee": "{equipement} debe ir después de {depend_de}, que no se ha podido colocar hoy: no colocado.",
+    "delai_apres_depasse": "{equipement} empieza {attente_min} después del final de {apres}, en lugar de {delai_min} como máximo: no era posible un intervalo más cercano.",
     "heures_insuffisantes_attente": "{equipement} está pendiente, pero no queda tiempo suficiente para un ciclo completo ({duree_min} a partir de las {debut_min}): no colocado.",
     "contrainte_impossible": "{equipement}: ninguna franja respeta sus restricciones horarias ({contraintes}): no colocado o duración mínima no cumplida.",
     "contrainte_non_respectee": "{equipement}: restricción flexible no respetada ({contraintes}) para mantener el resto del plan.",

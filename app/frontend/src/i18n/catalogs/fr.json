@@ -1219,7 +1219,10 @@
     },
     "rule": "Règle",
     "replaces_tasks": "Les tâches récurrentes de Home Assistant pour cet équipement sont alors ignorées ; une échéance manquée reste due jusqu'au prochain cycle.",
-    "after_hint": "Par exemple le sèche-linge après le lave-linge : il est placé après la fin de l'autre, le même jour."
+    "after_hint": "Par exemple le sèche-linge après le lave-linge : il est placé après la fin de l'autre, le même jour.",
+    "after_max": "Au plus tard",
+    "after_max_hours": "heures après sa fin (vide : pas de limite)",
+    "after_max_hint": "Pour que le linge mouillé n'attende pas : le sèche-linge démarre dans ce délai après la fin du lave-linge. Si ce n'est pas possible, il est placé au plus près et le plan le signale."
   },
   "constraint": {
     "title": "Contraintes horaires de {device}",

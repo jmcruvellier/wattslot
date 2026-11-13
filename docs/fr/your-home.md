@@ -31,6 +31,7 @@ Un cycle (lave-linge…) est placé un jour où quelque chose le demande :
 Autres règles du cycle :
 
 - **Démarre après la fin de** un autre équipement : le sèche-linge après le lave-linge, le même jour.
+  - **Au plus tard** tant d'heures après sa fin : pour que le linge mouillé n'attende pas. Le calcul garde les deux cycles proches ; si la limite ne peut pas être tenue, l'équipement est placé au plus près et un avertissement du plan le dit. Vide : pas de limite.
 - **Peut être reporté de** N jours au plus (2 par défaut) : un cycle en attente peut glisser vers un jour plus ensoleillé.
 
 ## Contraintes horaires

@@ -91,11 +91,11 @@ def device_name(name: str, lang: str) -> str:
 
 
 def _param(name: str, value: Any, lang: str) -> str:
-    if name in ("equipement", "depend_de"):
+    if name in ("equipement", "depend_de", "apres"):
         return device_name(str(value), lang)
     if name == "debut_min":
         return hour_minutes(int(value), lang)
-    if name == "duree_min":
+    if name in ("duree_min", "attente_min", "delai_min"):
         return duration(int(value), lang)
     if name == "jour" or name.startswith("jour_"):
         return long_date(value, lang)
