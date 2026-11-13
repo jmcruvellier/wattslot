@@ -1,6 +1,7 @@
 // Feuille « Batterie » de « L'essentiel » : les réglages de la maison, suivis par toutes les
 // batteries, puis, quand il y en a plusieurs, les réglages propres à celles qui diffèrent. Le
-// calcul voit toujours les batteries comme une seule (backend : battery_settings.combine).
+// calcul voit les batteries comme une seule (backend : battery_settings.combine) ; en triphasé,
+// celles d'une même phase quand le plan est calculé phase par phase (assemble.battery_groups).
 // Chargée à l'ouverture de la feuille.
 
 import { useI18n } from "../i18n/I18nProvider";
@@ -42,7 +43,7 @@ export default function BatteriesEditor({
       {batteries.length > 1 && (
         <>
           <h3>{t("battery.own_title")}</h3>
-          <p>{t("battery.own_help")}</p>
+          <p>{t(threePhase ? "battery.own_help_three_phase" : "battery.own_help")}</p>
           {batteries.map((device) => {
             const own = draft.devices.find((settings) => settings.key === device.key)?.battery ?? null;
             return (

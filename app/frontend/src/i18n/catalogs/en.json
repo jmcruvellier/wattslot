@@ -1077,6 +1077,7 @@
   "battery": {
     "title": "Battery",
     "intro": "Planning sees the home's batteries as one, of {capacity} kWh.",
+    "intro_three_phase": "These settings apply to all the batteries of the home, {capacity} kWh in total. When the plan is computed phase by phase, the batteries on the same phase are seen as one; otherwise, all of them are.",
     "defaults": "Default settings: change them to match your battery.",
     "charge": "Maximum charge power",
     "discharge": "Maximum discharge power",
@@ -1097,6 +1098,7 @@
     "floor_hint": "The battery never goes below: a reserve for the night or a power cut.",
     "own_title": "Settings per battery",
     "own_help": "Each battery follows the settings above, unless you give it its own. The calculation still sees your batteries as one: powers added up, floor according to each one's capacity.",
+    "own_help_three_phase": "Each battery follows the settings above, unless you give it its own. The calculation groups the batteries on the same phase (all of them, when the plan is not computed phase by phase): powers added up, floor according to each one's capacity.",
     "own_start": "Give this battery its own settings",
     "own_intro": "Own settings of this {capacity} kWh battery.",
     "own_reset": "Go back to the home's settings",

@@ -57,6 +57,8 @@ Needed only if Home Assistant's Energy dashboard has no solar forecast: describe
 
 ## Three-phase homes
 
+> **Experimental.** Three-phase support has been checked on simulated homes and is only starting to run on real installations. If something looks wrong in yours, please [tell us](https://github.com/jmcruvellier/wattslot/issues) and attach the report from **Settings › App status**.
+
 The first steps ask whether your home is **single-phase** (the default) or **three-phase**; afterwards, this is set in **Essentials › My grid connection**, and the **Three-phase** step of the setup checklist leads you to what is left to set. WattSlot reads what the names in Home Assistant say: when a sensor or a device names a phase (`l1`, `phase 2`, `phase a`, `channel c`…), a new home is suggested as three-phase, the device takes that phase, and the phase meters of a three-phase meter are suggested in the sheet of the grid connection. Check these suggestions: a name can be misleading. In a three-phase home:
 
 - **My meter sums the three phases** (ticked by default): what you export on one phase offsets what you import on another, as most smart meters do. Untick it if each phase is metered separately.
@@ -73,6 +75,13 @@ An appliance that exceeds its phase on its own stays placed, with a warning in t
 **A meter that counts each phase apart.** With **My meter sums the three phases** unticked, and once the consumption of each phase is measured, the cost is counted phase by phase: what one phase exports no longer offsets what another imports. The plan then places an appliance under the surplus of its own phase, and the cost, bought and sold energy of the plan are those the meter bills. What is on no phase (a device or a solar installation whose phase is not set, a battery that offsets the total) is shared equally between the three. The curves then show, hour by hour, what the three phases buy and sell together: an hour can have both.
 
 **What you see.** When the plan is calculated by phase (batteries that only offset their phase, or a meter that counts each phase apart), **Planning** shows a **By phase** card: what each phase buys from and sells to the grid over the day, as planned and, with phase sensors on the grid connection, as measured so far. The battery curve is then the one of the plan.
+
+**Particular installations.**
+
+- **Three-phase hybrid inverter** (one inverter for the panels and the battery, connected to the three phases): choose **All three phases** for the solar installation and for the battery. The battery then offsets the total of the home, and the production is spread equally over the three phases.
+- **Several solar installations of different sizes**: the forecast is shared equally between the installations, whatever their power. With very different sizes on different phases, the surplus planned for each phase is only approximate.
+- **A device connected to two phases only**: there is no setting for it yet. Leave **I don't know**: the device is still planned, but it is not counted in the power limit of a phase, and the **Three-phase** step of the setup checklist keeps asking for its phase.
+- **3×230 V without neutral** (each device is connected between two phases): not covered yet. Leave the home as **single-phase**: the plan is then calculated on the total of the home, as for any single-phase home.
 
 ## Objective
 

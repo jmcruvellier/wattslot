@@ -66,7 +66,11 @@ export default function BatteryEditor({ battery, capacityKwh, own = false, three
 
   return (
     <div>
-      <p>{t(own ? "battery.own_intro" : "battery.intro", { capacity: capacityKwh })}</p>
+      <p>
+        {t(own ? "battery.own_intro" : threePhase ? "battery.intro_three_phase" : "battery.intro", {
+          capacity: capacityKwh,
+        })}
+      </p>
       {battery === null && <p>{t("battery.defaults")}</p>}
       <p>
         <Power

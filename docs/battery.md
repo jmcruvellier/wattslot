@@ -20,7 +20,7 @@ The capacity comes from Home Assistant when a sensor gives it, otherwise from it
 
 The settings above apply to all your batteries. When the home has several, the **Battery** sheet lists each one under **Settings per battery**: **Give this battery its own settings** opens the same settings for that battery alone; **Go back to the home's settings** removes them.
 
-The calculation still sees your batteries as one:
+Outside the three-phase case described below, the calculation sees your batteries as one:
 
 - the **powers** add up (with no setting, each counts for half its capacity per hour). The powers set for the home are those of all your batteries together: a battery without its own settings takes its share of them, according to its capacity;
 - the **floor** follows each battery's capacity: 30 % of a 2 kWh battery and 10 % of a 6 kWh battery keep 1.2 kWh in reserve, hour by hour with the ranges;

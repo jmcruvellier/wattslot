@@ -1077,6 +1077,7 @@
   "battery": {
     "title": "Batterij",
     "intro": "De planning ziet de batterijen van het huis als één batterij van {capacity} kWh.",
+    "intro_three_phase": "Deze instellingen gelden voor alle batterijen van het huis, samen {capacity} kWh. Wanneer het plan fase per fase wordt berekend, worden de batterijen op dezelfde fase als één gezien; anders allemaal samen.",
     "defaults": "Standaardinstellingen: wijzig ze zodat ze bij uw batterij passen.",
     "charge": "Maximaal laadvermogen",
     "discharge": "Maximaal ontlaadvermogen",
@@ -1097,6 +1098,7 @@
     "floor_hint": "De batterij gaat er nooit onder: een reserve voor de nacht of een stroomstoring.",
     "own_title": "Instellingen per batterij",
     "own_help": "Elke batterij volgt de instellingen hierboven, tenzij u ze eigen instellingen geeft. De berekening ziet uw batterijen nog steeds als één: vermogens opgeteld, ondergrens volgens de capaciteit van elke batterij.",
+    "own_help_three_phase": "Elke batterij volgt de instellingen hierboven, tenzij u ze eigen instellingen geeft. De berekening voegt de batterijen op dezelfde fase samen (allemaal, wanneer het plan niet fase per fase wordt berekend): vermogens opgeteld, ondergrens volgens de capaciteit van elke batterij.",
     "own_start": "Deze batterij eigen instellingen geven",
     "own_intro": "Eigen instellingen van deze batterij van {capacity} kWh.",
     "own_reset": "Terug naar de instellingen van het huis",

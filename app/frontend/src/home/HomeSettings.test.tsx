@@ -368,6 +368,9 @@ describe("réglages de Ma maison", () => {
     renderHome();
 
     const sheet = await openSheet("L'essentiel", /^Batterie/, "Batterie");
+    // En triphasé, la feuille ne dit plus que le calcul voit toujours les batteries comme une seule.
+    expect(await within(sheet).findByText(/les batteries d'une même phase sont vues comme une seule/)).toBeInTheDocument();
+    expect(within(sheet).queryByText(/Le calcul voit les batteries de la maison comme une seule/)).toBeNull();
     await userEvent.click(await within(sheet).findByLabelText("La batterie compense le total des trois phases"));
     await save(sheet);
 

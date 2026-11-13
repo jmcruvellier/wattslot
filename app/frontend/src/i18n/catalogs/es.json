@@ -1077,6 +1077,7 @@
   "battery": {
     "title": "Batería",
     "intro": "La planificación ve las baterías de la casa como una sola, de {capacity} kWh.",
+    "intro_three_phase": "Estos ajustes valen para todas las baterías de la casa, {capacity} kWh en total. Cuando el plan se calcula fase por fase, las baterías de una misma fase se ven como una sola; si no, todas lo son.",
     "defaults": "Ajustes predeterminados: cámbielos para que correspondan a su batería.",
     "charge": "Potencia máxima de carga",
     "discharge": "Potencia máxima de descarga",
@@ -1097,6 +1098,7 @@
     "floor_hint": "La batería nunca baja de ahí: una reserva para la noche o un corte de luz.",
     "own_title": "Ajustes por batería",
     "own_help": "Cada batería sigue los ajustes de arriba, salvo que le dé los suyos. El cálculo sigue viendo sus baterías como una sola: potencias sumadas, mínimo según la capacidad de cada una.",
+    "own_help_three_phase": "Cada batería sigue los ajustes de arriba, salvo que le dé los suyos. El cálculo reúne las baterías de una misma fase (todas, cuando el plan no se calcula fase por fase): potencias sumadas, mínimo según la capacidad de cada una.",
     "own_start": "Dar a esta batería sus propios ajustes",
     "own_intro": "Ajustes propios de esta batería de {capacity} kWh.",
     "own_reset": "Volver a los ajustes de la casa",

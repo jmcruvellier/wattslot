@@ -1077,6 +1077,7 @@
   "battery": {
     "title": "Batteria",
     "intro": "La pianificazione vede le batterie della casa come una sola, da {capacity} kWh.",
+    "intro_three_phase": "Queste impostazioni valgono per tutte le batterie della casa, {capacity} kWh in tutto. Quando il piano è calcolato fase per fase, le batterie di una stessa fase sono viste come una sola; altrimenti lo sono tutte.",
     "defaults": "Impostazioni predefinite: le modifichi perché corrispondano alla sua batteria.",
     "charge": "Potenza massima di carica",
     "discharge": "Potenza massima di scarica",
@@ -1097,6 +1098,7 @@
     "floor_hint": "La batteria non scende mai sotto: una riserva per la notte o per un'interruzione di corrente.",
     "own_title": "Impostazioni per batteria",
     "own_help": "Ogni batteria segue le impostazioni qui sopra, a meno che non le si diano le sue. Il calcolo vede sempre le batterie come una sola: potenze sommate, soglia minima secondo la capacità di ciascuna.",
+    "own_help_three_phase": "Ogni batteria segue le impostazioni qui sopra, a meno che non le si diano le sue. Il calcolo riunisce le batterie di una stessa fase (tutte, quando il piano non è calcolato fase per fase): potenze sommate, soglia minima secondo la capacità di ciascuna.",
     "own_start": "Dare a questa batteria le sue impostazioni",
     "own_intro": "Impostazioni proprie di questa batteria da {capacity} kWh.",
     "own_reset": "Tornare alle impostazioni della casa",

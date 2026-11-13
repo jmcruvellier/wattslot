@@ -1077,6 +1077,7 @@
   "battery": {
     "title": "Batterie",
     "intro": "Die Planung sieht die Batterien des Hauses als eine einzige mit {capacity} kWh.",
+    "intro_three_phase": "Diese Einstellungen gelten für alle Batterien des Hauses, insgesamt {capacity} kWh. Wird der Plan Phase für Phase berechnet, gelten die Batterien derselben Phase als eine einzige; sonst alle zusammen.",
     "defaults": "Standardeinstellungen: Ändern Sie sie passend zu Ihrer Batterie.",
     "charge": "Maximale Ladeleistung",
     "discharge": "Maximale Entladeleistung",
@@ -1097,6 +1098,7 @@
     "floor_hint": "Die Batterie geht nie darunter: eine Reserve für die Nacht oder einen Stromausfall.",
     "own_title": "Einstellungen je Batterie",
     "own_help": "Jede Batterie folgt den Einstellungen oben, außer Sie geben ihr eigene. Die Berechnung sieht Ihre Batterien weiterhin als eine: Leistungen addiert, Untergrenze nach der Kapazität jeder Batterie.",
+    "own_help_three_phase": "Jede Batterie folgt den Einstellungen oben, außer Sie geben ihr eigene. Die Berechnung fasst die Batterien derselben Phase zusammen (alle, wenn der Plan nicht Phase für Phase berechnet wird): Leistungen addiert, Untergrenze nach der Kapazität jeder Batterie.",
     "own_start": "Dieser Batterie eigene Einstellungen geben",
     "own_intro": "Eigene Einstellungen dieser Batterie mit {capacity} kWh.",
     "own_reset": "Zu den Einstellungen des Hauses zurückkehren",

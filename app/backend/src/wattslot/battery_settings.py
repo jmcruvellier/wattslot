@@ -61,7 +61,7 @@ class BatterySettings(BaseModel):
     full_charge_every_days: int | None = Field(default=7, ge=1)  # None : jamais
     floor_ranges: list[FloorRange] = []  # plancher plus haut sur ces plages (lot 3.5)
     # Maison en triphasé : la batterie compense le total des trois phases (elle suit un compteur
-    # triphasé) plutôt que sa seule phase. Pas encore lu par le calcul.
+    # triphasé) plutôt que sa seule phase (``configuration.battery_line``).
     all_phases: bool = False
 
     def powers_w(self, capacity_kwh: float) -> tuple[float, float]:
