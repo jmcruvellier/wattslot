@@ -1362,6 +1362,10 @@
       "plan_slow": "L'ultimo calcolo del piano ha richiesto {minutes} minuti, molto più del solito.",
       "no_statistics": "Nessuno storico in Home Assistant per: {devices}.",
       "plan_stale": "Da più di 2 ore non è stato possibile calcolare alcun piano.",
+      "phase_meters_missing": "Il piano non è calcolato fase per fase, ma sul totale della casa: non c'è un sensore di prelievo per ogni fase (fasi senza sensore: {phases}).",
+      "phase_unknown": "Il piano non è calcolato fase per fase, ma sul totale della casa: la fase non è indicata per {devices}.",
+      "phase_history_short": "Il piano non è ancora calcolato fase per fase: il consumo abituale di ogni fase non è ancora noto per tutte le ore.",
+      "battery_not_counted": "{device} non è contata nel calcolo: il suo livello di carica non è leggibile in Home Assistant.",
       "energy_dashboard_issue": "{device}: {issue}",
       "impossible_data": "Previsioni interrotte prima del {day}: il sensore «{device}» ({entity}) ha contato {source_kwh} kWh in un'ora il {when} alle {when_hour}, probabilmente un'interruzione del sensore. Il consumo previsto alle {hour} ({kwh} kWh) supera ciò che la casa può prelevare ({limit} kWh); le previsioni di questo giorno della settimana restano falsate fino al {until}.",
       "impossible_data_unknown": "Previsioni interrotte prima del {day}: il consumo previsto alle {hour} ({kwh} kWh) supera ciò che la casa può prelevare in un'ora ({limit} kWh)."
@@ -1387,6 +1391,10 @@
       "plan_slow": "Se continua, allegate il rapporto a una segnalazione.",
       "no_statistics": "Questi sensori non hanno statistiche in Home Assistant: il piano non parte dal loro storico.",
       "plan_stale": "Guardi gli altri problemi, oppure avvii un calcolo dalla pagina iniziale.",
+      "phase_meters_missing": "Se Home Assistant li ha (contatore trifase, una pinza su ogni fase), aggiunga un sensore di prelievo per ogni fase nella scheda dell'allacciamento alla rete.",
+      "phase_unknown": "Indichi la fase nella scheda dell'apparecchio.",
+      "phase_history_short": "Niente da fare: WattSlot lo impara dallo storico dei sensori per fase.",
+      "battery_not_counted": "Verifichi il sensore del livello di carica nella scheda della batteria.",
       "configuration_issue": "Corregga l'impostazione in La mia casa.",
       "impossible_data": "Controlli lo storico di questo sensore in Home Assistant a quell'ora.",
       "impossible_data_unknown": "Probabilmente un salto del contatore falsa il consumo di base: controlli lo storico dei contatori di energia in Home Assistant."
@@ -1888,6 +1896,11 @@
   },
   "phases": {
     "title": "Per fase",
+    "gap": {
+      "meters": "Il piano non è calcolato fase per fase: le sue batterie e il costo sono calcolati sul totale della casa. Serve un sensore di prelievo per ogni fase (fasi senza sensore: {phases}); li aggiunga nella scheda dell'allacciamento alla rete (La mia casa › Apparecchi).",
+      "devices": "Il piano non è calcolato fase per fase: le sue batterie e il costo sono calcolati sul totale della casa. La fase non è indicata per {devices}; la indichi nella relativa scheda (La mia casa › Apparecchi).",
+      "history": "Il piano non è ancora calcolato fase per fase: WattSlot impara il consumo abituale di ogni fase dallo storico dei suoi sensori per fase. Fino ad allora, le sue batterie e il costo sono calcolati sul totale della casa."
+    },
     "note": "Ciò che ogni fase acquista dalla rete e le vende nella giornata, secondo il piano.",
     "note_measured": "Ciò che ogni fase acquista dalla rete e le vende: previsto nella giornata e misurato finora.",
     "phase": "Fase {number}",

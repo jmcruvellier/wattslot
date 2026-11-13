@@ -17,7 +17,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel
 
-from wattslot import home_model
+from wattslot import configuration, home_model
 from wattslot.aggregation import PERIODS, QUARTER
 from wattslot.detection import DeviceKind, Role
 from wattslot.home_model import Phase
@@ -53,6 +53,32 @@ class BatteryNow(BaseModel):
     power_w: float | None = None  # positive en charge, négative en décharge
 
 
+class PhaseGap(BaseModel):
+    """Maison en triphasé qui demande un plan phase par phase, alors que le plan du jour est
+    calculé sur le total : ce qui manque. ``meters`` : un capteur de soutirage par phase
+    (``phases`` : celles qui n'en ont pas) ; ``devices`` : la phase d'une installation solaire
+    ou d'une batterie (``devices`` : leurs noms) ; ``history`` : la consommation habituelle de
+    chaque phase, pas encore connue à toute heure."""
+
+    code: Literal["meters", "devices", "history"]
+    params: dict[str, str] = {}
+
+
+def phase_gap(
+    home: home_model.HomeModel, saved: configuration.Configuration | None, by_phase: bool
+) -> PhaseGap | None:
+    """Ce qui empêche le plan d'être calculé phase par phase ; ``None`` s'il l'est
+    (``by_phase``), ou si la maison ne le demande pas."""
+    if by_phase or not configuration.by_phase_expected(home, saved):
+        return None
+    lines, unknown = home_model.phase_gaps(home)
+    if lines:
+        return PhaseGap(code="meters", params={"phases": home_model.line_numbers(lines)})
+    if unknown:
+        return PhaseGap(code="devices", params={"devices": ", ".join(d.name for d in unknown)})
+    return PhaseGap(code="history")
+
+
 class Now(BaseModel):
     """Le moment : puissances moyennes du dernier quart d'heure clos, en watts."""
 
@@ -64,6 +90,8 @@ class Now(BaseModel):
     grid_w: float | None = None  # positive à l'achat, négative au surplus
     soc_percent: float | None = None  # dernier relevé ; plusieurs batteries : leur moyenne
     batteries: list[BatteryNow] = []  # chaque batterie de la maison
+    # Plan demandé phase par phase mais calculé sur le total : ce qui manque.
+    phase_gap: PhaseGap | None = None
     off_peak: bool = False
     sentence: str | None = None
 
@@ -167,8 +195,11 @@ def sentence(
     return texts["sun_share"].format(share=round(100 * production / consumption))
 
 
-def measure_now(state: Any, moment: datetime, context: Context, lang: Language) -> Now:
-    """Le moment d'après le dernier quart d'heure clos ; ``state`` : l'état de l'application."""
+def measure_now(
+    state: Any, moment: datetime, context: Context, lang: Language, by_phase: bool = True
+) -> Now:
+    """Le moment d'après le dernier quart d'heure clos ; ``state`` : l'état de l'application ;
+    ``by_phase`` : le plan du jour est calculé phase par phase."""
     local = moment.astimezone(context.zone)
     graph = getattr(state, "graph", None)
     home = home_model.load(graph) if graph is not None else None
@@ -180,6 +211,9 @@ def measure_now(state: Any, moment: datetime, context: Context, lang: Language) 
         off_peak=context.off_peak_hours()[local.hour],
         soc_percent=_soc(batteries, levels),
         batteries=batteries,
+        phase_gap=phase_gap(home, configuration.load(graph), by_phase)
+        if home is not None and graph is not None
+        else None,
     )
     aggregator = getattr(state, "aggregator", None)
     if aggregator is None:

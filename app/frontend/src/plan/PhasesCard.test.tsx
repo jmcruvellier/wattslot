@@ -56,4 +56,22 @@ describe("carte Par phase", () => {
     expect(cells(/Phase 2/)).toEqual(["4,0 kWh1,5 kWh mesurés", "5,2 kWhpas de mesure"]);
     expect(cells(/Phase 1/)).toEqual(["12,0 kWhpas de mesure", "0,0 kWhpas de mesure"]);
   });
+
+  it("dit ce qui manque quand la maison demande un plan par phase et qu'il est calculé sur le total", () => {
+    const now = { ...TODAY.now!, phase_gap: { code: "meters" as const, params: { phases: "1, 3" } } };
+    renderCard({ ...TODAY, now });
+
+    const card = screen.getByRole("article", { name: "Par phase" });
+    expect(within(card).getByText(/n'est pas calculé phase par phase/)).toHaveTextContent("(phases sans capteur : 1, 3)");
+    expect(within(card).queryByRole("table")).toBeNull();
+  });
+
+  it("montre les phases, pas ce qui manquait, dès que le plan est calculé par phase", () => {
+    const now = { ...TODAY.now!, phase_gap: { code: "history" as const, params: {} } };
+    renderCard({ ...TODAY, now, phases: PLANNED });
+
+    const card = screen.getByRole("article", { name: "Par phase" });
+    expect(within(card).getByRole("table")).toBeInTheDocument();
+    expect(within(card).queryByText(/pas encore calculé/)).toBeNull();
+  });
 });

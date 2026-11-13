@@ -29,6 +29,7 @@ from wattslot.views.now import (
     idle_reason,
     measure_now,
     next_action,
+    phase_gap,
     sentence,
 )
 from wattslot.views.timeline import Timeline
@@ -475,3 +476,46 @@ def test_a_single_phase_home_does_not_say_the_phase_of_its_batteries(tmp_path: P
     assert len(found.batteries) == 2
     assert [battery.phase for battery in found.batteries] == [None, None]
     assert found.soc_percent == 70
+
+
+def test_a_plan_asked_by_phase_but_computed_on_the_total_says_what_is_missing() -> None:
+    def battery(phase: Phase | None) -> HomeDevice:
+        return HomeDevice(
+            key="battery",
+            kind=DeviceKind.BATTERY,
+            name="Batterie du garage",
+            capacity_kwh=5.0,
+            phase=phase,
+            sensors=[HomeSensor(entity_id="sensor.battery_charge", role=Role.ENERGY_CHARGED)],
+        )
+
+    def grid(lines: tuple[Phase, ...]) -> HomeDevice:
+        return HomeDevice(
+            key="grid",
+            kind=DeviceKind.GRID,
+            name="Réseau",
+            sensors=[
+                HomeSensor(entity_id=f"sensor.import_{n}", role=Role.ENERGY_IMPORTED, phase=line)
+                for n, line in enumerate(lines)
+            ],
+        )
+
+    def gap(home: HomeModel, by_phase: bool = False) -> tuple[str, dict[str, str]] | None:
+        found = phase_gap(home, None, by_phase)
+        return (found.code, found.params) if found is not None else None
+
+    every = (Phase.L1, Phase.L2, Phase.L3)
+    home = HomeModel(supply=Supply.THREE, devices=[grid((Phase.L1,)), battery(Phase.L2)])
+    assert gap(home) == ("meters", {"phases": "2, 3"})
+    measured = HomeModel(supply=Supply.THREE, devices=[grid(every), battery(Phase.L2)])
+    assert gap(measured) == ("history", {})
+    # Plan calculé par phase : rien à dire.
+    assert gap(measured, by_phase=True) is None
+    # Une batterie sans phase compense le total : sans compteur par phase à part, la maison ne
+    # demande pas de calcul par phase ; avec un compteur qui compte chaque phase à part, si.
+    unknown = [grid(every), battery(None)]
+    assert gap(HomeModel(supply=Supply.THREE, devices=unknown)) is None
+    separate = HomeModel(supply=Supply.THREE, meter_sums_phases=False, devices=unknown)
+    assert gap(separate) == ("devices", {"devices": "Batterie du garage"})
+    # Maison en monophasé : jamais.
+    assert gap(HomeModel(devices=[grid(()), battery(Phase.L2)])) is None

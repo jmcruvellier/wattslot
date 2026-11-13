@@ -5,6 +5,7 @@ Enregistré en RDF dans le graphe de la maison (décision 12), avec la biblioth�
 vivent que dans le magasin de l'installation, jamais dans le dépôt (décision 2).
 """
 
+from collections.abc import Sequence
 from importlib import resources
 
 from pydantic import BaseModel
@@ -117,6 +118,35 @@ def counted_sensors(device: HomeDevice) -> list[HomeSensor]:
     deux fois). Sans capteur du total, les capteurs par phase le font à eux trois."""
     whole = {sensor.role for sensor in device.sensors if sensor.phase is None}
     return [s for s in device.sensors if s.phase is None or s.role not in whole]
+
+
+def phase_gaps(model: HomeModel) -> tuple[list[Phase], list[HomeDevice]]:
+    """Ce qui empêche de mesurer la consommation de chaque phase : (phases sans capteur de
+    soutirage sur le raccordement au réseau ; installations solaires et batteries dont la phase
+    n'est pas connue, leur production ou leur décharge manquerait au bilan d'une phase)."""
+    measured = {
+        sensor.phase
+        for device in model.devices
+        if device.kind is DeviceKind.GRID
+        for sensor in device.sensors
+        if sensor.role is Role.ENERGY_IMPORTED
+    }
+    sources = {
+        Role.ENERGY_PRODUCED: DeviceKind.SOLAR,
+        Role.ENERGY_CHARGED: DeviceKind.BATTERY,
+        Role.ENERGY_DISCHARGED: DeviceKind.BATTERY,
+    }
+    unknown = [
+        device
+        for device in model.devices
+        if device.phase is None and any(sources.get(s.role) is device.kind for s in device.sensors)
+    ]
+    return [line for line in LINES if line not in measured], unknown
+
+
+def line_numbers(lines: Sequence[Phase]) -> str:
+    """« 1, 3 » : numéros de ces phases, pour un message."""
+    return ", ".join(str(LINES.index(line) + 1) for line in lines)
 
 
 def problems(model: HomeModel) -> list[tuple[str, str | None, dict[str, str]]]:

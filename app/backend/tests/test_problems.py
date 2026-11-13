@@ -13,6 +13,7 @@ from tests.fake_home_assistant import default_responses, fake_home_assistant, ru
 from tests.test_health import _settings
 from wattslot import home_model, profiles, report
 from wattslot.aggregation import AggregationStatus, HistoryStatus
+from wattslot.battery_settings import BatterySettings
 from wattslot.configuration import Configuration
 from wattslot.detection import DeviceKind, Issue, Role
 from wattslot.diagnostic import DeviceIssue, Diagnostic
@@ -505,3 +506,138 @@ def test_an_external_statistic_that_stops_publishing_is_reported() -> None:
     assert codes(stale) == ["statistic_stale"]
     assert stale[0].severity is Severity.DEGRADED
     assert stale[0].params["since"] == (NOW - timedelta(days=3)).isoformat()
+
+
+# --- Triphasé : plan demandé phase par phase, et batteries écartées du calcul -------------------
+
+
+def _battery(key: str, name: str, phase: home_model.Phase | None) -> HomeDevice:
+    return HomeDevice(
+        key=key,
+        kind=DeviceKind.BATTERY,
+        name=name,
+        capacity_kwh=5.0,
+        phase=phase,
+        sensors=[
+            HomeSensor(entity_id=f"sensor.{key}_charge", role=Role.ENERGY_CHARGED),
+            HomeSensor(entity_id=f"sensor.{key}_discharge", role=Role.ENERGY_DISCHARGED),
+            HomeSensor(entity_id=f"sensor.{key}_soc", role=Role.STATE_OF_CHARGE),
+        ],
+    )
+
+
+def _grid(lines: tuple[home_model.Phase, ...]) -> HomeDevice:
+    return HomeDevice(
+        key="grid",
+        kind=DeviceKind.GRID,
+        name="Réseau",
+        sensors=[
+            HomeSensor(entity_id="sensor.grid_import", role=Role.ENERGY_IMPORTED),
+            *(
+                HomeSensor(
+                    entity_id=f"sensor.grid_import_{index}", role=Role.ENERGY_IMPORTED, phase=line
+                )
+                for index, line in enumerate(lines)
+            ),
+        ],
+    )
+
+
+def _three_phase(
+    lines: tuple[home_model.Phase, ...] = home_model.LINES,
+    garage: home_model.Phase | None = home_model.Phase.L3,
+    **change: Any,
+) -> HomeModel:
+    """Maison en triphasé : une batterie sur la phase 2, une autre au garage."""
+    return HomeModel(
+        supply=home_model.Supply.THREE,
+        devices=[
+            _grid(lines),
+            _battery("house", "Batterie maison", home_model.Phase.L2),
+            _battery("garage", "Batterie du garage", garage),
+        ],
+        **change,
+    )
+
+
+def _planned(by_phase: bool | None) -> Diagnostic:
+    report = RunReport(
+        day=NOW.date(), started_at=NOW, manual=False, seconds_today=1.0, by_phase=by_phase
+    )
+    return Diagnostic(
+        generated_at=NOW,
+        planning=SchedulerStatus(
+            running=True, enabled=True, last_success_at=NOW, last_report=report
+        ),
+    )
+
+
+def _phase_problems(home: HomeModel, diagnostic: Diagnostic | None = None) -> list[Problem]:
+    found = collect(
+        _ready(), diagnostic or Diagnostic(generated_at=NOW), home, Configuration(), None
+    )
+    return [p for p in found if p.code.startswith("phase_")]
+
+
+def test_a_plan_asked_by_phase_says_which_phase_meters_are_missing() -> None:
+    (missing,) = _phase_problems(_three_phase(lines=(home_model.Phase.L2,)))
+
+    assert missing.code == "phase_meters_missing" and missing.params == {"phases": "1, 3"}
+    assert missing.severity is Severity.WATCH and missing.target == "home#device-grid"
+
+
+def test_a_plan_asked_by_phase_names_the_devices_without_a_phase() -> None:
+    (unknown,) = _phase_problems(_three_phase(garage=None))
+
+    assert unknown.code == "phase_unknown" and unknown.params == {"devices": "Batterie du garage"}
+    assert unknown.severity is Severity.DEGRADED and unknown.target == "home#device-garage"
+
+
+def test_a_plan_still_on_the_total_waits_for_the_history_of_each_phase() -> None:
+    home = _three_phase()
+
+    assert codes(_phase_problems(home, _planned(by_phase=False))) == ["phase_history_short"]
+    # Plan calculé par phase, ou pas encore de calcul depuis le démarrage : rien à signaler.
+    assert _phase_problems(home, _planned(by_phase=True)) == []
+    assert _phase_problems(home) == []
+
+
+def test_a_home_that_does_not_ask_for_phases_has_no_phase_problem() -> None:
+    lines = (home_model.Phase.L2,)
+    single = _three_phase(lines=lines).model_copy(update={"supply": home_model.Supply.SINGLE})
+    # Batteries qui compensent le total des trois phases : le plan n'a pas à distinguer les phases.
+    whole = Configuration(battery=BatterySettings(all_phases=True))
+
+    assert _phase_problems(single) == []
+    assert [
+        p
+        for p in collect(
+            _ready(), Diagnostic(generated_at=NOW), _three_phase(lines=lines), whole, None
+        )
+        if p.code.startswith("phase_")
+    ] == []
+    # Compteur qui compte chaque phase à part : le coût se calcule par phase, même sans batterie.
+    separate = HomeModel(
+        supply=home_model.Supply.THREE, meter_sums_phases=False, devices=[_grid(lines)]
+    )
+    assert codes(_phase_problems(separate)) == ["phase_meters_missing"]
+
+
+def test_a_battery_whose_level_cannot_be_read_is_said_left_out(tmp_path: Path) -> None:
+    def state(entity_id: str, value: str) -> dict[str, Any]:
+        return {"entity_id": entity_id, "state": value, "attributes": {}}
+
+    responses = default_responses() | {
+        "get_states": [
+            state("sensor.house_soc", "64"),
+            state("sensor.garage_soc", "unavailable"),
+        ]
+    }
+    found = asyncio.run(_with_client(tmp_path, responses, _three_phase()))
+
+    (left_out,) = [p for p in found if p.code == "battery_not_counted"]
+    assert left_out.params == {"device": "Batterie du garage"}
+    assert left_out.severity is Severity.DEGRADED and left_out.target == "home#device-garage"
+    # Sans Home Assistant, rien n'est dit des batteries : la connexion est déjà signalée.
+    offline = collect(_ready(), Diagnostic(generated_at=NOW), _three_phase(), Configuration(), None)
+    assert "battery_not_counted" not in codes(offline)

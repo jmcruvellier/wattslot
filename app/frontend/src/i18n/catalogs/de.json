@@ -1362,6 +1362,10 @@
       "plan_slow": "Die letzte Berechnung des Plans dauerte {minutes} Minuten, viel länger als üblich.",
       "no_statistics": "Kein Verlauf in Home Assistant für: {devices}.",
       "plan_stale": "Seit mehr als 2 Stunden konnte kein Plan berechnet werden.",
+      "phase_meters_missing": "Der Plan wird nicht Phase für Phase berechnet, sondern auf die Summe des Hauses: Es gibt nicht für jede Phase einen Bezugssensor (Phasen ohne Sensor: {phases}).",
+      "phase_unknown": "Der Plan wird nicht Phase für Phase berechnet, sondern auf die Summe des Hauses: Die Phase ist nicht angegeben für {devices}.",
+      "phase_history_short": "Der Plan wird noch nicht Phase für Phase berechnet: Der übliche Verbrauch jeder Phase ist noch nicht für jede Stunde bekannt.",
+      "battery_not_counted": "{device} wird in der Berechnung nicht berücksichtigt: Der Ladestand ist in Home Assistant nicht lesbar.",
       "energy_dashboard_issue": "{device}: {issue}",
       "impossible_data": "Prognosen vor dem {day} beendet: Der Sensor „{device}“ ({entity}) hat am {when} um {when_hour} {source_kwh} kWh in einer Stunde gezählt, vermutlich ein Sensorausfall. Der um {hour} erwartete Verbrauch ({kwh} kWh) übersteigt, was das Haus beziehen kann ({limit} kWh); die Prognosen dieses Wochentags bleiben bis zum {until} verfälscht.",
       "impossible_data_unknown": "Prognosen vor dem {day} beendet: Der um {hour} erwartete Verbrauch ({kwh} kWh) übersteigt, was das Haus in einer Stunde beziehen kann ({limit} kWh)."
@@ -1387,6 +1391,10 @@
       "plan_slow": "Wenn es anhält, hängen Sie den Bericht an eine Meldung an.",
       "no_statistics": "Diese Sensoren haben keine Statistiken in Home Assistant: Der Plan geht nicht von ihrem Verlauf aus.",
       "plan_stale": "Sehen Sie sich die anderen Probleme an oder starten Sie eine Berechnung auf der Startseite.",
+      "phase_meters_missing": "Falls Home Assistant sie hat (dreiphasiger Zähler, eine Stromzange je Phase), fügen Sie im Blatt des Netzanschlusses einen Bezugssensor für jede Phase hinzu.",
+      "phase_unknown": "Geben Sie die Phase im Blatt des Geräts an.",
+      "phase_history_short": "Nichts zu tun: WattSlot lernt ihn aus dem Verlauf der Sensoren je Phase.",
+      "battery_not_counted": "Prüfen Sie den Ladestandssensor im Blatt der Batterie.",
       "configuration_issue": "Korrigieren Sie die Einstellung unter Mein Zuhause.",
       "impossible_data": "Prüfen Sie den Verlauf dieses Sensors in Home Assistant zu dieser Zeit.",
       "impossible_data_unknown": "Vermutlich verfälscht ein Zählersprung den Grundverbrauch: Prüfen Sie den Verlauf Ihrer Energiezähler in Home Assistant."
@@ -1888,6 +1896,11 @@
   },
   "phases": {
     "title": "Je Phase",
+    "gap": {
+      "meters": "Der Plan wird nicht Phase für Phase berechnet: Ihre Batterien und die Kosten werden auf die Summe des Hauses berechnet. Es braucht einen Bezugssensor für jede Phase (Phasen ohne Sensor: {phases}); fügen Sie sie im Blatt des Netzanschlusses hinzu (Mein Zuhause › Geräte).",
+      "devices": "Der Plan wird nicht Phase für Phase berechnet: Ihre Batterien und die Kosten werden auf die Summe des Hauses berechnet. Die Phase ist nicht angegeben für {devices}; geben Sie sie im jeweiligen Blatt an (Mein Zuhause › Geräte).",
+      "history": "Der Plan wird noch nicht Phase für Phase berechnet: WattSlot lernt den üblichen Verbrauch jeder Phase aus dem Verlauf Ihrer Sensoren je Phase. Bis dahin werden Ihre Batterien und die Kosten auf die Summe des Hauses berechnet."
+    },
     "note": "Was jede Phase laut Plan über den Tag aus dem Netz bezieht und einspeist.",
     "note_measured": "Was jede Phase aus dem Netz bezieht und einspeist: für den Tag geplant und bisher gemessen.",
     "phase": "Phase {number}",

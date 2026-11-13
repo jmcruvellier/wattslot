@@ -219,7 +219,9 @@ async def day_view_of(state: Any, kind: DayKind, lang: str = "fr") -> DayView | 
         )
     return view.model_copy(
         update={
-            "now": await asyncio.to_thread(measure_now, state, moment, context, language),
+            "now": await asyncio.to_thread(
+                measure_now, state, moment, context, language, bool(view.phases)
+            ),
             "next_action": action,
             "idle_reason": (
                 idle_reason(view.timeline, launched, dropped) if action is None else None
