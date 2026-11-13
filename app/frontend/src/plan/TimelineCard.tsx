@@ -49,10 +49,16 @@ function color(row: TimelineRow, bar: Bar): string {
   return "var(--cycle)";
 }
 
-/** L'équipement a-t-il déjà tourné aujourd'hui (un cycle réel commencé, en cours ou fini) ?
- * Lancé, il ne se déplace plus ni ne s'annule plus : son bloc reste une info-bulle. */
-function launched(row: TimelineRow, nowMin: number): boolean {
-  return row.actual.some((done) => done.start_hour * 60 <= nowMin);
+/** Le cycle prévu a-t-il déjà tourné aujourd'hui (un cycle réel commencé, en cours ou fini) ?
+ * Lancé, il ne se déplace plus ni ne s'annule plus : son bloc reste une info-bulle. Avec
+ * plusieurs cycles du même équipement dans la journée, un cycle réel ne vaut que pour un
+ * cycle prévu : le suivant n'est lancé que par une activité commencée après la fin du
+ * précédent. */
+function launched(row: TimelineRow, bar: Bar, nowMin: number): boolean {
+  const planned = row.planned.filter((other) => !other.carried);
+  const before = planned[planned.indexOf(bar) - 1];
+  const after = before ? before.end_hour : 0;
+  return row.actual.some((done) => done.start_hour * 60 <= nowMin && done.start_hour >= after);
 }
 
 // Minutes depuis minuit maintenant, pour dire si un cycle réel a commencé.
@@ -77,7 +83,7 @@ export default function TimelineCard({
   const [tip, setTip] = useState<string | null>(null);
   const [trackWidth, measureTrack] = useTrackWidth();
   const lang = language === "fr" ? "fr" : "en";
-  // Équipement et bloc prévu dont la feuille des autres départs est ouverte.
+  // Cycle (son identité) et bloc prévu dont la feuille des autres départs est ouverte.
   const [picked, setPicked] = useState<{ device: string; bar: Bar } | null>(null);
   const pickable = choices !== undefined && onChanged !== undefined;
   // Annulation (bouton « Annuler ») et rétablissement, dans et sous la frise.
@@ -114,8 +120,8 @@ export default function TimelineCard({
       // démarré : la feuille s'ouvre au clic, changer de créneau ou annuler la planification.
       // Un équipement lancé ou en cours ne se déplace plus : son bloc reste une info-bulle.
       const choice =
-        !actual && !bar.carried && pickable && row.kind === "cycle" && !launched(row, nowMin)
-          ? choices[row.device]
+        !actual && !bar.carried && pickable && row.kind === "cycle" && !launched(row, bar, nowMin)
+          ? choices[bar.cycle ?? row.device]
           : undefined;
       const opens = choice !== undefined;
       return (
@@ -130,7 +136,7 @@ export default function TimelineCard({
           }}
           title={text}
           aria-label={text}
-          onClick={() => (opens ? setPicked({ device: row.device, bar }) : setTip(text))}
+          onClick={() => (opens ? setPicked({ device: bar.cycle ?? row.device, bar }) : setTip(text))}
         >
           {wide && (
             <span

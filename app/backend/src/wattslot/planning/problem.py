@@ -795,7 +795,6 @@ def from_input(data: PlanningInput, reference: Reference = REFERENCE) -> Problem
     waiting_keys = {cycle_key(t.name, t.rank) for t in waiting}
 
     tasks: list[Task] = []
-    chosen_for: set[str] = set()  # équipements dont le départ choisi est déjà pris par un cycle
     for priority, group, suffix in ((1, recurring, "du"), (3, waiting, "attente")):
         for request in sorted(group, key=lambda t: t.rank or 1):
             rank = request.rank or 1
@@ -835,11 +834,7 @@ def from_input(data: PlanningInput, reference: Reference = REFERENCE) -> Problem
                     )
                 )
                 continue
-            # Départ choisi pour l'équipement : il vaut pour son premier cycle encore à placer.
-            chosen = (
-                data.chosen_starts.get(request.name) if request.name not in chosen_for else None
-            )
-            chosen_for.add(request.name)
+            chosen = data.chosen_starts.get(request.ident)  # départ choisi pour ce cycle
             parent = parents.get(request.ident) if priority == 3 else None
             tasks.append(
                 Task(

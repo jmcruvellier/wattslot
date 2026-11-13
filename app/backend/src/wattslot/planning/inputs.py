@@ -183,8 +183,8 @@ class PlanningInput:
     due_tasks: tuple[TaskRequest, ...] = ()
     waiting_tasks: tuple[TaskRequest, ...] = ()
     assignments: Mapping[str, date] | None = None  # tâche en attente (uid) → jour choisi
-    # Départs choisis par l'utilisateur pour aujourd'hui (``planning.choices``) : appareil →
-    # minutes depuis minuit, imposés au calcul.
+    # Départs choisis par l'utilisateur pour aujourd'hui (``planning.choices``) : cycle
+    # (``TaskRequest.ident``) → minutes depuis minuit, imposés au calcul.
     chosen_starts: Mapping[str, int] = field(default_factory=dict)
     # Départs annoncés par le plan précédent de la même journée (celui du jour, ou celui de
     # demain calculé la veille) : appareil → minutes depuis minuit. Le calcul ne les quitte

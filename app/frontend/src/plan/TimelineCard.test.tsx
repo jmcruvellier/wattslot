@@ -373,6 +373,53 @@ describe("frise des équipements", () => {
     });
   });
 
+  it("deux cycles du même équipement : une ligne, et chaque cycle a sa feuille et son Annuler", async () => {
+    vi.setSystemTime(new Date("2026-10-17T12:00:00"));
+    const user = userEvent.setup();
+    const calls = mockChoices();
+    // Le premier lave-linge a tourné à 10h05 ; le second est prévu à 16h.
+    const twice = {
+      device: "Lave-linge",
+      kind: "cycle" as const,
+      planned: [
+        { start_hour: 10, end_hour: 11.5, energy_kwh: 1, action: null, mode: null, cycle: "Lave-linge" },
+        { start_hour: 16, end_hour: 17.5, energy_kwh: 1, action: null, mode: null, cycle: "Lave-linge #2" },
+      ],
+      actual: [{ start_hour: 10.0833, end_hour: 11.5, energy_kwh: 1, action: null, mode: null }],
+    };
+    const view = {
+      ...TODAY,
+      timeline: { ...TODAY.timeline, rows: [twice] },
+      explanations: [
+        { device: "Lave-linge", text: "Lancé à 10h05." },
+        {
+          device: "Lave-linge #2",
+          text: "Placé à 16h.",
+          explanation: { alternatives: [{ debut_min: 1080, ecart_cout_eur: 0.1, ecart_soutirage_kwh: 0.2 }] },
+        },
+      ],
+    } as unknown as DayView;
+    const choices = startChoices(view);
+    expect(Object.keys(choices)).toEqual(["Lave-linge", "Lave-linge #2"]);
+    expect(choices["Lave-linge #2"].alternatives).toHaveLength(1);
+
+    renderTimeline(view.timeline, 14.5, { choices, onChanged: () => undefined });
+    expect(screen.getAllByLabelText("Lave-linge")).toHaveLength(1); // une seule ligne
+
+    // Le cycle déjà fait ne se déplace plus ; le second, pas encore lancé, s'ouvre.
+    const done = screen.getByRole("button", { name: "Prévu 10h → 11h30 : Lave-linge, 1,00 kWh" });
+    expect(done).not.toHaveClass("tl-pickable");
+    const second = screen.getByRole("button", { name: "Prévu 16h → 17h30 : Lave-linge, 1,00 kWh" });
+    expect(second).toHaveClass("tl-pickable");
+    await user.click(second);
+
+    const sheet = screen.getByRole("dialog");
+    expect(within(sheet).getByRole("heading", { name: "Départ de Lave-linge #2" })).toBeInTheDocument();
+    await user.click(within(sheet).getByRole("button", { name: "Annuler le lancement" }));
+    const cancelled = calls.find((call) => call.url.endsWith("api/planning/cancelled"));
+    expect(cancelled?.body).toEqual({ device: "Lave-linge #2" });
+  });
+
   it("annule la planification depuis la feuille, puis la rétablit depuis la frise", async () => {
     vi.setSystemTime(new Date("2026-10-17T12:00:00"));
     const calls = mockChoices();

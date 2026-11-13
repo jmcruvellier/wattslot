@@ -13,7 +13,7 @@ from typing import Any, Literal
 from pydantic import BaseModel
 
 from wattslot.planning.explain import render
-from wattslot.planning.plan import Explanation, Plan
+from wattslot.planning.plan import Explanation, Plan, Slot
 from wattslot.planning.warning_texts import warning_text
 from wattslot.views.display import Context, recalculated_production
 
@@ -292,9 +292,11 @@ def explanations(
         explanation = getattr(item, "explanation", None)
         device = getattr(item, "device", None)
         if explanation is not None and device:
+            # Un cycle porte son identité : l'équipement, et son rang à partir du deuxième.
+            name = item.ident if isinstance(item, Slot) else device
             found.append(
                 DeviceExplanation(
-                    device=device, explanation=explanation, text=render(explanation, lang)
+                    device=name, explanation=explanation, text=render(explanation, lang)
                 )
             )
     indicators = plan.indicators

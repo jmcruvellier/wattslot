@@ -137,6 +137,10 @@ export interface Bar {
   action: "charge" | "discharge" | null;
   mode: string | null;
   carried?: boolean; // fin d'un cycle commencé la veille avant minuit : rien à lancer
+  // Barre prévue d'un cycle : son identité, le nom de l'équipement ou, à partir de son deuxième
+  // cycle de la journée, ce nom et son rang (« Lave-linge #2 ») ; c'est elle que prennent le
+  // départ choisi et « Annuler ».
+  cycle?: string | null;
 }
 
 export interface TimelineRow {

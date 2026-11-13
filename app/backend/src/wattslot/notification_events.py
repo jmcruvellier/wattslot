@@ -277,7 +277,7 @@ def device_now(
             ),
         )
         for status in view.timeline.statuses
-        if status.device in cycles
+        if (status.appliance or status.device) in cycles
         and status.device not in declared
         and status.status == "planned"
         and now_min < status.planned_start_min <= now_min + window
@@ -304,7 +304,7 @@ def plan_gap(state: Mapping[str, Any], local: datetime, lang: str) -> list[Candi
             ),
         )
         for status in view.timeline.statuses
-        if status.device in cycles
+        if (status.appliance or status.device) in cycles
         and (
             status.status == "no_cycle"
             or (status.status == "planned" and reading_min >= status.planned_start_min + LATE_MIN)

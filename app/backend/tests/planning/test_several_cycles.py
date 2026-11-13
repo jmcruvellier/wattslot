@@ -3,11 +3,12 @@ demande est placée sur son créneau, l'une après l'autre, et un cycle réel n'
 une seule."""
 
 from dataclasses import replace
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from tests.v1_oracle import load, state_named
 from wattslot.planning.assemble import to_v1
 from wattslot.planning.assignment import launched_keys, launched_uids
+from wattslot.planning.cancelled import without_cancelled
 from wattslot.planning.cycles import Segment
 from wattslot.planning.engine import plan_day
 from wattslot.planning.inputs import FrozenCycle, PlanningInput, TaskRequest, from_v1
@@ -16,6 +17,10 @@ from wattslot.planning.occurrences import Wanted, attribute, numbered, paired
 from wattslot.planning.plan import Plan, Slot
 from wattslot.planning.problem import from_input
 from wattslot.planning.reference import ident, task_key
+from wattslot.views.banners import explanations
+from wattslot.views.display import Context
+from wattslot.views.now import declared_pending, next_action
+from wattslot.views.timeline import build_timeline
 
 HEATER = "Chauffe-eau"
 WASHER = "Lave-linge"
@@ -247,3 +252,64 @@ def test_a_task_request_carries_its_rank_in_the_stored_plan() -> None:
     again = from_v1({**to_v1(numbered(two_loads())), "date_cible": two_loads().day})
     assert [t.rank for t in again.waiting_tasks] == [None, None, 2, 2]
     assert TaskRequest(name=WASHER, rank=2).ident == "Lave-linge #2"
+
+
+# --- Actions par cycle (lot 2) ------------------------------------------------------------------
+
+
+def test_a_chosen_start_is_for_one_cycle() -> None:
+    """Le départ choisi désigne un cycle par son identité : celui du second ne touche pas au
+    premier, et celui de l'équipement (son premier cycle) ne déplace pas le second."""
+    asked, done = heater_done_then_asked_again()
+    free = slots(plan_day(from_input(asked)).day, HEATER)[1]
+    assert free.start_min is not None
+    later = (free.start_min // 60 + 2) * 60
+
+    chosen = replace(asked, chosen_starts={"Chauffe-eau #2": later})
+    first, second = slots(plan_day(from_input(chosen)).day, HEATER)
+    assert (first.start_min, second.start_min) == (done.start_min, later)
+    assert second.explanation is not None and second.explanation.chosen
+
+    other = replace(asked, chosen_starts={HEATER: later})
+    assert slots(plan_day(from_input(other)).day, HEATER)[1].start_min == free.start_min
+
+
+def test_cancelling_one_cycle_leaves_the_others() -> None:
+    data = numbered(two_loads())
+    kept = without_cancelled(data, {"Lave-linge #2"})
+    assert [t.ident for t in kept.waiting_tasks] == [DRYER, WASHER, "Sèche-linge #2"]
+    # Le cycle qui reste garde son rang : il ne devient pas « le » sèche-linge.
+    names = {t.name for t in from_input(kept).tasks}
+    assert names == {HEATER, WASHER, DRYER, "Sèche-linge #2"}
+
+
+def test_views_name_each_cycle() -> None:
+    """Frise, bilans, explications et « Prochaine action » : le second cycle porte son rang,
+    que reprennent le départ choisi, « Annuler » et « C'est lancé »."""
+    asked, _ = heater_done_then_asked_again()
+    result = plan_day(from_input(asked))
+    state = {**result.output, "date_cible": asked.day.isoformat()}
+    context = Context()
+
+    timeline = build_timeline(state, None, 12.0, 10.0, 8.0, context)
+    row = next(r for r in timeline.rows if r.device == HEATER)
+    assert [bar.cycle for bar in row.planned] == [HEATER, "Chauffe-eau #2"]
+    statuses = [s for s in timeline.statuses if s.appliance == HEATER]
+    assert [s.device for s in statuses] == [HEATER, "Chauffe-eau #2"]
+
+    texts = {e.device: e.text for e in explanations(state)[1]}
+    assert {HEATER, "Chauffe-eau #2"} <= set(texts)
+    assert texts[HEATER] != texts["Chauffe-eau #2"]  # « lancé » pour le premier seulement
+
+    second = slots(result.day, HEATER)[1]
+    assert second.start_min is not None
+    moment = datetime(2026, 1, 1, 0, 0, tzinfo=UTC)  # avant tous les départs
+    # Sans mesures, les deux cycles sont à lancer ; le premier déclaré lancé, vient le second.
+    action = next_action(timeline, texts, moment, context, declared={HEATER})
+    assert action is not None and action.device == "Chauffe-eau #2"
+    assert action.start_min == second.start_min
+    assert action.explanation == texts["Chauffe-eau #2"]
+    assert (
+        next_action(timeline, texts, moment, context, declared={HEATER, "Chauffe-eau #2"}) is None
+    )
+    assert declared_pending(timeline, moment, context, {"Chauffe-eau #2"}) == ["Chauffe-eau #2"]

@@ -239,7 +239,7 @@ def decide(
             )
             for t in group
         )
-        chosen_days = sorted((pinned or {})[t.name] for t in group if t.name in (pinned or {}))
+        chosen_days = sorted((pinned or {})[t.ident] for t in group if t.ident in (pinned or {}))
         if is_locked or not scores:
             day = today  # lancé, ou aucun jour ne convient
         elif chosen_days and chosen_days[0] >= today:
