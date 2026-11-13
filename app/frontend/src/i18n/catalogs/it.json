@@ -1669,6 +1669,7 @@
       "eyebrow": "Sole",
       "title": "{kwh} kWh previsti oggi",
       "done": "{kwh} kWh già prodotti.",
+      "at_reading": "{kwh} kWh previsti a quest'ora.",
       "none": "Ancora nessuna produzione misurata."
     },
     "trend": "Differenza con la previsione alla lettura"

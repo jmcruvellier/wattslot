@@ -102,6 +102,10 @@ export default function TodayView({ onNavigate }: { onNavigate?: (target: string
   // prévisions seules pouvait être inférieure à ce qui est déjà produit (« 1,2 kWh prévus »
   // à côté de « 1,5 kWh déjà produits »).
   const expected = view.weather?.production_kwh ?? view.summary.production_kwh;
+  // Prévu jusqu'au relevé : la référence de la pastille de tendance. Sans lui, « 6,6 kWh prévus,
+  // 6,6 kWh déjà produits » à côté de « −7 % » se contredisaient (constaté le 13/11/2026).
+  const sunLine = view.cards?.at_reading.find((card) => card.key === "production");
+  const forecastAtReading = sunLine && sunLine.trend.direction !== "none" ? sunLine.estimated_kwh : null;
 
   return (
     <div className="today">
@@ -141,6 +145,7 @@ export default function TodayView({ onNavigate }: { onNavigate?: (target: string
         {view.solar !== false && (
           <Card tone="sun" eyebrow={t("today.sun.eyebrow")} title={t("today.sun.title", { kwh: kwh(expected, 1) })} meta={<TrendBadge view={view} line="production" />}>
             <p>{measuredHours ? t("today.sun.done", { kwh: kwh(produced, 1) }) : t("today.sun.none")}</p>
+            {measuredHours && forecastAtReading !== null && <p>{t("today.sun.at_reading", { kwh: kwh(forecastAtReading, 1) })}</p>}
           </Card>
         )}
       </div>
