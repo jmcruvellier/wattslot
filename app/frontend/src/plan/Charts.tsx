@@ -24,7 +24,7 @@ import {
 
 import { useI18n } from "../i18n/I18nProvider";
 import { axisTick, hour, kwh, percent } from "./format";
-import { energyPoints, instantLabel, socPoints } from "./dayPoints";
+import { energyPoints, gridTooltipLine, instantLabel, socPoints } from "./dayPoints";
 import { useChartLegends } from "./legends";
 import type { HourPoint, WeekPoint } from "./types";
 
@@ -168,7 +168,16 @@ export function GridChart({ hours, readingHour }: ChartProps) {
         <ComposedChart data={data} margin={MARGIN} stackOffset="sign">
           {axes()}
           <YAxis tick={TICK} stroke="var(--text-dim)" tickFormatter={axisTick("kWh")} width="auto" />
-          <Tooltip contentStyle={TOOLTIP} labelFormatter={(x) => trancheBarre(Number(x), lang)} formatter={(v) => `${kwh(Math.abs(Number(v)))} kWh`} />
+          <Tooltip
+            contentStyle={TOOLTIP}
+            labelFormatter={(x) => trancheBarre(Number(x), lang)}
+            formatter={(v, name, item) => {
+              // Le prévu sous zéro est un surplus : l'info-bulle le dit, au lieu d'un nombre
+              // positif sous le nom « achat − surplus ».
+              const line = gridTooltipLine(Number(v), item.dataKey === "net", String(name));
+              return [`${kwh(line.quantity)} kWh`, line.key ? t(line.key) : line.label];
+            }}
+          />
           {legends && <Legend wrapperStyle={LEGEND} />}
           <Bar dataKey="importActual" name={t("plan.series.import_actual")} stackId="actual" fill="var(--grid-import)">
             {data.map((point) => (

@@ -156,7 +156,9 @@
       "floor": "Untergrenze {pct} %",
       "import_actual": "Gemessener Bezug",
       "export_actual": "Gemessener Überschuss",
-      "grid": "Geplantes Netz (Bezug − Überschuss)"
+      "grid": "Geplantes Netz (Bezug − Überschuss)",
+      "grid_import_planned": "Geplanter Bezug",
+      "grid_export_planned": "Geplanter Überschuss"
     },
     "week": {
       "title": "Woche vom {start} bis {end}",

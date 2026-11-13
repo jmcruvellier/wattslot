@@ -156,7 +156,9 @@
       "floor": "Floor {pct} %",
       "import_actual": "Measured import",
       "export_actual": "Measured surplus",
-      "grid": "Planned grid (import − surplus)"
+      "grid": "Planned grid (import − surplus)",
+      "grid_import_planned": "Planned import",
+      "grid_export_planned": "Planned surplus"
     },
     "week": {
       "title": "Week of {start} to {end}",

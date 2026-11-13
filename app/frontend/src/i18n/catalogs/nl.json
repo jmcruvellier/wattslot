@@ -156,7 +156,9 @@
       "floor": "Ondergrens {pct} %",
       "import_actual": "Gemeten afname",
       "export_actual": "Gemeten overschot",
-      "grid": "Gepland net (afname − overschot)"
+      "grid": "Gepland net (afname − overschot)",
+      "grid_import_planned": "Geplande afname",
+      "grid_export_planned": "Gepland overschot"
     },
     "week": {
       "title": "Week van {start} tot {end}",
