@@ -455,3 +455,69 @@ def test_actual_day_reads_an_external_statistic_and_skips_hours_not_yet_received
     assert set(consumption) == set(range(9))  # 9 h à 12 h : soutirage pas encore reçu
     production = found["production_reelle_horaire"]
     assert all(consumption[h] == pytest.approx(production[h] + 0.5) for h in range(9))
+
+
+def test_the_day_of_the_installation_reads_the_earlier_hours_in_the_history(
+    tmp_path: Path,
+) -> None:
+    """Installation faite le soir : les relevés ne commencent qu'à 18 h 30. La production de la
+    journée ne vaut pas 0 kWh pour autant : ses heures d'avant viennent de l'historique repris
+    de HA (premier rapport d'une installation réelle, 13/11/2026)."""
+    model = HomeModel(
+        devices=[
+            HomeDevice(
+                key="solar",
+                kind=DeviceKind.SOLAR,
+                name="solar",
+                sensors=[HomeSensor(entity_id="sensor.pv_energy", role=Role.ENERGY_PRODUCED)],
+            )
+        ]
+    )
+    raw = RawStores(tmp_path, "Europe/Paris")
+    raw.write(
+        [
+            reading("solar", "sensor.pv_energy", 18.0, at(18.5)),
+            reading("solar", "sensor.pv_energy", 18.2, at(19.5)),
+        ]
+    )
+    # Historique de HA : 2 kWh par heure de 9 h à 17 h, et l'heure de l'installation (18 h),
+    # que les relevés couvrent déjà.
+    reader = _StatisticReader("sensor.pv_energy", {hour: 2.0 for hour in range(9, 19)})
+
+    found: dict[str, Any] = actual_day(model, raw, DAY, at(20), reader=reader)
+    without: dict[str, Any] = actual_day(model, raw, DAY, at(20))
+
+    production = found["production_reelle_horaire"]
+    assert {h: production[h] for h in range(9, 18)} == {h: 2.0 for h in range(9, 18)}
+    # L'heure du premier relevé reste celle des relevés : jamais comptée deux fois.
+    assert production[18] == pytest.approx(0.1) and production[19] == pytest.approx(0.1)
+    assert sum(production.values()) == pytest.approx(18.2)
+    # Sans historique repris : comme avant, les seules heures des relevés.
+    assert sum(without["production_reelle_horaire"].values()) == pytest.approx(0.2)
+
+
+def test_a_meter_read_the_day_before_does_not_read_the_history(tmp_path: Path) -> None:
+    """Un compteur déjà suivi la veille a tous ses relevés : l'historique ne s'y ajoute pas."""
+    model = HomeModel(
+        devices=[
+            HomeDevice(
+                key="solar",
+                kind=DeviceKind.SOLAR,
+                name="solar",
+                sensors=[HomeSensor(entity_id="sensor.pv_energy", role=Role.ENERGY_PRODUCED)],
+            )
+        ]
+    )
+    raw = RawStores(tmp_path, "Europe/Paris")
+    raw.write(
+        [
+            reading("solar", "sensor.pv_energy", 100.0, at(-1)),
+            reading("solar", "sensor.pv_energy", 100.0, at(10)),
+            reading("solar", "sensor.pv_energy", 101.0, at(12)),
+        ]
+    )
+    reader = _StatisticReader("sensor.pv_energy", {hour: 2.0 for hour in range(9)})
+
+    found: dict[str, Any] = actual_day(model, raw, DAY, at(13), reader=reader)
+
+    assert sum(found["production_reelle_horaire"].values()) == pytest.approx(1.0)
