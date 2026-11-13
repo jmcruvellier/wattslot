@@ -300,7 +300,7 @@
       "measured": "Gemeten",
       "forecast": "Prognose",
       "at_reading": "Bij de meting",
-      "day": "Dag"
+      "day": "Dag (eerste prognose)"
     },
     "timeline": {
       "title": "Apparatenplanning",

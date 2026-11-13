@@ -50,7 +50,9 @@ describe("vue d'un jour", () => {
 
     const soc = screen.getByRole("article", { name: "SoC / capacité" });
     expect(soc).toHaveTextContent("Au relevé");
-    expect(soc).toHaveTextContent("Journée");
+    // L'estimé de cette ligne est la prévision du premier calcul du jour, pas celle du relevé :
+    // le libellé le dit (« Estimé 5,00 kWh » sous « Estimé 7,10 kWh », constaté le 13/11/2026).
+    expect(soc).toHaveTextContent("Journée (première prévision)");
     expect(within(soc).getAllByText("▲ +25%")[0]).toHaveClass("trend-good");
     const grid = screen.getByRole("article", { name: "Réseau" });
     expect(within(grid).getByText("▲ +25%")).toHaveClass("trend-bad"); // plus d'achat : défavorable

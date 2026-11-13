@@ -300,7 +300,7 @@
       "measured": "Measured",
       "forecast": "Forecast",
       "at_reading": "At the reading",
-      "day": "Day"
+      "day": "Day (first forecast)"
     },
     "timeline": {
       "title": "Appliance schedule",
