@@ -40,7 +40,7 @@ from wattslot.views.display import (
     phase_hours,
     recalculated_production,
 )
-from wattslot.views.now import NextAction, Now
+from wattslot.views.now import IdleReason, NextAction, Now
 from wattslot.views.timeline import Timeline, build_timeline
 
 # Jours de l'horizon après demain (J+2 à J+6) : affichés comme Demain, prévision seulement.
@@ -191,6 +191,8 @@ class DayView(BaseModel):
     # Aujourd'hui (lot 6b.3) : le moment et le prochain appareil à lancer, ajoutés par les routes.
     now: Now | None = None
     next_action: NextAction | None = None
+    # Sans prochaine action : pourquoi (tout est lancé, annulé, rien de prévu aujourd'hui).
+    idle_reason: IdleReason | None = None
     # « C'est lancé » sur lequel on peut encore revenir (cycle pas reconnu dans les mesures).
     declared_launches: list[str] = []
 

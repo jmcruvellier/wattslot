@@ -13,7 +13,7 @@ son explication (« Pourquoi ce plan »).
 
 from collections.abc import Mapping, Set
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel
 
@@ -316,6 +316,28 @@ def declared_pending(
     local = moment.astimezone(context.zone)
     pending = _to_start(timeline, local.hour * 60 + local.minute)
     return sorted({status.device for status in pending if status.device in declared})
+
+
+IdleReason = Literal["all_started", "cancelled", "nothing_planned"]
+
+
+def idle_reason(timeline: Timeline, declared: Set[str], cancelled: Set[str]) -> IdleReason | None:
+    """Pourquoi aucun appareil n'est à lancer (``next_action`` vide) : tout ce qui était
+    prévu est lancé, vu dans les mesures ou déclaré ; la planification du jour est annulée ;
+    aucun appareil à cycle n'est prévu aujourd'hui. None : l'heure prévue est passée sans
+    que le cycle ait été vu."""
+    cycles = {row.device for row in timeline.rows if row.kind == "cycle"}
+    planned = [s for s in timeline.statuses if (s.appliance or s.device) in cycles]
+    started = [
+        s
+        for s in planned
+        if s.status in ("on_time", "shifted") or (s.status == "planned" and s.device in declared)
+    ]
+    if started:
+        return "all_started"
+    if cancelled:
+        return "cancelled"
+    return None if planned else "nothing_planned"
 
 
 def next_action(

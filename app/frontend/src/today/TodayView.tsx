@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 
 import { ApiError, deleteRequest, getJson, postJson } from "../api";
 import { useI18n } from "../i18n/I18nProvider";
-import { hourOfDay, zoned } from "../i18n/homeTime";
+import { hourOfDay, minuteOfDay, zoned } from "../i18n/homeTime";
 import { clock, kwh, percent } from "../plan/format";
 import { RUN_EVENT } from "../plan/planView";
 import { IndicatorsCard } from "../plan/InsightCards";
@@ -253,9 +253,13 @@ function NextActionCard({
     // Aucun appareil placé par le calcul (tableau Énergie sans appareil) : rien ne sera jamais à
     // lancer tant qu'on n'en ajoute pas un.
     const noAppliance = features.appliances === 0;
+    // Pourquoi rien n'est à lancer, d'après le serveur : tout est lancé, planification
+    // annulée, ou aucun appareil prévu aujourd'hui ; sinon l'heure prévue est passée.
+    const reason = noAppliance ? "no_appliance" : (view.idle_reason ?? "none");
+    const devices = (view.timeline.cancelled ?? []).join(", ");
     return (
-      <Card eyebrow={t("today.next.eyebrow")} title={t(noAppliance ? "today.next.no_appliance" : "today.next.none")}>
-        <p className="dim">{t(noAppliance ? "today.next.no_appliance_help" : "today.next.none_help")}</p>
+      <Card eyebrow={t("today.next.eyebrow")} title={t(`today.next.${reason}`)}>
+        <p className="dim">{t(`today.next.${reason}_help`, { devices })}</p>
         {noAppliance && onNavigate && (
           <Button variant="primary" icon="plus" onClick={() => onNavigate("devices#add-device")}>
             {t("today.next.add_appliance")}
@@ -346,6 +350,7 @@ function NextActionCard({
         alternatives={action.alternatives ?? []}
         chosen={action.chosen ?? false}
         onChanged={onChanged}
+        freeFrom={minuteOfDay()} // heure libre, comme la frise
       />
       {declared}
     </section>

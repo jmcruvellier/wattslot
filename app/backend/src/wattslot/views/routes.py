@@ -25,7 +25,7 @@ from wattslot.planning.store import PlanStore
 from wattslot.tariff import off_peak_ranges
 from wattslot.views.day import LATER_KINDS, DayView, Kind, LaterKind, build_day
 from wattslot.views.display import Context, recalculated_production
-from wattslot.views.now import declared_pending, measure_now, next_action
+from wattslot.views.now import declared_pending, idle_reason, measure_now, next_action
 from wattslot.views.week import WeekView, build_week
 
 router = APIRouter()
@@ -208,6 +208,7 @@ async def day_view_of(state: Any, kind: DayKind, lang: str = "fr") -> DayView | 
     details = {e.device: e.explanation for e in view.explanations}
     launched = declared.load(state.database, plan.day)
     action = next_action(view.timeline, explanations, moment, context, details, launched)
+    dropped = cancelled.load(state.database, plan.day)
     if action is not None:
         action = action.model_copy(
             update={
@@ -220,11 +221,12 @@ async def day_view_of(state: Any, kind: DayKind, lang: str = "fr") -> DayView | 
         update={
             "now": await asyncio.to_thread(measure_now, state, moment, context, language),
             "next_action": action,
+            "idle_reason": (
+                idle_reason(view.timeline, launched, dropped) if action is None else None
+            ),
             "declared_launches": declared_pending(view.timeline, moment, context, launched),
             # Planifications annulées pour aujourd'hui, rétablies depuis la frise.
-            "timeline": view.timeline.model_copy(
-                update={"cancelled": sorted(cancelled.load(state.database, plan.day))}
-            ),
+            "timeline": view.timeline.model_copy(update={"cancelled": sorted(dropped)}),
         }
     )
 
