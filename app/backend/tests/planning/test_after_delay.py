@@ -36,10 +36,33 @@ def sunny() -> PlanningInput:
     return from_v1(load(state_named("synthetic_sunny_h00"))[0])
 
 
-def test_without_a_limit_the_dryer_may_wait_for_hours() -> None:
-    problem = from_input(sunny())
+def afternoon_sun() -> PlanningInput:
+    """Lave-linge lancé à 6 h (départ choisi), soleil de 14 h à 18 h seulement, pas de batterie :
+    le sèche-linge coûte nettement moins l'après-midi. Aucune égalité entre deux plans, donc le
+    même résultat quel que soit le solveur."""
+    data = sunny()
+    return replace(
+        data,
+        net_kwh={h: 4.0 if 14 <= h < 18 else -0.2 for h in range(24)},
+        production_kwh={h: 4.2 if 14 <= h < 18 else 0.0 for h in range(24)},
+        battery=replace(data.battery, capacity_kwh=0.0, stored_kwh=0.0, soc_percent=0.0),
+        chosen_starts={WASHER: 6 * 60},
+        due_tasks=(),
+    )
+
+
+def test_without_a_limit_the_dryer_waits_for_the_sun() -> None:
+    """Le plan d'avant : rien ne borne l'attente, le linge mouillé attend l'après-midi."""
+    problem = from_input(afternoon_sun())
     assert all(task.within_min is None for task in problem.tasks)
-    assert wait(plan_day(problem).day) > 120  # le plan d'avant : rien ne borne l'attente
+    assert wait(plan_day(problem).day) >= 6 * 60
+
+
+@pytest.mark.parametrize("limit", [0, 60, 120])
+def test_with_a_limit_the_dryer_does_not_wait_for_the_sun(limit: int) -> None:
+    """Le délai l'emporte sur le gain du soleil : le sèche-linge part dans le délai."""
+    day = plan_day(from_input(replace(afternoon_sun(), after_max_min={DRYER: limit}))).day
+    assert 0 <= wait(day) <= limit and late(day) == []
 
 
 @pytest.mark.parametrize("limit", [0, 60])
