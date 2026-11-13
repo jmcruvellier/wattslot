@@ -1,5 +1,145 @@
 # Changelog
 
+## 0.9.9
+
+### English
+
+**This is the last beta before the stable release. Testers wanted: if your home is three-phase, has several batteries, or both, please try this version and tell me how it goes (a GitHub issue, even to say "it works"). These two new features have only been checked on simulated homes so far.**
+
+This release brings the two biggest new features of the beta: three-phase homes and homes with several batteries. The plan also looks further ahead (a detailed view of each of the next six days, cycles that run past midnight), changes its mind less often, and sends far fewer notifications. **Nothing to do when updating:** a home stays single-phase until you say otherwise.
+
+- **Three-phase homes (new, testers wanted)**
+  - **"My grid connection"** in My home: say whether your home is single-phase or three-phase, and whether your meter adds the three phases together. In three-phase, each appliance, battery and solar installation has its phase (1, 2, 3, or all three for a three-phase device).
+  - **Power limit on each phase**: when the subscribed power is set, each phase gets a third of it, and the plan avoids running too many appliances together on the same phase. An appliance that goes over the limit on its own is still planned, with a warning.
+  - **Meters for each phase**: the grid sheet accepts an import and an export sensor per phase. The plan then knows the usual consumption of each phase and counts it in the limit.
+  - **A battery on one phase** only charges on the surplus of that phase and only covers what that phase draws, unless it follows a three-phase meter (an option on the battery).
+  - **Cost counted phase by phase** when your meter does not add the phases together: what you export on one phase no longer offsets what you import on another.
+  - **On screen**: a "By phase" card in Planning (planned and measured so far), and one battery line per phase in the timeline.
+  - **Detection**: phases are read from the names in Home Assistant (`l1`, `phase 2`, `phase a`…), and per-phase meters are suggested. A home that is already saved is not changed: "My grid connection" only tells you it looks three-phase.
+  - **Getting started** asks for your supply, with a new optional "Three-phase" step.
+
+- **Several batteries (new, testers wanted)**
+  - **Settings for each battery**: powers, reserve and its time ranges, active range and full charge can be set per battery instead of for the whole home.
+  - **State of charge of each battery** on Today and in Planning. The home's state of charge is now their average weighted by capacity, where it used to be the reading of a single battery.
+  - Charge and discharge meters of all batteries are added up in the day's measurements.
+  - The assistant knows each battery, its reserve, and the phases of the home.
+
+- **Planning over several days**
+  - **D+2 to D+6 tabs** between Tomorrow and Week, in Planning and Curves: each day of the horizon has its detailed view, and each day of the Week view opens it.
+  - **Start time editable for tomorrow and the following days**, from the timeline: pick a start suggested by the plan or any time you like (a water heater planned from 3 to 6, moved to 1).
+  - **Cycles that run past midnight**: a 3-hour water heater asked for at 9 pm can now run from 10 pm to 1 am in off-peak hours instead of starting at once. This applies when tomorrow's prices are known.
+
+- **A steadier plan**
+  - An announced start time is only changed for a real gain, not for a few cents from one hourly calculation to the next.
+  - A recommendation you did not follow is no longer taken as started: with no activity 30 minutes after the announced start, the appliance is planned again (appliances with a meter).
+  - A start is never placed before the moment of the calculation, which could leave an appliance unplanned for the rest of the day.
+  - An appliance that has run stays in the day's plan and curves after you mark it "Done".
+  - Asking again for an appliance that has already started (the water heater for tomorrow while tonight's is running) opens a new request instead of changing the first one.
+  - A calculation cut by a lost connection to Home Assistant is tried again 1 and then 5 minutes later, instead of an hour later.
+  - The plan stays readable while a calculation is running.
+
+- **Forecasts and curves**
+  - **Forecast quality**: a badge on "Plan indicators" (Reliable, Average, Uncertain) opens the details: comparable days behind your usual consumption, source of the solar forecast, how far ahead the weather is, cycles without a profile.
+  - Curve legends show planned as a dashed line and measured as a solid line, like the curves.
+  - The Sun tile no longer shows a forecast total below what has already been produced.
+  - A cycle running at night is no longer explained by "solar surplus".
+  - The Yesterday view shows the cycles of the day before again.
+
+- **Notifications**
+  - The recommendation is now sent **only when the plan changes** by default, instead of at each calculation. Settings you have already saved keep their rhythm.
+  - "No appliance to start" is sent once, not every hour (reported by a user).
+  - A detail that changes in the text no longer sends the recommendation again, and "Start … now" arrives at the right moment.
+
+- **Energy dashboard statistics**
+  - Homes whose Energy dashboard uses statistics from an integration (`linky:…`) instead of entities are now followed (reported by a user): live readings are no longer refused for the whole home, and the hours of these statistics are read from Home Assistant every quarter of an hour.
+  - App status says when such a statistic has had no new hour for two days.
+
+- **Getting started**
+  - Tempo and EJP can be set up on the spot: the sensors of today's and tomorrow's announced day are picked from a list, suggested by WattSlot.
+
+- **Resources**
+  - **Far fewer disk writes** during the nightly maintenance (41 MB instead of 589 MB in our measurement), which spares SD cards and SSDs.
+  - A new **"Disk writes"** line in App status, with its curve (Linux only).
+  - **Memory**: unused database connections are closed and free memory is given back to the system after each calculation. The problem report now details memory use.
+  - A **calculation log** keeps, for seven days, what each calculation decided for each appliance (kept, moved, started). It is attached to the anonymised problem report.
+
+- **Interface**
+  - Phone menu: "My home" fits on one line, and long labels no longer spill over in German, Spanish and Italian.
+  - Status badges have the same size and style on every page.
+  - A detected appliance takes the name of its device in Home Assistant rather than the name of its meter.
+
+- **Under the hood**
+  - Dependencies updated (Python 3.12.16, Node 22.23.4, Vite…).
+
+### Français
+
+**Cette version est la dernière bêta avant la version stable. Appel aux testeurs : si votre maison est en triphasé, a plusieurs batteries, ou les deux, essayez cette version et dites-moi ce que ça donne (une issue GitHub, même pour dire « ça marche »). Ces deux nouveautés n'ont été vérifiées jusqu'ici que sur des maisons simulées.**
+
+Cette version apporte les deux plus grosses nouveautés de la bêta : les maisons en triphasé et les maisons à plusieurs batteries. Le plan voit aussi plus loin (une vue détaillée de chacun des six jours suivants, des cycles qui passent minuit), change moins souvent d'avis et envoie beaucoup moins de notifications. **Rien à faire à la mise à jour :** une maison reste en monophasé tant que vous ne dites pas autre chose.
+
+- **Maisons en triphasé (nouveau, testeurs recherchés)**
+  - **« Mon raccordement »** dans Ma maison : indiquez si votre maison est en monophasé ou en triphasé, et si votre compteur additionne les trois phases. En triphasé, chaque appareil, batterie et installation solaire a sa phase (1, 2, 3, ou les trois pour un appareil triphasé).
+  - **Limite de puissance de chaque phase** : quand la puissance souscrite est réglée, chaque phase en reçoit un tiers, et le plan évite de faire tourner trop d'appareils ensemble sur la même phase. Un appareil qui dépasse à lui seul reste planifié, avec un avertissement.
+  - **Compteurs par phase** : la fiche du réseau accepte un capteur de soutirage et un capteur d'injection par phase. Le plan connaît alors la consommation habituelle de chaque phase et la compte dans la limite.
+  - **Une batterie branchée sur une phase** ne charge que sur le surplus de cette phase et ne couvre que ce que cette phase soutire, sauf si elle suit un compteur triphasé (option de la batterie).
+  - **Coût compté phase par phase** quand votre compteur n'additionne pas les phases : ce que vous injectez sur une phase ne compense plus ce que vous soutirez sur une autre.
+  - **À l'écran** : une carte « Par phase » dans le Planning (prévu et mesuré jusqu'ici), et une ligne de batterie par phase dans la frise.
+  - **Détection** : les phases sont lues dans les noms de Home Assistant (`l1`, `phase 2`, `phase a`…), et les compteurs par phase sont proposés. Une maison déjà enregistrée n'est pas modifiée : « Mon raccordement » signale seulement qu'elle semble en triphasé.
+  - **Les premiers pas** demandent votre alimentation, et la mise en route gagne une étape facultative « Triphasé ».
+
+- **Plusieurs batteries (nouveau, testeurs recherchés)**
+  - **Réglages propres à chaque batterie** : puissances, réserve et ses plages horaires, plage active et charge complète se règlent par batterie, à la place de ceux de la maison.
+  - **État de charge de chaque batterie** dans Aujourd'hui et dans le Planning. L'état de charge de la maison est maintenant leur moyenne pondérée par la capacité, et non plus le relevé d'une seule batterie.
+  - Les compteurs de charge et de décharge de toutes les batteries sont additionnés dans les mesures du jour.
+  - L'assistant connaît chaque batterie, sa réserve, et les phases de la maison.
+
+- **Planning sur plusieurs jours**
+  - **Onglets J+2 à J+6** entre Demain et Semaine, dans le Planning et les Courbes : chaque jour de l'horizon a sa vue détaillée, et chaque jour de la vue Semaine l'ouvre.
+  - **Départ modifiable pour demain et les jours suivants**, depuis la frise : choisissez un départ proposé par le plan ou une heure libre (un chauffe-eau prévu de 3 h à 6 h, avancé à 1 h).
+  - **Cycles qui passent minuit** : un chauffe-eau de 3 h demandé à 21 h peut maintenant tourner de 22 h à 1 h en heures creuses, au lieu de démarrer tout de suite. Cela vaut quand les prix du lendemain sont connus.
+
+- **Un plan plus stable**
+  - Une heure de départ annoncée n'est changée que pour un vrai gain, plus pour quelques centimes d'un calcul horaire à l'autre.
+  - Une recommandation que vous n'avez pas suivie n'est plus tenue pour lancée : sans activité 30 minutes après le départ annoncé, l'appareil est replanifié (appareils avec un compteur).
+  - Un départ n'est jamais placé avant l'instant du calcul, ce qui pouvait laisser un appareil sans créneau pour le reste de la journée.
+  - Un appareil qui a tourné reste dans le plan et les courbes du jour après avoir été déclaré « Fait ».
+  - Redemander un appareil déjà lancé (le chauffe-eau pour demain alors que celui de la nuit tourne) ouvre une nouvelle demande au lieu de modifier la première.
+  - Un calcul coupé par une perte de connexion à Home Assistant est refait 1 puis 5 minutes plus tard, au lieu d'une heure plus tard.
+  - Le plan reste lisible pendant un calcul.
+
+- **Prévisions et courbes**
+  - **Qualité des prévisions** : une pastille sur « Indicateurs du plan » (Fiable, Moyenne, Incertaine) ouvre le détail : jours comparables derrière votre consommation habituelle, source de la prévision solaire, jours d'avance de la météo, cycles sans profil.
+  - Les légendes des courbes montrent le prévu en pointillés et le mesuré en trait plein, comme les courbes.
+  - La tuile Soleil n'affiche plus un total prévu inférieur à ce qui est déjà produit.
+  - Un cycle qui tourne la nuit n'est plus justifié par le « surplus solaire ».
+  - La vue Hier montre de nouveau les cycles de la veille.
+
+- **Notifications**
+  - La recommandation part désormais **seulement quand le plan change** par défaut, et non plus à chaque calcul. Les réglages déjà enregistrés gardent leur rythme.
+  - « Aucun appareil à lancer » part une fois, et non toutes les heures (signalé par un utilisateur).
+  - Un détail qui change dans le texte ne renvoie plus la recommandation, et « Lancez … maintenant » arrive au bon moment.
+
+- **Statistiques du tableau Énergie**
+  - Les maisons dont le tableau Énergie utilise les statistiques d'une intégration (`linky:…`) à la place d'entités sont maintenant suivies (signalé par un utilisateur) : les relevés en direct ne sont plus refusés pour toute la maison, et les heures de ces statistiques sont relues dans Home Assistant tous les quarts d'heure.
+  - L'état de l'application signale une telle statistique restée deux jours sans nouvelle heure.
+
+- **Premiers pas**
+  - Tempo et l'EJP se règlent sur place : les capteurs du jour annoncé et du lendemain se choisissent dans une liste, proposés par WattSlot.
+
+- **Ressources**
+  - **Beaucoup moins d'écritures sur disque** pendant la maintenance de la nuit (41 Mo au lieu de 589 Mo dans notre mesure), ce qui ménage les cartes SD et les SSD.
+  - Une nouvelle ligne **« Écritures sur disque »** dans État de l'application, avec sa courbe (Linux seulement).
+  - **Mémoire** : les connexions à la base inutilisées sont fermées et la mémoire libre est rendue au système après chaque calcul. Le rapport de signalement détaille maintenant l'usage de la mémoire.
+  - Un **journal des calculs** garde, pendant sept jours, ce que chaque calcul a décidé pour chaque appareil (gardé, déplacé, lancé). Il est joint au rapport de signalement anonymisé.
+
+- **Interface**
+  - Menu sur téléphone : « Ma maison » tient sur une ligne, et les libellés longs ne débordent plus en allemand, espagnol et italien.
+  - Les pastilles d'état ont la même taille et le même style sur toutes les pages.
+  - Un appareil détecté prend le nom de son appareil dans Home Assistant plutôt que celui de son compteur.
+
+- **Sous le capot**
+  - Dépendances à jour (Python 3.12.16, Node 22.23.4, Vite…).
+
 ## 0.9.8
 
 ### English
