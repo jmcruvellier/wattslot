@@ -1621,7 +1621,9 @@
     "next": {
       "eyebrow": "Prochaine action",
       "title": "Lancez {device}",
-      "slot": "Entre {start} et {end}.",
+      "slot": "Départ à {start}, fin vers {end}.",
+      "slot_late": "Le départ prévu à {start} est passé : lancez-le dès que possible.",
+      "now": "maintenant",
       "launched": "C'est lancé",
       "launched_failed": "Le lancement n'a pas pu être enregistré.",
       "declared": "{device} : marqué comme lancé.",

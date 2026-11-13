@@ -82,6 +82,9 @@ class NextAction(BaseModel):
     start_min: int  # minutes depuis minuit, heure locale
     end_min: int
     explanation: str | None = None
+    # Heure de départ prévue dépassée alors que le cycle n'a pas été vu : à lancer dès que
+    # possible, l'heure de fin prévue ne vaut plus.
+    late: bool = False
     # Autres départs proposés par le plan, les meilleurs d'abord, et départ choisi par
     # l'utilisateur (« Revenir au choix du calcul »).
     alternatives: list[OtherStart] = []
@@ -339,6 +342,7 @@ def next_action(
         start_min=first.planned_start_min,
         end_min=first.planned_end_min,
         explanation=explanations.get(first.device),
+        late=first.planned_start_min < now_min,
         # Départs à venir seulement : un départ déjà passé ne se choisit plus.
         alternatives=[
             OtherStart(

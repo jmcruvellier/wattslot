@@ -1621,7 +1621,9 @@
     "next": {
       "eyebrow": "Next action",
       "title": "Start the {device}",
-      "slot": "Between {start} and {end}.",
+      "slot": "Start at {start}, done around {end}.",
+      "slot_late": "The planned start at {start} has passed: start it as soon as you can.",
+      "now": "now",
       "launched": "It's started",
       "launched_failed": "The start could not be saved.",
       "declared": "{device}: marked as started.",

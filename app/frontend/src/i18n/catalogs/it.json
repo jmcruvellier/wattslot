@@ -1621,7 +1621,9 @@
     "next": {
       "eyebrow": "Prossima azione",
       "title": "Avvii {device}",
-      "slot": "Tra le {start} e le {end}.",
+      "slot": "Avvio alle {start}, fine verso le {end}.",
+      "slot_late": "L'avvio previsto alle {start} è passato: lo avvii appena possibile.",
+      "now": "adesso",
       "launched": "È partito",
       "launched_failed": "Non è stato possibile registrare l'avvio.",
       "declared": "{device}: segnato come avviato.",
