@@ -1,9 +1,11 @@
-// Planning des équipements (lot 5.3) : une ligne par équipement, barres prévues (contour) et
-// réelles (pleines) sur 24 heures, ligne du dernier relevé, info-bulle au toucher. Faite main
-// (point n° 2 de la phase 5), positions en pourcentage de la journée comme la frise de la v1.
-// Deux couloirs par piste (lot 7.1) : le prévu en haut, le réel en bas, chaque bloc portant son
-// énergie, centrée sur sa plus grande partie visible, s'il lui reste assez de place libre ; pas de
-// légende, le détail est dans l'info-bulle.
+// Planning des équipements (lot 5.3) : une ligne par équipement sur 24 heures, repère du dernier
+// relevé avec son heure, info-bulle au toucher. Faite main (point n° 2 de la phase 5), positions
+// en pourcentage de la journée comme la frise de la v1.
+// Le réel est une pilule pleine ; le prévu, un crochet posé au-dessus (repère de plan, comme la
+// cible d'un graphique à puces). Un bloc prévu que rien de réel ne recouvre et qui reste à venir
+// — ou dont on peut encore changer le départ — porte en plus une pilule en pointillé sous son
+// crochet. L'énergie est écrite dans les pilules, centrée sur leur plus grande partie visible,
+// s'il leur reste assez de place libre ; pas de légende, le détail est dans l'info-bulle.
 // Une ligne de batterie qui en réunit plusieurs (toutes, ou celles d'une phase) est suivie d'une
 // ligne fine par batterie, avec son seul mesuré : la prévision n'existe que pour l'ensemble.
 // Sur la vue Aujourd'hui, le clic sur un bloc prévu d'un équipement — à venir, en cours ou
@@ -126,11 +128,18 @@ export default function TimelineCard({
           ? choices[bar.cycle ?? row.device]
           : undefined;
       const opens = choice !== undefined;
+      // À venir : rien de réel ne le recouvre, et son créneau n'est pas fini (ou son départ se
+      // change encore). Lui seul porte une pilule, donc son énergie ; les autres, un crochet.
+      const upcoming =
+        !actual &&
+        !row.actual.some((done) => done.start_hour < bar.end_hour && done.end_hour > bar.start_hour) &&
+        (opens || readingHour === null || bar.end_hour > readingHour);
+      const kind = actual ? "tl-actual" : upcoming ? "tl-planned tl-upcoming" : "tl-planned";
       return (
         <button
           key={`${actual ? "a" : "p"}-${index}`}
           type="button"
-          className={actual ? "tl-bar tl-actual" : opens ? "tl-bar tl-planned tl-pickable" : "tl-bar tl-planned"}
+          className={opens ? `tl-bar ${kind} tl-pickable` : `tl-bar ${kind}`}
           style={{
             left: `${(bar.start_hour / 24) * 100}%`,
             width: `max(3px, ${(duration / 24) * 100}%)`,
@@ -140,7 +149,7 @@ export default function TimelineCard({
           aria-label={text}
           onClick={() => (opens ? setPicked({ device: bar.cycle ?? row.device, bar }) : setTip(text))}
         >
-          {wide && (
+          {wide && (actual || upcoming) && (
             <span
               className="tl-value"
               aria-hidden="true"
@@ -194,6 +203,16 @@ export default function TimelineCard({
         </p>
       ) : (
         <div className="tl">
+          {readingHour !== null && (
+            <div className="tl-row" aria-hidden="true">
+              <span />
+              <div className="tl-now-row">
+                <span className="tl-now-label" style={{ ["--now" as string]: `${(readingHour / 24) * 100}%` }}>
+                  {hour(Math.round(readingHour * 60) / 60, lang)}
+                </span>
+              </div>
+            </div>
+          )}
           {timeline.rows.map((row, index) => (
             <Fragment key={row.device}>
               <div className="tl-row" aria-label={rowLabel(row, t)}>
