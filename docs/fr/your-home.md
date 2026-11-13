@@ -57,6 +57,8 @@ Seulement si le tableau Énergie de Home Assistant n'a pas de prévision solaire
 
 ## Maisons en triphasé
 
+> **Expérimental.** Le triphasé a été vérifié sur des maisons simulées et commence seulement à tourner sur de vraies installations. Si quelque chose vous semble faux chez vous, [dites-le-nous](https://github.com/jmcruvellier/wattslot/issues) en joignant le rapport de **Réglages › État de l'application**.
+
 Les premiers pas demandent si votre maison est en **monophasé** (par défaut) ou en **triphasé** ; ensuite, cela se règle dans **L'essentiel › Mon raccordement**, et l'étape **Triphasé** de la mise en route vous mène à ce qu'il reste à régler. WattSlot lit ce que disent les noms de Home Assistant : quand un capteur ou un appareil nomme une phase (`l1`, `phase 2`, `phase a`, `channel c`…), une nouvelle maison est proposée en triphasé, l'appareil prend cette phase, et les compteurs par phase d'un compteur triphasé sont proposés dans la fiche du réseau. Vérifiez ces propositions : un nom peut tromper. En triphasé :
 
 - **Mon compteur additionne les trois phases** (coché par défaut) : ce que vous injectez sur une phase compense ce que vous soutirez sur une autre, comme le font la plupart des compteurs communicants. Décochez si chaque phase est comptée à part.
@@ -73,6 +75,13 @@ Un appareil qui dépasse sa phase à lui seul reste placé, avec un avertissemen
 **Un compteur qui compte chaque phase à part.** Avec **Mon compteur additionne les trois phases** décoché, et dès que la consommation de chaque phase est mesurée, le coût est compté phase par phase : ce qu'une phase injecte ne compense plus ce qu'une autre soutire. Le plan place alors un appareil sous le surplus de sa propre phase, et le coût, l'énergie achetée et l'énergie vendue du plan sont ceux que le compteur facture. Ce qui n'est sur aucune phase (un appareil ou une installation solaire dont la phase n'est pas renseignée, une batterie qui compense le total) est réparti à parts égales entre les trois. Les courbes montrent alors, heure par heure, ce que les trois phases achètent et vendent ensemble : une heure peut avoir les deux.
 
 **Ce que vous voyez.** Quand le plan est calculé par phase (batteries qui ne compensent que leur phase, ou compteur qui compte chaque phase à part), **Planning** montre une carte **Par phase** : ce que chaque phase achète et vend au réseau sur la journée, prévu et, avec des capteurs par phase sur le raccordement au réseau, mesuré jusqu'ici. La courbe de la batterie est alors celle du plan.
+
+**Installations particulières.**
+
+- **Onduleur hybride triphasé** (un seul onduleur pour les panneaux et la batterie, branché sur les trois phases) : choisissez **Les trois phases** pour l'installation solaire et pour la batterie. La batterie compense alors le total de la maison, et la production est répartie à parts égales sur les trois phases.
+- **Plusieurs installations solaires de tailles différentes** : la prévision est partagée à parts égales entre les installations, quelle que soit leur puissance. Avec des tailles très différentes sur des phases différentes, le surplus prévu pour chaque phase n'est qu'approché.
+- **Un appareil branché sur deux phases seulement** : aucun réglage ne le décrit encore. Laissez **Je ne sais pas** : l'appareil reste planifié, mais il n'est pas compté dans la limite de puissance d'une phase, et l'étape **Triphasé** de la mise en route continue de demander sa phase.
+- **3×230 V sans neutre** (chaque appareil est branché entre deux phases) : pas encore couvert. Laissez la maison en **monophasé** : le plan est alors calculé sur le total de la maison, comme pour toute maison en monophasé.
 
 ## Objectif
 

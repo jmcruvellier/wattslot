@@ -1077,6 +1077,7 @@
   "battery": {
     "title": "Batterie",
     "intro": "Le calcul voit les batteries de la maison comme une seule, de {capacity} kWh.",
+    "intro_three_phase": "Ces réglages valent pour toutes les batteries de la maison, {capacity} kWh en tout. Quand le plan est calculé phase par phase, les batteries d'une même phase sont vues comme une seule ; sinon, toutes le sont.",
     "defaults": "Réglages par défaut : modifiez-les pour qu'ils correspondent à votre batterie.",
     "charge": "Puissance de charge maximale",
     "discharge": "Puissance de décharge maximale",
@@ -1097,6 +1098,7 @@
     "floor_hint": "La batterie ne descend jamais en dessous : une réserve pour la nuit ou une coupure.",
     "own_title": "Réglages par batterie",
     "own_help": "Chaque batterie suit les réglages ci-dessus, sauf si vous lui donnez les siens. Le calcul voit toujours vos batteries comme une seule : puissances additionnées, plancher selon la capacité de chacune.",
+    "own_help_three_phase": "Chaque batterie suit les réglages ci-dessus, sauf si vous lui donnez les siens. Le calcul réunit les batteries d'une même phase (toutes, quand le plan n'est pas calculé phase par phase) : puissances additionnées, plancher selon la capacité de chacune.",
     "own_start": "Donner ses propres réglages à cette batterie",
     "own_intro": "Réglages propres à cette batterie de {capacity} kWh.",
     "own_reset": "Reprendre les réglages de la maison",
