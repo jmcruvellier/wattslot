@@ -156,7 +156,9 @@
       "floor": "Minimo {pct} %",
       "import_actual": "Prelievo misurato",
       "export_actual": "Surplus misurato",
-      "grid": "Rete prevista (prelievo − surplus)"
+      "grid": "Rete prevista (prelievo − surplus)",
+      "grid_import_planned": "Prelievo previsto",
+      "grid_export_planned": "Surplus previsto"
     },
     "week": {
       "title": "Settimana dal {start} al {end}",

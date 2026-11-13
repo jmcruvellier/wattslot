@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { energyPoints, socPoints } from "./dayPoints";
+import { energyPoints, gridTooltipLine, socPoints } from "./dayPoints";
 import type { HourPoint } from "./types";
 
 // Journée simple : 24 heures, prévu = h + 1 kWh, mesuré = 2 × h décimales ; heures 0 à 20
@@ -89,5 +89,24 @@ describe("socPoints", () => {
   it("sans départ à minuit, la courbe commence à la fin de la première heure", () => {
     const points = socPoints(day(), null, null);
     expect(points.map((p) => p.x)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]);
+  });
+});
+
+describe("gridTooltipLine", () => {
+  it("prévu sous zéro : un surplus prévu, quantité sans signe", () => {
+    expect(gridTooltipLine(-0.52, true, "Réseau prévu")).toEqual({
+      quantity: 0.52,
+      label: "Réseau prévu",
+      key: "plan.series.grid_export_planned",
+    });
+  });
+
+  it("prévu positif ou nul : un achat prévu", () => {
+    expect(gridTooltipLine(0.61, true, "Réseau prévu").key).toBe("plan.series.grid_import_planned");
+    expect(gridTooltipLine(0, true, "Réseau prévu").key).toBe("plan.series.grid_import_planned");
+  });
+
+  it("mesuré : le nom de la barre, le surplus (tracé sous zéro) sans signe", () => {
+    expect(gridTooltipLine(-0.02, false, "Surplus mesuré")).toEqual({ quantity: 0.02, label: "Surplus mesuré", key: null });
   });
 });

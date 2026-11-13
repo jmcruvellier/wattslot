@@ -156,7 +156,9 @@
       "floor": "Mínimo {pct} %",
       "import_actual": "Compra medida",
       "export_actual": "Excedente medido",
-      "grid": "Red prevista (compra − excedente)"
+      "grid": "Red prevista (compra − excedente)",
+      "grid_import_planned": "Compra prevista",
+      "grid_export_planned": "Excedente previsto"
     },
     "week": {
       "title": "Semana del {start} al {end}",

@@ -156,7 +156,9 @@
       "floor": "Plancher {pct} %",
       "import_actual": "Achat mesuré",
       "export_actual": "Surplus mesuré",
-      "grid": "Réseau prévu (achat − surplus)"
+      "grid": "Réseau prévu (achat − surplus)",
+      "grid_import_planned": "Achat prévu",
+      "grid_export_planned": "Surplus prévu"
     },
     "week": {
       "title": "Semaine du {start} au {end}",

@@ -74,6 +74,17 @@ export function energyPoints(hours: HourPoint[], readingHour: number | null): En
   return data.sort((a, b) => a.x - b.x);
 }
 
+/** Ligne d'info-bulle du graphe Réseau : la quantité sans signe et le texte qui dit son sens.
+ * Le prévu est tracé en « achat moins surplus » : sous zéro, c'est un surplus prévu. Afficher
+ * sa valeur absolue sous le nom « achat − surplus » donnait un nombre positif pour un point
+ * tracé sous zéro (constaté le 13/11/2026). `planned` : la série du prévu, les barres du
+ * mesuré gardent leur nom. */
+export function gridTooltipLine(value: number, planned: boolean, name: string): { quantity: number; label: string; key: string | null } {
+  const quantity = Math.abs(value);
+  if (!planned) return { quantity, label: name, key: null };
+  return { quantity, label: name, key: value < 0 ? "plan.series.grid_export_planned" : "plan.series.grid_import_planned" };
+}
+
 export interface SocPoint {
   x: number;
   soc: number | null;
