@@ -23,7 +23,14 @@ from wattslot.planning.store import PlanStore
 from wattslot.storage.database import open_database
 from wattslot.storage.graph import GraphStore
 from wattslot.views.display import Context
-from wattslot.views.now import TEXTS, declared_pending, measure_now, next_action, sentence
+from wattslot.views.now import (
+    TEXTS,
+    declared_pending,
+    idle_reason,
+    measure_now,
+    next_action,
+    sentence,
+)
 from wattslot.views.timeline import Timeline
 
 ZONE = ZoneInfo("Europe/Paris")
@@ -407,6 +414,19 @@ def test_a_declared_launch_can_be_withdrawn_until_its_cycle_is_seen() -> None:
     assert declared_pending(timeline, NOON, CONTEXT, set()) == []
     late = datetime(2026, 10, 15, 14, 0, tzinfo=UTC)  # 16 h, plage finie
     assert declared_pending(timeline, late, CONTEXT, said) == []
+
+
+def test_idle_reason_says_why_nothing_is_to_start() -> None:
+    seen = _timeline(("Lave-linge", "on_time", 600, 700), ("Piscine", "planned", 700, 900))
+    assert idle_reason(seen, set(), set()) == "all_started"
+    said = _timeline(("Lave-linge", "planned", 780, 900))
+    assert idle_reason(said, {"Lave-linge"}, {"Lave-vaisselle"}) == "all_started"
+    only_pool = _timeline(("Piscine", "planned", 700, 900))  # pas un cycle
+    assert idle_reason(only_pool, set(), {"Lave-linge"}) == "cancelled"
+    assert idle_reason(only_pool, set(), set()) == "nothing_planned"
+    # Heure prévue passée sans cycle vu : aucun de ces motifs.
+    missed = _timeline(("Lave-linge", "no_cycle", 600, 700))
+    assert idle_reason(missed, set(), set()) is None
 
 
 # --- Route ------------------------------------------------------------------------------------

@@ -270,6 +270,8 @@ export interface DayView {
   cards: Cards | null;
   now?: Now | null; // Aujourd'hui seulement
   next_action?: NextAction | null;
+  // Sans prochaine action : pourquoi (tout est lancé, annulé, rien de prévu aujourd'hui).
+  idle_reason?: "all_started" | "cancelled" | "nothing_planned" | null;
   declared_launches?: string[]; // « C'est lancé » sur lequel on peut encore revenir
 }
 

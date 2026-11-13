@@ -168,6 +168,41 @@ describe("TodayView", () => {
     expect(screen.getByRole("heading", { name: "Lancez Lave-linge" })).toBeInTheDocument();
   });
 
+  it("dit pourquoi rien n'est à lancer", async () => {
+    const idle = { ...TODAY, now: NOW, next_action: null };
+    mockApi({ ...idle, idle_reason: "all_started" });
+    const first = renderView();
+    expect(await screen.findByRole("heading", { name: "Tout est lancé pour aujourd'hui" })).toBeInTheDocument();
+    first.unmount();
+
+    vi.restoreAllMocks();
+    vi.spyOn(navigator, "languages", "get").mockReturnValue(["fr-FR"]);
+    mockApi({ ...idle, idle_reason: "cancelled", timeline: { ...TODAY.timeline, cancelled: ["Lave-linge"] } });
+    const second = renderView();
+    expect(await screen.findByRole("heading", { name: "Rien à lancer : planification annulée" })).toBeInTheDocument();
+    expect(screen.getByText(/Annulé pour aujourd'hui : Lave-linge\./)).toBeInTheDocument();
+    second.unmount();
+
+    vi.restoreAllMocks();
+    vi.spyOn(navigator, "languages", "get").mockReturnValue(["fr-FR"]);
+    mockApi({ ...idle, idle_reason: "nothing_planned" });
+    renderView();
+    expect(await screen.findByRole("heading", { name: "Aucun appareil prévu aujourd'hui" })).toBeInTheDocument();
+  });
+
+  it("propose une heure libre pour la prochaine action", async () => {
+    vi.setSystemTime(new Date("2026-10-17T12:00:00"));
+    const fetchMock = mockApi({ ...TODAY, now: NOW, next_action: ACTION });
+    const user = userEvent.setup();
+    renderView();
+    const hour = await screen.findByLabelText("Autre heure de départ :");
+    await user.selectOptions(hour, "16");
+    await user.click(screen.getByRole("button", { name: "Démarrer à 16h00" }));
+    const post = fetchMock.mock.calls.find(([url]) => String(url) === "api/planning/choices");
+    expect(JSON.parse(String(post?.[1]?.body))).toEqual({ device: "Lave-linge", start_min: 960 });
+    expect(fetchMock.mock.calls.some((call) => String(call[0]) === "api/planning/run")).toBe(true);
+  });
+
   it("dit que l'heure prévue est passée, sans heure de fin", async () => {
     mockApi({ ...TODAY, now: NOW, next_action: { ...ACTION, late: true } });
     renderView();

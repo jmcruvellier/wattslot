@@ -1,8 +1,8 @@
 // Autres départs d'un appareil, proposés par le plan du jour : un bouton chacun, qui impose ce
 // départ au calcul (/api/planning/choices) puis le relance ; un départ choisi se rend au calcul.
 // Partagé par « Prochaine action » (Aujourd'hui) et « Pourquoi ce plan » (Planning, Aujourd'hui),
-// et par la frise, qui propose aussi une heure libre, pour aujourd'hui comme pour demain ou un
-// jour suivant (`day`).
+// et par la frise ; « Prochaine action » et la frise proposent aussi une heure libre, la frise
+// pour aujourd'hui comme pour demain ou un jour suivant (`day`).
 
 import { useState } from "react";
 
