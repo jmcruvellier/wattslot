@@ -42,4 +42,3 @@ schema:
   log_level: list(debug|info|warning|error)
   raw_days: int(1,30)
   quarter_days: int(31,3660)
-stage: stable
