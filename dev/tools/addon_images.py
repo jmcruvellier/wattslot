@@ -1,10 +1,10 @@
 """Icône et logo de l'extension Home Assistant (lots 6t.3 et 7.1).
 
-Motif « Créneau » de WattSlot (choisi le 18/10/2026, comme le favicon
-``app/frontend/public/favicon.svg``) : les pistes du Planning des équipements, un créneau doré mis
-en avant et un éclair. ``icon.png`` (128 x 128) : le carré du favicon ; ``logo.png`` (250 x 100) :
-le même motif en long. Couleurs du thème Ivoire (``app/frontend/src/theme/themes.css``), fond
-sombre lisible sur les thèmes clair et sombre de HA. Dessin vectoriel simple, sans dépendance
+Motif « Créneau inversé » de WattSlot (choisi le 14/11/2026 pour la 1.0.0, comme le favicon
+``app/frontend/public/favicon.svg`` et les bannières de ``docs/images/``) : fond doré, deux
+pistes du Planning des équipements, le créneau sombre mis en avant et un grand éclair doré.
+``icon.png`` (128 x 128) : le carré du favicon ; ``logo.png`` (250 x 100) : le même motif en long.
+Le fond doré ressort sur les thèmes clair et sombre de HA. Dessin vectoriel simple, sans dépendance
 (pas de Pillow) : suréchantillonnage 4 x 4 puis moyenne, PNG écrit avec ``zlib``.
 
 Depuis ``dev/`` : ``python -m tools.addon_images``.
@@ -15,9 +15,9 @@ import zlib
 from collections.abc import Callable
 from pathlib import Path
 
-TILE = (0x17, 0x19, 0x1C)  # fond sombre du favicon
-TRACK = (0x3A, 0x3D, 0x43)  # pistes du Planning des équipements
-GOLD = (0xF2, 0xC2, 0x6B)  # créneau mis en avant (--accent du thème Graphite)
+GOLD = (0xF2, 0xC2, 0x6B)  # fond et éclair (--accent du thème Graphite)
+TRACK = (0xC9, 0x9A, 0x45)  # pistes du Planning des équipements, sur le fond doré
+SLOT = (0x17, 0x19, 0x1C)  # créneau mis en avant, sombre
 SAMPLES = 4  # par côté de pixel
 ADDON = Path(__file__).resolve().parents[2] / "ha-addon" / "wattslot"
 
@@ -51,10 +51,10 @@ def polygon(points: list[tuple[float, float]]) -> Shape:
     return inside
 
 
-def bolt(x: float, y: float, scale: float) -> Shape:
-    """Éclair du favicon (``M36 27.5l-5 6h3.5l-1.5 3.5 5-6h-3.5z``), placé en ``x``, ``y``."""
-    path = [(36, 27.5), (31, 33.5), (34.5, 33.5), (33, 37), (38, 31), (34.5, 31)]
-    return polygon([(x + (px - 31) * scale, y + (py - 27.5) * scale) for px, py in path])
+def bolt(cx: float, cy: float, scale: float) -> Shape:
+    """Éclair du favicon (grille de 64, centré en 32, 32), centré en ``cx``, ``cy``."""
+    path = [(36, 6), (17, 35), (30, 35), (26, 58), (47, 26), (34, 26)]
+    return polygon([(cx + (px - 32) * scale, cy + (py - 32) * scale) for px, py in path])
 
 
 def render(width: int, height: int, layers: list[Layer]) -> bytes:
@@ -101,21 +101,20 @@ def icon() -> list[Layer]:
     """Le favicon (64 x 64) à l'échelle 2."""
     k = 2.0
     return [
-        (rounded_rect(0, 0, 64 * k, 64 * k, 14 * k), TILE),
-        *((rounded_rect(12 * k, y * k, 40 * k, 6 * k, 3 * k), TRACK) for y in (16, 29, 42)),
-        (rounded_rect(26 * k, 26 * k, 18 * k, 12 * k, 4 * k), GOLD),
-        (bolt(31 * k, 27.5 * k, k), TILE),
+        (rounded_rect(0, 0, 64 * k, 64 * k, 14 * k), GOLD),
+        *((rounded_rect(9 * k, y * k, 46 * k, 5 * k, 2.5 * k), TRACK) for y in (9, 50)),
+        (rounded_rect(9 * k, 19 * k, 46 * k, 26 * k, 8 * k), SLOT),
+        (bolt(32 * k, 32 * k, 0.42 * k), GOLD),
     ]
 
 
 def logo() -> list[Layer]:
-    """Le même motif en long : trois pistes, le créneau doré sur celle du milieu."""
-    k = 3.0  # échelle de l'éclair
+    """Le même motif en long : deux pistes, le créneau sombre entre elles."""
     return [
-        (rounded_rect(0, 0, 250, 100, 22), TILE),
-        *((rounded_rect(22, y, 206, 12, 6), TRACK) for y in (19, 44, 69)),
-        (rounded_rect(104, 32, 64, 36, 10), GOLD),
-        (bolt(136 - 3.5 * k, 50 - 4.75 * k, k), TILE),
+        (rounded_rect(0, 0, 250, 100, 22), GOLD),
+        *((rounded_rect(20, y, 210, 9, 4.5), TRACK) for y in (12, 79)),
+        (rounded_rect(20, 30, 210, 40, 12), SLOT),
+        (bolt(125, 50, 0.68), GOLD),
     ]
 
 

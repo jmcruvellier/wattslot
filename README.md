@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/images/banner-en-dark.svg">
-    <img src="docs/images/banner-en-light.svg" alt="WattSlot, beta: the right time to run your appliances, with or without solar panels." width="100%">
+    <img src="docs/images/banner-en-light.svg" alt="WattSlot: the right time to run your appliances, with or without solar panels." width="100%">
   </picture>
 </p>
 
