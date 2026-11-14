@@ -25,7 +25,9 @@ export default function MainMenu({ route, collapsed, onToggle, top, bottom }: Ma
     <nav className="main-menu" aria-label={t("nav.main")}>
       <div className="main-menu-head">
         <span className="main-menu-brand">
-          {t("app.title")} <span className="beta-badge">{t("nav.beta")}</span>
+          {/* L'icône de l'application (le favicon, adresse relative pour l'ingress de HA). */}
+          <img className="main-menu-logo" src="favicon.svg" alt="" width={28} height={28} />
+          {t("app.title")}
         </span>
         <button
           type="button"

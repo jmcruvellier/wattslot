@@ -1864,9 +1864,17 @@ a.ui-setting-row {
   }
 
   .main-menu-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
     font-weight: 800;
     font-size: 1.05rem;
     padding-left: 0.5rem;
+  }
+
+  .main-menu-logo {
+    flex: none;
+    border-radius: 0.45rem;
   }
 
   .main-menu ul {
@@ -2649,23 +2657,8 @@ p[role="status"]:not(.state-message) {
   overflow-x: auto;
 }
 
-/* Bêta publique (0.9.1) : étiquette à côté du nom, cartes « Version bêta » et « Soutenir
-   WattSlot » en bas des Réglages. */
-.beta-badge {
-  display: inline-block;
-  margin-left: 0.35rem;
-  padding: 0.05rem 0.45rem;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--surface-alt);
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  vertical-align: middle;
-}
-
-/* « Donner mon avis » : un lien qui a l'air d'un bouton, sans soulignement. */
+/* Cartes « Version bêta » et « Soutenir WattSlot » en bas des Réglages (0.9.1). « Donner mon
+   avis » : un lien qui a l'air d'un bouton, sans soulignement. */
 .beta-cards a.ui-button {
   text-decoration: none;
 }
