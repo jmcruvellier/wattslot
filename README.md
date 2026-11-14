@@ -37,7 +37,7 @@
 - **Data you can trust**: WattSlot checks your sensors, flags glitches and lets you correct them, so one wrong reading does not spoil the rest.
 - **Assistant (optional)**: a built-in MCP server lets Home Assistant's Assist answer questions about your plan, with the language model you already use.
 
-## Beta: we need you
+## We need you
 
 WattSlot is used every day on its author's home and is now looking for testers. Your feedback decides what comes next.
 

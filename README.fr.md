@@ -37,7 +37,7 @@
 - **Des données fiables** : WattSlot vérifie vos capteurs, signale les mesures aberrantes et vous laisse les corriger, pour qu'une mauvaise mesure ne gâche pas le reste.
 - **Assistant (facultatif)** : un serveur MCP intégré permet à l'Assist de Home Assistant de répondre aux questions sur votre plan, avec le modèle de langage que vous utilisez déjà.
 
-## Bêta : on a besoin de vous
+## On a besoin de vous
 
 WattSlot sert tous les jours dans la maison de son auteur et cherche maintenant des testeurs. Vos retours décident de la suite.
 

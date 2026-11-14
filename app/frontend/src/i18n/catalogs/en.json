@@ -1780,7 +1780,7 @@
     "scheduler_on": "Every hour, at minute {minute}",
     "scheduler_off": "Off: calculate by hand",
     "beta": {
-      "title": "Beta version",
+      "title": "Stable version",
       "text": "You are testing a beta version: your feedback decides what comes next. What works, what bothers you, what you did not understand: it all helps.",
       "feedback": "Give feedback"
     },

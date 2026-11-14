@@ -100,7 +100,7 @@ describe("cartes de la bêta", () => {
         <SettingsHome />
       </I18nProvider>,
     );
-    expect(await screen.findByRole("heading", { name: "Version bêta" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Version stable" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Donner mon avis" })).toHaveAttribute(
       "href",
       "https://github.com/jmcruvellier/wattslot/issues/new?template=beta_feedback.yml",

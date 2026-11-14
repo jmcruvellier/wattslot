@@ -1780,7 +1780,7 @@
     "scheduler_on": "Elk uur, op minuut {minute}",
     "scheduler_off": "Uit: handmatig berekenen",
     "beta": {
-      "title": "Bètaversie",
+      "title": "Stabiele versie",
       "text": "U test een bètaversie: uw feedback bepaalt wat er volgt. Wat werkt, wat stoort, wat u niet begreep: alles helpt.",
       "feedback": "Feedback geven"
     },
