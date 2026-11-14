@@ -43,7 +43,7 @@ WattSlot sert tous les jours dans la maison de son auteur et cherche maintenant 
 
 - **[Donner mon avis](https://github.com/jmcruvellier/wattslot/issues/new?template=beta_feedback.yml)** : ce qui marche, ce qui gêne, ce que vous n'avez pas compris, en français ou en anglais. Le même lien est dans l'application, en bas des **Réglages**.
 - **Limites connues** :
-  - WattSlot **recommande seulement** : il ne lance jamais un appareil et ne pilote jamais votre batterie. C'est vous qui lancez l'appareil, ou qui écrivez l'automatisation.
+  - Pour l'instant, WattSlot **recommande seulement** : il ne lance pas encore d'appareil et ne pilote pas encore votre batterie. C'est vous qui lancez l'appareil, ou qui écrivez l'automatisation. Le pilotage direct des appareils est prévu.
   - Il part du **tableau Énergie** de Home Assistant : celui-ci doit être configuré.
   - La bêta est surtout testée avec des contrats français (heures creuses, Tempo). Les autres tarifs fonctionnent, et vos retours sur eux sont particulièrement bienvenus.
 - **Relecteurs natifs recherchés** : les traductions allemande, néerlandaise, espagnole et italienne attendent un relecteur dont c'est la langue. Voir [CONTRIBUTING.md](CONTRIBUTING.md) ou ouvrir un [ticket de traduction](https://github.com/jmcruvellier/wattslot/issues/new/choose).
