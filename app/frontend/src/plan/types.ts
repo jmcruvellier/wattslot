@@ -113,6 +113,7 @@ export interface Freshness {
 
 export interface DeviceStatus {
   device: string;
+  appliance?: string | null; // nom de l'équipement (sa ligne de la frise)
   status: "on_time" | "shifted" | "no_cycle" | "planned";
   planned_start_min: number;
   planned_end_min: number;
@@ -171,6 +172,9 @@ export interface TimelineRow {
   // total ; absent ou null : la batterie de la maison, ou un autre équipement.
   phase?: number | null;
   batteries?: BatteryTrack[]; // ligne qui réunit plusieurs batteries : le mesuré de chacune
+  // Type de l'équipement dans la maison (« WashingMachine », « Dryer »…), pour son icône ;
+  // absent ou null : une batterie, ou un équipement que la maison n'a plus.
+  type?: string | null;
 }
 
 export interface Timeline {

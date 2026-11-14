@@ -312,6 +312,14 @@
       "tip_carried": "Suite de la veille {start} → {end} : {what}, {kwh} kWh",
       "tip_actual": "Réel {start} → {end} : {what}, {kwh} kWh",
       "tip_none": "{start} → {end} : {what}, rien de prévu ni de mesuré",
+      "state": {
+        "running": "en cours",
+        "started": "lancé à {time}",
+        "planned": "prévu à {time}",
+        "no_cycle": "pas lancé",
+        "measured": "{kwh} kWh mesurés",
+        "energy": "{kwh} kWh prévus"
+      },
       "battery_measured": "{name} (mesuré)",
       "no_surplus": "Pas de surplus solaire prévu (production {production} kWh, consommation {consumption} kWh) : aucun équipement planifié.",
       "nothing": "Aucun équipement planifié ce jour.",

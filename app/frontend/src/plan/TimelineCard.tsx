@@ -16,6 +16,9 @@
 // Partout ailleurs sur une piste, le clic choisit une heure : sous la frise, le prévu et le réel
 // de la ligne à cet endroit, ensemble — les blocs sous le clic, sinon ceux de l'heure d'horloge
 // touchée — ou la mention qu'il n'y a rien. L'heure choisie reste marquée sur sa ligne.
+// Chaque ligne commence par l'icône de son équipement, dans une pastille à la couleur de ses
+// blocs, et porte sous son nom une ligne d'état : où en est son cycle (en cours, lancé à…,
+// prévu à…, pas lancé) ou, pour une batterie et les autres, l'énergie mesurée, à défaut prévue.
 
 import { Fragment, useCallback, useEffect, useState, type MouseEvent } from "react";
 
@@ -26,6 +29,7 @@ import { freeSpan } from "./timelineSpan";
 import { rowLabel } from "./batteryLabel";
 import type { Bar, TimelineRow, Timeline } from "./types";
 import Icon from "../ui/Icon";
+import type { IconName } from "../ui/iconPaths";
 import Button from "../ui/Button";
 import Sheet from "../ui/Sheet";
 import OtherStarts from "./OtherStarts";
@@ -67,6 +71,23 @@ function launched(row: TimelineRow, bar: Bar, nowMin: number): boolean {
   const after = before ? before.end_hour : 0;
   return row.actual.some((done) => done.start_hour * 60 <= nowMin && done.start_hour >= after);
 }
+
+// Icône d'une ligne, d'après le type de l'équipement dans la maison ; une prise à défaut.
+const ICONS: Record<string, IconName> = {
+  WashingMachine: "washer",
+  Dryer: "dryer",
+  Dishwasher: "dishwasher",
+  WaterHeater: "water-heater",
+  PoolPump: "pool",
+};
+
+function rowIcon(row: TimelineRow): IconName {
+  if (row.kind === "battery") return "battery";
+  return ICONS[row.type ?? ""] ?? (row.kind === "runtime" ? "pool" : "plug");
+}
+
+// Couleur de la pastille : celle des blocs de la ligne.
+const TONES = { battery: "var(--battery)", cycle: "var(--cycle)", runtime: "var(--pool-eco)" };
 
 /** Une piste : ses blocs prévus et réels, sous une clé et un nom (ligne d'équipement, ou batterie
  * d'un groupe). */
@@ -123,6 +144,30 @@ export default function TimelineCard({
       end: hour(Math.round(bar.end_hour * 60) / 60, lang),
       what,
       kwh: kwh(bar.energy_kwh),
+    });
+  };
+
+  // Ligne d'état sous le nom : le bilan du cycle de l'équipement (celui en cours, sinon le
+  // dernier lancé, sinon le premier prévu) ; sans cycle jugé, l'énergie mesurée, à défaut prévue.
+  const stateLine = (row: TimelineRow): string | null => {
+    const own = (timeline.statuses ?? []).filter((status) => (status.appliance ?? status.device) === row.device);
+    const status =
+      own.find((one) => one.running) ?? [...own].reverse().find((one) => one.actual_start_min !== null) ?? own[0];
+    if (row.kind === "cycle" && status) {
+      if (status.running) return t("plan.timeline.state.running");
+      if (status.actual_start_min !== null)
+        return t("plan.timeline.state.started", { time: hour(status.actual_start_min / 60, lang) });
+      return status.status === "no_cycle"
+        ? t("plan.timeline.state.no_cycle")
+        : t("plan.timeline.state.planned", { time: hour(status.planned_start_min / 60, lang) });
+    }
+    const measured = row.actual.length > 0;
+    const items = measured ? row.actual : row.planned;
+    if (items.length === 0) return null;
+    const sum = (action?: string) =>
+      kwh(items.reduce((total, bar) => (action && bar.action !== action ? total : total + bar.energy_kwh), 0), 1);
+    return t(measured ? "plan.timeline.state.measured" : "plan.timeline.state.energy", {
+      kwh: row.kind === "battery" ? `+${sum("charge")} / −${sum("discharge")}` : sum(),
     });
   };
 
@@ -275,7 +320,15 @@ export default function TimelineCard({
           {timeline.rows.map((row, index) => (
             <Fragment key={row.device}>
               <div className="tl-row" aria-label={rowLabel(row, t)}>
-                <span className="tl-label">{rowLabel(row, t)}</span>
+                <span className="tl-label tl-device">
+                  <span className="tl-icon" style={{ ["--bar" as string]: TONES[row.kind] }}>
+                    <Icon name={rowIcon(row)} size={18} />
+                  </span>
+                  <span className="tl-name">
+                    <span>{rowLabel(row, t)}</span>
+                    {stateLine(row) && <small>{stateLine(row)}</small>}
+                  </span>
+                </span>
                 {track(
                   { key: row.device, label: rowLabel(row, t), row, planned: row.planned, actual: row.actual },
                   index === 0,

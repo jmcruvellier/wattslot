@@ -55,6 +55,9 @@ class TimelineRow(BaseModel):
     phase: int | None = None
     # Ligne d'une batterie qui en réunit plusieurs : le mesuré de chacune. Vide sinon.
     batteries: list[BatteryTrack] = []
+    # Type de l'équipement dans la maison (``DeviceKind`` : « WashingMachine », « Dryer »…),
+    # pour l'icône de la ligne. ``None`` : une batterie, ou un équipement que la maison n'a plus.
+    type: str | None = None
 
 
 class DeviceStatus(BaseModel):
@@ -471,6 +474,9 @@ def build_timeline(
                 actual=_actual_bars(measured.get(item["equipement"]) or [], context),
             )
         )
+    for row in rows:
+        if row.kind != "battery":
+            row.type = context.kinds.get(row.device)
     any_planned = any(row.planned for row in rows)
     empty = None
     if not any_planned:

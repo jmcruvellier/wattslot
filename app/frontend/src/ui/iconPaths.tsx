@@ -32,6 +32,35 @@ export const PATHS = {
       <path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3" />
     </>
   ),
+  // Équipements de la frise (Planning des équipements).
+  washer: (
+    <>
+      <rect x="4.5" y="3" width="15" height="18" rx="2.5" />
+      <circle cx="12" cy="13.5" r="4" />
+      <path d="M8 6.5h2" />
+    </>
+  ),
+  dryer: (
+    <>
+      <rect x="4.5" y="3" width="15" height="18" rx="2.5" />
+      <circle cx="12" cy="13.5" r="4" />
+      <path d="M10.2 13.5c.9-1.4 2.7 1.4 3.6 0M15 6.5h1" />
+    </>
+  ),
+  dishwasher: (
+    <>
+      <rect x="4.5" y="3" width="15" height="18" rx="2.5" />
+      <path d="M4.5 8.5h15M10 5.8h4M9 13v4M12 13v4M15 13v4" />
+    </>
+  ),
+  "water-heater": (
+    <>
+      <rect x="6.5" y="2.5" width="11" height="16.5" rx="4" />
+      <path d="M9.5 19v2.5M14.5 19v2.5" />
+      <path d="M12 7.5c-1.3 1.8-2 2.8-2 3.8a2 2 0 0 0 4 0c0-1-.7-2-2-3.8z" />
+    </>
+  ),
+  pool: <path d="M3 10c1.5-1.3 3-1.3 4.5 0s3 1.3 4.5 0 3-1.3 4.5 0 3 1.3 4.5 0M3 16c1.5-1.3 3-1.3 4.5 0s3 1.3 4.5 0 3-1.3 4.5 0 3 1.3 4.5 0" />,
   battery: (
     <>
       <rect x="3" y="7" width="16" height="10" rx="2" />
