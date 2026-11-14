@@ -186,6 +186,21 @@ describe("frise des équipements", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Réel 9h15 → 13h30 : charge, 2,10 kWh");
   });
 
+  it("donne à chaque ligne l'icône de son équipement et une ligne d'état", () => {
+    const rows = TODAY.timeline.rows.map((row) =>
+      row.device === "Lave-linge" ? { ...row, type: "WashingMachine" } : row,
+    );
+    renderTimeline({ ...TODAY.timeline, rows }, 14.5);
+
+    const icon = (name: string) => screen.getByLabelText(name).querySelector(".tl-icon svg")?.innerHTML;
+    const state = (name: string) => screen.getByLabelText(name).querySelector(".tl-name small")?.textContent;
+    // Lave-linge : son icône (un hublot), pas la prise des équipements sans type connu.
+    expect(icon("Lave-linge")).toContain("<circle");
+    expect(icon("Lave-linge")).not.toBe(icon("Batterie"));
+    expect(state("Batterie")).toBe("+2,1 / −0,0 kWh mesurés");
+    expect(state("Lave-linge")).toBe("lancé à 10h05");
+  });
+
   it("explique une journée sans équipement planifié", () => {
     renderTimeline({ ...TODAY.timeline, rows: [], empty: "no_surplus" });
     expect(screen.getByText(/Pas de surplus solaire prévu \(production 10,0 kWh, consommation 9,6 kWh\)/)).toBeInTheDocument();

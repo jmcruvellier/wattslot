@@ -678,6 +678,42 @@ pre {
   white-space: nowrap;
 }
 
+/* Ligne d'un équipement : son icône dans une pastille à la couleur de ses blocs, puis son nom
+   et, dessous, sa ligne d'état. */
+.tl-device {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tl-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.6rem;
+  background: color-mix(in srgb, var(--bar) 18%, transparent);
+  color: var(--bar);
+}
+
+.tl-name {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.tl-name > * {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tl-name > small {
+  color: var(--text-dim);
+  font-size: 0.75rem;
+}
+
 /* Piste sans fond : un filet au-dessus, un trait fin toutes les 4 heures. */
 .tl-track {
   position: relative;
@@ -858,6 +894,23 @@ pre {
 
   .tl-label {
     margin-top: 0.35rem;
+  }
+
+  /* Nom et ligne d'état côte à côte, pour ne pas allonger la carte. */
+  .tl-device {
+    margin-bottom: 0.25rem;
+  }
+
+  .tl-icon {
+    width: 1.6rem;
+    height: 1.6rem;
+    border-radius: 0.5rem;
+  }
+
+  .tl-name {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 0.5rem;
   }
 
   .tl-row > span:empty {

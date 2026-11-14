@@ -90,6 +90,7 @@ def house_context(state: Any, day: date) -> Context:
         appliances=tuple(
             a.name for a in cycle_appliances(home, saved) if a.key not in runtime_keys(home, saved)
         ),
+        kinds={device.name: device.kind.value for device in home.devices},
         objective=objective_of(state, saved).value,
         solar=has_production(home),
         tariff=configuration.tariff_of(saved),

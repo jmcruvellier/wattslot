@@ -151,10 +151,16 @@ def test_rows_show_actual_bars_and_hide_empty_appliances() -> None:
         "batterie_reelle_segments": [{**segment(iso(11), iso(12, 30), 0.6), "action": "charge"}],
         "equipements_reels_horaire": {"Sèche-linge": [segment(iso(13), iso(14), 1.0)]},
     }
-    context = Context(zone=PARIS, appliances=("Lave-linge", "Sèche-linge", "Lave-vaisselle"))
+    context = Context(
+        zone=PARIS,
+        appliances=("Lave-linge", "Sèche-linge", "Lave-vaisselle"),
+        kinds={"Batterie": "Battery", "Lave-linge": "WashingMachine"},
+    )
     timeline = build_timeline(state, actual, 15.0, 10.0, 8.0, context)
 
     assert [row.device for row in timeline.rows] == ["Batterie", "Lave-linge", "Sèche-linge"]
+    # Type de l'équipement pour l'icône de sa ligne : aucun pour la batterie ni pour un inconnu.
+    assert [row.type for row in timeline.rows] == [None, "WashingMachine", None]
     battery = timeline.rows[0].actual[0]
     assert (battery.start_hour, battery.end_hour, battery.action) == (11.0, 12.5, "charge")
     assert timeline.rows[2].planned == [] and timeline.rows[2].actual[0].energy_kwh == 1.0

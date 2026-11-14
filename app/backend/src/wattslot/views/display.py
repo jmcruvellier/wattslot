@@ -44,6 +44,8 @@ class Context:
     pool_speeds: Mapping[str, float] = field(default_factory=lambda: dict(V1_POOL.speeds))
     # Équipements à cycles de la maison : une ligne de la frise même sans créneau prévu.
     appliances: tuple[str, ...] = ()
+    # Type de chaque équipement de la maison, par son nom (``DeviceKind``) : l'icône de sa ligne.
+    kinds: Mapping[str, str] = field(default_factory=dict)
     # Objectif du calcul (préréglage du lot 3.6) : l'indicateur mis en avant (point n° 5).
     objective: str = "cost"
     # Faux pour une maison sans installation solaire (lot 7.4) : rien de solaire à montrer.

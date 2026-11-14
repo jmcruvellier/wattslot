@@ -312,6 +312,14 @@
       "tip_carried": "Fortsetzung vom Vortag {start} → {end}: {what}, {kwh} kWh",
       "tip_actual": "Tatsächlich {start} → {end}: {what}, {kwh} kWh",
       "tip_none": "{start} → {end}: {what}, nichts geplant oder gemessen",
+      "state": {
+        "running": "läuft",
+        "started": "gestartet um {time}",
+        "planned": "geplant um {time}",
+        "no_cycle": "nicht gestartet",
+        "measured": "{kwh} kWh gemessen",
+        "energy": "{kwh} kWh geplant"
+      },
       "battery_measured": "{name} (gemessen)",
       "no_surplus": "Kein Solarüberschuss erwartet (Erzeugung {production} kWh, Verbrauch {consumption} kWh): kein Gerät eingeplant.",
       "nothing": "An diesem Tag ist kein Gerät eingeplant.",
