@@ -43,7 +43,7 @@ WattSlot is used every day on its author's home and is now looking for testers. 
 
 - **[Give feedback](https://github.com/jmcruvellier/wattslot/issues/new?template=beta_feedback.yml)**: what works, what bothers you, what you did not understand. The same link is in the app, at the bottom of **Settings**.
 - **Known limits**:
-  - WattSlot **recommends only**: it never starts an appliance and never controls your battery. You start the appliance, or you build the automation yourself.
+  - For now, WattSlot **recommends only**: it does not start an appliance or control your battery yet. You start the appliance, or you build the automation yourself. Controlling devices directly is planned.
   - It starts from Home Assistant's **Energy dashboard**: it must be set up.
   - The beta is tested mostly on French contracts (off-peak hours, Tempo). Other tariffs work, and your feedback on them is especially welcome.
 - **Native speakers wanted**: the German, Dutch, Spanish and Italian translations need a native proofreader. See [CONTRIBUTING.md](CONTRIBUTING.md) or open a [translation issue](https://github.com/jmcruvellier/wattslot/issues/new/choose).
