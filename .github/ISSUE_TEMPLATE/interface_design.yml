@@ -1,0 +1,65 @@
+name: Interface and design
+description: A screen that is unclear, a text you did not understand, a display problem on a phone or in a theme.
+labels: ["area: interface"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping make WattSlot clearer! You can write in English or French.
+        If something is broken (a wrong value, an error, a screen that does not load), the **Bug report** form is a better fit.
+  - type: dropdown
+    id: screen
+    attributes:
+      label: Screen concerned
+      options:
+        - Today
+        - Planning
+        - Charts
+        - My home
+        - Assistant
+        - Settings
+        - Several screens, or the whole app
+        - Other (say which below)
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of problem?
+      options:
+        - Hard to understand (a word, a sentence, a number)
+        - Hard to find or to use
+        - Display problem (cut, overlapping, unreadable)
+        - Looks or style (colors, layout, icons)
+        - Translation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What did you see, and what would you have expected?
+      description: A screenshot helps a lot. Check that it shows no device name or address you would rather keep private.
+    validations:
+      required: true
+  - type: dropdown
+    id: device
+    attributes:
+      label: Device
+      options:
+        - Computer
+        - Tablet
+        - Phone
+        - Home Assistant companion app
+  - type: input
+    id: theme
+    attributes:
+      label: Theme and language
+      description: Shown in Settings → Language and display.
+      placeholder: "Graphite, English"
+  - type: input
+    id: version
+    attributes:
+      label: WattSlot version
+      description: Shown in Settings → App status.
+      placeholder: "1.0.0"
