@@ -10,6 +10,12 @@ Heure en cours (``elapsed``) : le calcul tourne en fin d'heure. Le début de l'h
 été mesuré (``elapsed_change_kwh``), la batterie ne bouge que sur les minutes qui restent. Sans
 cela, chaque calcul rejouait l'heure entière depuis le SoC mesuré : une batterie restée au
 plancher « se déchargeait » à chaque heure, et le plan additionnait ces décharges.
+
+Échange avec le réseau de l'heure en cours : le bilan de l'heure est une prévision, la part
+mesurée de la batterie suit la maison réelle. Une batterie qui s'est déchargée de 0,8 kWh pour
+un déficit prévu de 0,3 kWh donnait 0,5 kWh d'injection, comptés dans le surplus et le coût du
+plan (constaté le 13/11/2026). En autoconsommation, la batterie n'injecte pas dans le réseau
+et ne s'y charge pas : cet échange est borné entre zéro et le bilan prévu.
 """
 
 from collections.abc import Mapping
@@ -97,6 +103,11 @@ def simulate(
                 exchanged -= given
         if hour in net_kwh:
             residual[hour] = net - exchanged
+            if current and elapsed > 0:
+                # Le bilan est prévu sur l'heure entière, l'échange de la batterie mesuré sur
+                # son début : quand la mesure dépasse ce que le bilan prévu explique, l'échange
+                # avec le réseau reste entre zéro et ce bilan.
+                residual[hour] = min(max(residual[hour], min(net, 0.0)), max(net, 0.0))
         if exchanged > 0:
             movements.append(Movement(hour, "charge", round(exchanged, 3)))
         elif exchanged < 0:

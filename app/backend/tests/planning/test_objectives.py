@@ -1,5 +1,6 @@
 """Objectifs (lot 3.6) : réglage dans la configuration, objectif pondéré, indicateurs des plans."""
 
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -94,3 +95,19 @@ def test_free_weights_trade_one_criterion_for_another() -> None:
 
     assert cost_only.cost_eur == pytest.approx(indicators(found, Objective.COST).cost_eur, abs=0.01)
     assert export_heavy.export_kwh <= cost_only.export_kwh + 1e-3
+
+
+@pytest.mark.parametrize("index", range(len(STATES)), ids=IDS)
+def test_indicators_count_no_surplus_the_forecast_of_the_current_hour_lacks(index: int) -> None:
+    """Calcul en fin d'heure, batterie déchargée de 2 kWh depuis son début : les indicateurs ne
+    comptent pas, pour cette heure, plus de surplus que son bilan prévu (13/11/2026)."""
+    found = problem(index)
+    battery = replace(found.battery, hour_elapsed=59 / 60, hour_change_kwh=-2.0)
+    day = plan_day(replace(found, battery=battery)).day
+    first = found.first_hour
+
+    assert day.indicators is not None
+    assert day.residual_kwh[first] <= max(0.0, found.net_kwh.get(first, 0.0)) + 1e-9
+    assert day.indicators.export_kwh == pytest.approx(
+        sum(v for v in day.residual_kwh.values() if v > 0), abs=1e-3
+    )
