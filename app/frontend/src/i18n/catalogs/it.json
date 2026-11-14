@@ -1780,7 +1780,7 @@
     "scheduler_on": "Ogni ora, al minuto {minute}",
     "scheduler_off": "Disattivato: calcolo a mano",
     "beta": {
-      "title": "Versione beta",
+      "title": "Versione stabile",
       "text": "State provando una versione beta: i vostri riscontri decidono il seguito. Cosa funziona, cosa dà fastidio, cosa non è chiaro: tutto aiuta.",
       "feedback": "Dai il tuo parere"
     },

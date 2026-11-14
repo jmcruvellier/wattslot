@@ -82,6 +82,6 @@ Your home in plain sentences, in four tabs. Tap a line: its setting opens on its
 - **Language and display**: six languages, five themes (Ivory, Graphite, Ocean, Meadow, Dusk) or **Automatic**, which follows your device's light or dark mode, and the **currency** of your prices and costs. By default it is Home Assistant's (Settings › System › General); changing it does not convert the prices already entered.
 - **App status**: what is wrong, if anything, and how to fix it; the version, and whether a new one exists; links to support the project; the resources the app uses (processor averaged over 15 minutes, memory, its data on disk, the free space on that disk and what it writes to it); a report to attach to a bug report ([Troubleshooting](troubleshooting.md)).
 - **Home Assistant connection** (standalone mode).
-- At the bottom, **Beta version**, with **Give feedback** (a ready-made form on GitHub), and **Support WattSlot** (GitHub Sponsors and Ko-fi).
+- At the bottom, **Stable version**, with **Give feedback** (a ready-made form on GitHub), and **Support WattSlot** (GitHub Sponsors and Ko-fi).
 
 ![App status](images/en/status-desktop-light.png)
