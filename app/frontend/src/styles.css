@@ -690,6 +690,21 @@ pre {
   );
   border-top: 1px solid var(--border);
   height: 3.25rem;
+  cursor: pointer;
+}
+
+/* Heure choisie d'un clic sur la piste, et ses phrases sous la frise, une par ligne. */
+.tl-zone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: calc(100% / 24);
+  background: color-mix(in srgb, var(--text) 9%, transparent);
+  pointer-events: none;
+}
+
+.tl-tip > span {
+  display: block;
 }
 
 /* Barres ajustées à la piste : on neutralise la hauteur et le remplissage des boutons globaux. */

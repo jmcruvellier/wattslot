@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -160,6 +160,30 @@ describe("frise des équipements", () => {
     await user.click(screen.getByRole("button", { name: /^Réel 9h15/ }));
     expect(screen.getByRole("status")).toHaveTextContent("Réel 9h15 → 13h30 : charge, 2,10 kWh");
     expect(document.querySelector(".tl-now")).toBeNull();
+  });
+
+  it("au clic sur un bloc, donne ensemble le prévu et le réel de la ligne à cette heure", async () => {
+    const user = userEvent.setup();
+    renderTimeline(TODAY.timeline, null);
+
+    await user.click(screen.getByRole("button", { name: /^Réel 9h15/ }));
+    const status = screen.getByRole("status");
+    expect(status).toHaveTextContent("Prévu 9h → 13h : charge, 2,00 kWh");
+    expect(status).toHaveTextContent("Réel 9h15 → 13h30 : charge, 2,10 kWh");
+  });
+
+  it("au clic sur une heure sans bloc, le dit et marque l'heure sur la ligne", () => {
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({ width: 960, left: 0 } as DOMRect);
+    renderTimeline(TODAY.timeline, null);
+
+    const track = screen.getByLabelText("Batterie").querySelector(".tl-track") as HTMLElement;
+    fireEvent.click(track, { clientX: 20.5 * 40, detail: 1 });
+    expect(screen.getByRole("status")).toHaveTextContent("20h → 21h : Batterie, rien de prévu ni de mesuré");
+    expect(track.querySelector(".tl-zone")).toHaveStyle({ left: `${(20 / 24) * 100}%` });
+
+    // Un clic dans l'heure d'un bloc, à côté de lui, le trouve quand même.
+    fireEvent.click(track, { clientX: 13.75 * 40, detail: 1 });
+    expect(screen.getByRole("status")).toHaveTextContent("Réel 9h15 → 13h30 : charge, 2,10 kWh");
   });
 
   it("explique une journée sans équipement planifié", () => {
