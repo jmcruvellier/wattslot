@@ -115,14 +115,18 @@ def tool_env() -> dict[str, str]:
     return env
 
 
-def wait_until_up(app_url: str, process: subprocess.Popen[bytes], timeout_s: float = 60) -> None:
+def wait_until_up(app_url: str, process: subprocess.Popen[bytes], timeout_s: float = 180) -> None:
     deadline = time.monotonic() + timeout_s
     while time.monotonic() < deadline and process.poll() is None:
         try:
             with urllib.request.urlopen(app_url + "/api/health", timeout=5) as response:
                 health = json.loads(response.read())
             if health["connections"]["home_assistant"]["state"] == "connected":
-                return
+                # Connecté ne suffit pas : la carte « En ce moment » d'Aujourd'hui attend le
+                # premier relevé des puissances ; sans lui, elle se replie sur le texte du plan.
+                with urllib.request.urlopen(app_url + "/api/views/today", timeout=5) as response:
+                    if (json.loads(response.read()).get("now") or {}).get("sentence"):
+                        return
         except (urllib.error.URLError, OSError, KeyError, ValueError):
             pass
         time.sleep(0.5)
