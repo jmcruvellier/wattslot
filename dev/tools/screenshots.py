@@ -37,7 +37,9 @@ OUTPUT = ROOT / "docs" / "images"
 LANGUAGES = ("en", "fr")
 THEMES = {"light": "ivory", "dark": "graphite"}
 DEVICES = {"phone": (390, 844), "desktop": (1440, 900)}
-NOW_MS = 1781094600000  # 10/06/2026 14:30 à Paris (``demo_home.NOW``), horloge du navigateur
+NOW_MS = (
+    1781094600000  # 10/06/2026 14:30 à Paris (``demo_home.NOW``), horloge du navigateur
+)
 TIME_ZONE = "Europe/Paris"
 
 
@@ -60,9 +62,21 @@ SHOTS: tuple[Shot, ...] = (
     Shot("planning-desktop-dark", "/planning", "desktop", "dark", full_page=True),
     Shot("planning-phone-light", "/planning", "phone", "light"),
     Shot("curves-desktop-light", "/curves", "desktop", "light", full_page=True),
-    Shot("curves-week-desktop-light", "/curves", "desktop", "light", extra=(("plan.tab", "week"),)),
+    Shot(
+        "curves-week-desktop-light",
+        "/curves",
+        "desktop",
+        "light",
+        extra=(("plan.tab", "week"),),
+    ),
     Shot("home-desktop-light", "/home", "desktop", "light"),
-    Shot("home-data-desktop-light", "/home", "desktop", "light", extra=(("home.tab", "data"),)),
+    Shot(
+        "home-data-desktop-light",
+        "/home",
+        "desktop",
+        "light",
+        extra=(("home.tab", "data"),),
+    ),
     Shot("assistant-desktop-light", "/assistant", "desktop", "light"),
     Shot("settings-desktop-light", "/settings", "desktop", "light", full_page=True),
     Shot("status-desktop-light", "/settings/status", "desktop", "light"),
@@ -115,14 +129,22 @@ def tool_env() -> dict[str, str]:
     return env
 
 
-def wait_until_up(app_url: str, process: subprocess.Popen[bytes], timeout_s: float = 60) -> None:
+def wait_until_up(
+    app_url: str, process: subprocess.Popen[bytes], timeout_s: float = 180
+) -> None:
     deadline = time.monotonic() + timeout_s
     while time.monotonic() < deadline and process.poll() is None:
         try:
             with urllib.request.urlopen(app_url + "/api/health", timeout=5) as response:
                 health = json.loads(response.read())
             if health["connections"]["home_assistant"]["state"] == "connected":
-                return
+                # Connecté ne suffit pas : la carte « En ce moment » d'Aujourd'hui attend le
+                # premier relevé des puissances ; sans lui, elle se replie sur le texte du plan.
+                with urllib.request.urlopen(
+                    app_url + "/api/views/today", timeout=5
+                ) as response:
+                    if (json.loads(response.read()).get("now") or {}).get("sentence"):
+                        return
         except (urllib.error.URLError, OSError, KeyError, ValueError):
             pass
         time.sleep(0.5)
@@ -131,7 +153,16 @@ def wait_until_up(app_url: str, process: subprocess.Popen[bytes], timeout_s: flo
 
 @contextmanager
 def demo_server(python: str, data: Path, port: int) -> Iterator[str]:
-    command = [python, "-m", "tools.demo", "serve", "--data", str(data), "--port", str(port)]
+    command = [
+        python,
+        "-m",
+        "tools.demo",
+        "serve",
+        "--data",
+        str(data),
+        "--port",
+        str(port),
+    ]
     process = subprocess.Popen(command, cwd=DEV, env=tool_env())
     app_url = f"http://127.0.0.1:{port}"
     try:
@@ -172,7 +203,9 @@ def capture(app_url: str, language: str, shots: tuple[Shot, ...]) -> list[Path]:
             )
             context.route(
                 "**/*",
-                lambda route: route.continue_() if local_url(route.request.url) else route.abort(),
+                lambda route: (
+                    route.continue_() if local_url(route.request.url) else route.abort()
+                ),
             )
             context.add_init_script(
                 "for (const [k, v] of Object.entries("
@@ -196,18 +229,35 @@ def capture(app_url: str, language: str, shots: tuple[Shot, ...]) -> list[Path]:
 
 
 def generate(python: str, language: str, data: Path) -> None:
-    command = [python, "-m", "tools.demo", "generate", "--language", language, "--data", str(data)]
-    subprocess.run(command, cwd=DEV, env=tool_env(), check=True, stdout=subprocess.DEVNULL)
+    command = [
+        python,
+        "-m",
+        "tools.demo",
+        "generate",
+        "--language",
+        language,
+        "--data",
+        str(data),
+    ]
+    subprocess.run(
+        command, cwd=DEV, env=tool_env(), check=True, stdout=subprocess.DEVNULL
+    )
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--python", default=server_python(), help="python du serveur")
-    parser.add_argument("--data", type=Path, default=Path(tempfile.gettempdir()) / "wattslot-demo")
+    parser.add_argument(
+        "--data", type=Path, default=Path(tempfile.gettempdir()) / "wattslot-demo"
+    )
     parser.add_argument("--port", type=int, default=8199)
     parser.add_argument("--language", choices=LANGUAGES, action="append")
-    parser.add_argument("--only", action="append", help="nom d'une capture (plusieurs possibles)")
-    parser.add_argument("--reuse", action="store_true", help="données déjà générées gardées")
+    parser.add_argument(
+        "--only", action="append", help="nom d'une capture (plusieurs possibles)"
+    )
+    parser.add_argument(
+        "--reuse", action="store_true", help="données déjà générées gardées"
+    )
     args = parser.parse_args()
     shots = tuple(s for s in SHOTS if not args.only or s.name in args.only)
     for language in args.language or LANGUAGES:
