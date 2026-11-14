@@ -5,6 +5,7 @@
 import { describe, expect, it } from "vitest";
 
 import indexHtml from "../../index.html?raw";
+import styles from "../styles.css?raw";
 import css from "./themes.css?raw";
 import { THEMES } from "./theme";
 
@@ -78,6 +79,19 @@ describe("thèmes", () => {
   it.each(Object.entries(PALETTES))("tient les contrastes AA : %s", (_, palette) => {
     for (const [text, background] of PAIRS) {
       expect(contrast(palette[text], palette[background]), `${text} sur ${background}`).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  // Pilules du réel du Planning des équipements (styles.css, .tl-actual) : la couleur de sens
+  // éclaircie d'un quart, sous un texte sombre fixe.
+  it.each(Object.entries(PALETTES))("garde lisible l'énergie écrite dans les pilules : %s", (_, palette) => {
+    expect(styles).toContain("color-mix(in srgb, var(--bar, var(--cycle)) 75%, #ffffff)");
+    const lightened = (hex: string) =>
+      `#${[1, 3, 5]
+        .map((i) => Math.round(parseInt(hex.slice(i, i + 2), 16) * 0.75 + 255 * 0.25).toString(16).padStart(2, "0"))
+        .join("")}`;
+    for (const bar of ["--battery", "--discharge", "--go", "--sun", "--pool-silence"]) {
+      expect(contrast("#17191c", lightened(palette[bar])), bar).toBeGreaterThanOrEqual(4.5);
     }
   });
 

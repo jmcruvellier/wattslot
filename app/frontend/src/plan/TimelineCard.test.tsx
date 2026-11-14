@@ -92,9 +92,10 @@ describe("frise des équipements", () => {
 
     const card = screen.getByRole("article", { name: "Planning des équipements" });
     const battery = within(card).getByLabelText("Batterie");
-    expect(within(battery).getByRole("button", { name: "Prévu 9h → 13h : charge, 2,00 kWh" })).toHaveTextContent(
-      "2,0 kWh",
-    );
+    // Le prévu que le réel recouvre n'est qu'un crochet : son énergie est dans l'info-bulle.
+    const planned = within(battery).getByRole("button", { name: "Prévu 9h → 13h : charge, 2,00 kWh" });
+    expect(planned).not.toHaveClass("tl-upcoming");
+    expect(planned).toHaveTextContent("");
     expect(within(battery).getByRole("button", { name: /^Réel 9h15/ })).toHaveTextContent("2,1 kWh");
     expect(card.querySelector(".tl-legend")).toBeNull();
     expect(within(card).queryByText("prévu")).toBeNull();
@@ -123,12 +124,26 @@ describe("frise des équipements", () => {
     expect(charge).toHaveClass("tl-actual");
   });
 
-  it("centre aussi l'énergie prévue dans son bloc", () => {
+  it("dessine en pilule, avec son énergie, le prévu à venir que rien de réel ne recouvre", () => {
     stubTrackWidth(960);
-    renderTimeline(TODAY.timeline);
+    const rows = TODAY.timeline.rows.map((row) => (row.kind === "battery" ? { ...row, actual: [] } : row));
+    // Dernier relevé à 10 h : la charge prévue de 9 h à 13 h n'est pas finie.
+    renderTimeline({ ...TODAY.timeline, rows }, 10);
 
     const planned = screen.getByRole("button", { name: "Prévu 9h → 13h : charge, 2,00 kWh" });
+    expect(planned).toHaveClass("tl-upcoming");
     expect((planned.querySelector(".tl-value") as HTMLElement).style.left).toBe("50%");
+    expect(document.querySelector(".tl-now-label")).toHaveTextContent("10h");
+  });
+
+  it("ne garde qu'un crochet pour le prévu passé que rien n'a réalisé", () => {
+    stubTrackWidth(960);
+    const rows = TODAY.timeline.rows.map((row) => (row.kind === "battery" ? { ...row, actual: [] } : row));
+    renderTimeline({ ...TODAY.timeline, rows }, 14);
+
+    const planned = screen.getByRole("button", { name: "Prévu 9h → 13h : charge, 2,00 kWh" });
+    expect(planned).not.toHaveClass("tl-upcoming");
+    expect(planned.querySelector(".tl-value")).toBeNull();
   });
 
   it("laisse vides les blocs trop étroits pour leur énergie", () => {
