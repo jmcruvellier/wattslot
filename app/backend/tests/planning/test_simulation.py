@@ -94,3 +94,36 @@ def test_the_current_hour_is_measured_then_only_its_last_minutes_are_simulated()
     assert run(0.5, -0.1)[0] == (7, "decharge", 0.168)
     # Sans part écoulée : l'heure entière, comme avant.
     assert run(0.0, 0.0)[0] == (7, "decharge", 0.073)
+
+
+def test_the_exchange_of_the_current_hour_stays_within_its_forecast() -> None:
+    """13/11/2026 : calcul à 10h59, déficit prévu de 0,3 kWh sur l'heure, batterie déchargée de
+    0,8 kWh côté maison (la maison a consommé plus que prévu). Bilan prévu moins échange
+    mesuré donnait 0,5 kWh d'injection, comptés dans le surplus et le coût du plan."""
+    capacity = 5.12
+
+    def residual(net: float, change: float) -> float:
+        result = simulate(
+            {10: net, 11: -0.2},
+            0.5 * capacity,
+            capacity,
+            2.5,
+            2.5,
+            0,
+            24,
+            1.0,
+            1.0,
+            0.12 * capacity,
+            first_hour=10,
+            elapsed=59 / 60,
+            elapsed_change_kwh=change,
+        )
+        assert result.residual_kwh[11] == pytest.approx(0.0)  # heures suivantes : inchangées
+        return result.residual_kwh[10]
+
+    assert residual(-0.3, -0.8) == 0.0  # pas d'injection sans surplus prévu
+    assert residual(0.3, 0.8) == 0.0  # pas de soutirage sans déficit prévu
+    assert residual(0.3, -0.8) == pytest.approx(0.3)  # ni plus de surplus que prévu
+    assert residual(-0.3, 0.8) == pytest.approx(-0.3)  # ni plus d'achat que prévu
+    # Mesure que le bilan prévu explique : comptée comme avant.
+    assert residual(-0.3, -0.1) == pytest.approx(-0.3 + 0.1 + 0.3 / 60)
