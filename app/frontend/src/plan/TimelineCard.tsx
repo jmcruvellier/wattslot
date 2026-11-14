@@ -13,8 +13,11 @@
 // de créneau, annuler la planification du jour ou y revenir, sans quitter l'écran. Sur Demain et
 // les jours suivants (`day`), la feuille propose les autres départs et une heure libre ; pas
 // d'annulation, qui ne vaut que pour aujourd'hui.
+// Partout ailleurs sur une piste, le clic choisit une heure : sous la frise, le prévu et le réel
+// de la ligne à cet endroit, ensemble — les blocs sous le clic, sinon ceux de l'heure d'horloge
+// touchée — ou la mention qu'il n'y a rien. L'heure choisie reste marquée sur sa ligne.
 
-import { Fragment, useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState, type MouseEvent } from "react";
 
 import { useI18n } from "../i18n/I18nProvider";
 import { minuteOfDay } from "../i18n/homeTime";
@@ -65,6 +68,17 @@ function launched(row: TimelineRow, bar: Bar, nowMin: number): boolean {
   return row.actual.some((done) => done.start_hour * 60 <= nowMin && done.start_hour >= after);
 }
 
+/** Une piste : ses blocs prévus et réels, sous une clé et un nom (ligne d'équipement, ou batterie
+ * d'un groupe). */
+type Lane = { key: string; label: string; row: TimelineRow; planned: Bar[]; actual: Bar[] };
+
+/** Heure de la journée sous le clic, lue sur la piste ; `fallback` au clavier ou sans largeur. */
+function hourAt(event: MouseEvent<HTMLElement>, fallback: number): number {
+  const box = (event.currentTarget.closest(".tl-track") ?? event.currentTarget).getBoundingClientRect();
+  if (event.detail === 0 || box.width === 0) return fallback;
+  return Math.min(Math.max(((event.clientX - box.left) / box.width) * 24, 0), 23.99);
+}
+
 // Minutes depuis minuit maintenant, pour dire si un cycle réel a commencé.
 function nowMinute(): number {
   return minuteOfDay();
@@ -84,7 +98,8 @@ export default function TimelineCard({
   day?: string; // jour d'un plan à venir ; aucun : aujourd'hui
 }) {
   const { language, t } = useI18n();
-  const [tip, setTip] = useState<string | null>(null);
+  // Heure choisie sur une piste : sa ligne, l'heure d'horloge marquée, les phrases affichées.
+  const [tip, setTip] = useState<{ key: string; zone: number; lines: string[] } | null>(null);
   const [trackWidth, measureTrack] = useTrackWidth();
   const lang = language === "fr" ? "fr" : "en";
   // Cycle (son identité) et bloc prévu dont la feuille des autres départs est ouverte.
@@ -111,8 +126,33 @@ export default function TimelineCard({
     });
   };
 
-  const bars = (row: TimelineRow, items: Bar[], actual: boolean) =>
+  // Prévu et réel de la piste à l'heure `at` ; `own` est le bloc touché, s'il y en a un.
+  const pick = (lane: Lane, at: number, own?: { bar: Bar; actual: boolean }) => {
+    if (Number.isNaN(at)) return;
+    const zone = Math.floor(at);
+    const found = (items: Bar[], actual: boolean) => {
+      const under = items.filter((bar) => bar.start_hour <= at && at < bar.end_hour);
+      if (under.length > 0) return under;
+      if (own?.actual === actual) return [own.bar];
+      return items.filter((bar) => bar.start_hour < zone + 1 && bar.end_hour > zone);
+    };
+    const lines = [
+      ...found(lane.planned, false).map((bar) => describe(lane.row, bar, false)),
+      ...found(lane.actual, true).map((bar) => describe(lane.row, bar, true)),
+    ];
+    setTip({
+      key: lane.key,
+      zone,
+      lines:
+        lines.length > 0
+          ? lines
+          : [t("plan.timeline.tip_none", { start: hour(zone, lang), end: hour(zone + 1, lang), what: lane.label })],
+    });
+  };
+
+  const bars = (lane: Lane, items: Bar[], actual: boolean) =>
     items.map((bar, index) => {
+      const row = lane.row;
       const text = describe(row, bar, actual);
       // Un cycle qui finit le lendemain s'arrête à minuit sur la frise du jour.
       const shownEnd = Math.min(bar.end_hour, 24);
@@ -147,7 +187,11 @@ export default function TimelineCard({
           }}
           title={text}
           aria-label={text}
-          onClick={() => (opens ? setPicked({ device: bar.cycle ?? row.device, bar }) : setTip(text))}
+          onClick={(event) => {
+            event.stopPropagation();
+            if (opens) setPicked({ device: bar.cycle ?? row.device, bar });
+            else pick(lane, hourAt(event, (bar.start_hour + shownEnd) / 2), { bar, actual });
+          }}
         >
           {wide && (actual || upcoming) && (
             <span
@@ -161,6 +205,21 @@ export default function TimelineCard({
         </button>
       );
     });
+
+  const track = (lane: Lane, measured: boolean, single: boolean) => (
+    // Les blocs sont des boutons, pour le clavier ; le reste de la piste répond à la souris et
+    // au doigt.
+    <div
+      className={single ? "tl-track tl-track-single" : "tl-track"}
+      ref={measured ? measureTrack : undefined}
+      onClick={(event) => pick(lane, hourAt(event, Number.NaN))}
+    >
+      {tip?.key === lane.key && <span className="tl-zone" style={{ left: `${(tip.zone / 24) * 100}%` }} />}
+      {bars(lane, lane.planned, false)}
+      {bars(lane, lane.actual, true)}
+      {readingHour !== null && <span className="tl-now" style={{ left: `${(readingHour / 24) * 100}%` }} />}
+    </div>
+  );
 
   const run = async (change: () => Promise<unknown>) => {
     setCancelling("running");
@@ -217,11 +276,11 @@ export default function TimelineCard({
             <Fragment key={row.device}>
               <div className="tl-row" aria-label={rowLabel(row, t)}>
                 <span className="tl-label">{rowLabel(row, t)}</span>
-                <div className="tl-track" ref={index === 0 ? measureTrack : undefined}>
-                  {bars(row, row.planned, false)}
-                  {bars(row, row.actual, true)}
-                  {readingHour !== null && <span className="tl-now" style={{ left: `${(readingHour / 24) * 100}%` }} />}
-                </div>
+                {track(
+                  { key: row.device, label: rowLabel(row, t), row, planned: row.planned, actual: row.actual },
+                  index === 0,
+                  false,
+                )}
               </div>
               {/* Ligne qui réunit plusieurs batteries : le mesuré de chacune dessous, sur un seul
                * couloir. La prévision n'existe que pour l'ensemble. */}
@@ -234,10 +293,11 @@ export default function TimelineCard({
                   <span className="tl-label tl-sub-label" title={t("plan.timeline.battery_measured", { name: battery.name })}>
                     {battery.name}
                   </span>
-                  <div className="tl-track tl-track-single">
-                    {bars(row, battery.actual, true)}
-                    {readingHour !== null && <span className="tl-now" style={{ left: `${(readingHour / 24) * 100}%` }} />}
-                  </div>
+                  {track(
+                    { key: `${row.device}/${battery.key}`, label: battery.name, row, planned: [], actual: battery.actual },
+                    false,
+                    true,
+                  )}
                 </div>
               ))}
             </Fragment>
@@ -273,7 +333,13 @@ export default function TimelineCard({
           {restoreFailed && <span role="alert">{t("plan.timeline.restore_failed")}</span>}
         </p>
       )}
-      {tip && <p role="status">{tip}</p>}
+      {tip && (
+        <p role="status" className="tl-tip">
+          {tip.lines.map((line) => (
+            <span key={line}>{line}</span>
+          ))}
+        </p>
+      )}
       {picked && (
         <Sheet
           open
