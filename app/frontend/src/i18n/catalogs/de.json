@@ -312,6 +312,11 @@
       "tip_carried": "Fortsetzung vom Vortag {start} → {end}: {what}, {kwh} kWh",
       "tip_actual": "Tatsächlich {start} → {end}: {what}, {kwh} kWh",
       "tip_none": "{start} → {end}: {what}, nichts geplant oder gemessen",
+      "legend_sun": "Solarproduktion",
+      "legend_off_peak": "Niedertarif",
+      "tip_off_peak": "{start} → {end}: Niedertarif",
+      "tip_peak": "{start} → {end}: Hochtarif",
+      "tip_sun": "{start} → {end}: Solarproduktion, {kwh} kWh",
       "state": {
         "running": "läuft",
         "started": "gestartet um {time}",

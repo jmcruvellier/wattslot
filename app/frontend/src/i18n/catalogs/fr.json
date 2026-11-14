@@ -312,6 +312,11 @@
       "tip_carried": "Suite de la veille {start} → {end} : {what}, {kwh} kWh",
       "tip_actual": "Réel {start} → {end} : {what}, {kwh} kWh",
       "tip_none": "{start} → {end} : {what}, rien de prévu ni de mesuré",
+      "legend_sun": "Production solaire",
+      "legend_off_peak": "Heures creuses",
+      "tip_off_peak": "{start} → {end} : heures creuses",
+      "tip_peak": "{start} → {end} : heures pleines",
+      "tip_sun": "{start} → {end} : production solaire, {kwh} kWh",
       "state": {
         "running": "en cours",
         "started": "lancé à {time}",

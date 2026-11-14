@@ -729,6 +729,44 @@ pre {
   cursor: pointer;
 }
 
+/* Vue Aujourd'hui : heures creuses en fond des pistes (la teinte des courbes), bande de soleil
+   au-dessus de la première, et leur légende sous l'axe. */
+.tl-offpeak {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: color-mix(in srgb, var(--grid-import) 12%, transparent);
+  pointer-events: none;
+}
+
+.tl-sun {
+  height: 0.4rem;
+  margin-bottom: 0.3rem;
+  border-radius: 0.2rem;
+}
+
+.tl-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  margin: 0.4rem 0 0;
+  font-size: 0.75rem;
+}
+
+.tl-legend > span::before {
+  content: "";
+  display: inline-block;
+  width: 0.9rem;
+  height: 0.5rem;
+  margin-right: 0.35rem;
+  border-radius: 0.15rem;
+  background: var(--sun);
+}
+
+.tl-legend > .tl-legend-offpeak::before {
+  background: color-mix(in srgb, var(--grid-import) 30%, transparent);
+}
+
 /* Heure choisie d'un clic sur la piste, et ses phrases sous la frise, une par ligne. */
 .tl-zone {
   position: absolute;

@@ -125,6 +125,7 @@ export default function TodayView({ onNavigate }: { onNavigate?: (target: string
         readingHour={readingHour(view)}
         choices={startChoices(view)}
         onChanged={() => setAttempt((count) => count + 1)}
+        hours={view.hours}
       />
       <div className="today-grid">
         {view.battery_capacity_kwh !== null && (
