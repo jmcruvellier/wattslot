@@ -312,6 +312,11 @@
       "tip_carried": "Continuación del día anterior {start} → {end}: {what}, {kwh} kWh",
       "tip_actual": "Real {start} → {end}: {what}, {kwh} kWh",
       "tip_none": "{start} → {end}: {what}, nada previsto ni medido",
+      "legend_sun": "Producción solar",
+      "legend_off_peak": "Horas valle",
+      "tip_off_peak": "{start} → {end}: horas valle",
+      "tip_peak": "{start} → {end}: horas punta",
+      "tip_sun": "{start} → {end}: producción solar, {kwh} kWh",
       "state": {
         "running": "en curso",
         "started": "iniciado a las {time}",

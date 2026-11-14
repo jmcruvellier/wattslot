@@ -312,6 +312,11 @@
       "tip_carried": "Vervolg van de vorige dag {start} → {end}: {what}, {kwh} kWh",
       "tip_actual": "Werkelijk {start} → {end}: {what}, {kwh} kWh",
       "tip_none": "{start} → {end}: {what}, niets gepland of gemeten",
+      "legend_sun": "Zonneproductie",
+      "legend_off_peak": "Daluren",
+      "tip_off_peak": "{start} → {end}: daluren",
+      "tip_peak": "{start} → {end}: piekuren",
+      "tip_sun": "{start} → {end}: zonneproductie, {kwh} kWh",
       "state": {
         "running": "bezig",
         "started": "gestart om {time}",

@@ -19,6 +19,10 @@
 // Chaque ligne commence par l'icône de son équipement, dans une pastille à la couleur de ses
 // blocs, et porte sous son nom une ligne d'état : où en est son cycle (en cours, lancé à…,
 // prévu à…, pas lancé) ou, pour une batterie et les autres, l'énergie mesurée, à défaut prévue.
+// Avec les heures de la journée (`hours`, vue Aujourd'hui seule), la frise porte en fond les
+// heures creuses, au-dessus d'elle une bande de soleil — plus dense quand la production est
+// forte, mesurée si elle l'est, prévue sinon — et la phrase du clic dit le tarif et la
+// production de l'heure choisie. Une légende de deux mots l'explique sous l'axe.
 
 import { Fragment, useCallback, useEffect, useState, type MouseEvent } from "react";
 
@@ -27,7 +31,7 @@ import { minuteOfDay } from "../i18n/homeTime";
 import { hour, kwh } from "./format";
 import { freeSpan } from "./timelineSpan";
 import { rowLabel } from "./batteryLabel";
-import type { Bar, TimelineRow, Timeline } from "./types";
+import type { Bar, HourPoint, TimelineRow, Timeline } from "./types";
 import Icon from "../ui/Icon";
 import type { IconName } from "../ui/iconPaths";
 import Button from "../ui/Button";
@@ -89,6 +93,20 @@ function rowIcon(row: TimelineRow): IconName {
 // Couleur de la pastille : celle des blocs de la ligne.
 const TONES = { battery: "var(--battery)", cycle: "var(--cycle)", runtime: "var(--pool-eco)" };
 
+// Production d'une heure : mesurée si elle l'est, prévue sinon.
+const sunOf = (point: HourPoint) => point.production_actual_kwh ?? point.production_kwh;
+
+/** Fond de la bande de soleil : une teinte par heure, en proportion de la plus forte. */
+function sunBand(hours: HourPoint[]): string {
+  const top = Math.max(...hours.map(sunOf), 0);
+  if (top <= 0) return "none";
+  const stops = hours.map((point) => {
+    const tint = `color-mix(in srgb, var(--sun) ${Math.round((sunOf(point) / top) * 100)}%, transparent)`;
+    return `${tint} ${(point.hour / 24) * 100}% ${((point.hour + 1) / 24) * 100}%`;
+  });
+  return `linear-gradient(to right, ${stops.join(", ")})`;
+}
+
 /** Une piste : ses blocs prévus et réels, sous une clé et un nom (ligne d'équipement, ou batterie
  * d'un groupe). */
 type Lane = { key: string; label: string; row: TimelineRow; planned: Bar[]; actual: Bar[] };
@@ -111,12 +129,14 @@ export default function TimelineCard({
   choices,
   onChanged,
   day,
+  hours,
 }: {
   timeline: Timeline;
   readingHour: number | null;
   choices?: Record<string, StartChoice>;
   onChanged?: () => void;
   day?: string; // jour d'un plan à venir ; aucun : aujourd'hui
+  hours?: HourPoint[]; // heures de la journée : fond des heures creuses et bande de soleil
 }) {
   const { language, t } = useI18n();
   // Heure choisie sur une piste : sa ligne, l'heure d'horloge marquée, les phrases affichées.
@@ -171,6 +191,16 @@ export default function TimelineCard({
     });
   };
 
+  // Plages d'heures creuses [début, fin[ : une bande par plage, sans joint entre deux heures.
+  const offPeak: [number, number][] = [];
+  for (const point of hours ?? []) {
+    if (!point.off_peak) continue;
+    const last = offPeak[offPeak.length - 1];
+    if (last && last[1] === point.hour) last[1] = point.hour + 1;
+    else offPeak.push([point.hour, point.hour + 1]);
+  }
+  const sun = hours ? sunBand(hours) : "none";
+
   // Prévu et réel de la piste à l'heure `at` ; `own` est le bloc touché, s'il y en a un.
   const pick = (lane: Lane, at: number, own?: { bar: Bar; actual: boolean }) => {
     if (Number.isNaN(at)) return;
@@ -185,14 +215,14 @@ export default function TimelineCard({
       ...found(lane.planned, false).map((bar) => describe(lane.row, bar, false)),
       ...found(lane.actual, true).map((bar) => describe(lane.row, bar, true)),
     ];
-    setTip({
-      key: lane.key,
-      zone,
-      lines:
-        lines.length > 0
-          ? lines
-          : [t("plan.timeline.tip_none", { start: hour(zone, lang), end: hour(zone + 1, lang), what: lane.label })],
-    });
+    const span = { start: hour(zone, lang), end: hour(zone + 1, lang) };
+    if (lines.length === 0) lines.push(t("plan.timeline.tip_none", { ...span, what: lane.label }));
+    // Tarif de l'heure (si la journée a des heures creuses) et production solaire (si elle en a).
+    const point = hours?.find((one) => one.hour === zone);
+    if (point && offPeak.length > 0)
+      lines.push(t(point.off_peak ? "plan.timeline.tip_off_peak" : "plan.timeline.tip_peak", span));
+    if (point && sun !== "none") lines.push(t("plan.timeline.tip_sun", { ...span, kwh: kwh(sunOf(point)) }));
+    setTip({ key: lane.key, zone, lines });
   };
 
   const bars = (lane: Lane, items: Bar[], actual: boolean) =>
@@ -259,6 +289,13 @@ export default function TimelineCard({
       ref={measured ? measureTrack : undefined}
       onClick={(event) => pick(lane, hourAt(event, Number.NaN))}
     >
+      {offPeak.map(([start, end]) => (
+        <span
+          key={start}
+          className="tl-offpeak"
+          style={{ left: `${(start / 24) * 100}%`, width: `${((end - start) / 24) * 100}%` }}
+        />
+      ))}
       {tip?.key === lane.key && <span className="tl-zone" style={{ left: `${(tip.zone / 24) * 100}%` }} />}
       {bars(lane, lane.planned, false)}
       {bars(lane, lane.actual, true)}
@@ -317,6 +354,12 @@ export default function TimelineCard({
               </div>
             </div>
           )}
+          {sun !== "none" && (
+            <div className="tl-row" aria-hidden="true">
+              <span />
+              <div className="tl-sun" style={{ background: sun }} />
+            </div>
+          )}
           {timeline.rows.map((row, index) => (
             <Fragment key={row.device}>
               <div className="tl-row" aria-label={rowLabel(row, t)}>
@@ -366,6 +409,12 @@ export default function TimelineCard({
             </div>
           </div>
         </div>
+      )}
+      {!timeline.empty && (sun !== "none" || offPeak.length > 0) && (
+        <p className="tl-legend dim">
+          {sun !== "none" && <span className="tl-legend-sun">{t("plan.timeline.legend_sun")}</span>}
+          {offPeak.length > 0 && <span className="tl-legend-offpeak">{t("plan.timeline.legend_off_peak")}</span>}
+        </p>
       )}
       {/* Planifications annulées pour aujourd'hui, rétablies d'un clic ; ailleurs que sur la vue
        * Aujourd'hui, la liste est vide et rien ne s'affiche. */}

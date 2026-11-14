@@ -28,7 +28,7 @@ function mockChoices(): Call[] {
 function renderTimeline(
   timeline: Timeline,
   readingHour: number | null = 14.5,
-  props: { choices?: Record<string, StartChoice>; onChanged?: () => void; day?: string } = {},
+  props: { choices?: Record<string, StartChoice>; onChanged?: () => void; day?: string; hours?: DayView["hours"] } = {},
 ) {
   render(
     <I18nProvider>
@@ -199,6 +199,23 @@ describe("frise des équipements", () => {
     expect(icon("Lave-linge")).not.toBe(icon("Batterie"));
     expect(state("Batterie")).toBe("+2,1 / −0,0 kWh mesurés");
     expect(state("Lave-linge")).toBe("lancé à 10h05");
+  });
+
+  it("avec les heures du jour, montre heures creuses et soleil, et les dit au clic", () => {
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({ width: 960, left: 0 } as DOMRect);
+    renderTimeline(TODAY.timeline, 14.5, { hours: TODAY.hours });
+
+    const track = screen.getByLabelText("Batterie").querySelector(".tl-track") as HTMLElement;
+    expect(track.querySelectorAll(".tl-offpeak")).toHaveLength(2); // 0h–6h et 22h–24h
+    expect(document.querySelector(".tl-sun")).not.toBeNull();
+    expect(screen.getByText("Production solaire")).toBeInTheDocument();
+    expect(screen.getByText("Heures creuses")).toBeInTheDocument();
+
+    fireEvent.click(track, { clientX: 22.5 * 40, detail: 1 });
+    expect(screen.getByRole("status")).toHaveTextContent("22h → 23h : heures creuses");
+    fireEvent.click(track, { clientX: 10.5 * 40, detail: 1 });
+    expect(screen.getByRole("status")).toHaveTextContent("10h → 11h : heures pleines");
+    expect(screen.getByRole("status")).toHaveTextContent("10h → 11h : production solaire, 1,00 kWh");
   });
 
   it("explique une journée sans équipement planifié", () => {
