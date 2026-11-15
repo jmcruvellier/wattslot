@@ -1781,7 +1781,7 @@
     "scheduler_off": "Aus: Berechnung von Hand",
     "beta": {
       "title": "Stabile Version",
-      "text": "Sie testen eine Betaversion: Ihre Rückmeldungen bestimmen, wie es weitergeht. Was funktioniert, was stört, was unklar war: alles hilft.",
+      "text": "Ihre Rückmeldungen bestimmen, wie es weitergeht. Was funktioniert, was stört, was unklar war: alles hilft.",
       "feedback": "Feedback geben"
     },
     "support": {
