@@ -1781,7 +1781,7 @@
     "scheduler_off": "Desactivado: cálculo a mano",
     "beta": {
       "title": "Versión estable",
-      "text": "Está probando una versión beta: sus comentarios deciden lo que viene. Lo que funciona, lo que molesta, lo que no entendió: todo ayuda.",
+      "text": "Sus comentarios deciden lo que viene. Lo que funciona, lo que molesta, lo que no entendió: todo ayuda.",
       "feedback": "Dar mi opinión"
     },
     "support": {

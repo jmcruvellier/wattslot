@@ -1781,7 +1781,7 @@
     "scheduler_off": "Désactivé : calcul à la main",
     "beta": {
       "title": "Version stable",
-      "text": "Vous testez une version bêta : vos retours décident de la suite. Ce qui marche, ce qui gêne, ce que vous n'avez pas compris : tout nous aide.",
+      "text": "Vos retours décident de la suite. Ce qui marche, ce qui gêne, ce que vous n'avez pas compris : tout nous aide.",
       "feedback": "Donner mon avis"
     },
     "support": {
