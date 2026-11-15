@@ -12,6 +12,12 @@ ce qui peut fuir par ailleurs (fils, fichiers ouverts). ``release`` rend la mém
 système (``malloc_trim``) après chaque calcul du plan, et écrit dans le journal ce que cela a
 rendu : une baisse nette confirme l'hypothèse, une baisse nulle la réfute.
 
+La mémoire « utilisée » de glibc mêle les objets Python et la mémoire native (RocksDB). Elle montait
+encore d'environ 80 Mo par jour sur une installation réelle (palier pendant la maintenance de la
+nuit, lente dérive en journée, 15/11/2026) : le journal compte donc aussi les blocs alloués par
+Python, les objets suivis par le ramasse-miettes et les types dont le nombre a le plus augmenté
+depuis le calcul précédent. Des chiffres Python plats pendant la hausse la placent côté natif.
+
 Hors de Linux, ou avec une autre bibliothèque C que glibc, tout est inconnu (``None``) et
 ``release`` ne fait rien.
 """
@@ -21,12 +27,14 @@ import gc
 import logging
 import os
 import sys
+from collections import Counter
 from pathlib import Path
 
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
+GROWTH_TYPES = 5  # types d'objets Python en plus forte hausse écrits dans le journal
 PROC_STATUS = Path("/proc/self/status")
 PROC_FD = Path("/proc/self/fd")
 # Champs de /proc/self/status, en kilo-octets sauf le nombre de fils.
@@ -53,6 +61,7 @@ class MemoryDetail(BaseModel):
     heap_used_bytes: int | None = None  # alloué et utilisé par l'application
     heap_free_bytes: int | None = None  # libéré par l'application, gardé par l'allocateur
     heap_mapped_bytes: int | None = None  # grands blocs, rendus au système dès leur libération
+    python_blocks: int | None = None  # blocs alloués par Python (``sys.getallocatedblocks``)
 
 
 class _Mallinfo2(ctypes.Structure):
@@ -119,6 +128,47 @@ def _open_files() -> int | None:
         return None
 
 
+def _python_blocks() -> int:
+    return sys.getallocatedblocks()
+
+
+def object_types() -> Counter[str]:
+    """Nombre d'objets suivis par le ramasse-miettes, par type (quelques dixièmes de seconde
+    pour quelques centaines de milliers d'objets : une fois par calcul, pas à chaque relevé)."""
+    found: Counter[str] = Counter()
+    for item in gc.get_objects():
+        kind = type(item)
+        module = kind.__module__
+        found[kind.__qualname__ if module == "builtins" else f"{module}.{kind.__qualname__}"] += 1
+    return found
+
+
+def growth(
+    previous: Counter[str], current: Counter[str], limit: int = GROWTH_TYPES
+) -> list[tuple[str, int]]:
+    """Types dont le nombre d'objets a le plus augmenté, du plus fort au plus faible."""
+    found = [(name, count - previous[name]) for name, count in current.items()]
+    return sorted((item for item in found if item[1] > 0), key=lambda item: (-item[1], item[0]))[
+        :limit
+    ]
+
+
+_previous_types: Counter[str] | None = None  # relevé du calcul précédent
+
+
+def _python_summary() -> str:
+    """Objets Python suivis, et types en plus forte hausse depuis l'appel précédent."""
+    global _previous_types
+    current = object_types()
+    if _previous_types is None:
+        rising = "premier relevé"
+    else:
+        found = growth(_previous_types, current)
+        rising = ", ".join(f"{name} +{count}" for name, count in found) or "aucune"
+    _previous_types = current
+    return f"{sum(current.values())} objets suivis, hausse depuis le calcul précédent : {rising}"
+
+
 def detail(database_connections: int | None = None) -> MemoryDetail:
     """Détail de la mémoire à l'instant de l'appel."""
     try:
@@ -130,6 +180,7 @@ def detail(database_connections: int | None = None) -> MemoryDetail:
         **_heap(),
         open_files=_open_files(),
         database_connections=database_connections,
+        python_blocks=_python_blocks(),
     )
 
 
@@ -161,7 +212,8 @@ def release(database_connections: int | None = None) -> tuple[MemoryDetail, Memo
     logger.info(
         "Mémoire après le calcul : %s Mo, puis %s Mo une fois la mémoire libre rendue au système "
         "(utilisée par l'application %s Mo, libre gardée par l'allocateur %s puis %s Mo, en "
-        "échange %s Mo ; %s fils, %s fichiers ouverts, %s connexions à la base)",
+        "échange %s Mo ; %s fils, %s fichiers ouverts, %s connexions à la base ; "
+        "Python : %s blocs, %s)",
         _megabytes(before.resident_bytes),
         _megabytes(after.resident_bytes),
         _megabytes(after.heap_used_bytes),
@@ -171,5 +223,7 @@ def release(database_connections: int | None = None) -> tuple[MemoryDetail, Memo
         "?" if after.threads is None else after.threads,
         "?" if after.open_files is None else after.open_files,
         "?" if database_connections is None else database_connections,
+        "?" if after.python_blocks is None else after.python_blocks,
+        _python_summary(),
     )
     return before, after

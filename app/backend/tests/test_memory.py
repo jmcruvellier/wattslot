@@ -2,12 +2,21 @@
 
 import logging
 import sys
+from collections import Counter
 from pathlib import Path
 
 import pytest
 
 from wattslot import memory
-from wattslot.memory import MemoryDetail, detail, release, status_fields, trim
+from wattslot.memory import (
+    MemoryDetail,
+    detail,
+    growth,
+    object_types,
+    release,
+    status_fields,
+    trim,
+)
 from wattslot.resources import ResourceMonitor
 from wattslot.storage.database import open_database
 
@@ -43,6 +52,7 @@ def test_detail_reads_the_process(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
     monkeypatch.setattr(memory, "PROC_STATUS", status)
     monkeypatch.setattr(memory, "PROC_FD", descriptors)
     monkeypatch.setattr(memory, "_heap", lambda: {"heap_used_bytes": 300, "heap_free_bytes": 200})
+    monkeypatch.setattr(memory, "_python_blocks", lambda: 12345)
 
     assert detail(database_connections=4) == MemoryDetail(
         resident_bytes=520000 * 1024,
@@ -54,6 +64,7 @@ def test_detail_reads_the_process(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
         database_connections=4,
         heap_used_bytes=300,
         heap_free_bytes=200,
+        python_blocks=12345,
     )
 
 
@@ -61,7 +72,8 @@ def test_detail_is_unknown_without_proc(tmp_path: Path, monkeypatch: pytest.Monk
     monkeypatch.setattr(memory, "PROC_STATUS", tmp_path / "absent")
     monkeypatch.setattr(memory, "PROC_FD", tmp_path / "absent")
     monkeypatch.setattr(memory, "_libc", lambda: None)
-    assert detail() == MemoryDetail()
+    monkeypatch.setattr(memory, "_python_blocks", lambda: 7)
+    assert detail() == MemoryDetail(python_blocks=7)  # seul Python se mesure partout
     assert trim() is None
     assert release() is None  # rien à rendre, rien dans le journal
 
@@ -79,11 +91,14 @@ def test_release_logs_before_and_after(
                 swap_bytes=0,
                 threads=30,
                 open_files=120,
+                python_blocks=900_000,
             ),
         ]
     )
     monkeypatch.setattr(memory, "detail", lambda connections=None: next(states))
     monkeypatch.setattr(memory, "trim", lambda: True)
+    monkeypatch.setattr(memory, "_previous_types", Counter({"dict": 10}))
+    monkeypatch.setattr(memory, "object_types", lambda: Counter({"dict": 15, "list": 3}))
     with caplog.at_level(logging.INFO, logger="wattslot.memory"):
         found = release(7)
     assert found is not None
@@ -91,6 +106,46 @@ def test_release_logs_before_and_after(
     assert "520 Mo, puis 350 Mo" in caplog.text
     assert "gardée par l'allocateur 180 puis 10 Mo" in caplog.text
     assert "30 fils, 120 fichiers ouverts, 7 connexions" in caplog.text
+    assert "Python : 900000 blocs, 18 objets suivis" in caplog.text
+    assert "hausse depuis le calcul précédent : dict +5, list +3" in caplog.text
+    assert memory._previous_types == Counter({"dict": 15, "list": 3})  # base du prochain calcul
+
+
+def test_growth_lists_the_types_that_rose_most() -> None:
+    previous = Counter({"dict": 100, "list": 50, "tuple": 20, "float": 5})
+    current = Counter({"dict": 130, "list": 40, "tuple": 25, "wattslot.x.Reading": 90, "int": 5})
+
+    assert growth(previous, current) == [
+        ("wattslot.x.Reading", 90),
+        ("dict", 30),
+        ("int", 5),
+        ("tuple", 5),
+    ]
+    assert growth(previous, current, limit=1) == [("wattslot.x.Reading", 90)]
+    assert growth(current, current) == []
+
+
+class _Tracked:
+    pass
+
+
+def test_object_types_count_tracked_objects_by_qualified_name() -> None:
+    kept = [_Tracked() for _ in range(3)]
+    found = object_types()
+    assert found[f"{__name__}._Tracked"] >= 3
+    assert found["list"] > 0  # types de base sans nom de module
+    del kept
+
+
+def test_first_release_has_no_previous_count(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    monkeypatch.setattr(memory, "detail", lambda connections=None: MemoryDetail())
+    monkeypatch.setattr(memory, "trim", lambda: True)
+    monkeypatch.setattr(memory, "_previous_types", None)
+    with caplog.at_level(logging.INFO, logger="wattslot.memory"):
+        release()
+    assert "Python : ? blocs" in caplog.text and "premier relevé" in caplog.text
 
 
 @pytest.mark.skipif(not sys.platform.startswith("linux"), reason="glibc seulement")
