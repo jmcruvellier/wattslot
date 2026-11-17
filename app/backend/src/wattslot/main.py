@@ -326,12 +326,13 @@ def _scheduler(
             configuration=configuration.load(graph),
             data_dir=data_dir,
         )
+        used_before = memory.heap_used()  # sépare ce que gagne le calcul (``memory.py``)
         report = await run(context, now)
         await _notify(client, database, now, raw.zone, report, week_of, alerts_of)
         # Le calcul lit des semaines d'agrégats puis les libère : cette mémoire, gardée par
         # l'allocateur, est rendue au système (``memory.py``).
         try:
-            await asyncio.to_thread(memory.release, open_connections(database))
+            await asyncio.to_thread(memory.release, open_connections(database), used_before)
         except Exception:
             logger.exception("Mémoire libre non rendue au système")
         return report

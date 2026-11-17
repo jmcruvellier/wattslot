@@ -99,13 +99,16 @@ def test_release_logs_before_and_after(
     monkeypatch.setattr(memory, "trim", lambda: True)
     monkeypatch.setattr(memory, "_previous_types", Counter({"dict": 10}))
     monkeypatch.setattr(memory, "object_types", lambda: Counter({"dict": 15, "list": 3}))
+    monkeypatch.setattr(memory, "_previous_used", 230_000_000)
     with caplog.at_level(logging.INFO, logger="wattslot.memory"):
-        found = release(7)
+        found = release(7, used_before=240_000_000)
     assert found is not None
     assert found[0].resident_bytes == 520_000_000 and found[1].resident_bytes == 350_000_000
     assert "520 Mo, puis 350 Mo" in caplog.text
     assert "gardée par l'allocateur 180 puis 10 Mo" in caplog.text
     assert "30 fils, 120 fichiers ouverts, 7 connexions" in caplog.text
+    assert "utilisée +10 Mo entre deux calculs, +10 Mo pendant le calcul" in caplog.text
+    assert memory._previous_used == 250_000_000  # base du prochain calcul
     assert "Python : 900000 blocs, 18 objets suivis" in caplog.text
     assert "hausse depuis le calcul précédent : dict +5, list +3" in caplog.text
     assert memory._previous_types == Counter({"dict": 15, "list": 3})  # base du prochain calcul
@@ -143,9 +146,24 @@ def test_first_release_has_no_previous_count(
     monkeypatch.setattr(memory, "detail", lambda connections=None: MemoryDetail())
     monkeypatch.setattr(memory, "trim", lambda: True)
     monkeypatch.setattr(memory, "_previous_types", None)
+    monkeypatch.setattr(memory, "_previous_used", None)
     with caplog.at_level(logging.INFO, logger="wattslot.memory"):
         release()
     assert "Python : ? blocs" in caplog.text and "premier relevé" in caplog.text
+    assert "utilisée ? Mo entre deux calculs, ? Mo pendant le calcul" in caplog.text
+
+
+def test_heap_used_is_the_allocator_figure(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(memory, "_heap", lambda: {"heap_used_bytes": 123, "heap_free_bytes": 4})
+    assert memory.heap_used() == 123
+    monkeypatch.setattr(memory, "_heap", lambda: {})
+    assert memory.heap_used() is None
+
+
+def test_gain_is_signed_in_megabytes() -> None:
+    assert memory._gain(250_000_000, 240_000_000) == "+10"
+    assert memory._gain(217_000_000, 241_000_000) == "-24"
+    assert memory._gain(None, 1) == "?" and memory._gain(1, None) == "?"
 
 
 @pytest.mark.skipif(not sys.platform.startswith("linux"), reason="glibc seulement")
