@@ -18,6 +18,11 @@ nuit, lente dérive en journée, 15/11/2026) : le journal compte donc aussi les 
 Python, les objets suivis par le ramasse-miettes et les types dont le nombre a le plus augmenté
 depuis le calcul précédent. Des chiffres Python plats pendant la hausse la placent côté natif.
 
+Les chiffres Python sont restés plats pendant une hausse native d'environ 50 Mo par jour
+(17/11/2026). Pour savoir si elle vient du calcul (solveur, lectures) ou de ce qui tourne entre
+deux calculs (ingestion, agrégation), le journal sépare aussi la mémoire utilisée gagnée entre deux
+calculs de celle gagnée pendant le calcul (``heap_used`` relevé juste avant le calcul).
+
 Hors de Linux, ou avec une autre bibliothèque C que glibc, tout est inconnu (``None``) et
 ``release`` ne fait rien.
 """
@@ -128,6 +133,12 @@ def _open_files() -> int | None:
         return None
 
 
+def heap_used() -> int | None:
+    """Mémoire utilisée par l'application d'après l'allocateur ; ``None`` sans ``mallinfo2``.
+    Assez légère pour être relevée juste avant chaque calcul."""
+    return _heap().get("heap_used_bytes")
+
+
 def _python_blocks() -> int:
     return sys.getallocatedblocks()
 
@@ -154,6 +165,20 @@ def growth(
 
 
 _previous_types: Counter[str] | None = None  # relevé du calcul précédent
+_previous_used: int | None = None  # mémoire utilisée après le calcul précédent
+
+
+def _gain(value: int | None, base: int | None) -> str:
+    return "?" if value is None or base is None else f"{(value - base) / 1e6:+.0f}"
+
+
+def _phases(used_before: int | None, used_after: int | None) -> str:
+    """Mémoire utilisée gagnée entre deux calculs puis pendant ce calcul."""
+    global _previous_used
+    between = _gain(used_before, _previous_used)
+    during = _gain(used_after, used_before)
+    _previous_used = used_after
+    return f"utilisée {between} Mo entre deux calculs, {during} Mo pendant le calcul"
 
 
 def _python_summary() -> str:
@@ -200,10 +225,13 @@ def _megabytes(value: int | None) -> str:
     return "?" if value is None else str(round(value / 1e6))
 
 
-def release(database_connections: int | None = None) -> tuple[MemoryDetail, MemoryDetail] | None:
+def release(
+    database_connections: int | None = None, used_before: int | None = None
+) -> tuple[MemoryDetail, MemoryDetail] | None:
     """Ramasse les objets Python hors d'usage, rend la mémoire libre au système et écrit dans le
-    journal l'état d'avant et d'après ; ``None`` là où ce n'est pas possible. À appeler hors de
-    la boucle d'événements."""
+    journal l'état d'avant et d'après ; ``None`` là où ce n'est pas possible. ``used_before`` :
+    mémoire utilisée relevée juste avant le calcul (``heap_used``). À appeler hors de la boucle
+    d'événements."""
     before = detail(database_connections)
     gc.collect()
     if trim() is None:
@@ -212,7 +240,7 @@ def release(database_connections: int | None = None) -> tuple[MemoryDetail, Memo
     logger.info(
         "Mémoire après le calcul : %s Mo, puis %s Mo une fois la mémoire libre rendue au système "
         "(utilisée par l'application %s Mo, libre gardée par l'allocateur %s puis %s Mo, en "
-        "échange %s Mo ; %s fils, %s fichiers ouverts, %s connexions à la base ; "
+        "échange %s Mo ; %s fils, %s fichiers ouverts, %s connexions à la base ; %s ; "
         "Python : %s blocs, %s)",
         _megabytes(before.resident_bytes),
         _megabytes(after.resident_bytes),
@@ -223,6 +251,7 @@ def release(database_connections: int | None = None) -> tuple[MemoryDetail, Memo
         "?" if after.threads is None else after.threads,
         "?" if after.open_files is None else after.open_files,
         "?" if database_connections is None else database_connections,
+        _phases(used_before, after.heap_used_bytes),
         "?" if after.python_blocks is None else after.python_blocks,
         _python_summary(),
     )
