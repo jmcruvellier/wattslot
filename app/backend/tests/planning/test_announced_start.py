@@ -36,7 +36,9 @@ def test_an_announced_start_is_kept_when_another_saves_little() -> None:
     best = _slot(_plan(data))
     assert best.explanation is not None
     # Un autre départ presque aussi bon : quelques millièmes d'euro de plus, sous la marge.
-    close = best.explanation.alternatives[-1]
+    # 14 h, et non la dernière alternative de la liste : leur ordre dépend de la version du
+    # solveur, et 12 h est à égalité réelle avec 13 h (rien à garder « par la marge »).
+    close = next(a for a in best.explanation.alternatives if a.start_min == 14 * 60)
     task = next(t for t in from_input(data).tasks if t.name == DEVICE)
     margin = KEEP_MARGIN * task.energy_kwh * min(from_input(data).prices_eur_kwh.values())
     assert 0 < close.cost_eur_delta < margin
