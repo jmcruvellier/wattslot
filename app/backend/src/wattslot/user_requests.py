@@ -166,10 +166,16 @@ def tasks(
         appliance = by_key.get(request.device)
         if appliance is None or task_key(appliance.name) in from_ha:
             continue
+        # Échéance passée sans lancement : dès aujourd'hui. Le calcul ne place une tâche datée
+        # que le jour de son échéance ; la demande restait sinon ouverte sans plus jamais
+        # être planifiée, et le formulaire la disait « en attente » (constaté le 19/11/2026).
+        due_day = request.latest
+        if due_day is not None and due_day < zone_today:
+            due_day = zone_today
         task = TaskRequest(
             name=appliance.name,
             uid=f"{UID_PREFIX}{request.id}",
-            due=request.latest,
+            due=due_day,
             on_demand=True,
             needed_since=min(request.created_at.date(), zone_today),
             asked_at=request.created_at,
