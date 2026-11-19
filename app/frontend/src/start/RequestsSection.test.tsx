@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { I18nProvider } from "../i18n/I18nProvider";
 import RequestsSection, { type UserRequest } from "./RequestsSection";
 
-const DEVICES = [
+const DEVICES: { key: string; name: string; placeable?: boolean }[] = [
   { key: "washer", name: "Lave-linge" },
   { key: "dishwasher", name: "Lave-vaisselle" },
 ];
@@ -86,6 +86,20 @@ describe("RequestsSection", () => {
       { device: "washer", latest: null, another: true },
       { device: "washer", latest: null },
     ]);
+  });
+
+  it("ne dépose pas la demande d'un appareil dont le cycle n'est pas connu", async () => {
+    // 20/11/2026 : chauffe-eau demandé, accepté, puis absent du plan.
+    const user = userEvent.setup();
+    const calls = mockApi([...DEVICES, { key: "heater", name: "Chauffe-eau", placeable: false }], []);
+    renderSection();
+
+    await user.selectOptions(await screen.findByLabelText("Appareil"), "heater");
+    expect(screen.getByText(/ne connaît pas encore le cycle de cet appareil/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Demander" })).toBeDisabled();
+    await user.selectOptions(screen.getByLabelText("Appareil"), "washer");
+    expect(screen.getByRole("button", { name: "Demander" })).toBeEnabled();
+    expect(calls.filter((call) => call.method === "POST")).toEqual([]);
   });
 
   it("marque une demande faite ou l'annule", async () => {

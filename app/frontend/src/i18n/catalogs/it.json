@@ -484,6 +484,7 @@
     "change_date": "Cambia la data",
     "add_cycle": "Aggiungi un ciclo",
     "waiting_hint": "Questo apparecchio ha già una richiesta in attesa: ne cambi la data oppure aggiunga un ciclo per farlo funzionare un'altra volta.",
+    "unknown_cycle": "WattSlot non conosce ancora il ciclo di questo apparecchio: servono almeno 3 cicli misurati negli ultimi 30 giorni per sceglierne l'ora. Avviatelo voi; in seguito potrete richiederlo.",
     "failed": "Impossibile salvare la richiesta.",
     "error": "Impossibile leggere le richieste.",
     "none": "Nessuna richiesta in corso.",

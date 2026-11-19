@@ -9,6 +9,9 @@ import { useI18n } from "../i18n/I18nProvider";
 export interface RequestDevice {
   key: string;
   name: string;
+  // Faux : cycle pas encore connu du calcul (trop peu de cycles mesurés). Une demande resterait
+  // ouverte sans jamais être placée : le formulaire le dit et ne la dépose pas.
+  placeable?: boolean;
 }
 
 interface RequestFormProps {
@@ -26,6 +29,7 @@ export default function RequestForm({ devices, waiting = [], onAsked }: RequestF
   const [failed, setFailed] = useState(false);
   const selected = device || devices[0].key;
   const pending = waiting.includes(selected);
+  const unknown = devices.find((d) => d.key === selected)?.placeable === false;
 
   const ask = async (another = false) => {
     setFailed(false);
@@ -58,20 +62,20 @@ export default function RequestForm({ devices, waiting = [], onAsked }: RequestF
         </label>{" "}
         {pending ? (
           <>
-            <button type="button" onClick={() => void ask()}>
+            <button type="button" disabled={unknown} onClick={() => void ask()}>
               {t("requests.change_date")}
             </button>{" "}
-            <button type="button" onClick={() => void ask(true)}>
+            <button type="button" disabled={unknown} onClick={() => void ask(true)}>
               {t("requests.add_cycle")}
             </button>
           </>
         ) : (
-          <button type="button" onClick={() => void ask()}>
+          <button type="button" disabled={unknown} onClick={() => void ask()}>
             {t("requests.ask")}
           </button>
         )}
         <br />
-        <small>{pending ? t("requests.waiting_hint") : t("requests.hint")}</small>
+        <small>{unknown ? t("requests.unknown_cycle") : pending ? t("requests.waiting_hint") : t("requests.hint")}</small>
       </p>
       {failed && <p role="alert">{t("requests.failed")}</p>}
     </>
