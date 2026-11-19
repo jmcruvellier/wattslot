@@ -136,7 +136,9 @@ def test_warnings_read_as_in_the_v1_in_french_and_english(lang: str) -> None:
         # Comparé à la v1 d'origine (résultats figés), pas à sa copie que le lot 5.8 supprime ;
         # les codes ajoutés par la v2 (contraintes, Open-Meteo…) n'y sont pas.
         expected = v1("i18n.texte_avertissement", warning, lang)
-        if not expected.startswith("avertissement."):
+        # Écart voulu à la v1 : le profil indisponible dit sa cause et quoi faire (20/11/2026).
+        rewritten = isinstance(warning, dict) and warning["code"].startswith("profil_indisponible")
+        if not expected.startswith("avertissement.") and not rewritten:
             assert warning_text(warning, lang) == expected
             compared += 1
     assert compared >= 10
@@ -230,3 +232,19 @@ def test_the_impossible_data_warning_is_written_out_in_every_language() -> None:
         assert "sensor.grid_import" in text and "64045" in text, lang
     bare = found.model_copy(update={"source_start": None})
     assert "Home Assistant" in warning_text(bare.warning(), "fr")
+
+
+def test_a_missing_cycle_profile_says_why_and_what_to_do() -> None:
+    """20/11/2026 : « Chauffe-Eau est en attente mais son profil est indisponible
+    (status=insuffisant) : non placé. » ne disait ni la cause ni quoi faire."""
+    warning = {
+        "code": "profil_indisponible_attente",
+        "params": {"equipement": "Chauffe-Eau", "status": "insuffisant"},
+    }
+    text = warning_text(warning, "fr")
+    assert "3 cycles mesurés sur les 30 derniers jours" in text
+    assert "Lancez-le vous-même" in text
+    for lang in LANGUAGES:
+        for status in ("absent", "insuffisant", "non_planifie"):
+            found = warning_text({**warning, "params": {"equipement": "X", "status": status}}, lang)
+            assert status not in found and "status" not in found, (lang, found)

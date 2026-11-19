@@ -93,6 +93,11 @@ def device_name(name: str, lang: str) -> str:
 def _param(name: str, value: Any, lang: str) -> str:
     if name in ("equipement", "depend_de", "apres"):
         return device_name(str(value), lang)
+    if name == "status":
+        # Pourquoi le cycle d'un équipement n'est pas connu (``profile_status``), en clair :
+        # « status=insuffisant » ne disait pas quoi faire (constaté le 20/11/2026). Les textes
+        # citent les seuils de ``appliances.MIN_CYCLES`` et ``journal.PROFILE_DAYS``.
+        return _text(lang, "statut_profil", str(value)) or str(value)
     if name == "debut_min":
         return hour_minutes(int(value), lang)
     if name in ("duree_min", "attente_min", "delai_min"):

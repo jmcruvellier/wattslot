@@ -3,9 +3,9 @@
     "status": "to_review"
   },
   "avertissement": {
-    "profil_indisponible_du": "{equipement} is vandaag aan de beurt, maar het profiel is niet beschikbaar (status={status}): geen tijdvak te bepalen, plan het met de hand in.",
+    "profil_indisponible_du": "{equipement} is vandaag aan de beurt, maar WattSlot kan het tijdstip niet kiezen: {status}. Start het zelf wanneer u wilt.",
     "heures_insuffisantes_du": "{equipement} is vandaag aan de beurt, maar er blijft niet genoeg tijd over voor een volledige cyclus ({duree_min} vanaf {debut_min}): niet ingepland. Als het al gedraaid heeft, vink de taak dan af in Home Assistant.",
-    "profil_indisponible_attente": "{equipement} wacht, maar het profiel is niet beschikbaar (status={status}): niet ingepland.",
+    "profil_indisponible_attente": "{equipement} is aangevraagd, maar WattSlot kan het tijdstip niet kiezen: {status}. Start het zelf wanneer u wilt.",
     "dependance_non_placee": "{equipement} moet na {depend_de} komen, dat vandaag niet ingepland kon worden: niet ingepland.",
     "delai_apres_depasse": "{equipement} start {attente_min} na het einde van {apres}, in plaats van hoogstens {delai_min}: een dichterbij gelegen tijdvak was niet mogelijk.",
     "heures_insuffisantes_attente": "{equipement} wacht, maar er blijft niet genoeg tijd over voor een volledige cyclus ({duree_min} vanaf {debut_min}): niet ingepland.",
@@ -50,6 +50,11 @@
     "mois_11": "november",
     "mois_12": "december",
     "format_sans_annee": "{jour} {num} {mois}"
+  },
+  "statut_profil": {
+    "absent": "geen apparaat van het huis dat als te starten cyclus is ingesteld, heeft deze naam",
+    "insuffisant": "er zijn minstens 3 gemeten cycli in de laatste 30 dagen nodig om duur en verbruik te kennen",
+    "non_planifie": "de instellingen houden het buiten de berekening"
   },
   "equipement": {
     "Batterie": "Batterij",

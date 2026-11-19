@@ -3,9 +3,9 @@
     "status": "to_review"
   },
   "avertissement": {
-    "profil_indisponible_du": "{equipement} toca hoy, pero su perfil no está disponible (status={status}): no se puede dimensionar una franja, colóquelo a mano.",
+    "profil_indisponible_du": "{equipement} toca hoy, pero WattSlot no puede elegir su hora: {status}. Póngalo en marcha usted mismo cuando quiera.",
     "heures_insuffisantes_du": "{equipement} toca hoy, pero no queda tiempo suficiente para un ciclo completo ({duree_min} a partir de las {debut_min}): no colocado. Si ya ha funcionado, marque la tarea en Home Assistant.",
-    "profil_indisponible_attente": "{equipement} está pendiente, pero su perfil no está disponible (status={status}): no colocado.",
+    "profil_indisponible_attente": "{equipement} está solicitado, pero WattSlot no puede elegir su hora: {status}. Póngalo en marcha usted mismo cuando quiera.",
     "dependance_non_placee": "{equipement} debe ir después de {depend_de}, que no se ha podido colocar hoy: no colocado.",
     "delai_apres_depasse": "{equipement} empieza {attente_min} después del final de {apres}, en lugar de {delai_min} como máximo: no era posible un intervalo más cercano.",
     "heures_insuffisantes_attente": "{equipement} está pendiente, pero no queda tiempo suficiente para un ciclo completo ({duree_min} a partir de las {debut_min}): no colocado.",
@@ -50,6 +50,11 @@
     "mois_11": "noviembre",
     "mois_12": "diciembre",
     "format_sans_annee": "{jour}, {num} de {mois}"
+  },
+  "statut_profil": {
+    "absent": "ningún aparato de la casa configurado como ciclo que iniciar lleva este nombre",
+    "insuffisant": "necesita al menos 3 ciclos medidos en los últimos 30 días para conocer su duración y su consumo",
+    "non_planifie": "sus ajustes lo dejan fuera del cálculo"
   },
   "equipement": {
     "Batterie": "Batería",
