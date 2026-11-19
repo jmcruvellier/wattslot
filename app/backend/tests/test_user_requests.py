@@ -80,6 +80,19 @@ def test_requests_become_on_demand_tasks(tmp_path: Path) -> None:
     assert due == [] and [t.name for t in waiting] == ["Sèche-linge"]
 
 
+def test_a_request_whose_date_has_passed_is_planned_today(tmp_path: Path) -> None:
+    """19/11/2026 : sèche-linge demandé « au plus tard » un jour où il n'a pas tourné. La
+    demande restait ouverte, absente de tous les plans, et le formulaire la disait en attente."""
+    database = open_database(tmp_path)
+    user_requests.ask(database, "washer", TODAY - timedelta(days=3), CREATED)
+
+    due, waiting = user_requests.tasks(database, [WASHER], [], TODAY)
+
+    assert [(t.name, t.due) for t in due] == [("Lave-linge", TODAY)] and waiting == []
+    # L'échéance demandée n'est pas réécrite : la demande garde sa date.
+    assert user_requests.open_requests(database)[0].latest == TODAY - timedelta(days=3)
+
+
 def test_a_launched_request_closes_the_next_day(tmp_path: Path) -> None:
     database = open_database(tmp_path)
     request = user_requests.ask(database, "washer", None, CREATED)
