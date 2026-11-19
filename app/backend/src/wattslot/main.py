@@ -1039,11 +1039,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             cycle_journal = CycleJournal(
                 request.app.state.database, request.app.state.raw, aggregator
             )
-            profiles = {
-                appliance.name: journal.profile_summary(cycle_journal.profile(appliance, today))
-                | {"sources": cycle_journal.sources(appliance, today)}
-                for appliance in journal.appliances(model)
-            }
+            profiles = {}
+            for appliance in journal.appliances(model):
+                profile = cycle_journal.profile(appliance, today)
+                measured = cycle_journal.measured(appliance, today)
+                profiles[appliance.name] = journal.profile_summary(profile) | {
+                    "sources": cycle_journal.sources(appliance, today),
+                    "measured": journal.cycles_summary(measured, profile, zone),
+                }
             return PlanningHistory(
                 day=day or today,
                 baseline_kwh=past.baseline(model, aggregator, day or today, today, zone),

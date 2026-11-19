@@ -245,6 +245,12 @@ class CycleJournal:
         self.record(appliance, days)
         return profile_from_cycles(self.cycles(appliance, days[0], days[-1]))
 
+    def measured(self, appliance: Appliance, today: date) -> list[Cycle]:
+        """Tous les cycles du journal sur la fenêtre du profil, retenus ou non par lui."""
+        days = [today - timedelta(days=k) for k in range(PROFILE_DAYS, 0, -1)]
+        self.record(appliance, days)
+        return self.cycles(appliance, days[0], days[-1])
+
     def last_cycle_day(self, appliance: Appliance, today: date) -> date | None:
         """Jour (local) du dernier cycle réel avant aujourd'hui, sur les 30 derniers jours."""
         days = [today - timedelta(days=k) for k in range(PROFILE_DAYS, 0, -1)]
@@ -303,6 +309,26 @@ def real_cycles(
             for c in cycles
         )
     return found
+
+
+def cycles_summary(
+    cycles: Sequence[Cycle], profile: Profile, zone: ZoneInfo
+) -> list[dict[str, Any]]:
+    """Cycles mesurés d'un équipement, pour le diagnostic : début (heure de la maison), durée,
+    énergie, et si le profil le retient. Le profil ne dit que le nombre de cycles retenus : un
+    appareil lancé plusieurs fois restait « insuffisant » sans qu'on voie pourquoi (20/11/2026).
+    Les cycles coupés par minuit n'y sont pas : le journal les écarte à la mesure."""
+    kept = {(c.start, c.end) for c in profile.cycles}
+    return [
+        {
+            "start": c.start.astimezone(zone).isoformat(timespec="minutes"),
+            "minutes": round(c.minutes),
+            "energy_kwh": round(c.energy_kwh, 3),
+            "from_counter": c.from_counter,
+            "kept": (c.start, c.end) in kept,
+        }
+        for c in cycles
+    ]
 
 
 def profile_summary(profile: Profile) -> dict[str, Any]:
