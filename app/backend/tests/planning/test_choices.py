@@ -87,6 +87,33 @@ def test_choices_are_kept_for_the_day_only(tmp_path: Path) -> None:
     assert not choices.clear(database, date(2026, 10, 21), "Chauffe-eau")
 
 
+def test_the_choice_of_a_closed_request_is_forgotten(tmp_path: Path) -> None:
+    """20/11/2026 : départ du lave-linge choisi à 3 h, lessive faite, nouvelle lessive demandée
+    le matin. Le choix de 3 h valait encore pour elle."""
+    database = open_database(tmp_path)
+    day, now = date(2026, 11, 20), datetime(2026, 11, 20, 7, 0, tzinfo=UTC)
+    choices.choose(database, day, "Lave Linge", 180, now, request="app-41")
+    choices.choose(database, day, "Sèche Linge", 600, now, request="app-45")
+    choices.choose(database, day, "Chauffe-Eau", 720, now)  # choix d'avant : sans demande
+
+    assert choices.forget_closed(database, day, {"app-45", "app-47"}) == 1
+
+    assert choices.load(database, day) == {"Sèche Linge": 600, "Chauffe-Eau": 720}
+
+
+def test_a_choice_keeps_the_request_of_its_block() -> None:
+    planning: list[dict[str, object]] = [
+        {"equipement": "Batterie"},
+        {"equipement": "Lave Linge", "demande": "app-41"},
+        {"equipement": "Lave Linge", "rang": 2, "demande": "app-47"},
+        {"equipement": "Chauffe-Eau"},
+    ]
+    assert choices.request_of(planning, "Lave Linge") == "app-41"
+    assert choices.request_of(planning, "Lave Linge #2") == "app-47"
+    assert choices.request_of(planning, "Chauffe-Eau") is None
+    assert choices.request_of(planning, "Sèche Linge") is None
+
+
 def test_routes(tmp_path: Path) -> None:
     app = FastAPI()
     app.include_router(choices.router)
