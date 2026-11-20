@@ -137,6 +137,15 @@ def test_merge_same_as_v1(seed: int) -> None:
     kept = (old or {}).get("residu_reseau_horaire", {})
     if old and old["date_cible"] == new["date_cible"] and first_hour in kept:
         expected["residu_reseau_horaire"][first_hour] = kept[first_hour]
+    # Écart à la v1 : un bloc encore à venir que le nouveau calcul ne place plus n'est pas gardé.
+    placed = {item["equipement"] for item in new.get("planning", [])}
+    expected["planning"] = [
+        item
+        for item in expected["planning"]
+        if item["equipement"] in placed
+        or "heure_debut" not in item
+        or item["heure_debut"] <= first_hour
+    ]
 
     assert by_name(actual) == by_name(expected)
 
@@ -168,6 +177,23 @@ def test_the_planned_exchange_of_the_first_computation_of_the_day_is_the_new_one
     new = {"date_cible": DAY, "residu_reseau_horaire": {10: 0.52, 11: 0.1}}
 
     assert merge_plans(new, old, 10)["residu_reseau_horaire"] == {10: 0.52, 11: 0.1}
+
+
+def test_a_block_to_come_that_the_new_plan_no_longer_places_is_dropped() -> None:
+    """20/11/2026 : le calcul de 8 h ne place plus le sèche-linge (avertissement « non
+    placé »), mais son bloc de 11 h du plan précédent restait affiché, et « Prochaine action »
+    demandait encore de le lancer à 11 h."""
+    dryer = {"equipement": "Sèche Linge", "heure_debut": 11, "heure_fin": 15, "energie_kwh": 1.5}
+    washer = {"equipement": "Lave Linge", "heure_debut": 3, "heure_fin": 5, "energie_kwh": 0.4}
+    started = {"equipement": "Chauffe-Eau", "heure_debut": 8, "heure_fin": 11, "energie_kwh": 2.0}
+    old = {"date_cible": DAY, "planning": [dryer, washer, started]}
+    waiting = [{"summary": item["equipement"]} for item in (dryer, washer, started)]
+    new = {"date_cible": DAY, "planning": [], "taches_en_attente": waiting}
+
+    merged = merge_plans(new, old, 8)
+
+    # Le passé et le cycle parti dans l'heure du calcul restent ; le bloc à venir, non.
+    assert sorted(i["equipement"] for i in merged["planning"]) == ["Chauffe-Eau", "Lave Linge"]
 
 
 def test_an_old_warning_about_a_device_now_placed_is_dropped() -> None:
