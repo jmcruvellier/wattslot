@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { energyPoints, gridTooltipLine, socPoints } from "./dayPoints";
+import { energyPoints, gridTooltipLine, hourSun, socPoints } from "./dayPoints";
 import type { HourPoint } from "./types";
 
 // Journée simple : 24 heures, prévu = h + 1 kWh, mesuré = 2 × h décimales ; heures 0 à 20
@@ -89,6 +89,20 @@ describe("socPoints", () => {
   it("sans départ à minuit, la courbe commence à la fin de la première heure", () => {
     const points = socPoints(day(), null, null);
     expect(points.map((p) => p.x)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]);
+  });
+});
+
+describe("hourSun", () => {
+  const point = { hour: 10, production_kwh: 1.04, production_actual_kwh: 0.12 } as HourPoint;
+
+  it("garde le prévu de l'heure en cours, dont la mesure ne compte que le début", () => {
+    expect(hourSun(point, 10.25)).toBe(1.04);
+  });
+
+  it("prend la mesure d'une heure finie, et le prévu sans mesure", () => {
+    expect(hourSun(point, 11.5)).toBe(0.12);
+    expect(hourSun(point, null)).toBe(0.12); // Hier : pas de relevé en cours
+    expect(hourSun({ ...point, production_actual_kwh: null }, 8)).toBe(1.04);
   });
 });
 
