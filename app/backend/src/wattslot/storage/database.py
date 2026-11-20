@@ -246,6 +246,10 @@ MIGRATIONS: tuple[str, ...] = (
     # n'envoie que les changements). Recalculées à la demande, sur le brut s'il est encore là,
     # sinon sur les quarts d'heure.
     "DELETE FROM appliance_days WHERE source = 'raw'",
+    # 26 : demande (uid de la tâche) dont le départ a été choisi ; aucune : choix d'avant, ou
+    # d'un jour dont le plan n'était pas lisible. Le choix d'une demande close ne vaut plus pour
+    # la demande suivante du même appareil.
+    "ALTER TABLE chosen_starts ADD COLUMN request TEXT",
 )
 
 

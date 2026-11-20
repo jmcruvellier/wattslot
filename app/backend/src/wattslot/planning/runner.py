@@ -602,6 +602,11 @@ async def run(ctx: Context, now: datetime, manual: bool = False) -> RunReport:
         ctx.configuration,
         ctx.database,
     )
+    # Départ choisi pour une demande close depuis (faite, annulée, cochée dans HA) : oublié,
+    # il ne vaut pas pour la demande suivante du même appareil.
+    choices.forget_closed(
+        ctx.database, today, {t.uid for t in (*data.due_tasks, *data.waiting_tasks) if t.uid}
+    )
     data = replace(
         overnight.with_carried(data, carried),
         chosen_starts=choices.load(ctx.database, today),
