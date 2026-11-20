@@ -1031,9 +1031,9 @@ def _resolve_dependencies(
     """Applique ``depend_de`` comme la v1, et écarte les tâches impossibles à placer.
 
     Dépendance vers une tâche fixée (gelée ou lancée) : départ au plus tôt à sa fin. Vers une
-    tâche à placer : contrainte du moteur. Vers une tâche en attente mais impossible à placer :
-    la tâche n'est pas placée (avertissement). Vers une tâche absente (déjà cochée dans HA) :
-    aucune contrainte.
+    tâche à placer : contrainte du moteur, sauf pour un départ choisi par l'utilisateur. Vers
+    une tâche en attente mais impossible à placer : la tâche n'est pas placée (avertissement).
+    Vers une tâche absente (déjà cochée dans HA) : aucune contrainte.
     """
     placeable: list[Task] = []
     for task in tasks:
@@ -1044,6 +1044,12 @@ def _resolve_dependencies(
             # Cycle suivi déjà fixé : sa fin sert aussi au délai maximal (``within_min``).
             after_end = ends[depends]
             earliest, depends = max(earliest, after_end), None
+        elif depends is not None and task.candidates() == [task.chosen_min]:
+            # Départ choisi par l'utilisateur, encore possible : il passe avant le cycle à
+            # suivre, qui reste à placer. Sinon un sèche-linge choisi à 10 h derrière une
+            # lessive demandée à 8 h 21 (fin au plus tôt à 10 h 21) n'était plus placé du tout,
+            # et son ancien bloc restait affiché (constaté le 20/11/2026).
+            depends = None
         updated = Task(
             **{
                 **task.__dict__,
