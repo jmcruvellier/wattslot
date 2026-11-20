@@ -3,9 +3,9 @@
     "status": "reviewed"
   },
   "avertissement": {
-    "profil_indisponible_du": "{equipement} is due today but its profile is unavailable (status={status}): unable to size a time slot, schedule it manually.",
+    "profil_indisponible_du": "{equipement} is due today, but WattSlot cannot choose its time: {status}. Start it yourself whenever you like.",
     "heures_insuffisantes_du": "{equipement} is due today but there is not enough time left for a full cycle ({duree_min} from {debut_min}): not scheduled. If it has already run, check off the task in Home Assistant.",
-    "profil_indisponible_attente": "{equipement} is pending but its profile is unavailable (status={status}): not scheduled.",
+    "profil_indisponible_attente": "{equipement} is requested, but WattSlot cannot choose its time: {status}. Start it yourself whenever you like.",
     "dependance_non_placee": "{equipement} must follow {depend_de}, which could not be scheduled today: not scheduled.",
     "delai_apres_depasse": "{equipement} starts {attente_min} after the end of {apres}, instead of {delai_min} at most: no closer slot was possible.",
     "heures_insuffisantes_attente": "{equipement} is pending but there is not enough time left for a full cycle ({duree_min} from {debut_min}): not scheduled.",
@@ -50,6 +50,11 @@
     "mois_11": "November",
     "mois_12": "December",
     "format_sans_annee": "{jour}, {mois} {num}"
+  },
+  "statut_profil": {
+    "absent": "no appliance of the home set as a cycle to start has this name",
+    "insuffisant": "it needs at least 3 measured cycles over the last 30 days to know its duration and its consumption",
+    "non_planifie": "its settings keep it out of the calculation"
   },
   "equipement": {
     "Batterie": "Battery",

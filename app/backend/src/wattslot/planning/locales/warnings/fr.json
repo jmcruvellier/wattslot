@@ -3,9 +3,9 @@
     "status": "reviewed"
   },
   "avertissement": {
-    "profil_indisponible_du": "{equipement} est dû aujourd'hui mais son profil est indisponible (status={status}) : impossible de dimensionner un créneau, à placer manuellement.",
+    "profil_indisponible_du": "{equipement} est prévu aujourd'hui, mais WattSlot ne peut pas choisir son heure : {status}. Lancez-le vous-même quand vous le voulez.",
     "heures_insuffisantes_du": "{equipement} est dû aujourd'hui mais il ne reste pas assez de temps pour un cycle complet ({duree_min} à partir de {debut_min}) : non placé. S'il a déjà tourné, cochez la tâche dans Home Assistant.",
-    "profil_indisponible_attente": "{equipement} est en attente mais son profil est indisponible (status={status}) : non placé.",
+    "profil_indisponible_attente": "{equipement} est demandé, mais WattSlot ne peut pas choisir son heure : {status}. Lancez-le vous-même quand vous le voulez.",
     "dependance_non_placee": "{equipement} doit suivre {depend_de}, qui n'a pas pu être placé aujourd'hui : non placé.",
     "delai_apres_depasse": "{equipement} démarre {attente_min} après la fin de {apres}, au lieu de {delai_min} au plus : aucun créneau plus proche n'était possible.",
     "heures_insuffisantes_attente": "{equipement} est en attente mais il ne reste pas assez de temps pour un cycle complet ({duree_min} à partir de {debut_min}) : non placé.",
@@ -50,6 +50,11 @@
     "mois_11": "Novembre",
     "mois_12": "Décembre",
     "format_sans_annee": "{jour} {num} {mois}"
+  },
+  "statut_profil": {
+    "absent": "aucun appareil de la maison réglé en cycle à démarrer ne porte ce nom",
+    "insuffisant": "il lui faut au moins 3 cycles mesurés sur les 30 derniers jours pour connaître sa durée et sa consommation",
+    "non_planifie": "ses réglages ne le font pas prendre en compte par le calcul"
   },
   "equipement": {
     "Batterie": "Batterie",
