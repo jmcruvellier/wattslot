@@ -484,6 +484,7 @@
     "change_date": "Change the date",
     "add_cycle": "Add a cycle",
     "waiting_hint": "This appliance already has a pending request: change its date, or add a cycle to run it once more.",
+    "unknown_cycle": "WattSlot does not know this appliance's cycle yet: it needs at least 3 measured cycles over the last 30 days to choose its time. Start it yourself; you will be able to request it afterwards.",
     "failed": "The request could not be saved.",
     "error": "Unable to read the requests.",
     "none": "No request in progress.",

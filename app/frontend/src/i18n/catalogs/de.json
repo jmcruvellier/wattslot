@@ -484,6 +484,7 @@
     "change_date": "Datum ändern",
     "add_cycle": "Zyklus hinzufügen",
     "waiting_hint": "Für dieses Gerät gibt es bereits eine offene Anfrage: Ändern Sie ihr Datum oder fügen Sie einen Zyklus hinzu, um es ein weiteres Mal laufen zu lassen.",
+    "unknown_cycle": "WattSlot kennt den Zyklus dieses Geräts noch nicht: Es braucht mindestens 3 gemessene Zyklen in den letzten 30 Tagen, um seine Uhrzeit zu wählen. Starten Sie es selbst; danach können Sie es anfragen.",
     "failed": "Die Anfrage konnte nicht gespeichert werden.",
     "error": "Die Anfragen können nicht gelesen werden.",
     "none": "Keine laufende Anfrage.",

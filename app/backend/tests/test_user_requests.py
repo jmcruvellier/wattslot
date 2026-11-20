@@ -93,6 +93,23 @@ def test_a_request_whose_date_has_passed_is_planned_today(tmp_path: Path) -> Non
     assert user_requests.open_requests(database)[0].latest == TODAY - timedelta(days=3)
 
 
+def test_a_device_whose_cycle_is_unknown_cannot_be_placed() -> None:
+    """20/11/2026 : chauffe-eau demandé alors que son cycle n'est pas connu. La demande était
+    acceptée, puis absente du plan."""
+    heater = Appliance("heater", "Chauffe-eau", WASHER.kind, (), ())
+    known = {"washer"}
+
+    def profile_ok(appliance: Appliance) -> bool:
+        return appliance.key in known
+
+    found = user_requests.placeable([WASHER, heater], set(), profile_ok)
+    assert found == {"washer": True, "heater": False}
+    # Réglé en besoin d'énergie : placé sans cycle mesuré.
+    assert user_requests.placeable([heater], {"heater"}, profile_ok) == {"heater": True}
+    # Sans journal des cycles : on ne peut pas juger, la demande reste possible.
+    assert user_requests.placeable([heater], set(), None) == {"heater": True}
+
+
 def test_a_launched_request_closes_the_next_day(tmp_path: Path) -> None:
     database = open_database(tmp_path)
     request = user_requests.ask(database, "washer", None, CREATED)

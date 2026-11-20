@@ -16,7 +16,7 @@ sa demande ouverte pas encore lancée ; une demande de plus s'ouvre si toutes so
 """
 
 import sqlite3
-from collections.abc import Iterable, Sequence
+from collections.abc import Callable, Collection, Iterable, Sequence
 from datetime import UTC, date, datetime, timedelta
 from enum import StrEnum
 
@@ -131,6 +131,20 @@ def waiting(database: sqlite3.Connection, device: str) -> bool:
         (device,),
     ).fetchone()
     return row is not None
+
+
+def placeable(
+    candidates: Sequence[Appliance],
+    needs: Collection[str],
+    profile_ok: Callable[[Appliance], bool] | None,
+) -> dict[str, bool]:
+    """Par clé d'équipement : le calcul saura-t-il placer sa demande ? Un besoin d'énergie
+    (``needs``) toujours ; un cycle à démarrer seulement si son cycle est connu
+    (``profile_ok`` : profil du journal). Sans journal, on ne peut pas juger : supposé connu.
+
+    Le formulaire acceptait un équipement dont le cycle n'est pas connu : la demande restait
+    ouverte sans jamais apparaître dans un plan (constaté le 20/11/2026)."""
+    return {a.key: a.key in needs or profile_ok is None or profile_ok(a) for a in candidates}
 
 
 def get(database: sqlite3.Connection, request_id: int) -> UserRequest | None:

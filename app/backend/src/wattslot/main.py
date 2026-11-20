@@ -238,6 +238,9 @@ class OAuthLogin(BaseModel):
 class RequestableDevice(BaseModel):
     key: str
     name: str
+    # Faux : cycle pas encore connu (trop peu de cycles mesurés), le calcul ne saurait pas
+    # placer une demande ; le formulaire le dit et ne la dépose pas.
+    placeable: bool = True
 
 
 class NewRequest(BaseModel):
@@ -1452,9 +1455,26 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
 
     def requestable(request: Request) -> list[RequestableDevice]:
-        graph = request.app.state.graph
-        found = cycle_appliances(home_model.load(graph), configuration.load(graph))
-        return [RequestableDevice(key=a.key, name=a.name) for a in found]
+        state = request.app.state
+        model, saved = home_model.load(state.graph), configuration.load(state.graph)
+        found = cycle_appliances(model, saved)
+        needs = {
+            settings.key
+            for settings in configuration.effective(model, saved).devices
+            if settings.behavior is configuration.Behavior.ENERGY_BY_DEADLINE
+            and settings.energy is not None
+        }
+        aggregator: Aggregator | None = state.aggregator
+        profile_ok = None
+        if aggregator is not None:
+            cycle_journal = CycleJournal(state.database, state.raw, aggregator)
+            today = datetime.now(UTC).astimezone(state.raw.zone).date()
+
+            def profile_ok(appliance: journal.Appliance) -> bool:
+                return cycle_journal.profile(appliance, today).ok
+
+        known = user_requests.placeable(found, needs, profile_ok)
+        return [RequestableDevice(key=a.key, name=a.name, placeable=known[a.key]) for a in found]
 
     @app.get("/api/requests/devices")
     def request_devices(request: Request) -> list[RequestableDevice]:
@@ -1470,9 +1490,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def post_request(request: Request, asked: NewRequest) -> user_requests.UserRequest:
         """Demande pour un équipement ; une demande déjà ouverte pour lui, pas encore lancée,
         change de date, sauf ``another`` (un cycle de plus le même jour). 422 pour un équipement
-        qu'on ne peut pas demander."""
-        if asked.device not in {d.key for d in requestable(request)}:
+        qu'on ne peut pas demander, ou dont le cycle n'est pas connu."""
+        devices = {d.key: d for d in requestable(request)}
+        if asked.device not in devices:
             raise HTTPException(status_code=422, detail="device_not_requestable")
+        if not devices[asked.device].placeable:
+            raise HTTPException(status_code=422, detail="device_cycle_unknown")
         return user_requests.ask(
             request.app.state.database,
             asked.device,
