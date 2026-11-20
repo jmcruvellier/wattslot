@@ -20,6 +20,8 @@ from wattslot.planning.appliances import (
     cycle_shape,
     measure_cycles,
     profile_from_cycles,
+    significant,
+    single_loads,
 )
 
 V1 = "forme_horaire_solaire."
@@ -151,6 +153,12 @@ def test_profile_same_as_v1(seed: int) -> None:
         V1 + "profil_depuis_cycles", [{**as_segment(c), "forme": list(c.shape)} for c in cycles]
     )
     profile = profile_from_cycles(cycles)
+    # Écart voulu à la v1 : les cycles enchaînés sont écartés du profil (``single_loads``) ;
+    # la v1 (résultats figés) n'est comparée que quand aucun ne l'est.
+    kept = significant(cycles)
+    if single_loads(kept) != kept:
+        assert profile.ok and profile.cycles == single_loads(kept)
+        return
 
     assert profile.ok == (expected["status"] == "ok")
     assert [round(c.minutes) for c in profile.cycles] == [
@@ -160,6 +168,27 @@ def test_profile_same_as_v1(seed: int) -> None:
     assert profile.duration_min == expected.get("duree_min")
     expected_shape = expected.get("forme_quart_heure")
     assert profile.shape == (tuple(expected_shape) if expected_shape else None)
+
+
+def test_chained_loads_are_left_out_of_the_profile() -> None:
+    """20/11/2026 : sept cycles de sèche-linge sur 30 jours, dont deux de deux charges
+    enchaînées. La médiane donnait 240 min et 1,48 kWh : chaque demande planifiée sur 4 h."""
+    measured = [(240, 1.56), (150, 0.96), (165, 1.03), (330, 2.13), (135, 0.86), (315, 1.9)]
+    measured.append((273, 1.48))
+    cycles = [
+        Cycle(START + timedelta(days=k), START + timedelta(days=k, minutes=minutes), kwh)
+        for k, (minutes, kwh) in enumerate(measured)
+    ]
+
+    profile = profile_from_cycles(cycles)
+
+    assert profile.ok and (profile.duration_min, profile.energy_kwh) == (165, 1.03)
+    assert sorted(round(c.minutes) for c in profile.cycles) == [135, 150, 165, 240, 273]
+    # Long sans être gourmand, ou l'inverse : un cycle ordinaire, gardé.
+    assert len(single_loads([*cycles[:3], cycles[6]])) == 4
+    # Trop peu de cycles ordinaires : aucun n'est écarté.
+    few = [cycles[1], cycles[3], cycles[5]]
+    assert single_loads(few) == tuple(few)
 
 
 @pytest.mark.parametrize("seed", range(200))
