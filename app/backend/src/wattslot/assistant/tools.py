@@ -953,12 +953,21 @@ def request_device(
     ``PENDING_FOR`` qui suivent. Les deux modèles essayés déposaient la demande sans rien
     demander malgré la règle du prompt ; un code rendu avec la question était montré à
     l'utilisateur."""
-    home = home_model.load(state.graph)
-    requestable = cycle_appliances(home, configuration.load(state.graph))
+    listed = user_requests.requestable(state)
+    requestable = [appliance for appliance, _ in listed]
     names = [a.name for a in requestable]
     name = find_name(device, names)
     if name is None:
         return {"error": "unknown_device", "devices": names}
+    if not next(known for appliance, known in listed if appliance.name == name):
+        # Comme le formulaire : la demande resterait ouverte sans jamais être placée.
+        return {
+            "error": "cycle_unknown",
+            "device": name,
+            "hint": "Nothing filed. WattSlot does not know this appliance's cycle yet: it needs "
+            "at least 3 measured cycles over the last 30 days to choose its time. Tell the user "
+            "to start it themselves; it can be requested once its cycles are known.",
+        }
     today = datetime.now(state.raw.zone).date()
     # « Avant demain soir » : les modèles passent « tomorrow » sans connaître la date du jour.
     relative = {"today": today, "tomorrow": today + timedelta(days=1)}
