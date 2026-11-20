@@ -31,6 +31,7 @@ import { minuteOfDay } from "../i18n/homeTime";
 import { hour, kwh } from "./format";
 import { freeSpan } from "./timelineSpan";
 import { rowLabel } from "./batteryLabel";
+import { hourSun } from "./dayPoints";
 import type { Bar, HourPoint, TimelineRow, Timeline } from "./types";
 import Icon from "../ui/Icon";
 import type { IconName } from "../ui/iconPaths";
@@ -93,11 +94,10 @@ function rowIcon(row: TimelineRow): IconName {
 // Couleur de la pastille : celle des blocs de la ligne.
 const TONES = { battery: "var(--battery)", cycle: "var(--cycle)", runtime: "var(--pool-eco)" };
 
-// Production d'une heure : mesurée si elle l'est, prévue sinon.
-const sunOf = (point: HourPoint) => point.production_actual_kwh ?? point.production_kwh;
-
-/** Fond de la bande de soleil : une teinte par heure, en proportion de la plus forte. */
-function sunBand(hours: HourPoint[]): string {
+/** Fond de la bande de soleil : une teinte par heure, en proportion de la plus forte
+ * (``hourSun`` : mesurée, sauf l'heure en cours, prévue). */
+function sunBand(hours: HourPoint[], readingHour: number | null): string {
+  const sunOf = (point: HourPoint) => hourSun(point, readingHour);
   const top = Math.max(...hours.map(sunOf), 0);
   if (top <= 0) return "none";
   const stops = hours.map((point) => {
@@ -199,7 +199,7 @@ export default function TimelineCard({
     if (last && last[1] === point.hour) last[1] = point.hour + 1;
     else offPeak.push([point.hour, point.hour + 1]);
   }
-  const sun = hours ? sunBand(hours) : "none";
+  const sun = hours ? sunBand(hours, readingHour) : "none";
 
   // Prévu et réel de la piste à l'heure `at` ; `own` est le bloc touché, s'il y en a un.
   const pick = (lane: Lane, at: number, own?: { bar: Bar; actual: boolean }) => {
@@ -221,7 +221,7 @@ export default function TimelineCard({
     const point = hours?.find((one) => one.hour === zone);
     if (point && offPeak.length > 0)
       lines.push(t(point.off_peak ? "plan.timeline.tip_off_peak" : "plan.timeline.tip_peak", span));
-    if (point && sun !== "none") lines.push(t("plan.timeline.tip_sun", { ...span, kwh: kwh(sunOf(point)) }));
+    if (point && sun !== "none") lines.push(t("plan.timeline.tip_sun", { ...span, kwh: kwh(hourSun(point, readingHour)) }));
     setTip({ key: lane.key, zone, lines });
   };
 

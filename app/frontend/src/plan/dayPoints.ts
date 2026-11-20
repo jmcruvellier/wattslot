@@ -85,6 +85,15 @@ export function gridTooltipLine(value: number, planned: boolean, name: string): 
   return { quantity, label: name, key: value < 0 ? "plan.series.grid_export_planned" : "plan.series.grid_import_planned" };
 }
 
+/** Production d'une heure pour la bande de soleil de la frise : mesurée pour une heure finie,
+ * prévue pour une heure à venir et pour l'heure en cours. Celle-ci n'a que la mesure de ses
+ * premières minutes : à 10 h 15, sa teinte et son info-bulle disaient 0,12 kWh, presque noir,
+ * pour une heure prévue parmi les plus fortes (constaté le 20/11/2026). */
+export function hourSun(point: HourPoint, readingHour: number | null): number {
+  const enCours = readingHour !== null && Math.floor(readingHour) === point.hour;
+  return (enCours ? null : point.production_actual_kwh) ?? point.production_kwh;
+}
+
 export interface SocPoint {
   x: number;
   soc: number | null;
