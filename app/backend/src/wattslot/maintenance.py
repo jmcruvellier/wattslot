@@ -30,6 +30,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field
 
+from wattslot import memory
 from wattslot.aggregation import HOUR, PERIODS, QUARTER, Aggregator, next_midnight
 from wattslot.ontology import BASE, VOCAB
 from wattslot.storage.database import DATABASE_FILENAME
@@ -65,6 +66,12 @@ class MaintenanceRun(BaseModel):
     kept_days: list[date] = []  # échues mais pas encore entièrement agrégées
     removed_aggregates: dict[str, int] = {}
     compacted: bool = False  # magasin compacté : au moins un graphe mensuel retiré
+    # Mémoire utilisée gagnée par étape (octets, ``memory.heap_used``), vide hors de glibc : la
+    # mémoire montait d'environ 30 Mo à chaque maintenance sur une installation réelle (20/11/2026).
+    heap_used_steps: dict[str, int] = {}
+
+
+STEP_LABELS = {"raw": "brut", QUARTER: "quarts d'heure", HOUR: "heures", "optimize": "compactage"}
 
 
 class MaintenanceStatus(BaseModel):
@@ -111,6 +118,16 @@ def directory_size(path: Path) -> int:
     except FileNotFoundError:
         pass  # sous-dossier retiré pendant le parcours : mesure partielle, sans erreur
     return total
+
+
+def _steps_text(steps: dict[str, int]) -> str:
+    """Mémoire utilisée gagnée par étape, pour le journal ; rien si elle est inconnue."""
+    if not steps:
+        return ""
+    parts = [
+        f"{STEP_LABELS.get(name, name)} {value / 1e6:+.0f} Mo" for name, value in steps.items()
+    ]
+    return " ; mémoire utilisée : " + ", ".join(parts)
 
 
 def _xsd(moment: datetime) -> str:
@@ -173,10 +190,11 @@ class Maintenance:
             run = await asyncio.to_thread(self._run, now or datetime.now(UTC), retention, complete)
             self._last_run, self._last_error = run, None
             logger.info(
-                "Maintenance : %s journées de brut supprimées, agrégats supprimés %s (%.1f s)",
+                "Maintenance : %s journées de brut supprimées, agrégats supprimés %s (%.1f s)%s",
                 len(run.removed_days),
                 run.removed_aggregates,
                 run.duration_s,
+                _steps_text(run.heap_used_steps),
             )
             return run
 
@@ -210,6 +228,15 @@ class Maintenance:
         zone = self._raw.zone
         today = now.astimezone(zone).date()
         run = MaintenanceRun(started_at=now, duration_s=0.0)
+        used = memory.heap_used()
+
+        def step(name: str) -> None:
+            nonlocal used
+            current = memory.heap_used()
+            if current is not None and used is not None:
+                run.heap_used_steps[name] = current - used
+            used = current
+
         # Agrégée jusqu'où : la plus en retard des périodes (inconnue juste après un démarrage).
         aggregated = min(complete.values()) if complete and set(complete) == set(PERIODS) else None
         for day in self._raw.days():
@@ -221,6 +248,7 @@ class Maintenance:
                 continue
             self._raw.remove_day(day)
             run.removed_days.append(day)
+        step("raw")
         removed_graphs = 0
         for period, days in ((QUARTER, retention.quarter_days), (HOUR, retention.hour_days)):
             if days is not None:
@@ -228,9 +256,11 @@ class Maintenance:
                 removed, graphs = self._prune(period, cutoff.astimezone(UTC))
                 run.removed_aggregates[period] = removed
                 removed_graphs += graphs
+                step(period)
         if removed_graphs:
             self._graph.optimize()
             run.compacted = True
+            step("optimize")
         run.duration_s = round(time_module.monotonic() - began, 1)
         return run
 

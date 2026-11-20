@@ -49,6 +49,7 @@ export interface MaintenanceRun {
   kept_days: string[];
   removed_aggregates: Record<string, number>;
   compacted: boolean;
+  heap_used_steps: Record<string, number>;
 }
 
 export interface MaintenanceStatus {

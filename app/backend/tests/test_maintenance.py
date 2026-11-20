@@ -1,6 +1,7 @@
 """Conservation et maintenance : brut par journée, agrégats échus, réglages."""
 
 import asyncio
+import logging
 import os
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
@@ -9,6 +10,7 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
+from wattslot import memory
 from wattslot.aggregation import (
     HOUR,
     QUARTER,
@@ -174,6 +176,43 @@ def test_one_flush_per_graph_whatever_the_number_of_sensors(tmp_path: Path) -> N
     assert run.removed_aggregates[QUARTER] == 5 and not run.compacted
     assert counting.flushes == 1
     assert _starts(graph, QUARTER) == ["2026-09-20T10:00:00Z"] * 5
+
+
+def test_memory_gained_by_each_step_is_recorded_and_logged(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Mémoire utilisée relevée avant et après chaque étape (brut, périodes, compactage)."""
+    maintenance, _, graph = _maintenance(tmp_path, NOW)
+    monkeypatch.setattr(graph, "optimize", lambda: None)
+    _aggregate(graph, QUARTER, datetime(2026, 8, 20, 10, tzinfo=UTC))  # mois retiré : compactage
+    save_retention(open_database(tmp_path), Retention(hour_days=366))
+    readings = iter([100_000_000, 101_000_000, 131_000_000, 131_000_000, 120_000_000])
+    monkeypatch.setattr(memory, "heap_used", lambda: next(readings))
+
+    with caplog.at_level(logging.INFO, logger="wattslot.maintenance"):
+        run = asyncio.run(maintenance.run(NOW))
+
+    assert run.heap_used_steps == {
+        "raw": 1_000_000,
+        QUARTER: 30_000_000,
+        HOUR: 0,
+        "optimize": -11_000_000,
+    }
+    assert (
+        "mémoire utilisée : brut +1 Mo, quarts d'heure +30 Mo, heures +0 Mo, compactage -11 Mo"
+        in caplog.text
+    )
+
+
+def test_memory_steps_are_empty_without_glibc(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    maintenance, _, _ = _maintenance(tmp_path, NOW)
+    monkeypatch.setattr(memory, "heap_used", lambda: None)
+    with caplog.at_level(logging.INFO, logger="wattslot.maintenance"):
+        run = asyncio.run(maintenance.run(NOW))
+    assert run.heap_used_steps == {}
+    assert "mémoire utilisée" not in caplog.text
 
 
 def test_directory_size_ignores_files_removed_while_measuring(
