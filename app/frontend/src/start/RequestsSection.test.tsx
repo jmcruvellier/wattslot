@@ -78,7 +78,8 @@ describe("RequestsSection", () => {
     // Le lave-linge a une demande en attente : deux boutons, et l'aide qui les explique.
     await user.click(await screen.findByRole("button", { name: "Ajouter un cycle" }));
     expect(screen.queryByRole("button", { name: "Demander" })).toBeNull();
-    expect(screen.getByText(/a déjà une demande en attente/)).toBeInTheDocument();
+    // L'aide dit la date de cette demande (19/11/2026 : « déjà une demande », sans dire laquelle).
+    expect(screen.getByText(/a déjà une demande en attente, au plus tard dimanche 18 octobre/)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Changer la date" }));
 
     const posted = calls.filter((call) => call.method === "POST").map((call) => call.body);
@@ -100,6 +101,13 @@ describe("RequestsSection", () => {
     await user.selectOptions(screen.getByLabelText("Appareil"), "washer");
     expect(screen.getByRole("button", { name: "Demander" })).toBeEnabled();
     expect(calls.filter((call) => call.method === "POST")).toEqual([]);
+  });
+
+  it("dit qu'une demande en attente est sans date", async () => {
+    mockApi(DEVICES, [{ ...OPEN, device: "washer", latest: null }]);
+    renderSection();
+
+    expect(await screen.findByText(/a déjà une demande en attente, dès que possible/)).toBeInTheDocument();
   });
 
   it("marque une demande faite ou l'annule", async () => {
