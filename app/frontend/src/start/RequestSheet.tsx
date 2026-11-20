@@ -9,12 +9,12 @@ import { getJson } from "../api";
 import { useI18n } from "../i18n/I18nProvider";
 import Button from "../ui/Button";
 import Sheet from "../ui/Sheet";
-import RequestForm, { type RequestDevice } from "./RequestForm";
+import RequestForm, { pendingLatest, type RequestDevice } from "./RequestForm";
 
 type Load =
   | { status: "loading" }
   | { status: "error" }
-  | { status: "ready"; devices: RequestDevice[]; waiting: string[] }
+  | { status: "ready"; devices: RequestDevice[]; waiting: string[]; latest: Record<string, string | null> }
   | { status: "asked" };
 
 export default function RequestSheet({ onClose }: { onClose: () => void }) {
@@ -26,7 +26,7 @@ export default function RequestSheet({ onClose }: { onClose: () => void }) {
     // Les demandes en attente aussi : pour un appareil déjà demandé, le formulaire propose de
     // changer la date ou d'ajouter un cycle. Si elles ne se lisent pas, la feuille s'ouvre
     // quand même, avec le seul bouton « Demander ».
-    type Asked = { device: string; status: string; launched_on: string | null };
+    type Asked = { device: string; status: string; launched_on: string | null; latest: string | null };
     Promise.all([
       getJson<RequestDevice[]>("api/requests/devices", controller.signal),
       getJson<Asked[]>("api/requests", controller.signal).catch((): Asked[] => []),
@@ -36,6 +36,7 @@ export default function RequestSheet({ onClose }: { onClose: () => void }) {
           status: "ready",
           devices,
           waiting: requests.filter((r) => r.status === "open" && !r.launched_on).map((r) => r.device),
+          latest: pendingLatest(requests),
         }),
       )
       .catch(() => {
@@ -54,7 +55,7 @@ export default function RequestSheet({ onClose }: { onClose: () => void }) {
         ) : (
           <>
             <p>{t("requests.intro")}</p>
-            <RequestForm devices={load.devices} waiting={load.waiting} onAsked={() => setLoad({ status: "asked" })} />
+            <RequestForm devices={load.devices} waiting={load.waiting} waitingLatest={load.latest} onAsked={() => setLoad({ status: "asked" })} />
           </>
         ))}
       {load.status === "asked" && (

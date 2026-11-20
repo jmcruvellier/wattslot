@@ -484,6 +484,8 @@
     "change_date": "Changer la date",
     "add_cycle": "Ajouter un cycle",
     "waiting_hint": "Cet appareil a déjà une demande en attente : changez sa date, ou ajoutez un cycle pour le faire tourner une fois de plus.",
+    "waiting_hint_latest": "Cet appareil a déjà une demande en attente, au plus tard {latest} : changez sa date, ou ajoutez un cycle pour le faire tourner une fois de plus.",
+    "waiting_hint_asap": "Cet appareil a déjà une demande en attente, dès que possible : donnez-lui une date, ou ajoutez un cycle pour le faire tourner une fois de plus.",
     "unknown_cycle": "WattSlot ne connaît pas encore le cycle de cet appareil : il lui faut au moins 3 cycles mesurés sur les 30 derniers jours pour choisir son heure. Lancez-le vous-même ; vous pourrez le demander ensuite.",
     "failed": "La demande n'a pas pu être enregistrée.",
     "error": "Impossible de lire les demandes.",

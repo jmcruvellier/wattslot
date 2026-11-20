@@ -484,6 +484,8 @@
     "change_date": "Datum wijzigen",
     "add_cycle": "Cyclus toevoegen",
     "waiting_hint": "Dit apparaat heeft al een openstaand verzoek: wijzig de datum of voeg een cyclus toe om het nog een keer te laten draaien.",
+    "waiting_hint_latest": "Dit apparaat heeft al een openstaande aanvraag, uiterlijk {latest}: wijzig de datum of voeg een cyclus toe om het nog een keer te laten draaien.",
+    "waiting_hint_asap": "Dit apparaat heeft al een openstaande aanvraag, zo snel mogelijk: geef een datum op of voeg een cyclus toe om het nog een keer te laten draaien.",
     "unknown_cycle": "WattSlot kent de cyclus van dit apparaat nog niet: er zijn minstens 3 gemeten cycli in de laatste 30 dagen nodig om het tijdstip te kiezen. Start het zelf; daarna kunt u het aanvragen.",
     "failed": "Het verzoek kon niet worden opgeslagen.",
     "error": "De verzoeken kunnen niet worden gelezen.",

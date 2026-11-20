@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 
 import { getJson, postJson } from "../api";
 import { useI18n } from "../i18n/I18nProvider";
-import RequestForm, { type RequestDevice } from "./RequestForm";
+import RequestForm, { pendingLatest, type RequestDevice } from "./RequestForm";
 
 export interface UserRequest {
   id: number;
@@ -87,6 +87,7 @@ export default function RequestsSection() {
         // Demandes en attente, pas encore lancées : le formulaire propose d'en changer la date
         // ou d'ajouter un cycle.
         waiting={opened.filter((r) => !r.launched_on).map((r) => r.device)}
+        waitingLatest={pendingLatest(opened)}
         onAsked={() => setVersion((count) => count + 1)}
       />
       {failed && <p role="alert">{t("requests.failed")}</p>}
