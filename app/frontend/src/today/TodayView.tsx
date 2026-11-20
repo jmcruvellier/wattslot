@@ -16,6 +16,7 @@ import { TrendMark } from "../plan/SummaryCards";
 import { DEFAULT_LAYOUT } from "../plan/layout";
 import TimelineCard from "../plan/TimelineCard";
 import { startChoices } from "../plan/startChoices";
+import { unplacedNotices } from "../plan/unplaced";
 import { cancelTask } from "../plan/cancelled";
 import OtherStarts from "../plan/OtherStarts";
 import { BatteryList } from "../plan/BatteryList";
@@ -25,6 +26,7 @@ import { useHomeFeatures } from "../home/features";
 import type { DayView, LineKey, Now } from "../plan/types";
 import Button from "../ui/Button";
 import Card from "../ui/Card";
+import Icon from "../ui/Icon";
 import StateMessage from "../ui/StateMessage";
 
 export const REFRESH_MS = 60_000;
@@ -107,6 +109,8 @@ export default function TodayView({ onNavigate }: { onNavigate?: (target: string
   const sunLine = view.cards?.at_reading.find((card) => card.key === "production");
   const forecastAtReading = sunLine && sunLine.trend.direction !== "none" ? sunLine.estimated_kwh : null;
 
+  const unplaced = unplacedNotices(view.notices);
+
   return (
     <div className="today">
       {load.stale && (
@@ -119,6 +123,16 @@ export default function TodayView({ onNavigate }: { onNavigate?: (target: string
       <ProvisionalNote view={view} />
       <NowCard now={view.now ?? null} recommendation={view.recommendation} />
       <NextActionCard view={view} onChanged={() => setAttempt((count) => count + 1)} onNavigate={onNavigate} />
+      {/* Appareils demandés que le calcul n'a pas placés : sans bloc ni prochaine action. */}
+      {unplaced.length > 0 && (
+        <ul className="notices" aria-label={t("today.unplaced")}>
+          {unplaced.map((notice, index) => (
+            <li key={`${notice.code}-${index}`} className="pill pill-warning">
+              <Icon name="warning" size={18} /> {notice.text}
+            </li>
+          ))}
+        </ul>
+      )}
       {/* La frise reprend les autres départs des blocs pas encore lancés (feuille au clic). */}
       <TimelineCard
         timeline={view.timeline}

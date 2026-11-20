@@ -1633,6 +1633,7 @@
     "no_plan": "No plan for today yet: it comes with the next calculation.",
     "error": "Unable to read today's plan.",
     "stale": "Couldn't refresh: showing the last data read. Next try in a minute.",
+    "unplaced": "Appliances not scheduled",
     "now": {
       "eyebrow": "Right now",
       "no_flows": "Today's plan",

@@ -1633,6 +1633,7 @@
     "no_plan": "Noch kein Plan für heute: Er kommt mit der nächsten Berechnung.",
     "error": "Der Tagesplan kann nicht gelesen werden.",
     "stale": "Aktualisierung nicht möglich: Die zuletzt gelesenen Daten werden angezeigt. Nächster Versuch in einer Minute.",
+    "unplaced": "Nicht eingeplante Geräte",
     "now": {
       "eyebrow": "Gerade jetzt",
       "no_flows": "Der Tagesplan",
