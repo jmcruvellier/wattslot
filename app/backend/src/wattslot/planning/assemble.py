@@ -247,6 +247,11 @@ async def build_input(
     if day == today:
         said = declared.moments(database, today) if database is not None else None
         by_device = real_cycles(model, raw, now, configuration, declared=said)
+        # Activités de chaque équipement, sous son nom : aussi celles d'un équipement qui n'a
+        # plus de tâche. Sans elles, une demande marquée « Fait » après son cycle ne laissait
+        # plus rien dire que l'équipement avait tourné : la fusion retirait ses blocs du plan
+        # (crochets du sèche-linge disparus de la frise, constaté le 20/11/2026).
+        real.update({name: segments for name, segments in by_device.items() if segments})
         for task in [*due, *waiting]:
             appliance = appliance_for(task, candidates)
             if appliance is not None and by_device.get(appliance.name):

@@ -15,7 +15,7 @@ from tests.test_health import _settings
 from wattslot.aggregation import HOUR, QUARTER, Aggregate
 from wattslot.detection import DeviceKind, Role
 from wattslot.home_assistant import HomeAssistantClient
-from wattslot.home_model import HomeDevice, HomeModel, HomeSensor
+from wattslot.home_model import HomeDevice, HomeModel, HomeSensor, sensor_iri
 from wattslot.main import create_app
 from wattslot.planning.assemble import battery_state, build_input, to_v1
 from wattslot.planning.inputs import from_v1
@@ -30,7 +30,7 @@ from wattslot.planning.sources import (
     solar_forecast,
 )
 from wattslot.storage.database import open_database
-from wattslot.storage.raw import RawStores
+from wattslot.storage.raw import RawStores, Reading
 
 PARIS = ZoneInfo("Europe/Paris")
 TODAY = date(2026, 10, 16)
@@ -281,6 +281,39 @@ def test_build_input_assembles_every_source(tmp_path: Path) -> None:
         for n, p in data.cycle_profiles.items()
     }
     assert back.battery.stored_kwh == data.battery.stored_kwh
+
+
+def test_real_cycles_are_read_for_a_device_without_a_task(tmp_path: Path) -> None:
+    """20/11/2026 : une demande marquée « Fait » après son cycle n'est plus une tâche. Les
+    activités de l'équipement n'étaient alors plus lues, rien ne disait qu'il avait tourné, et
+    la fusion retirait ses blocs du plan (``merge.merge_planning``, ``_ran``)."""
+    reader = Reader()
+    raw = RawStores(tmp_path, "Europe/Paris")
+    iri = sensor_iri("washer", "sensor.washer_power")
+    start = local(TODAY, 10)
+    raw.write(
+        [Reading("sensor.washer_power", iri, 0.0, local(TODAY, 0, 5))]
+        + [
+            Reading("sensor.washer_power", iri, 800.0, start + timedelta(minutes=m))
+            for m in range(90)
+        ]
+        + [Reading("sensor.washer_power", iri, 0.0, start + timedelta(minutes=90))]
+    )
+    journal = CycleJournal(open_database(tmp_path), raw, reader)
+    ha = client(
+        {
+            "energy/solar_forecast": {"x": {"wh_hours": {local(TODAY, 12).isoformat(): 2000}}},
+            "get_states": [{"entity_id": "sensor.soc", "state": "60"}],
+        }
+    )
+
+    data = asyncio.run(build_input(TODAY, NOW, ha, MODEL, reader, raw, journal, PlanningSettings()))
+
+    assert not data.due_tasks and not data.waiting_tasks
+    name = next(d.name for d in MODEL.devices if d.key == "washer")
+    (cycle,) = data.real_segments[name]
+    assert cycle.start == start and not cycle.running
+    assert cycle.energy_kwh == pytest.approx(1.2, abs=0.01)
 
 
 def test_settings_saved_with_the_removed_legacy_dashboard_still_load(tmp_path: Path) -> None:
