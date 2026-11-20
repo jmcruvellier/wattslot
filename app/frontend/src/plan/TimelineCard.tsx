@@ -152,12 +152,22 @@ export default function TimelineCard({
   const [restoreFailed, setRestoreFailed] = useState(false);
   const nowMin = day === undefined ? nowMinute() : -1;
 
+  // Plusieurs cycles du même équipement dans la journée : la légende d'un cycle prévu dit
+  // lequel (« Sèche-linge #1 », « Sèche-linge #2 »). Les deux se lisaient « Sèche-linge ».
+  const cycleName = (row: TimelineRow, bar: Bar) => {
+    const several = new Set(row.planned.map((other) => other.cycle).filter(Boolean)).size > 1;
+    if (!several || !bar.cycle) return row.device;
+    return bar.cycle === row.device ? `${row.device} #1` : bar.cycle;
+  };
+
   const describe = (row: TimelineRow, bar: Bar, actual: boolean) => {
     const what = bar.action
       ? t(`plan.timeline.${bar.action}`)
       : bar.mode
         ? t("plan.timeline.mode", { mode: bar.mode })
-        : row.device;
+        : actual
+          ? row.device
+          : cycleName(row, bar);
     const tip = actual ? "plan.timeline.tip_actual" : bar.carried ? "plan.timeline.tip_carried" : "plan.timeline.tip_planned";
     return t(tip, {
       start: hour(Math.round(bar.start_hour * 60) / 60, lang),
