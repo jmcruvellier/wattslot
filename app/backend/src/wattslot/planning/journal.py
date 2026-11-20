@@ -208,6 +208,9 @@ class CycleJournal:
             if day in complete_raw:
                 low, high = _bounds(day, zone)
                 power, counter = _raw_observations(self._raw, appliance, low, high)
+                state = self._power_before(appliance, low)
+                if state is not None:
+                    power.insert(0, (low - timedelta(seconds=1), state))
                 rows.append((day, "raw", self._measure(appliance, power, counter, low, high)))
         with self._database:
             self._database.executemany(
@@ -215,6 +218,21 @@ class CycleJournal:
                 "DO UPDATE SET source = excluded.source, cycles = excluded.cycles",
                 [(appliance.key, day.isoformat(), source, _encode(c)) for day, source, c in rows],
             )
+
+    def _power_before(self, appliance: Appliance, low: datetime) -> float | None:
+        """Puissance à l'entrée de la journée : celle du dernier quart d'heure de la veille,
+        où l'agrégation reporte la valeur tenue. Une prise n'envoie rien tant que sa puissance
+        ne change pas : le brut de la journée commence alors au démarrage du cycle, que
+        ``_measure`` prenait pour un cycle déjà en marche à minuit et écartait (chauffe-eau
+        lancé sept fois en 30 jours, deux cycles au journal, 20/11/2026). ``None`` sans
+        agrégat : rien n'est supposé."""
+        for entity_id, _ in appliance.power[:1]:
+            found = self._reader.read(entity_id, QUARTER, low - QUARTER_STEP, low)
+            for aggregate in reversed(found):
+                value = aggregate.last if aggregate.last is not None else aggregate.mean
+                if value is not None:
+                    return value
+        return None
 
     @staticmethod
     def _measure(

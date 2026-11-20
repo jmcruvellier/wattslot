@@ -147,6 +147,64 @@ def test_the_measured_cycles_say_which_ones_the_profile_keeps(
     assert found[0]["start"] == local(TODAY - timedelta(days=9), 10).isoformat(timespec="minutes")
 
 
+def test_a_cycle_whose_start_is_the_first_reading_of_the_day_is_kept(
+    setup: tuple[CycleJournal, RawStores, QuarterReader],
+) -> None:
+    """20/11/2026 : chauffe-eau lancé sept fois en 30 jours, deux cycles au journal. Une prise
+    qui n'envoie rien tant que sa puissance ne change pas a pour premier relevé du jour le
+    démarrage du cycle : pris pour un cycle déjà en marche à minuit, il était écarté."""
+    journal, raw, reader = setup
+    power_iri = sensor_iri("washer", POWER)
+    raw.write([Reading(POWER, power_iri, 0.0, local(TODAY - timedelta(days=4), 12))])  # 1er jour
+    for k in (3, 2, 1):
+        day = TODAY - timedelta(days=k)
+        raw.write(
+            [
+                Reading(POWER, power_iri, 900.0, local(day, 10)),
+                Reading(POWER, power_iri, 0.0, local(day, 12)),
+            ]
+        )
+        # Dernier quart d'heure de la veille : à l'arrêt.
+        reader.data[POWER].append(
+            Aggregate(
+                entity_id=POWER,
+                period=QUARTER,
+                start=local(day, 0) - timedelta(minutes=15),
+                mean=0.0,
+                last=0.0,
+            )
+        )
+    washer = appliances(MODEL)[0]
+
+    found = journal.measured(washer, TODAY)
+
+    assert [(c.start, round(c.minutes)) for c in found] == [
+        (local(TODAY - timedelta(days=k), 10), 120) for k in (3, 2, 1)
+    ]
+    assert journal.profile(washer, TODAY).ok
+
+
+def test_a_cycle_running_since_the_day_before_is_still_left_out(
+    setup: tuple[CycleJournal, RawStores, QuarterReader],
+) -> None:
+    journal, raw, reader = setup
+    power_iri = sensor_iri("washer", POWER)
+    day = TODAY - timedelta(days=1)
+    raw.write([Reading(POWER, power_iri, 0.0, local(day - timedelta(days=1), 12))])
+    raw.write([Reading(POWER, power_iri, 0.0, local(day, 2))])  # fin d'un cycle parti la veille
+    reader.data[POWER].append(
+        Aggregate(
+            entity_id=POWER,
+            period=QUARTER,
+            start=local(day, 0) - timedelta(minutes=15),
+            mean=900.0,
+            last=900.0,
+        )
+    )
+
+    assert journal.measured(appliances(MODEL)[0], TODAY) == []
+
+
 def test_quarter_days_are_redone_once_raw_is_complete(
     setup: tuple[CycleJournal, RawStores, QuarterReader],
 ) -> None:

@@ -241,6 +241,11 @@ MIGRATIONS: tuple[str, ...] = (
         PRIMARY KEY (day, device)
     )
     """,
+    # 25 : journées du journal des cycles mesurées sur le brut sans la puissance à l'entrée de
+    # la journée : un cycle dont le démarrage était le premier relevé du jour y manque (prise qui
+    # n'envoie que les changements). Recalculées à la demande, sur le brut s'il est encore là,
+    # sinon sur les quarts d'heure.
+    "DELETE FROM appliance_days WHERE source = 'raw'",
 )
 
 
