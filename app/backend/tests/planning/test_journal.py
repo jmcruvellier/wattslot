@@ -11,7 +11,7 @@ import pytest
 from wattslot.aggregation import QUARTER, Aggregate
 from wattslot.detection import DeviceKind, Role
 from wattslot.home_model import HomeDevice, HomeModel, HomeSensor, sensor_iri
-from wattslot.planning.journal import CycleJournal, appliances, real_cycles
+from wattslot.planning.journal import CycleJournal, appliances, cycles_summary, real_cycles
 from wattslot.storage.database import open_database
 from wattslot.storage.raw import RawStores, Reading
 
@@ -121,6 +121,30 @@ def test_profile_uses_raw_days_then_quarters(
     assert by_day[TODAY - timedelta(days=5)].minutes == 90  # au quart d'heure
     assert profile.ok and profile.energy_kwh == pytest.approx(0.3)
     assert profile.duration_min == 90
+
+
+def test_the_measured_cycles_say_which_ones_the_profile_keeps(
+    setup: tuple[CycleJournal, RawStores, QuarterReader],
+) -> None:
+    """20/11/2026 : un appareil lancé plusieurs fois restait « insuffisant », et le diagnostic
+    ne donnait que le nombre de cycles retenus. Un cycle hors norme écarte ici les autres."""
+    journal, _, reader = setup
+    for k in (9, 7, 5):
+        reader.add_cycle(TODAY - timedelta(days=k), 10, 6, 0.3)
+    reader.add_cycle(TODAY - timedelta(days=3), 10, 6, 3.0)
+    washer = appliances(MODEL)[0]
+
+    profile = journal.profile(washer, TODAY)
+    found = cycles_summary(journal.measured(washer, TODAY), profile, PARIS)
+
+    assert not profile.ok
+    assert [(c["energy_kwh"], c["minutes"], c["kept"]) for c in found] == [
+        (0.3, 90, False),
+        (0.3, 90, False),
+        (0.3, 90, False),
+        (3.0, 90, True),
+    ]
+    assert found[0]["start"] == local(TODAY - timedelta(days=9), 10).isoformat(timespec="minutes")
 
 
 def test_quarter_days_are_redone_once_raw_is_complete(
