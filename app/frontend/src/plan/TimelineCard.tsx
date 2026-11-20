@@ -31,6 +31,7 @@ import { minuteOfDay } from "../i18n/homeTime";
 import { hour, kwh } from "./format";
 import { freeSpan } from "./timelineSpan";
 import { rowLabel } from "./batteryLabel";
+import { cycleNames } from "./cycleNames";
 import { hourSun } from "./dayPoints";
 import type { Bar, HourPoint, TimelineRow, Timeline } from "./types";
 import Icon from "../ui/Icon";
@@ -152,31 +153,12 @@ export default function TimelineCard({
   const [restoreFailed, setRestoreFailed] = useState(false);
   const nowMin = day === undefined ? nowMinute() : -1;
 
-  // Plusieurs cycles du même équipement dans la journée : la légende dit lequel
-  // (« Sèche-linge #1 », « Sèche-linge #2 »), pour un bloc prévu comme pour une activité
-  // mesurée. Celle-ci prend le cycle dont elle est le démarrage réel dans le bilan du serveur ;
-  // reconnue pour aucun cycle, elle garde le nom de l'équipement.
-  const cycleName = (row: TimelineRow, bar: Bar, actual: boolean) => {
-    const several = new Set(row.planned.map((other) => other.cycle).filter(Boolean)).size > 1;
-    if (!several) return row.device;
-    const cycle = actual
-      ? (timeline.statuses ?? []).find(
-          (status) =>
-            (status.appliance ?? status.device) === row.device &&
-            status.actual_start_min !== null &&
-            Math.abs(status.actual_start_min - bar.start_hour * 60) < 1,
-        )?.device
-      : bar.cycle;
-    if (!cycle) return row.device;
-    return cycle === row.device ? `${row.device} #1` : cycle;
-  };
-
   const describe = (row: TimelineRow, bar: Bar, actual: boolean) => {
     const what = bar.action
       ? t(`plan.timeline.${bar.action}`)
       : bar.mode
         ? t("plan.timeline.mode", { mode: bar.mode })
-        : cycleName(row, bar, actual);
+        : (cycleNames(row, timeline.statuses ?? []).get(bar) ?? row.device);
     const tip = actual ? "plan.timeline.tip_actual" : bar.carried ? "plan.timeline.tip_carried" : "plan.timeline.tip_planned";
     return t(tip, {
       start: hour(Math.round(bar.start_hour * 60) / 60, lang),
