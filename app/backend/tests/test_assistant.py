@@ -19,7 +19,7 @@ from tests.test_health import _settings
 from tests.test_views_day import actual_of, state_of
 from tests.test_views_week import horizon_of
 from tests.v1_oracle import STATES, state_named
-from wattslot import configuration, home_model
+from wattslot import configuration, home_model, user_requests
 from wattslot.assistant.prompts import prompt
 from wattslot.assistant.tools import (
     PENDING_FOR,
@@ -493,6 +493,28 @@ def test_request_device_files_a_request_like_my_requests(api: TestClient) -> Non
     for wrong in ("demain", "2001-01-01"):
         found = _call(api, "request_device", {"device": "Lave-linge", "latest_date": wrong})
         assert found["error"] == "invalid_date" and "today is 20" in found["hint"]
+
+
+def test_request_device_refuses_a_device_whose_cycle_is_unknown(
+    api: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """20/11/2026 : le formulaire refuse un appareil que le calcul ne sait pas placer ;
+    l'assistant déposait encore la demande, qui restait ouverte sans jamais être planifiée."""
+    home_model.save(api.app.state.graph, HOME)  # type: ignore[attr-defined]
+    known = user_requests.requestable
+
+    def none_placeable(state: Any) -> list[tuple[Any, bool]]:
+        return [(appliance, False) for appliance, _ in known(state)]
+
+    monkeypatch.setattr("wattslot.user_requests.requestable", none_placeable)
+
+    refused = _call(api, "request_device", {"device": "Lave-linge"})
+
+    assert refused["error"] == "cycle_unknown" and refused["device"] == "Lave-linge"
+    assert "Nothing filed" in refused["hint"]
+    again = _call(api, "request_device", {"device": "Lave-linge", "confirm": True})
+    assert again["error"] == "cycle_unknown"
+    assert api.get("/api/requests").json() == []
 
 
 def test_request_device_understands_today_and_tomorrow(api: TestClient) -> None:

@@ -87,7 +87,7 @@ from wattslot.planning.choices import router as choices_routes
 from wattslot.planning.cycles import Segment
 from wattslot.planning.declared import router as declared_routes
 from wattslot.planning.explain import catalog as explain_catalog
-from wattslot.planning.journal import CycleJournal, cycle_appliances
+from wattslot.planning.journal import CycleJournal
 from wattslot.planning.runner import Context, RunReport, refresh_actual, run, stored_plan
 from wattslot.planning.scheduler import PlanningScheduler, SchedulerStatus
 from wattslot.planning.sources import (
@@ -1455,26 +1455,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
 
     def requestable(request: Request) -> list[RequestableDevice]:
-        state = request.app.state
-        model, saved = home_model.load(state.graph), configuration.load(state.graph)
-        found = cycle_appliances(model, saved)
-        needs = {
-            settings.key
-            for settings in configuration.effective(model, saved).devices
-            if settings.behavior is configuration.Behavior.ENERGY_BY_DEADLINE
-            and settings.energy is not None
-        }
-        aggregator: Aggregator | None = state.aggregator
-        profile_ok = None
-        if aggregator is not None:
-            cycle_journal = CycleJournal(state.database, state.raw, aggregator)
-            today = datetime.now(UTC).astimezone(state.raw.zone).date()
-
-            def profile_ok(appliance: journal.Appliance) -> bool:
-                return cycle_journal.profile(appliance, today).ok
-
-        known = user_requests.placeable(found, needs, profile_ok)
-        return [RequestableDevice(key=a.key, name=a.name, placeable=known[a.key]) for a in found]
+        return [
+            RequestableDevice(key=a.key, name=a.name, placeable=known)
+            for a, known in user_requests.requestable(request.app.state)
+        ]
 
     @app.get("/api/requests/devices")
     def request_devices(request: Request) -> list[RequestableDevice]:

@@ -19,11 +19,13 @@ import sqlite3
 from collections.abc import Callable, Collection, Iterable, Sequence
 from datetime import UTC, date, datetime, timedelta
 from enum import StrEnum
+from typing import Any
 
 from pydantic import BaseModel
 
+from wattslot import configuration, home_model
 from wattslot.planning.inputs import TaskRequest
-from wattslot.planning.journal import Appliance
+from wattslot.planning.journal import Appliance, CycleJournal, cycle_appliances
 from wattslot.planning.reference import task_key
 
 UID_PREFIX = "app-"
@@ -145,6 +147,30 @@ def placeable(
     Le formulaire acceptait un équipement dont le cycle n'est pas connu : la demande restait
     ouverte sans jamais apparaître dans un plan (constaté le 20/11/2026)."""
     return {a.key: a.key in needs or profile_ok is None or profile_ok(a) for a in candidates}
+
+
+def requestable(state: Any) -> list[tuple[Appliance, bool]]:
+    """Équipements qu'on peut demander (cycles à démarrer et besoins d'énergie de la maison),
+    chacun avec ``placeable`` : pour le formulaire et pour l'assistant, qui déposait encore la
+    demande d'un appareil au cycle inconnu. ``state`` : l'état de l'application."""
+    model, saved = home_model.load(state.graph), configuration.load(state.graph)
+    found = cycle_appliances(model, saved)
+    needs = {
+        settings.key
+        for settings in configuration.effective(model, saved).devices
+        if settings.behavior is configuration.Behavior.ENERGY_BY_DEADLINE
+        and settings.energy is not None
+    }
+    profile_ok = None
+    if state.aggregator is not None:
+        cycle_journal = CycleJournal(state.database, state.raw, state.aggregator)
+        today = datetime.now(UTC).astimezone(state.raw.zone).date()
+
+        def profile_ok(appliance: Appliance) -> bool:
+            return cycle_journal.profile(appliance, today).ok
+
+    known = placeable(found, needs, profile_ok)
+    return [(appliance, known[appliance.key]) for appliance in found]
 
 
 def get(database: sqlite3.Connection, request_id: int) -> UserRequest | None:
