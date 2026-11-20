@@ -36,6 +36,8 @@ COUNTER_MARGIN_MIN = 5  # le compteur rapporte sa dernière hausse juste après 
 CYCLE_FRACTION = 0.3
 MIN_CYCLE_KWH = 0.05
 MIN_CYCLES = 3
+# Cycles enchaînés : durée et énergie d'au moins ce multiple d'un cycle ordinaire.
+CHAINED_FACTOR = 1.7
 
 
 @dataclass(frozen=True)
@@ -200,11 +202,40 @@ def average_shape(shapes: Sequence[Sequence[float]], duration_min: float) -> tup
     return tuple(round(x / total, 4) for x in sums) if total > 0 else ()
 
 
-def profile_from_cycles(cycles: Sequence[Cycle]) -> Profile:
-    """Énergie et durée médianes des cycles significatifs, forme moyenne."""
+def significant(cycles: Sequence[Cycle]) -> tuple[Cycle, ...]:
+    """Cycles significatifs : au moins ``CYCLE_FRACTION`` du plus gros (règle de la v1)."""
     biggest = max((c.energy_kwh for c in cycles), default=0.0)
     threshold = max(MIN_CYCLE_KWH, biggest * CYCLE_FRACTION)
-    kept = tuple(c for c in cycles if c.energy_kwh >= threshold)
+    return tuple(c for c in cycles if c.energy_kwh >= threshold)
+
+
+def single_loads(cycles: Sequence[Cycle]) -> tuple[Cycle, ...]:
+    """Cycles d'une seule charge : sans ceux qui en enchaînent plusieurs.
+
+    Deux charges lancées l'une derrière l'autre (pause plus courte que la fenêtre de fusion de
+    l'équipement) sont mesurées comme un seul cycle, deux fois plus long et plus gourmand. Avec
+    trois de ces cycles sur sept, la médiane d'un sèche-linge donnait 4 h et 1,48 kWh, ni une
+    charge (2 h 30, 1 kWh) ni deux : chaque demande était planifiée sur 4 h (constaté le
+    20/11/2026). Un cycle est écarté quand sa durée **et** son énergie valent au moins
+    ``CHAINED_FACTOR`` fois celles d'un cycle ordinaire (médiane de la moitié basse). Écart à la
+    v1 ; s'il resterait moins de ``MIN_CYCLES`` cycles, aucun n'est écarté."""
+    if len(cycles) < MIN_CYCLES:
+        return tuple(cycles)
+    half = max(1, len(cycles) // 2)
+    usual_min = median(sorted(c.minutes for c in cycles)[:half])
+    usual_kwh = median(sorted(c.energy_kwh for c in cycles)[:half])
+    kept = tuple(
+        c
+        for c in cycles
+        if c.minutes < CHAINED_FACTOR * usual_min or c.energy_kwh < CHAINED_FACTOR * usual_kwh
+    )
+    return kept if len(kept) >= MIN_CYCLES else tuple(cycles)
+
+
+def profile_from_cycles(cycles: Sequence[Cycle]) -> Profile:
+    """Énergie et durée médianes des cycles significatifs d'une seule charge
+    (``significant``, ``single_loads``), forme moyenne."""
+    kept = single_loads(significant(cycles))
     if len(kept) < MIN_CYCLES:
         return Profile(ok=False, cycles=kept)
     duration = round(median(round(c.minutes) for c in kept))
