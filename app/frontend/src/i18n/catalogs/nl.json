@@ -497,6 +497,8 @@
     "done_item": "{device}: klaar",
     "cancelled_item": "{device}: geannuleerd",
     "mark_done": "Klaar",
+    "mark_launched": "Is gestart",
+    "declared_item": "{device}: gemarkeerd als gestart",
     "cancel": "Annuleren",
     "recent": "Recente verzoeken",
     "loading": "Apparaten worden gelezen…",

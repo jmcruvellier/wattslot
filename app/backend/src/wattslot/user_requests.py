@@ -16,7 +16,7 @@ sa demande ouverte pas encore lancée ; une demande de plus s'ouvre si toutes so
 """
 
 import sqlite3
-from collections.abc import Callable, Collection, Iterable, Sequence
+from collections.abc import Callable, Collection, Iterable, Mapping, Sequence, Set
 from datetime import UTC, date, datetime, timedelta
 from enum import StrEnum
 from typing import Any
@@ -26,7 +26,7 @@ from pydantic import BaseModel
 from wattslot import configuration, home_model
 from wattslot.planning.inputs import TaskRequest
 from wattslot.planning.journal import Appliance, CycleJournal, cycle_appliances
-from wattslot.planning.reference import task_key
+from wattslot.planning.reference import ident, task_key
 
 UID_PREFIX = "app-"
 KEPT_DAYS = 7  # demandes closes encore montrées
@@ -46,6 +46,10 @@ class UserRequest(BaseModel):
     status: Status = Status.OPEN
     launched_on: date | None = None  # lancement constaté par un calcul
     closed_at: datetime | None = None
+    # Demande placée dans le plan du jour : l'identité de son cycle (« Sèche-linge #2 »), et si
+    # l'utilisateur l'a déclaré lancé (« C'est lancé »). Remplis par ``with_cycles``.
+    cycle: str | None = None
+    declared: bool = False
 
 
 def _row(row: Sequence[object]) -> UserRequest:
@@ -79,6 +83,28 @@ def recent(database: sqlite3.Connection, now: datetime) -> list[UserRequest]:
         (since,),
     ).fetchall()
     return [_row(r) for r in rows]
+
+
+def with_cycles(
+    requests: Sequence[UserRequest],
+    planning: Iterable[Mapping[str, object]],
+    declared: Set[str],
+) -> list[UserRequest]:
+    """Demandes ouvertes complétées du cycle qui les porte dans le plan du jour (``planning``,
+    blocs du plan gardé) et de sa déclaration (``declared``, cycles déclarés lancés) : « Mes
+    demandes » propose « C'est lancé » comme « Prochaine action »."""
+    cycles: dict[str, str] = {}
+    for item in planning:
+        name, rank, uid = item.get("equipement"), item.get("rang"), item.get("demande")
+        if isinstance(name, str) and isinstance(uid, str):
+            cycles[uid] = ident(name, rank if isinstance(rank, int) else None)
+    found = []
+    for request in requests:
+        cycle = cycles.get(f"{UID_PREFIX}{request.id}") if request.status == Status.OPEN else None
+        if cycle is not None:
+            request = request.model_copy(update={"cycle": cycle, "declared": cycle in declared})
+        found.append(request)
+    return found
 
 
 def ask(
