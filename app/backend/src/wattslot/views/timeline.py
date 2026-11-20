@@ -149,11 +149,25 @@ def cycle_bounds(item: Mapping[str, Any]) -> tuple[int, int]:
     return start, item.get("fin_min", min(24 * 60, start + round(cycle_min)))
 
 
+def asked_times(state: Mapping[str, Any]) -> dict[str, str]:
+    """Moment où chaque demande de l'application a été faite (uid → ISO), d'après les tâches
+    gardées avec le plan."""
+    tasks = [*(state.get("taches_placees") or []), *(state.get("taches_en_attente") or [])]
+    return {
+        str(task["uid"]): str(task["demandee_iso"])
+        for task in tasks
+        if isinstance(task, Mapping) and task.get("uid") and task.get("demandee_iso")
+    }
+
+
 def planned_devices(
-    planning: Sequence[Mapping[str, Any]], context: Context
+    planning: Sequence[Mapping[str, Any]],
+    context: Context,
+    asked: Mapping[str, str] | None = None,
 ) -> list[dict[str, Any]]:
     """Équipements prévus (créneau en minutes et énergie), la filtration résumée de son premier
-    à son dernier segment (``_equipements_prevus`` de la v1)."""
+    à son dernier segment (``_equipements_prevus`` de la v1). ``asked`` (``asked_times``) :
+    chaque cycle porte le moment où sa demande a été faite (``depuis_iso``)."""
     found = []
     for item in planning:
         name = item["equipement"]
@@ -181,9 +195,28 @@ def planned_devices(
                 "debut_min": start,
                 "fin_min": end,
                 "energie_kwh": round(energy, 3),
+                **(
+                    {"depuis_iso": (asked or {})[item["demande"]]}
+                    if item.get("demande") in (asked or {})
+                    else {}
+                ),
             }
         )
     return sorted(found, key=lambda p: p["debut_min"])
+
+
+def _before_request(segment: Mapping[str, Any], plan: Mapping[str, Any], context: Context) -> bool:
+    """L'activité a-t-elle commencé avant que la demande du cycle prévu soit faite ? Elle n'est
+    alors pas son cycle, comme dans le calcul (``occurrences.attribute``). Une lessive faite à
+    3 h passait pour le cycle de la lessive demandée à 8 h 21 : celle-ci était dite « lancée à
+    3 h » et n'était plus proposée dans « Prochaine action » (constaté le 20/11/2026)."""
+    since = plan.get("depuis_iso")
+    if not since:
+        return False
+    try:
+        return _local(segment["debut_iso"], context) < _local(str(since), context)
+    except (TypeError, ValueError):  # heures avec et sans fuseau : l'activité est gardée
+        return False
 
 
 def _local(iso: str, context: Context) -> datetime:
@@ -236,7 +269,7 @@ def statuses(
     # Plusieurs cycles du même équipement : chacun avec son cycle réel, dans l'ordre de la
     # journée (le premier prévu avec le premier mesuré) ; un seul, le plus proche de son départ.
     several = {name for name in {_device(p) for p in planned} if _count(planned, name) > 1}
-    position: dict[str, int] = {}
+    taken: dict[str, list[Any]] = {}  # activités déjà prises par un autre cycle de l'équipement
     for plan in planned:
         device = _device(plan)
         segments = measured.get(device) or []
@@ -258,11 +291,13 @@ def statuses(
                 )
                 or s.get("en_cours")
             ]
+            recognized = [s for s in recognized if not _before_request(s, plan, context)]
             if device in several:
-                index = position.get(device, 0)
-                position[device] = index + 1
+                used = taken.setdefault(device, [])
+                recognized = [s for s in recognized if not any(s is other for other in used)]
                 recognized.sort(key=lambda s: _minutes(s["debut_iso"], context))
-                recognized = recognized[index : index + 1]
+                recognized = recognized[:1]
+                used.extend(recognized)
             else:
                 recognized.sort(
                     key=lambda s: abs(_minutes(s["debut_iso"], context) - plan["debut_min"])
@@ -482,7 +517,11 @@ def build_timeline(
     if not any_planned:
         empty = "no_surplus" if production_kwh < consumption_kwh else "nothing"
     found, unplanned, badge = statuses(
-        planned_devices(planning, context), actual, reference_hour, runtime_names, context
+        planned_devices(planning, context, asked_times(state)),
+        actual,
+        reference_hour,
+        runtime_names,
+        context,
     )
     return Timeline(
         rows=[row for row in rows if row.planned or row.actual],
