@@ -456,11 +456,18 @@ describe("frise des équipements", () => {
         { start_hour: 10, end_hour: 11.5, energy_kwh: 1, action: null, mode: null, cycle: "Lave-linge" },
         { start_hour: 16, end_hour: 17.5, energy_kwh: 1, action: null, mode: null, cycle: "Lave-linge #2" },
       ],
-      actual: [{ start_hour: 10.0833, end_hour: 11.5, energy_kwh: 1, action: null, mode: null }],
+      actual: [
+        { start_hour: 7, end_hour: 7.25, energy_kwh: 0.06, action: null, mode: null },
+        { start_hour: 10.0833, end_hour: 11.5, energy_kwh: 1, action: null, mode: null },
+      ],
     };
+    const statuses = [
+      { device: "Lave-linge", appliance: "Lave-linge", status: "on_time", actual_start_min: 605 },
+      { device: "Lave-linge #2", appliance: "Lave-linge", status: "planned", actual_start_min: null },
+    ];
     const view = {
       ...TODAY,
-      timeline: { ...TODAY.timeline, rows: [twice] },
+      timeline: { ...TODAY.timeline, rows: [twice], statuses },
       explanations: [
         { device: "Lave-linge", text: "Lancé à 10h05." },
         {
@@ -477,8 +484,10 @@ describe("frise des équipements", () => {
     renderTimeline(view.timeline, 14.5, { choices, onChanged: () => undefined });
     expect(screen.getAllByLabelText("Lave-linge")).toHaveLength(1); // une seule ligne
 
-    // La légende dit de quel cycle il s'agit ; le mesuré garde le nom de l'équipement.
-    expect(screen.getByRole("button", { name: "Réel 10h05 → 11h30 : Lave-linge, 1,00 kWh" })).toBeInTheDocument();
+    // La légende dit de quel cycle il s'agit ; le mesuré aussi, d'après le bilan du serveur.
+    expect(screen.getByRole("button", { name: "Réel 10h05 → 11h30 : Lave-linge #1, 1,00 kWh" })).toBeInTheDocument();
+    // Activité qui n'est le démarrage d'aucun cycle : le nom de l'équipement seul.
+    expect(screen.getByRole("button", { name: "Réel 7h → 7h15 : Lave-linge, 0,06 kWh" })).toBeInTheDocument();
     // Le cycle déjà fait ne se déplace plus ; le second, pas encore lancé, s'ouvre.
     const done = screen.getByRole("button", { name: "Prévu 10h → 11h30 : Lave-linge #1, 1,00 kWh" });
     expect(done).not.toHaveClass("tl-pickable");
