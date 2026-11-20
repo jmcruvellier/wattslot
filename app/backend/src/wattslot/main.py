@@ -80,7 +80,7 @@ from wattslot.maintenance import (
 from wattslot.notification_events import Candidate
 from wattslot.ontology import GRAPH_CONFIGURATION, GRAPH_HOME
 from wattslot.ontology import migration as ontology_migration
-from wattslot.planning import journal, open_meteo, past, run_log
+from wattslot.planning import declared, journal, open_meteo, past, run_log
 from wattslot.planning.assemble import TaskRules, build_input, rules_from_tasks, to_v1
 from wattslot.planning.cancelled import router as cancelled_routes
 from wattslot.planning.choices import router as choices_routes
@@ -1467,8 +1467,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.get("/api/requests")
     def get_requests(request: Request) -> list[user_requests.UserRequest]:
-        """Demandes ouvertes, puis celles closes depuis 7 jours."""
-        return user_requests.recent(request.app.state.database, datetime.now(UTC))
+        """Demandes ouvertes, puis celles closes depuis 7 jours ; une demande placée dans le
+        plan du jour dit son cycle, et s'il a été déclaré lancé."""
+        database = request.app.state.database
+        now = datetime.now(UTC)
+        today = now.astimezone(request.app.state.raw.zone).date()
+        plan = PlanStore(database).load("today")
+        planning = plan.content.get("planning", []) if plan and plan.day == today else []
+        return user_requests.with_cycles(
+            user_requests.recent(database, now), planning, declared.load(database, today)
+        )
 
     @app.post("/api/requests")
     def post_request(request: Request, asked: NewRequest) -> user_requests.UserRequest:

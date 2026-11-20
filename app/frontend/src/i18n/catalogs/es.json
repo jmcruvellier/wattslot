@@ -497,6 +497,8 @@
     "done_item": "{device}: hecho",
     "cancelled_item": "{device}: cancelado",
     "mark_done": "Hecho",
+    "mark_launched": "Ya está en marcha",
+    "declared_item": "{device}: marcado como en marcha",
     "cancel": "Cancelar",
     "recent": "Peticiones recientes",
     "loading": "Leyendo los aparatos…",

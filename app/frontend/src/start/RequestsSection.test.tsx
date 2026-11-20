@@ -123,6 +123,24 @@ describe("RequestsSection", () => {
     expect(screen.getByText("Lave-linge : fait").closest("details")?.open).toBe(false);
   });
 
+  it("déclare lancé le cycle d'une demande placée dans le plan du jour", async () => {
+    const user = userEvent.setup();
+    const placed = { ...OPEN, cycle: "Lave-vaisselle #2" };
+    const calls = mockApi(DEVICES, [
+      placed,
+      { ...OPEN, id: 2, device: "washer" }, // pas dans le plan du jour : rien à déclarer
+      { ...placed, id: 3, declared: true },
+    ]);
+    renderSection();
+
+    // Un seul bouton : ni pour la demande hors du plan du jour, ni pour celle déjà déclarée.
+    await user.click(await screen.findByRole("button", { name: "C'est lancé" }));
+
+    const call = calls.find((c) => c.url === "api/planning/launched");
+    expect(call).toMatchObject({ method: "POST", body: { device: "Lave-vaisselle #2" } });
+    expect(screen.getByText(/Lave-vaisselle : marqué comme lancé/)).toBeInTheDocument();
+  });
+
   it("ne montre rien sans appareil à lancer", async () => {
     const calls = mockApi([], []);
     renderSection();

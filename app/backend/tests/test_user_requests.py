@@ -233,6 +233,30 @@ def test_requests_give_the_same_plan_as_the_home_assistant_list(tmp_path: Path) 
     assert plan_app.output == plan_ha.output
 
 
+def test_an_open_request_says_its_cycle_of_the_day(tmp_path: Path) -> None:
+    """« Mes demandes » propose « C'est lancé » : une demande placée dans le plan du jour dit
+    l'identité de son cycle, celle que prend la déclaration."""
+    database = open_database(tmp_path)
+    first = user_requests.ask(database, "dryer", None, CREATED)
+    second = user_requests.ask(database, "dryer", None, CREATED, another=True)
+    other = user_requests.ask(database, "washer", None, CREATED)
+    done = user_requests.close(database, first.id, Status.DONE, CREATED)
+    assert done is not None
+    planning: list[dict[str, object]] = [
+        {"equipement": "Batterie"},
+        {"equipement": "Sèche-linge", "demande": f"app-{first.id}"},
+        {"equipement": "Sèche-linge", "rang": 2, "demande": f"app-{second.id}"},
+    ]
+
+    found = {r.id: r for r in user_requests.with_cycles([done, second, other], planning, set())}
+
+    assert (found[second.id].cycle, found[second.id].declared) == ("Sèche-linge #2", False)
+    assert found[first.id].cycle is None  # demande close
+    assert found[other.id].cycle is None  # pas dans le plan du jour
+    (said,) = user_requests.with_cycles([second], planning, {"Sèche-linge #2"})
+    assert said.declared
+
+
 def test_routes(tmp_path: Path) -> None:
     with TestClient(create_app(_settings(tmp_path))) as api:
         assert api.get("/api/requests/devices").json() == []

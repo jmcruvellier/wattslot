@@ -18,6 +18,10 @@ export interface UserRequest {
   status: "open" | "done" | "cancelled";
   launched_on: string | null;
   closed_at: string | null;
+  // Demande placée dans le plan du jour : l'identité de son cycle (« Sèche-linge #2 »), et si
+  // l'utilisateur l'a déjà déclaré lancé (« C'est lancé »).
+  cycle?: string | null;
+  declared?: boolean;
 }
 
 
@@ -74,6 +78,7 @@ export default function RequestsSection() {
     if (request.status === "done") return t("requests.done_item", { device: name });
     if (request.status === "cancelled") return t("requests.cancelled_item", { device: name });
     if (request.launched_on) return t("requests.launched", { device: name });
+    if (request.declared) return t("requests.declared_item", { device: name });
     return request.latest
       ? t("requests.open_latest", { device: name, latest: day(request.latest) })
       : t("requests.open_asap", { device: name });
@@ -99,6 +104,18 @@ export default function RequestsSection() {
           {opened.map((request) => (
             <li key={request.id}>
               {describe(request)}{" "}
+              {request.cycle && !request.launched_on && !request.declared && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      void act(() => postJson("api/planning/launched", { device: request.cycle }))
+                    }
+                  >
+                    {t("requests.mark_launched")}
+                  </button>{" "}
+                </>
+              )}
               <button
                 type="button"
                 onClick={() => void act(() => postJson(`api/requests/${request.id}/done`, {}))}
