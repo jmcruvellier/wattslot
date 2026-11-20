@@ -14,7 +14,7 @@ from tests.v1_oracle import STATES, load
 from wattslot.planning import choices
 from wattslot.planning.engine import Objective, indicators, load_kwh, plan_day, simulate_plan
 from wattslot.planning.explain import ALTERNATIVES, explain
-from wattslot.planning.inputs import from_v1
+from wattslot.planning.inputs import CycleProfile, from_v1
 from wattslot.planning.plan import Indicators, Slot
 from wattslot.planning.problem import Task, from_input
 from wattslot.storage.database import open_database
@@ -184,3 +184,34 @@ def test_a_cheaper_start_set_aside_for_the_battery_says_so() -> None:
     assert codes and all(
         c[0] == "full_charge_first" and "objective" not in c for c in codes.values()
     )
+
+
+def test_a_chosen_start_wins_over_the_cycle_to_follow() -> None:
+    """20/11/2026 : sèche-linge « après le lave-linge », départ choisi à 10 h, puis une
+    nouvelle lessive demandée à 8 h 21. Elle ne pouvait pas finir avant 10 h : le sèche-linge
+    n'était plus placé du tout (« pas assez de temps pour un cycle complet »), et son ancien
+    bloc de 11 h restait affiché. Un départ choisi est une décision : il passe avant la suite."""
+    data = from_v1(load(next(p for p in STATES if "synthetic_sunny_h00" in p.stem))[0])
+    now = datetime.combine(data.day, datetime.min.time()).astimezone() + timedelta(
+        hours=8, minutes=21
+    )
+    asked = replace(
+        data,
+        first_hour=8,
+        real_updated_at=now,
+        cycle_profiles={
+            **data.cycle_profiles,
+            "Lave-linge": CycleProfile(0.43, 120.0),
+            "Sèche-linge": CycleProfile(1.48, 240.0),
+        },
+    )
+
+    def starts(chosen: dict[str, int]) -> dict[str, int | None]:
+        day = plan_day(from_input(replace(asked, chosen_starts=chosen))).day
+        assert not [w for w in day.warnings if isinstance(w, dict) and "heures" in w["code"]]
+        return {i.device: i.start_min for i in day.items if isinstance(i, Slot)}
+
+    free = starts({})
+    washer_end = (free["Lave-linge"] or 0) + 120
+    assert washer_end > 600 and (free["Sèche-linge"] or 0) >= washer_end  # la suite, sans choix
+    assert starts({"Sèche-linge": 600})["Sèche-linge"] == 600
