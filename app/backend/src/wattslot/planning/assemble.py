@@ -34,7 +34,7 @@ from wattslot.configuration import Behavior, Configuration, DeviceSettings
 from wattslot.detection import DeviceKind, Role, classify_appliance
 from wattslot.home_assistant import HomeAssistantClient
 from wattslot.home_model import LINES, HomeDevice, HomeModel, Phase, Supply, line_shares
-from wattslot.planning import past
+from wattslot.planning import declared, past
 from wattslot.planning.appliances import DEFAULT_RULES, RULES
 from wattslot.planning.co2_sources import co2_context
 from wattslot.planning.inputs import (
@@ -245,7 +245,8 @@ async def build_input(
     )
     real: dict[str, Any] = {}
     if day == today:
-        by_device = real_cycles(model, raw, now, configuration)
+        said = declared.moments(database, today) if database is not None else None
+        by_device = real_cycles(model, raw, now, configuration, declared=said)
         for task in [*due, *waiting]:
             appliance = appliance_for(task, candidates)
             if appliance is not None and by_device.get(appliance.name):

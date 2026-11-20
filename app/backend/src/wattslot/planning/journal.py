@@ -18,7 +18,7 @@ coupés par la fenêtre en v1.
 import json
 import sqlite3
 from collections import defaultdict
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
 from datetime import date, datetime, time, timedelta
 from typing import Any
@@ -39,9 +39,11 @@ from wattslot.planning.appliances import (
     apply_counter,
     measure_cycles,
     profile_from_cycles,
+    split_at,
 )
 from wattslot.planning.cycles import Segment
 from wattslot.planning.past import AggregateReader
+from wattslot.planning.reference import task_key
 from wattslot.storage.raw import RawStores
 
 PROFILE_DAYS = 30
@@ -295,19 +297,39 @@ def _paused_as_running(cycles: list[Cycle], now: datetime, merge_min: float) -> 
     return [*cycles[:-1], replace(cycles[-1], running=True)]
 
 
+def _later_launches(declared: Mapping[str, datetime] | None, name: str) -> list[datetime]:
+    """Instants où l'utilisateur a déclaré lancé (« C'est lancé ») un cycle de l'équipement
+    ``name`` qui n'est pas son premier de la journée (« Sèche-linge #2 »)."""
+    found = []
+    for cycle, moment in (declared or {}).items():
+        device, _, rank = cycle.rpartition(" #")
+        if device and rank.isdigit() and int(rank) >= 2 and task_key(device) == task_key(name):
+            found.append(moment)
+    return found
+
+
 def real_cycles(
     model: HomeModel,
     raw: RawStores,
     now: datetime,
     configuration: Configuration | None = None,
     day: date | None = None,
+    declared: Mapping[str, datetime] | None = None,
 ) -> dict[str, tuple[Segment, ...]]:
     """Cycles réels du jour (depuis minuit, heure locale) par équipement, sur le brut : mêmes
     règles que la v1 (``donnees_reelles_du_jour``), compteur relu depuis la veille. Instants en
     heure locale de la maison : le calcul en tire l'heure et la minute du démarrage réel.
     ``day`` : la journée à lire quand ``now`` est sa fin (minuit du lendemain, à l'archivage
     de la veille) ; sans lui, minuit tombait sur le lendemain et la veille n'avait aucun
-    cycle (« aucun cycle » dans la vue Hier pour un appareil pourtant lancé)."""
+    cycle (« aucun cycle » dans la vue Hier pour un appareil pourtant lancé).
+
+    ``declared`` : lancements déclarés du jour (``declared.moments``, identité du cycle →
+    instant). Une seconde charge lancée juste derrière la première est mesurée avec elle comme
+    une seule activité (pause plus courte que la fenêtre de fusion) : le second cycle demandé
+    restait à lancer, replanifié d'heure en heure, alors qu'il tournait (constaté le
+    20/11/2026). Rien dans les mesures ne dit qu'il y a deux charges ; le « C'est lancé » du
+    second cycle le dit : l'activité est coupée à la pause mesurée juste avant
+    (``appliances.split_at``)."""
     zone = raw.zone
     midnight = datetime.combine(day or now.astimezone(zone).date(), time(), zone)
     found: dict[str, tuple[Segment, ...]] = {}
@@ -318,6 +340,9 @@ def real_cycles(
             found[appliance.name] = ()
             continue
         cycles = activity_segments(power, now, rules.threshold_w, rules.merge_min, PARASITIC_KWH)
+        cycles = split_at(
+            cycles, _later_launches(declared, appliance.name), power, rules.threshold_w
+        )
         if cycles and appliance.counter:
             _, counter = _raw_observations(raw, appliance, midnight - timedelta(days=1), now)
             cycles = apply_counter(cycles, counter)

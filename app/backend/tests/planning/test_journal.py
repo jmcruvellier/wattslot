@@ -267,6 +267,52 @@ def test_real_cycle_ended_after_long_pause(
     assert cycle.end == local(TODAY, 9, 58) and not cycle.running
 
 
+def test_a_declared_second_load_splits_the_activity(
+    setup: tuple[CycleJournal, RawStores, QuarterReader],
+) -> None:
+    """20/11/2026 : une seconde charge lancée juste derrière la première, mesurée avec elle
+    comme une seule activité (pause de 10 minutes, fenêtre de fusion de 30). Le second cycle
+    demandé restait à lancer ; son « C'est lancé » dit qu'il y a deux charges, et l'activité
+    est coupée à la pause mesurée, pas à l'instant de la déclaration."""
+    _, raw, _ = setup
+    counter = raw_cycle(raw, TODAY, local(TODAY, 10), 150, 1.0, 50.0)
+    again = local(TODAY, 12, 40)  # seconde charge : 400 W, compteur toutes les 10 minutes
+    power_iri, energy_iri = sensor_iri("washer", POWER), sensor_iri("washer", ENERGY)
+    raw.write(
+        [Reading(POWER, power_iri, 400.0, again + timedelta(minutes=m)) for m in range(150)]
+        + [
+            Reading(ENERGY, energy_iri, counter + m / 150, again + timedelta(minutes=m))
+            for m in range(10, 151, 10)
+        ]
+    )
+    now = local(TODAY, 13, 45).astimezone(UTC)
+    said = local(TODAY, 12, 55).astimezone(UTC)
+
+    (whole,) = real_cycles(MODEL, raw, now)["Lave-linge"]
+    first, second = real_cycles(MODEL, raw, now, declared={"Lave-linge #2": said})["Lave-linge"]
+
+    assert whole.start == local(TODAY, 10) and whole.running
+    assert (first.start, first.end, first.running) == (whole.start, local(TODAY, 12, 30), False)
+    assert (second.start, second.end, second.running) == (local(TODAY, 12, 40), whole.end, True)
+    assert first.energy_kwh == pytest.approx(1.0)
+    assert second.energy_kwh == pytest.approx(0.4, abs=0.05)
+    # Pendant la pause (avant de relancer) : la même coupure.
+    during = {"Lave-linge #2": local(TODAY, 12, 35).astimezone(UTC)}
+    assert real_cycles(MODEL, raw, now, declared=during)["Lave-linge"] == (first, second)
+    # Le premier cycle de la journée, un autre équipement, un instant hors de l'activité :
+    # rien n'est coupé.
+    for declared in (
+        {"Lave-linge": said},
+        {"Sèche-linge #2": said},
+        {"Lave-linge #2": local(TODAY, 9).astimezone(UTC)},
+    ):
+        assert real_cycles(MODEL, raw, now, declared=declared)["Lave-linge"] == (whole,)
+    # Déclaré sans aucune pause mesurée avant : coupé à l'instant déclaré.
+    early = local(TODAY, 11).astimezone(UTC)
+    first, second = real_cycles(MODEL, raw, now, declared={"Lave-linge #2": early})["Lave-linge"]
+    assert first.end == second.start == early
+
+
 def test_real_cycles_of_a_closed_day(setup: tuple[CycleJournal, RawStores, QuarterReader]) -> None:
     """À l'archivage de la veille, les cycles sont lus jusqu'à minuit du lendemain : ceux de la
     journée demandée, pas ceux (aucun) de la journée qui commence."""
