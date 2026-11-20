@@ -1633,6 +1633,7 @@
     "no_plan": "Pas encore de plan pour aujourd'hui : il arrive au prochain calcul.",
     "error": "Impossible de lire le plan du jour.",
     "stale": "Rafraîchissement impossible : dernières données lues affichées. Nouvel essai dans une minute.",
+    "unplaced": "Appareils non placés",
     "now": {
       "eyebrow": "En ce moment",
       "no_flows": "Le plan du jour",

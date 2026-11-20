@@ -215,6 +215,19 @@ describe("TodayView", () => {
     expect(sentence).not.toHaveTextContent("15h00");
   });
 
+  it("signale un appareil demandé que le calcul n'a pas placé", async () => {
+    // 20/11/2026 : l'avertissement n'était que sur la page Planning.
+    const unplaced = { code: "heures_insuffisantes_attente", info: false, text: "Sèche-linge n'est pas placé." };
+    const other = { code: "prevision_open_meteo", info: false, text: "Prévision de repli." };
+    const postponed = { code: "tache_reportee", info: true, text: "Lave-linge reporté à demain." };
+    mockApi({ ...TODAY, now: NOW, next_action: null, notices: [unplaced, other, postponed] });
+    renderView();
+    const list = await screen.findByRole("list", { name: "Appareils non placés" });
+    expect(list).toHaveTextContent("Sèche-linge n'est pas placé.");
+    expect(list).not.toHaveTextContent("Prévision de repli.");
+    expect(list).not.toHaveTextContent("reporté");
+  });
+
   it("ne garde pas « Rappel prévu » pour l'appareil suivant", async () => {
     let device = "Lave-linge";
     vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
