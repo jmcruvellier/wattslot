@@ -22,7 +22,7 @@ from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, replace
 from datetime import datetime
 
-from wattslot.planning.cycles import RECOGNIZED_FRACTION, Segment
+from wattslot.planning.cycles import Segment, is_recognized
 from wattslot.planning.inputs import PlanningInput, TaskRequest
 from wattslot.planning.reference import task_key
 
@@ -85,6 +85,7 @@ class Wanted:
     energy_kwh: float
     since: datetime | None = None  # demande faite à ce moment : pas une activité d'avant
     before: datetime | None = None  # tâche close : pas une activité démarrée après
+    cycle_min: float | None = None  # durée du cycle : rythme attendu d'une activité en cours
 
 
 def _within(segment: Segment, wanted: Wanted) -> bool:
@@ -104,10 +105,14 @@ def attribute(segments: Sequence[Segment], wanted: Sequence[Wanted]) -> dict[str
     found: dict[str, Segment] = {}
     free = list(segments)
     for index, cycle in enumerate(wanted):
-        threshold = RECOGNIZED_FRACTION * (cycle.energy_kwh or 0.0)
-        fitting = [
-            s for s in free if s.energy_kwh >= threshold and s.energy_kwh > 0 and _within(s, cycle)
-        ]
+        # À son énergie d'abord ; sinon seulement, une activité en cours reconnue à son rythme.
+        fitting = [s for s in free if is_recognized(s, cycle.energy_kwh) and _within(s, cycle)]
+        if not fitting:
+            fitting = [
+                s
+                for s in free
+                if is_recognized(s, cycle.energy_kwh, cycle.cycle_min) and _within(s, cycle)
+            ]
         if not fitting:
             continue
         segment = fitting[-1] if index == len(wanted) - 1 else fitting[0]
