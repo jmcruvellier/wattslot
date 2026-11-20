@@ -6,7 +6,7 @@
 
 import { useEffect, useState } from "react";
 
-import { ApiError, deleteRequest, getJson, postJson } from "../api";
+import { ApiError, getJson, postJson } from "../api";
 import { useI18n } from "../i18n/I18nProvider";
 import { hourOfDay, minuteOfDay, zoned } from "../i18n/homeTime";
 import { clock, kwh, percent } from "../plan/format";
@@ -18,6 +18,7 @@ import TimelineCard from "../plan/TimelineCard";
 import { startChoices } from "../plan/startChoices";
 import { unplacedNotices } from "../plan/unplaced";
 import { cancelTask } from "../plan/cancelled";
+import { declareLaunched, withdrawLaunched } from "../plan/declared";
 import OtherStarts from "../plan/OtherStarts";
 import { BatteryList } from "../plan/BatteryList";
 import DiscardedNote from "../plan/DiscardedNote";
@@ -223,7 +224,7 @@ function DeclaredLaunches({ devices, onChanged }: { devices: string[]; onChanged
     setFailed(false);
     setUndoing(device);
     try {
-      await deleteRequest(`api/planning/launched/${encodeURIComponent(device)}`);
+      await withdrawLaunched(device);
       onChanged();
     } catch {
       setFailed(true);
@@ -296,7 +297,7 @@ function NextActionCard({
     setLaunchFailed(false);
     setLaunching(true);
     try {
-      await postJson("api/planning/launched", { device: action.device });
+      await declareLaunched(action.device);
       onChanged();
     } catch {
       setLaunchFailed(true);
