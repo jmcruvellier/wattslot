@@ -7,7 +7,8 @@ import { useEffect, useState } from "react";
 
 import { getJson, postJson } from "../api";
 import { useI18n } from "../i18n/I18nProvider";
-import RequestForm, { pendingLatest, type RequestDevice } from "./RequestForm";
+import RequestForm, { type RequestDevice } from "./RequestForm";
+import { pendingLatest } from "./pendingLatest";
 
 export interface UserRequest {
   id: number;

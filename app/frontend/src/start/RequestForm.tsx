@@ -14,21 +14,6 @@ export interface RequestDevice {
   placeable?: boolean;
 }
 
-/** Date de la demande en attente (pas encore lancée) de chaque appareil : celle que
- * « Changer la date » modifie, la plus récente. La liste du serveur donne les plus récentes
- * d'abord. */
-export function pendingLatest(
-  requests: { device: string; status: string; launched_on: string | null; latest: string | null }[],
-): Record<string, string | null> {
-  const found: Record<string, string | null> = {};
-  for (const request of requests) {
-    if (request.status === "open" && !request.launched_on && !(request.device in found)) {
-      found[request.device] = request.latest;
-    }
-  }
-  return found;
-}
-
 interface RequestFormProps {
   devices: RequestDevice[];
   // Appareils (clés) qui ont déjà une demande en attente, pas encore lancée : le formulaire
