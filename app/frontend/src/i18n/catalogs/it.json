@@ -313,6 +313,8 @@
       "tip_none": "{start} → {end}: {what}, niente previsto né misurato",
       "legend_sun": "Produzione solare",
       "legend_off_peak": "Ore a tariffa ridotta",
+      "legend_link": "Dopo un altro apparecchio (tratteggiata: non ancora avviato)",
+      "follows": "parte dopo {device}",
       "tip_off_peak": "{start} → {end}: ore a tariffa ridotta",
       "tip_peak": "{start} → {end}: ore di punta",
       "tip_sun": "{start} → {end}: produzione solare, {kwh} kWh",

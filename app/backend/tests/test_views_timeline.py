@@ -255,3 +255,165 @@ def test_several_cycles_of_one_device_share_a_row() -> None:
     found, _, badge = statuses(planned, actual, 13.0, set(), Context(zone=PARIS))
     assert [(s.status, s.actual_start_min) for s in found] == [("on_time", 605), ("planned", None)]
     assert badge == "on_time"
+
+
+def cycle(device: str, start: int, end: int, rank: int | None = None) -> dict[str, Any]:
+    return {
+        "equipement": device,
+        "heure_debut": start,
+        "heure_fin": end,
+        "energie_kwh": 1.0,
+        **({"rang": rank} if rank else {}),
+    }
+
+
+LAUNDRY = Context(
+    zone=PARIS,
+    appliances=("Lave-vaisselle", "Sèche-linge", "Lave-linge", "Chauffe-eau"),
+    follows={"Sèche-linge": "Lave-linge"},
+)
+
+
+def test_rows_follow_the_first_start_of_the_day_after_the_batteries() -> None:
+    """Demande du 20/11/2026 : les batteries d'abord, puis les équipements dans l'ordre de leur
+    premier lancement prévu ou réel ; un équipement qui en suit un autre juste après lui, même
+    s'il a tourné plus tôt ; la filtration en dernier."""
+    state = {
+        "planning": [
+            {
+                "equipement": "Piscine",
+                "segments": [{"heure_debut": 1, "heure_fin": 3, "mode": "eco"}],
+            },
+            cycle("Sèche-linge", 12, 14),
+            cycle("Lave-linge", 10, 12),
+            cycle("Chauffe-eau", 13, 15),
+            {
+                "equipement": "Batterie",
+                "mouvements": [{"heure": 11, "action": "charge", "energie_kwh": 0.5}],
+            },
+        ]
+    }
+    actual = {
+        "heure_maj_iso": iso(9),
+        "equipements_reels_horaire": {
+            # Réveil de veille à 1 h (pas un cycle), vrai cycle à 5 h.
+            "Lave-vaisselle": [segment(iso(1), iso(1, 5), 0.01), segment(iso(5), iso(7), 0.9)],
+            # Le sèche-linge a tourné à 2 h : il reste sous le lave-linge.
+            "Sèche-linge": [segment(iso(2), iso(4), 1.0)],
+        },
+    }
+    timeline = build_timeline(state, actual, 9.0, 10.0, 8.0, LAUNDRY)
+
+    assert [row.device for row in timeline.rows] == [
+        "Batterie",
+        "Lave-vaisselle",  # 5 h, mesuré
+        "Lave-linge",  # 10 h, prévu
+        "Sèche-linge",  # juste après celui qu'il suit
+        "Chauffe-eau",  # 13 h
+        "Piscine",
+    ]
+    assert [row.follows for row in timeline.rows] == [None, None, None, "Lave-linge", None, None]
+
+
+def test_a_dependent_row_without_its_parent_row_is_ordered_like_the_others() -> None:
+    state = {"planning": [cycle("Chauffe-eau", 13, 15), cycle("Sèche-linge", 9, 11)]}
+    timeline = build_timeline(state, None, 8.0, 10.0, 8.0, LAUNDRY)
+    assert [(row.device, row.follows) for row in timeline.rows] == [
+        ("Sèche-linge", None),
+        ("Chauffe-eau", None),
+    ]
+    assert timeline.links == []
+
+
+def test_the_dependency_written_in_the_tasks_orders_the_rows_too() -> None:
+    """Maison sans réglage « démarre après » : la dépendance des tâches gardées avec le plan."""
+    state = {
+        "planning": [
+            cycle("Sèche-linge", 12, 14),
+            cycle("Chauffe-eau", 11, 12),
+            cycle("Lave-linge", 10, 12),
+        ],
+        "taches_placees": [
+            {"summary": "Sèche-linge", "uid": "a", "description": {"depend_de": "Lave-linge"}}
+        ],
+    }
+    timeline = build_timeline(state, None, 8.0, 10.0, 8.0, Context(zone=PARIS))
+    assert [row.device for row in timeline.rows] == ["Lave-linge", "Sèche-linge", "Chauffe-eau"]
+    assert [
+        (link.source, link.target, link.from_hour, link.to_hour, link.started)
+        for link in timeline.links
+    ] == [("Lave-linge", "Sèche-linge", 12.0, 12.0, False)]
+
+
+def test_links_pair_the_cycles_of_the_day_in_order() -> None:
+    """Journée du 20/11/2026 : deux lessives (3 h et 10 h) et deux séchages (10 h et 12 h 45)
+    mesurés, puis une troisième lessive et son séchage prévus. Chaque séchage est relié à la
+    première lessive finie avant lui et pas encore prise ; plein s'il est lancé, pointillé
+    (``started`` faux) s'il est prévu."""
+    state = {
+        "planning": [
+            {**cycle("Sèche-linge", 19, 21, 3), "demande": "app-2"},
+            {**cycle("Lave-linge", 17, 19, 3), "demande": "app-1"},
+        ],
+        # Demandes faites à 16 h : les activités d'avant ne sont pas leurs cycles.
+        "taches_placees": [
+            {"summary": "Lave-linge", "uid": "app-1", "rang": 3, "demandee_iso": iso(16)},
+            {"summary": "Sèche-linge", "uid": "app-2", "rang": 3, "demandee_iso": iso(16)},
+        ],
+    }
+    actual = {
+        "heure_maj_iso": iso(16, 30),
+        "equipements_reels_horaire": {
+            "Lave-linge": [
+                segment(iso(3), iso(4, 15), 0.4),
+                segment(iso(6, 50), iso(7), 0.01),  # réveil de veille : pas un cycle
+                segment(iso(10, 5), iso(11, 45), 0.4),
+            ],
+            "Sèche-linge": [
+                segment(iso(10), iso(12, 30), 1.0),
+                segment(iso(12, 45), iso(15, 30), 1.1),
+            ],
+        },
+    }
+    timeline = build_timeline(state, actual, 16.5, 10.0, 8.0, LAUNDRY)
+
+    assert [(link.from_hour, link.to_hour, link.started) for link in timeline.links] == [
+        (4.25, 10.0, True),
+        (11.75, 12.75, True),
+        (19.0, 19.0, False),
+    ]
+    assert {(link.source, link.target) for link in timeline.links} == {
+        ("Lave-linge", "Sèche-linge")
+    }
+
+
+def test_a_cycle_started_before_the_other_appliance_has_no_link() -> None:
+    """Séchage du linge de la veille à 8 h, lessive à 10 h, séchage à 14 h : seul le second
+    séchage suit la lessive."""
+    actual = {
+        "heure_maj_iso": iso(18),
+        "equipements_reels_horaire": {
+            "Lave-linge": [segment(iso(10), iso(12), 0.5)],
+            "Sèche-linge": [segment(iso(8), iso(9), 1.0), segment(iso(14), iso(16), 1.0)],
+        },
+    }
+    timeline = build_timeline({"planning": []}, actual, 18.0, 10.0, 8.0, LAUNDRY)
+    assert [row.device for row in timeline.rows] == ["Lave-linge", "Sèche-linge"]
+    assert [(link.from_hour, link.to_hour) for link in timeline.links] == [(12.0, 14.0)]
+
+
+def test_a_launched_planned_cycle_is_linked_from_its_measured_start() -> None:
+    """Lessive prévue à 10 h, lancée à 10 h 20 et finie ; séchage prévu à 13 h, lancé à
+    13 h 10 : la liaison va de la fin mesurée au départ mesuré, pleine."""
+    state = {"planning": [cycle("Lave-linge", 10, 12), cycle("Sèche-linge", 13, 15)]}
+    actual = {
+        "heure_maj_iso": iso(13, 30),
+        "equipements_reels_horaire": {
+            "Lave-linge": [segment(iso(10, 20), iso(12, 15), 0.9)],
+            "Sèche-linge": [segment(iso(13, 10), iso(13, 30), 0.2, running=True)],
+        },
+    }
+    timeline = build_timeline(state, actual, 13.5, 10.0, 8.0, LAUNDRY)
+    assert [(link.from_hour, link.to_hour, link.started) for link in timeline.links] == [
+        (12.25, 13.1667, True)
+    ]

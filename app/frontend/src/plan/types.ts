@@ -175,6 +175,20 @@ export interface TimelineRow {
   // Type de l'équipement dans la maison (« WashingMachine », « Dryer »…), pour son icône ;
   // absent ou null : une batterie, ou un équipement que la maison n'a plus.
   type?: string | null;
+  // Équipement que celui-ci suit (« démarre après la fin de »), quand il a aussi sa ligne : la
+  // ligne vient juste après la sienne.
+  follows?: string | null;
+}
+
+// Liaison entre deux cycles de la journée : celui de la ligne `target` vient après celui de la
+// ligne `source`. De la fin du cycle suivi (`from_hour`) au début de celui qui le suit
+// (`to_hour`) ; `started` : ce dernier est lancé ou fini (trait plein), sinon pointillé.
+export interface TimelineLink {
+  source: string;
+  target: string;
+  from_hour: number;
+  to_hour: number;
+  started: boolean;
 }
 
 export interface Timeline {
@@ -186,6 +200,7 @@ export interface Timeline {
   unplanned: Unplanned[];
   badge: "on_time" | "shifted" | null;
   cancelled?: string[]; // planifications annulées pour aujourd'hui (vue Aujourd'hui seule)
+  links?: TimelineLink[]; // liaisons entre les cycles d'équipements qui se suivent
 }
 
 export type ObjectivePreset = "cost" | "autonomy" | "self_consumption" | "co2" | "custom";

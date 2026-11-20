@@ -46,6 +46,9 @@ class Context:
     appliances: tuple[str, ...] = ()
     # Type de chaque équipement de la maison, par son nom (``DeviceKind``) : l'icône de sa ligne.
     kinds: Mapping[str, str] = field(default_factory=dict)
+    # Équipement réglé « démarre après la fin de » (nom) → nom de l'équipement qu'il suit : sa
+    # ligne de la frise vient juste après, reliée à elle.
+    follows: Mapping[str, str] = field(default_factory=dict)
     # Objectif du calcul (préréglage du lot 3.6) : l'indicateur mis en avant (point n° 5).
     objective: str = "cost"
     # Faux pour une maison sans installation solaire (lot 7.4) : rien de solaire à montrer.

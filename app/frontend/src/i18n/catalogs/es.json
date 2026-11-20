@@ -313,6 +313,8 @@
       "tip_none": "{start} → {end}: {what}, nada previsto ni medido",
       "legend_sun": "Producción solar",
       "legend_off_peak": "Horas valle",
+      "legend_link": "Después de otro equipo (discontinua: aún no iniciado)",
+      "follows": "empieza después de {device}",
       "tip_off_peak": "{start} → {end}: horas valle",
       "tip_peak": "{start} → {end}: horas punta",
       "tip_sun": "{start} → {end}: producción solar, {kwh} kWh",

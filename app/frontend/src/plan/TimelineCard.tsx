@@ -23,6 +23,11 @@
 // heures creuses, au-dessus d'elle une bande de soleil — plus dense quand la production est
 // forte, mesurée si elle l'est, prévue sinon — et la phrase du clic dit le tarif et la
 // production de l'heure choisie. Une légende de deux mots l'explique sous l'axe.
+// Un équipement qui en suit un autre (le sèche-linge après le lave-linge) vient juste sous lui,
+// et chacun de ses cycles est relié au cycle qu'il suit par un trait fin (timelineLinks.ts) :
+// plein quand il est lancé ou fini, en pointillé tant qu'il est prévu ou pas lancé. Le trait est
+// un décor : la dépendance est dite dans le nom de la ligne pour un lecteur d'écran, et dans la
+// légende.
 
 import { Fragment, useCallback, useEffect, useState, type MouseEvent } from "react";
 
@@ -32,6 +37,7 @@ import { hour, kwh } from "./format";
 import { freeSpan } from "./timelineSpan";
 import { rowLabel } from "./batteryLabel";
 import { cycleNames } from "./cycleNames";
+import { laneOffset, linkShapes, stubPx, turnsBack } from "./timelineLinks";
 import { hourSun } from "./dayPoints";
 import type { Bar, HourPoint, TimelineRow, Timeline } from "./types";
 import Icon from "../ui/Icon";
@@ -201,6 +207,7 @@ export default function TimelineCard({
     else offPeak.push([point.hour, point.hour + 1]);
   }
   const sun = hours ? sunBand(hours, readingHour) : "none";
+  const links = linkShapes(timeline);
 
   // Prévu et réel de la piste à l'heure `at` ; `own` est le bloc touché, s'il y en a un.
   const pick = (lane: Lane, at: number, own?: { bar: Bar; actual: boolean }) => {
@@ -300,6 +307,32 @@ export default function TimelineCard({
       {tip?.key === lane.key && <span className="tl-zone" style={{ left: `${(tip.zone / 24) * 100}%` }} />}
       {bars(lane, lane.planned, false)}
       {bars(lane, lane.actual, true)}
+      {!single &&
+        (links.get(lane.key) ?? []).map((shape, index) => {
+          // Un morceau par virage (styles.css). Tracé ordinaire, deux morceaux : le long de la
+          // ligne du bloc suivi puis la descente, la fin de la descente puis le long de cette
+          // ligne. Tracé de repli, quatre : la sortie du bloc suivi, la descente et le couloir,
+          // la fin du couloir et la descente, l'entrée dans le bloc qui suit.
+          const direct = shape.via !== null;
+          const back = !direct && turnsBack(shape, trackWidth) ? " tl-link-back" : "";
+          const kind = `tl-link${shape.started ? "" : " tl-link-dashed"}${back}`;
+          const style = {
+            ["--x1" as string]: `${(shape.from / 24) * 100}%`,
+            ["--x2" as string]: `${(shape.to / 24) * 100}%`,
+            ["--via" as string]: `${((shape.via ?? shape.to) / 24) * 100}%`,
+            ["--half" as string]: `${((shape.to - shape.from) / 48) * 100}%`,
+            ["--stub" as string]: `${stubPx(shape, trackWidth)}px`,
+            ["--lane" as string]: `${laneOffset(shape)}rem`,
+            ["--skip" as string]: shape.skip,
+          };
+          return (
+            <Fragment key={`l-${index}`}>
+              {(direct ? ["across", "into"] : ["out", "down", "along", "in"]).map((part) => (
+                <span key={part} aria-hidden="true" className={`${kind} tl-link-${part}`} style={style} />
+              ))}
+            </Fragment>
+          );
+        })}
       {readingHour !== null && <span className="tl-now" style={{ left: `${(readingHour / 24) * 100}%` }} />}
     </div>
   );
@@ -370,6 +403,9 @@ export default function TimelineCard({
                   </span>
                   <span className="tl-name">
                     <span>{rowLabel(row, t)}</span>
+                    {row.follows && (
+                      <span className="visually-hidden">{t("plan.timeline.follows", { device: row.follows })}</span>
+                    )}
                     {stateLine(row) && <small>{stateLine(row)}</small>}
                   </span>
                 </span>
@@ -411,10 +447,11 @@ export default function TimelineCard({
           </div>
         </div>
       )}
-      {!timeline.empty && (sun !== "none" || offPeak.length > 0) && (
+      {!timeline.empty && (sun !== "none" || offPeak.length > 0 || links.size > 0) && (
         <p className="tl-legend dim">
           {sun !== "none" && <span className="tl-legend-sun">{t("plan.timeline.legend_sun")}</span>}
           {offPeak.length > 0 && <span className="tl-legend-offpeak">{t("plan.timeline.legend_off_peak")}</span>}
+          {links.size > 0 && <span className="tl-legend-link">{t("plan.timeline.legend_link")}</span>}
         </p>
       )}
       {/* Planifications annulées pour aujourd'hui, rétablies d'un clic ; ailleurs que sur la vue
