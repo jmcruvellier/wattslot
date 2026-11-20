@@ -131,6 +131,34 @@ def test_device_statuses_at_the_last_reading() -> None:
     assert badge == "shifted"
 
 
+def test_an_activity_before_a_request_is_not_its_cycle() -> None:
+    """20/11/2026 : lessive faite à 3 h, nouvelle lessive demandée à 8 h 21 et prévue à 10 h.
+    La frise la disait « lancée à 3 h » : « Prochaine action » ne la proposait pas."""
+    planning = [
+        {
+            "equipement": "Lave-linge",
+            "heure_debut": 10,
+            "heure_fin": 12,
+            "debut_min": 600,
+            "fin_min": 720,
+            "energie_kwh": 0.4,
+            "demande": "app-47",
+        }
+    ]
+    actual = {"equipements_reels_horaire": {"Lave-linge": [segment(iso(3), iso(4, 15), 0.37)]}}
+    context = Context(zone=PARIS)
+
+    def status(asked: dict[str, str]) -> str:
+        found, _, _ = statuses(
+            planned_devices(planning, context, asked), actual, 9.9, set(), context
+        )
+        return found[0].status
+
+    assert status({"app-47": iso(8, 21)}) == "planned"
+    assert status({"app-47": iso(2)}) == "shifted"  # demandée avant : c'est bien son cycle
+    assert status({}) == "shifted"  # tâche sans moment de demande : comme avant
+
+
 def test_without_actual_data_nothing_is_judged() -> None:
     found, unplanned, badge = statuses(PLANNED, None, 23.0, set(), Context(zone=PARIS))
     assert {s.status for s in found} == {"planned"} and unplanned == [] and badge is None
