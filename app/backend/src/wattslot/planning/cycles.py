@@ -128,11 +128,43 @@ def after_midnight(hourly: Mapping[int, float]) -> dict[int, float]:
     return {hour - 24: kwh for hour, kwh in hourly.items() if hour >= 24 and kwh > 0}
 
 
-def recognized_segment(segments: Sequence[Segment], planned_kwh: float) -> Segment | None:
-    """Dernière activité du jour reconnue comme le cycle de l'équipement."""
+# Cycle encore en cours : durée d'activité à partir de laquelle il est jugé sur son rythme.
+RUNNING_MIN = 15
+
+
+def is_recognized(segment: Segment, planned_kwh: float, cycle_min: float | None = None) -> bool:
+    """L'activité est-elle le cycle prévu : au moins ``RECOGNIZED_FRACTION`` de son énergie.
+
+    Une activité encore en cours depuis ``RUNNING_MIN`` est jugée sur son rythme : la même
+    fraction de l'énergie attendue à ce stade du cycle (au prorata de ``cycle_min``). Un cycle
+    long et peu gourmand n'atteignait le seuil qu'après plus d'une heure : un sèche-linge de
+    1,48 kWh sur 4 h, à 0,40 kWh après 59 minutes, passait pour pas encore lancé, et le plan
+    le replaçait plus tard (constaté le 20/11/2026). Un réveil de veille, de quelques watts,
+    ne tient pas ce rythme."""
+    if segment.energy_kwh <= 0:
+        return False
     threshold = RECOGNIZED_FRACTION * (planned_kwh or 0.0)
-    recognized = [s for s in segments if s.energy_kwh >= threshold and s.energy_kwh > 0]
-    return recognized[-1] if recognized else None
+    if segment.energy_kwh >= threshold:
+        return True
+    if not segment.running or not cycle_min or cycle_min <= 0:
+        return False
+    minutes = (segment.end - segment.start).total_seconds() / 60
+    return minutes >= RUNNING_MIN and segment.energy_kwh >= threshold * min(
+        1.0, minutes / cycle_min
+    )
+
+
+def recognized_segment(
+    segments: Sequence[Segment], planned_kwh: float, cycle_min: float | None = None
+) -> Segment | None:
+    """Dernière activité du jour reconnue comme le cycle de l'équipement : à son énergie
+    d'abord ; sinon seulement, une activité en cours reconnue à son rythme
+    (``is_recognized``) — elle ne prend pas la place d'un cycle déjà fait."""
+    by_energy = [s for s in segments if is_recognized(s, planned_kwh)]
+    if by_energy:
+        return by_energy[-1]
+    by_pace = [s for s in segments if is_recognized(s, planned_kwh, cycle_min)]
+    return by_pace[-1] if by_pace else None
 
 
 # Recommandation non suivie : délai après le départ annoncé, sans aucune activité mesurée de
@@ -156,7 +188,7 @@ def realign(
     planned_kwh: float, cycle_min: float, segments: Sequence[Segment], now: datetime
 ) -> Realignment | None:
     """Recalage d'un cycle prévu sur son cycle réel du jour, s'il y en a un."""
-    segment = recognized_segment(segments, planned_kwh)
+    segment = recognized_segment(segments, planned_kwh, cycle_min)
     if segment is None:
         return None
     if segment.running:

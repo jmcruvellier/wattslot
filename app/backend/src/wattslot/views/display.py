@@ -141,7 +141,10 @@ def planned_devices_hourly(
         items = sorted(items, key=lambda i: i.get("rang") or 1)
         found = attribute(
             measured.get(key, []),
-            [Wanted(str(index), i.get("energie_kwh", 0.0)) for index, i in enumerate(items)],
+            [
+                Wanted(str(index), i.get("energie_kwh", 0.0), cycle_min=_bounds(i)[2])
+                for index, i in enumerate(items)
+            ],
         )
         for index, i in enumerate(items):
             own[id(i)] = [found[str(index)]] if str(index) in found else []
@@ -163,7 +166,7 @@ def planned_devices_hourly(
         realignment = realign(energy, cycle_min, segments, now) if now else None
         sources: tuple[dict[int, float], ...]
         if realignment is not None and now is not None:
-            segment = recognized_segment(segments, energy)
+            segment = recognized_segment(segments, energy, cycle_min)
             assert segment is not None
             sources = (
                 measured_hourly(realignment, segment, shape),

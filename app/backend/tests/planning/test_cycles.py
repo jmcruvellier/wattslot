@@ -13,6 +13,7 @@ from wattslot.planning.cycles import (
     Segment,
     free_from_hour,
     free_from_minute,
+    is_recognized,
     measured_hourly,
     planned_hourly,
     realign,
@@ -122,7 +123,10 @@ def test_realignment(seed: int) -> None:
     actual = realign(planned_kwh, cycle_min, segs, now)
 
     if expected is None:
-        assert actual is None
+        # Écart voulu à la v1 : sans cycle reconnu à son énergie, une activité encore en
+        # cours au rythme du cycle est reconnue (``is_recognized``).
+        paced = [s for s in segs if s.running and is_recognized(s, planned_kwh, cycle_min)]
+        assert (actual is None) == (not paced)
         return
     assert actual == Realignment(
         start=datetime.fromisoformat(expected["debut_iso"]),
@@ -144,3 +148,23 @@ def test_realignment(seed: int) -> None:
         measured_hourly(actual, recognized, cycle_shape),
         v1(V1 + "conso_mesuree_horaire", expected, segment, cycle_shape),
     )
+
+
+def test_a_long_cycle_still_running_is_recognized_by_its_pace() -> None:
+    """20/11/2026 : sèche-linge de 1,48 kWh sur 4 h, en marche depuis 59 minutes avec 0,40 kWh
+    (seuil : 0,44 kWh). Le calcul le croyait pas encore lancé et le replaçait à 12 h 04."""
+    start = DAY + timedelta(hours=10)
+
+    def running(minutes: int, kwh: float, still: bool = True) -> Segment:
+        return Segment(start, start + timedelta(minutes=minutes), kwh, still)
+
+    assert is_recognized(running(59, 0.40), 1.48, 240)
+    assert realign(1.48, 240, [running(59, 0.40)], start + timedelta(minutes=59)) is not None
+    # Activité finie sous le seuil, ou sans durée de cycle connue : comme avant.
+    assert not is_recognized(running(59, 0.40, still=False), 1.48, 240)
+    assert not is_recognized(running(59, 0.40), 1.48)
+    # Réveil de veille (quelques watts) ou tout début d'activité : pas encore un cycle.
+    assert not is_recognized(running(59, 0.01), 1.48, 240)
+    assert not is_recognized(running(10, 0.10), 1.48, 240)
+    # Au-dessus du seuil d'énergie : reconnue, en cours ou non.
+    assert is_recognized(running(30, 0.50, still=False), 1.48, 240)

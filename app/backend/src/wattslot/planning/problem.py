@@ -493,6 +493,7 @@ def real_cycles(data: PlanningInput, reference: Reference = REFERENCE) -> RealCy
                     since=request.asked_at if request is not None else None,
                     # Tâche close : son cycle a démarré pendant son créneau, pas après.
                     before=None if request is not None else closed_end,
+                    cycle_min=_cycle_min(item),
                 ),
             )
         )
@@ -502,7 +503,10 @@ def real_cycles(data: PlanningInput, reference: Reference = REFERENCE) -> RealCy
         cycle = characteristics(task.name, data, reference)
         if cycle is not None:
             wanted[task_key(task.name)].append(
-                (task.rank or 1, Wanted(task.ident, cycle[0], since=task.asked_at))
+                (
+                    task.rank or 1,
+                    Wanted(task.ident, cycle[0], since=task.asked_at, cycle_min=cycle[1]),
+                )
             )
     found: dict[str, Segment] = {}
     devices: dict[str, str] = {}
