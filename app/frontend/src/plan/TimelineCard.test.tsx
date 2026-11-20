@@ -477,10 +477,12 @@ describe("frise des équipements", () => {
     renderTimeline(view.timeline, 14.5, { choices, onChanged: () => undefined });
     expect(screen.getAllByLabelText("Lave-linge")).toHaveLength(1); // une seule ligne
 
+    // La légende dit de quel cycle il s'agit ; le mesuré garde le nom de l'équipement.
+    expect(screen.getByRole("button", { name: "Réel 10h05 → 11h30 : Lave-linge, 1,00 kWh" })).toBeInTheDocument();
     // Le cycle déjà fait ne se déplace plus ; le second, pas encore lancé, s'ouvre.
-    const done = screen.getByRole("button", { name: "Prévu 10h → 11h30 : Lave-linge, 1,00 kWh" });
+    const done = screen.getByRole("button", { name: "Prévu 10h → 11h30 : Lave-linge #1, 1,00 kWh" });
     expect(done).not.toHaveClass("tl-pickable");
-    const second = screen.getByRole("button", { name: "Prévu 16h → 17h30 : Lave-linge, 1,00 kWh" });
+    const second = screen.getByRole("button", { name: "Prévu 16h → 17h30 : Lave-linge #2, 1,00 kWh" });
     expect(second).toHaveClass("tl-pickable");
     await user.click(second);
 
