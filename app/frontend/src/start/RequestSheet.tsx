@@ -9,7 +9,8 @@ import { getJson } from "../api";
 import { useI18n } from "../i18n/I18nProvider";
 import Button from "../ui/Button";
 import Sheet from "../ui/Sheet";
-import RequestForm, { pendingLatest, type RequestDevice } from "./RequestForm";
+import RequestForm, { type RequestDevice } from "./RequestForm";
+import { pendingLatest } from "./pendingLatest";
 
 type Load =
   | { status: "loading" }
