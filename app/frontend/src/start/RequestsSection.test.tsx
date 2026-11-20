@@ -138,6 +138,8 @@ describe("RequestsSection", () => {
 
     const call = calls.find((c) => c.url === "api/planning/launched");
     expect(call).toMatchObject({ method: "POST", body: { device: "Lave-vaisselle #2" } });
+    // Un cycle après le premier : sa déclaration change le plan, le calcul est relancé.
+    expect(calls.some((c) => c.url === "api/planning/run" && c.method === "POST")).toBe(true);
     expect(screen.getByText(/Lave-vaisselle : marqué comme lancé/)).toBeInTheDocument();
   });
 

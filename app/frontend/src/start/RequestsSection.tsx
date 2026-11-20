@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 
 import { getJson, postJson } from "../api";
 import { useI18n } from "../i18n/I18nProvider";
+import { declareLaunched } from "../plan/declared";
 import RequestForm, { type RequestDevice } from "./RequestForm";
 import { pendingLatest } from "./pendingLatest";
 
@@ -108,9 +109,7 @@ export default function RequestsSection() {
                 <>
                   <button
                     type="button"
-                    onClick={() =>
-                      void act(() => postJson("api/planning/launched", { device: request.cycle }))
-                    }
+                    onClick={() => void act(() => declareLaunched(request.cycle ?? ""))}
                   >
                     {t("requests.mark_launched")}
                   </button>{" "}
