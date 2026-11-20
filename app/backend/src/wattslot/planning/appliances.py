@@ -147,6 +147,83 @@ def activity_segments(
     ]
 
 
+def _integrated_kwh(points: Sequence[Observation], begin: datetime, end: datetime) -> float:
+    """Énergie de ``begin`` à ``end``, par palier sur la puissance (``points`` triés) ; la
+    dernière valeur est tenue jusqu'à ``end``."""
+    total = 0.0
+    for (t0, v0), (t1, _v1) in itertools.pairwise(points):
+        low, high = max(t0, begin), min(t1, end)
+        if high > low:
+            total += v0 * (high - low).total_seconds() / 3600 / 1000
+    if points and end > max(points[-1][0], begin):
+        total += points[-1][1] * (end - max(points[-1][0], begin)).total_seconds() / 3600 / 1000
+    return total
+
+
+def _pause_before(
+    points: Sequence[Observation], low: datetime, moment: datetime, threshold_w: float
+) -> tuple[datetime, datetime] | None:
+    """Dernière pause (passage sous le seuil, puis reprise) entre ``low`` et ``moment`` :
+    l'instant de l'arrêt et celui de la reprise. Une pause en cours à ``moment`` compte, avec la
+    reprise qui la suit."""
+    found: tuple[datetime, datetime] | None = None
+    stopped: datetime | None = None
+    for instant, watts in points:
+        if instant > moment and stopped is None:
+            break
+        if instant <= low:
+            continue
+        if watts < threshold_w:
+            stopped = stopped or instant
+        elif stopped is not None:
+            found, stopped = (stopped, instant), None
+    return found
+
+
+def split_at(
+    cycles: Sequence[Cycle],
+    moments: Sequence[datetime],
+    power: Sequence[Observation],
+    threshold_w: float,
+) -> list[Cycle]:
+    """Activités coupées en deux quand un des ``moments`` tombe dedans : une seconde charge
+    lancée derrière la première (pause plus courte que la fenêtre de fusion), que l'utilisateur
+    a déclarée à cet instant. La déclaration dit seulement qu'il y a deux charges ; la coupure
+    se fait là où les mesures montrent le changement de charge, à la dernière pause d'avant :
+    la première partie finit à l'arrêt, la seconde commence à la reprise et garde l'état de
+    l'activité. Sans pause mesurée, la coupure est à l'instant déclaré. Énergies intégrées sur
+    la puissance. Un instant hors de toute activité ne coupe rien, ni une partie de moins de
+    ``SHORT_GAP_MIN``."""
+    points = sorted(power)
+    found = list(cycles)
+    shortest = timedelta(minutes=SHORT_GAP_MIN)
+    for moment in sorted(moments):
+        for index, cycle in enumerate(found):
+            if not cycle.start < moment < cycle.end:
+                continue
+            stop, resume = _pause_before(points, cycle.start, moment, threshold_w) or (
+                moment,
+                moment,
+            )
+            if stop - cycle.start < shortest:
+                break
+            found[index : index + 1] = [
+                replace(
+                    cycle,
+                    end=stop,
+                    energy_kwh=round(_integrated_kwh(points, cycle.start, stop), 3),
+                    running=False,
+                ),
+                replace(
+                    cycle,
+                    start=resume,
+                    energy_kwh=round(_integrated_kwh(points, resume, cycle.end), 3),
+                ),
+            ]
+            break
+    return found
+
+
 def apply_counter(cycles: Sequence[Cycle], counter: Sequence[Observation]) -> list[Cycle]:
     """Énergie de chaque cycle lue au compteur cumulatif (dernier relevé à l'instant voulu),
     sinon gardée telle qu'intégrée (compteur sans relevé avant, ou remis à zéro)."""

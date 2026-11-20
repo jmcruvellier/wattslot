@@ -26,7 +26,7 @@ compteur total (2048,9 kWh) était alors compté en entier sur la nuit.
 
 import itertools
 from collections import defaultdict
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from datetime import date, datetime, time, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -392,8 +392,11 @@ def actual_day(
     manual: bool = False,
     configuration: Configuration | None = None,
     reader: AggregateReader | None = None,
+    declared: Mapping[str, datetime] | None = None,
 ) -> dict[str, Any]:
     """Données réelles de ``day`` jusqu'à ``until`` (fin de journée au plus), format de la v1.
+    ``declared`` : lancements déclarés du jour, qui séparent deux charges enchaînées
+    (``journal.real_cycles``).
 
     Statistiques externes (« linky:… ») : pas de brut, leurs heures viennent des agrégats repris
     de HA (``reader``), souvent la veille seulement ; une heure pas encore reçue n'entre pas dans
@@ -528,7 +531,7 @@ def actual_day(
             }
             for s in segments
         ]
-        for name, segments in real_cycles(model, raw, until, configuration, day).items()
+        for name, segments in real_cycles(model, raw, until, configuration, day, declared).items()
     }
     # Durées à placer (filtration…) : celles de la configuration, sinon la piscine de la v1.
     effective = config.effective(model, configuration) if configuration is not None else None

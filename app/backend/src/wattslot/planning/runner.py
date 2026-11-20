@@ -43,6 +43,7 @@ from wattslot.planning import (
     cancelled,
     capture,
     choices,
+    declared,
     forecast_quality,
     open_meteo,
     overnight,
@@ -438,7 +439,10 @@ async def next_day_of(
 def _actual(ctx: Context, day: date, until: datetime, manual: bool = False) -> Any:
     """Données réelles du jour ; un échec n'empêche pas le calcul (le dashboard s'en passe)."""
     try:
-        return actual_day(ctx.model, ctx.raw, day, until, manual, ctx.configuration, ctx.reader)
+        said = declared.moments(ctx.database, day)
+        return actual_day(
+            ctx.model, ctx.raw, day, until, manual, ctx.configuration, ctx.reader, said
+        )
     except Exception:
         logger.exception("Données réelles du %s illisibles", day)
         return None
@@ -478,7 +482,14 @@ def refresh_actual(
     if current is None or current.day != today:
         return None
     actual = actual_day(
-        model, raw, today, now, manual=manual, configuration=configuration, reader=reader
+        model,
+        raw,
+        today,
+        now,
+        manual=manual,
+        configuration=configuration,
+        reader=reader,
+        declared=declared.moments(database, today),
     )
     content = {**current.content, "donnees_reelles_cache": actual}
     store.save("today", today, content, current.seconds, current.manual)

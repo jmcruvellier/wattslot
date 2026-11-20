@@ -122,6 +122,24 @@ def test_a_request_never_takes_an_activity_started_before_it() -> None:
 # --- Une seconde demande après un cycle déjà fait ----------------------------------------------
 
 
+def test_a_declared_second_load_is_the_cycle_of_the_second_request() -> None:
+    """20/11/2026 : deux charges de sèche-linge enchaînées, mesurées comme une seule activité.
+    Coupée à la déclaration du second cycle (``journal.real_cycles``), chaque partie va à son
+    cycle : le second, demandé à 12 h 25, n'est plus à lancer."""
+    day = datetime(2026, 11, 20)
+    first = Segment(day.replace(hour=10), day.replace(hour=12, minute=30), 1.0)
+    second = Segment(day.replace(hour=12, minute=40), day.replace(hour=13, minute=45), 0.41, True)
+    wanted = [
+        Wanted("X", 1.48, cycle_min=240),
+        Wanted("X #2", 1.03, since=day.replace(hour=12, minute=25), cycle_min=165),
+    ]
+
+    assert attribute([first, second], wanted) == {"X": first, "X #2": second}
+    # Sans la déclaration, une seule activité : le second cycle reste à lancer.
+    whole = Segment(first.start, second.end, 1.41, True)
+    assert attribute([whole], wanted) == {"X": whole}
+
+
 def heater_done_then_asked_again() -> tuple[PlanningInput, Slot]:
     """Journée 02 à midi : le chauffe-eau a tourné, sa tâche est close, son bloc est dans le
     plan ; il est redemandé pour aujourd'hui."""

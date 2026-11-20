@@ -2,8 +2,11 @@
 n'est plus à lancer ce jour-là. « Prochaine action » passe à l'appareil suivant, sur tous les
 navigateurs et après chaque nouveau calcul ; ni rappel ni notification « à lancer » ne partent
 plus pour lui. Le plan n'en est pas changé : seul un cycle reconnu dans les mesures cale son
-créneau. Gardé en base jusqu'au jour suivant (``declared_launches``) ; un retour en arrière
-rend l'appareil à « Prochaine action » tant que son cycle n'est pas reconnu.
+créneau. Une exception : déclaré pendant que l'appareil tourne déjà, un cycle qui n'est pas le
+premier de la journée est une seconde charge lancée derrière la première ; l'activité mesurée
+est coupée à la pause d'avant (``journal.real_cycles``), et le cycle est reconnu. Gardé en base
+jusqu'au jour suivant (``declared_launches``) ; un retour en arrière rend l'appareil à
+« Prochaine action » tant que son cycle n'est pas reconnu.
 """
 
 import sqlite3
@@ -19,6 +22,14 @@ def load(database: sqlite3.Connection, day: date) -> set[str]:
         "SELECT device FROM declared_launches WHERE day = ?", (day.isoformat(),)
     )
     return {str(row[0]) for row in rows}
+
+
+def moments(database: sqlite3.Connection, day: date) -> dict[str, datetime]:
+    """Instant de chaque lancement déclaré ce jour-là, par cycle."""
+    rows = database.execute(
+        "SELECT device, created_at FROM declared_launches WHERE day = ?", (day.isoformat(),)
+    )
+    return {str(device): datetime.fromisoformat(str(at)) for device, at in rows}
 
 
 def declare(database: sqlite3.Connection, day: date, device: str, now: datetime) -> None:
