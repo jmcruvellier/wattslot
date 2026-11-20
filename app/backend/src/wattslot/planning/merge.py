@@ -235,9 +235,17 @@ def merge_planning(
             merged.append(old_item)  # commencé ou décidé dans le passé : gelé
         elif name in new_by_name:
             merged.append(new_by_name[name])
-        elif old_item and still_active and name not in unfollowed:
+        elif (
+            old_item
+            and still_active
+            and name not in unfollowed
+            and old_item["heure_debut"] <= first_hour
+        ):
             # Une recommandation non suivie qui ne tient plus aujourd'hui n'est pas gardée
-            # à son ancienne heure : l'appareil n'a pas tourné.
+            # à son ancienne heure : l'appareil n'a pas tourné. Écart à la v1 : un bloc encore
+            # à venir que le nouveau calcul ne place plus n'est pas gardé non plus ; il
+            # restait affiché à son ancienne heure à côté de l'avertissement « non placé »
+            # (sèche-linge annoncé à 11 h, constaté le 20/11/2026).
             merged.append(old_item)
         # sinon : tâche annulée dans HA, et plus proposée par le nouveau calcul
     return merged
