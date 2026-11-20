@@ -313,6 +313,8 @@
       "tip_none": "{start} → {end}: {what}, nothing planned or measured",
       "legend_sun": "Solar production",
       "legend_off_peak": "Off-peak hours",
+      "legend_link": "Runs after another appliance (dashed: not started yet)",
+      "follows": "starts after {device}",
       "tip_off_peak": "{start} → {end}: off-peak hours",
       "tip_peak": "{start} → {end}: peak hours",
       "tip_sun": "{start} → {end}: solar production, {kwh} kWh",

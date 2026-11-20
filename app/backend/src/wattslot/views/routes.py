@@ -83,6 +83,7 @@ def house_context(state: Any, day: date) -> Context:
     l'état de l'application (``app.state``)."""
     saved = configuration.load(state.graph)
     home = home_model.load(state.graph)
+    names = {device.key: device.name for device in home.devices}
     context = Context(
         zone=state.raw.zone,
         off_peak=tuple(off_peak_ranges(configuration.tariff_of(saved), day)),
@@ -91,6 +92,11 @@ def house_context(state: Any, day: date) -> Context:
             a.name for a in cycle_appliances(home, saved) if a.key not in runtime_keys(home, saved)
         ),
         kinds={device.name: device.kind.value for device in home.devices},
+        follows={
+            names[settings.key]: names[settings.after]
+            for settings in saved.devices
+            if settings.after in names and settings.key in names
+        },
         objective=objective_of(state, saved).value,
         solar=has_production(home),
         tariff=configuration.tariff_of(saved),

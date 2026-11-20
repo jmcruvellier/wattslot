@@ -538,4 +538,67 @@ describe("frise des équipements", () => {
     renderTimeline({ ...TODAY.timeline, rows: [FUTURE], cancelled: ["Lave-linge"] }, 14.5);
     expect(screen.queryByRole("button", { name: /Rétablir/ })).toBeNull();
   });
+
+  it("relie le cycle d'un équipement à celui qu'il suit : plein s'il est lancé, pointillé sinon", () => {
+    const cycle = (start: number, end: number) => ({
+      start_hour: start,
+      end_hour: end,
+      energy_kwh: 1,
+      action: null,
+      mode: null,
+    });
+    renderTimeline(
+      {
+        ...TODAY.timeline,
+        rows: [
+          { device: "Lave-linge", kind: "cycle", planned: [], actual: [cycle(3, 4.25), cycle(10, 11.75)] },
+          {
+            device: "Sèche-linge",
+            kind: "cycle",
+            planned: [cycle(17, 19)],
+            actual: [cycle(12, 14)],
+            follows: "Lave-linge",
+          },
+        ],
+        statuses: [],
+        links: [
+          { source: "Lave-linge", target: "Sèche-linge", from_hour: 4.25, to_hour: 12, started: true },
+          { source: "Lave-linge", target: "Sèche-linge", from_hour: 11.75, to_hour: 17, started: false },
+        ],
+      },
+      14.5,
+    );
+
+    // Premier morceau : un par liaison, depuis la fin du cycle suivi.
+    const outs = [...document.querySelectorAll<HTMLElement>(".tl-link-across")];
+    expect(outs.map((out) => out.classList.contains("tl-link-dashed"))).toEqual([false, true]);
+    const percent = (piece: HTMLElement, name: string) => parseFloat(piece.style.getPropertyValue(name));
+    // De la fin du cycle suivi au début de celui qui suit, en parts de la journée.
+    expect(percent(outs[0], "--x1")).toBeCloseTo((4.25 / 24) * 100);
+    expect(percent(outs[0], "--x2")).toBeCloseTo((12 / 24) * 100);
+    expect(percent(outs[1], "--x1")).toBeCloseTo((11.75 / 24) * 100);
+    expect(percent(outs[1], "--x2")).toBeCloseTo((17 / 24) * 100);
+    // Une seule descente par liaison, dans l'espace libre : entre la fin de la première lessive
+    // et le début de la seconde (10 h), puis entre la fin du séchage mesuré (14 h) et 17 h.
+    expect(percent(outs[0], "--via")).toBeCloseTo(((4.25 + 10) / 2 / 24) * 100);
+    expect(percent(outs[1], "--via")).toBeCloseTo(((14 + 17) / 2 / 24) * 100);
+    // Deux morceaux par liaison, tracés dans la piste du sèche-linge ; décor pour un lecteur
+    // d'écran, la dépendance est dite dans le nom de la ligne et dans la légende.
+    const pieces = [...document.querySelectorAll(".tl-link")];
+    expect(
+      pieces.map((piece) => piece.className.replace(/tl-link-dashed /, "").replace("tl-link tl-link-", "")),
+    ).toEqual(["across", "into", "across", "into"]);
+    for (const piece of pieces) {
+      expect(piece.getAttribute("aria-hidden")).toBe("true");
+      expect(piece.closest(".tl-row")?.getAttribute("aria-label")).toBe("Sèche-linge");
+    }
+    expect(screen.getByText("démarre après Lave-linge")).toBeTruthy();
+    expect(screen.getByText(/À la suite d'un autre équipement/)).toBeTruthy();
+  });
+
+  it("ne trace aucune liaison et n'en parle pas quand le plan n'en a pas", () => {
+    renderTimeline(TODAY.timeline, 14.5);
+    expect(document.querySelector(".tl-link")).toBeNull();
+    expect(screen.queryByText(/À la suite/)).toBeNull();
+  });
 });

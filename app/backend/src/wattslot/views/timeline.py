@@ -7,18 +7,24 @@ navigateur), désormais calculés côté serveur.
 """
 
 import math
+from collections import defaultdict
 from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Literal
 
 from pydantic import BaseModel
 
-from wattslot.planning.reference import ident
+from wattslot.planning.reference import ident, task_key
 from wattslot.views.display import BATTERY, Context, find_item, is_runtime
 
 SHIFT_MIN = 15  # écart de démarrage toléré (« à l'heure »)
 ENERGY_GAP_PERCENT = 10  # écart d'énergie signalé au-delà
 CYCLE_FRACTION = 0.3  # part de l'énergie prévue pour reconnaître un cycle
+MIDNIGHT_HOURS = 0.25  # activité en cours à minuit : la suite du cycle de la veille
+# Un cycle qui en suit un autre a pu démarrer un peu avant la fin mesurée de celui-ci (fin
+# reconnue avec retard) : tolérance de la liaison entre les deux.
+LINK_TOLERANCE_HOURS = SHIFT_MIN / 60
 
 
 class Bar(BaseModel):
@@ -58,6 +64,21 @@ class TimelineRow(BaseModel):
     # Type de l'équipement dans la maison (``DeviceKind`` : « WashingMachine », « Dryer »…),
     # pour l'icône de la ligne. ``None`` : une batterie, ou un équipement que la maison n'a plus.
     type: str | None = None
+    # Équipement que celui-ci suit (« démarre après la fin de »), quand il a aussi sa ligne :
+    # la ligne est alors placée juste après la sienne.
+    follows: str | None = None
+
+
+class Link(BaseModel):
+    """Liaison entre deux cycles de la journée : celui de la ligne ``target`` vient après celui
+    de la ligne ``source`` (sèche-linge après lave-linge). Tracée de la fin du cycle suivi au
+    début de celui qui le suit."""
+
+    source: str  # ligne (équipement) du cycle suivi
+    target: str  # ligne du cycle qui le suit
+    from_hour: float  # fin du cycle suivi : mesurée s'il a tourné, prévue sinon
+    to_hour: float  # début du cycle qui le suit : mesuré s'il est lancé, prévu sinon
+    started: bool  # cycle qui suit lancé ou fini : trait plein ; prévu ou pas lancé : pointillé
 
 
 class DeviceStatus(BaseModel):
@@ -95,6 +116,7 @@ class Timeline(BaseModel):
     unplanned: list[Unplanned]
     badge: Literal["on_time", "shifted"] | None = None  # au moins un équipement jugé
     cancelled: list[str] = []  # planifications annulées pour aujourd'hui (Aujourd'hui seule)
+    links: list[Link] = []  # liaisons entre les cycles d'équipements qui se suivent
 
 
 def _js_round(value: float) -> int:
@@ -355,6 +377,128 @@ def statuses(
     return found, unplanned, badge
 
 
+@dataclass(frozen=True)
+class DayCycle:
+    """Cycle de la journée d'un équipement : une activité mesurée, ou un bloc prévu pas lancé."""
+
+    start: float  # heures depuis minuit
+    end: float
+    started: bool
+
+
+def day_cycles(row: TimelineRow, found: Sequence[DeviceStatus]) -> list[DayCycle]:
+    """Cycles de la journée d'une ligne, dans l'ordre (comme ``cycleNames.ts`` de l'interface) :
+    les activités mesurées qui sont des cycles — le démarrage d'un cycle prévu d'après le bilan,
+    ou au moins ``CYCLE_FRACTION`` de la plus grosse activité de la journée (un réveil de veille
+    n'est pas un cycle) —, les blocs prévus pas lancés, et la suite d'un cycle de la veille si
+    elle n'est pas mesurée dès minuit."""
+    own = [status for status in found if (status.appliance or status.device) == row.device]
+    starts = [s.actual_start_min for s in own if s.actual_start_min is not None]
+    launched = {status.device for status in own if status.actual_start_min is not None}
+    biggest = max((bar.energy_kwh for bar in row.actual), default=0.0)
+    cycles = [
+        DayCycle(bar.start_hour, bar.end_hour, True)
+        for bar in row.actual
+        if any(abs(start - bar.start_hour * 60) < 1 for start in starts)
+        or (bar.energy_kwh > 0 and bar.energy_kwh >= CYCLE_FRACTION * biggest)
+    ]
+    measured_at_midnight = any(cycle.start < MIDNIGHT_HOURS for cycle in cycles)
+    for bar in row.planned:
+        if bar.carried:
+            if not measured_at_midnight:
+                cycles.append(DayCycle(0.0, bar.end_hour, True))
+        elif (bar.cycle or row.device) not in launched:
+            cycles.append(DayCycle(bar.start_hour, bar.end_hour, False))
+    return sorted(cycles, key=lambda cycle: cycle.start)
+
+
+def _first_start(row: TimelineRow, cycles: Sequence[DayCycle]) -> float:
+    """Premier lancement de la journée, prévu ou réel ; sans cycle, son premier bloc."""
+    if cycles:
+        return cycles[0].start
+    return min((bar.start_hour for bar in [*row.planned, *row.actual]), default=math.inf)
+
+
+def followed(state: Mapping[str, Any], context: Context) -> dict[str, str]:
+    """Équipement suivi par chaque équipement réglé « démarre après la fin de » (clés
+    ``task_key``) : le réglage de la maison, sinon la dépendance écrite dans les tâches gardées
+    avec le plan (``depend_de``)."""
+    found = {task_key(child): task_key(parent) for child, parent in context.follows.items()}
+    tasks = [*(state.get("taches_placees") or []), *(state.get("taches_en_attente") or [])]
+    for task in tasks:
+        description = task.get("description") if isinstance(task, Mapping) else None
+        if not isinstance(description, Mapping) or not description.get("depend_de"):
+            continue
+        child = task_key(str(task.get("summary", "")))
+        found.setdefault(child, task_key(str(description["depend_de"])))
+    return {child: parent for child, parent in found.items() if child and child != parent}
+
+
+def ordered_rows(
+    rows: Sequence[TimelineRow], cycles: Mapping[str, Sequence[DayCycle]]
+) -> list[TimelineRow]:
+    """Lignes dans l'ordre de la frise : les batteries, puis les équipements à cycles dans
+    l'ordre de leur premier lancement de la journée (prévu ou réel ; à égalité, l'ordre du
+    plan), un équipement qui en suit un autre juste après lui même s'il a tourné plus tôt,
+    puis les durées à placer (la filtration, qui tourne par morceaux toute la journée)."""
+    by_start = sorted(
+        (row for row in rows if row.kind == "cycle"),
+        key=lambda row: _first_start(row, cycles.get(row.device, ())),
+    )
+    children: dict[str, list[TimelineRow]] = defaultdict(list)
+    for row in by_start:
+        if row.follows is not None:
+            children[row.follows].append(row)
+    placed: list[TimelineRow] = []
+
+    def place(row: TimelineRow) -> None:
+        if any(row is other for other in placed):
+            return
+        placed.append(row)
+        for child in children.get(row.device, ()):
+            place(child)
+
+    for row in by_start:
+        if row.follows is None:
+            place(row)
+    for row in by_start:  # dépendances en boucle : aucune ligne n'est perdue
+        place(row)
+    return [
+        *(row for row in rows if row.kind == "battery"),
+        *placed,
+        *(row for row in rows if row.kind == "runtime"),
+    ]
+
+
+def links(rows: Sequence[TimelineRow], cycles: Mapping[str, Sequence[DayCycle]]) -> list[Link]:
+    """Liaisons entre les cycles d'un équipement et ceux de celui qu'il suit. Appariés dans
+    l'ordre de la journée, comme dans le calcul (``occurrences.paired``) : chaque cycle prend
+    le premier cycle de l'autre équipement, pas encore pris, fini avant son départ. Un cycle
+    lancé avant la fin de tous ceux de l'autre équipement n'a pas de liaison."""
+    found: list[Link] = []
+    for row in rows:
+        if row.follows is None:
+            continue
+        free = list(cycles.get(row.follows, ()))
+        for cycle in cycles.get(row.device, ()):
+            parent = next(
+                (other for other in free if other.end <= cycle.start + LINK_TOLERANCE_HOURS), None
+            )
+            if parent is None:
+                continue
+            free.remove(parent)
+            found.append(
+                Link(
+                    source=row.follows,
+                    target=row.device,
+                    from_hour=round(parent.end, 4),
+                    to_hour=round(cycle.start, 4),
+                    started=cycle.started,
+                )
+            )
+    return found
+
+
 # Mouvement de batterie affiché « 0,0 kWh » : quelques Wh au-dessus du plancher, pas montré.
 MIN_BATTERY_BAR_KWH = 0.05
 
@@ -523,12 +667,22 @@ def build_timeline(
         runtime_names,
         context,
     )
+    # Lignes affichées : celles qui ont un bloc. Un équipement qui en suit un autre est relié
+    # à lui si l'autre a aussi sa ligne.
+    shown = [row for row in rows if row.planned or row.actual]
+    devices = {task_key(row.device): row.device for row in shown if row.kind == "cycle"}
+    for child, parent in followed(state, context).items():
+        if child in devices and parent in devices:
+            next(row for row in shown if row.device == devices[child]).follows = devices[parent]
+    cycles = {row.device: day_cycles(row, found) for row in shown if row.kind == "cycle"}
+    shown = ordered_rows(shown, cycles)
     return Timeline(
-        rows=[row for row in rows if row.planned or row.actual],
+        rows=shown,
         empty=empty,  # type: ignore[arg-type]
         production_kwh=round(production_kwh, 3),
         consumption_kwh=round(consumption_kwh, 3),
         statuses=found,
         unplanned=unplanned,
         badge=badge,  # type: ignore[arg-type]
+        links=links(shown, cycles),
     )

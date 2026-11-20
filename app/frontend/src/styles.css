@@ -664,6 +664,8 @@ pre {
   display: grid;
   grid-template-columns: minmax(5rem, max-content) 1fr;
   gap: 0 0.5rem;
+  /* Hauteur entre deux pistes qui se suivent (liaisons) : rien, les pistes se touchent. */
+  --tl-between: 0rem;
 }
 
 .tl-row {
@@ -872,6 +874,121 @@ pre {
   white-space: nowrap;
 }
 
+/* Liaison entre deux cycles qui se suivent (timelineLinks.ts), posée dans la piste du cycle qui
+   suit, en morceaux qui portent chacun un virage arrondi. --top : le milieu du bloc suivi,
+   1,225 rem au-dessus du bas de sa piste ; le milieu du bloc qui suit est à 2,025 rem du haut
+   de cette piste. Rien n'y répond au clic.
+   Tracé ordinaire, deux morceaux :
+   - « across » : du bord droit du bloc suivi (--x1), à l'horizontale le long de sa ligne
+     jusqu'à la descente (--via), virage, et descente jusqu'au haut de cette piste ;
+   - « into » : suite de la descente, virage, et à l'horizontale jusqu'au bord gauche du bloc
+     qui suit (--x2).
+   Tracé de repli par la marge entre les pistes, quatre morceaux :
+   - « out » : sortie horizontale (--stub) du bloc suivi, puis virage vers le bas ;
+   - « down » : descente jusqu'au couloir (--lane, depuis le haut de cette piste), virage, et
+     première moitié du couloir (--half : la moitié de l'écart entre les deux cycles) ;
+   - « along » : seconde moitié du couloir, virage vers le bas un peu avant le cycle qui suit ;
+   - « in » : fin de la descente, virage, et entrée horizontale dans le bloc.
+   Cycles trop proches (« back ») : le couloir revient vers la gauche. */
+.tl-link {
+  --top: calc(-1.225rem - var(--tl-between) - var(--skip, 0) * (3.25rem + var(--tl-between)));
+  --turn: 0.4rem;
+  position: absolute;
+  box-sizing: border-box;
+  border: 0 solid var(--text-dim);
+  pointer-events: none;
+}
+
+.tl-link-dashed {
+  border-style: dashed;
+}
+
+.tl-link-across {
+  left: var(--x1);
+  width: max(1.5px, var(--via) - var(--x1));
+  top: calc(var(--top) - 0.75px);
+  height: calc(0.75px - var(--top));
+  border-top-width: 1.5px;
+  border-right-width: 1.5px;
+  border-top-right-radius: var(--turn);
+}
+
+.tl-link-into {
+  left: max(var(--x1), var(--via) - 1.5px);
+  width: max(1.5px, var(--x2) - var(--via) + 1.5px);
+  top: 0;
+  bottom: calc(100% - 2.025rem - 0.75px);
+  border-left-width: 1.5px;
+  border-bottom-width: 1.5px;
+  border-bottom-left-radius: var(--turn);
+}
+
+.tl-link-out {
+  left: var(--x1);
+  width: var(--stub);
+  top: var(--top);
+  height: 0.5rem;
+  border-top-width: 1.5px;
+  border-right-width: 1.5px;
+  border-top-right-radius: var(--turn);
+}
+
+.tl-link-down {
+  left: calc(var(--x1) + var(--stub) - 1.5px);
+  width: calc(var(--half) - var(--stub) + 1.5px);
+  top: calc(var(--top) + 0.5rem);
+  bottom: calc(100% - var(--lane));
+  border-left-width: 1.5px;
+  border-bottom-width: 1.5px;
+  border-bottom-left-radius: var(--turn);
+}
+
+.tl-link-along {
+  left: calc(var(--x1) + var(--half));
+  width: calc(var(--half) - var(--stub));
+  top: calc(var(--lane) - 1.5px);
+  height: 0.6rem;
+  border-top-width: 1.5px;
+  border-right-width: 1.5px;
+  border-top-right-radius: var(--turn);
+}
+
+.tl-link-in {
+  left: calc(var(--x2) - var(--stub) - 1.5px);
+  width: calc(var(--stub) + 1.5px);
+  top: calc(var(--lane) - 1.5px + 0.6rem);
+  bottom: calc(100% - 2.025rem - 0.75px);
+  border-left-width: 1.5px;
+  border-bottom-width: 1.5px;
+  border-bottom-left-radius: var(--turn);
+}
+
+.tl-link-back.tl-link-down {
+  left: calc(var(--x1) + var(--half));
+  width: calc(var(--stub) - var(--half));
+  border-left-width: 0;
+  border-right-width: 1.5px;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: var(--turn);
+}
+
+.tl-link-back.tl-link-along {
+  left: calc(var(--x2) - var(--stub) - 1.5px);
+  width: calc(var(--stub) - var(--half) + 1.5px);
+  border-right-width: 0;
+  border-left-width: 1.5px;
+  border-top-right-radius: 0;
+  border-top-left-radius: var(--turn);
+}
+
+.tl-legend > .tl-legend-link::before {
+  height: 0;
+  border-top: 1.5px solid var(--text-dim);
+  border-radius: 0;
+  background: none;
+  vertical-align: middle;
+}
+
 /* Dernier relevé : un trait dans la couleur d'action, et son heure dans une pastille au-dessus
    de la première piste, retenue dans la largeur de la frise. */
 .tl-now {
@@ -928,10 +1045,19 @@ pre {
 @media (max-width: 40rem) {
   .tl {
     grid-template-columns: 1fr;
+    /* Entre deux pistes : le nom de la ligne (marges de 0,35 et 0,25 rem, pastille de 1,6 rem). */
+    --tl-between: 2.2rem;
   }
 
+  /* Le nom ne prend que sa largeur, sur le fond de la carte : une liaison qui descend d'une
+     piste à la suivante passe derrière lui, sans se mêler au texte. */
   .tl-label {
+    position: relative;
+    z-index: 1;
+    justify-self: start;
+    max-width: 100%;
     margin-top: 0.35rem;
+    background: var(--surface);
   }
 
   /* Nom et ligne d'état côte à côte, pour ne pas allonger la carte. */

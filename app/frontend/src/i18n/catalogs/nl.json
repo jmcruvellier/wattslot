@@ -313,6 +313,8 @@
       "tip_none": "{start} → {end}: {what}, niets gepland of gemeten",
       "legend_sun": "Zonneproductie",
       "legend_off_peak": "Daluren",
+      "legend_link": "Na een ander apparaat (stippellijn: nog niet gestart)",
+      "follows": "start na {device}",
       "tip_off_peak": "{start} → {end}: daluren",
       "tip_peak": "{start} → {end}: piekuren",
       "tip_sun": "{start} → {end}: zonneproductie, {kwh} kWh",

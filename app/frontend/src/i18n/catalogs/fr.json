@@ -313,6 +313,8 @@
       "tip_none": "{start} → {end} : {what}, rien de prévu ni de mesuré",
       "legend_sun": "Production solaire",
       "legend_off_peak": "Heures creuses",
+      "legend_link": "À la suite d'un autre équipement (pointillé : pas encore lancé)",
+      "follows": "démarre après {device}",
       "tip_off_peak": "{start} → {end} : heures creuses",
       "tip_peak": "{start} → {end} : heures pleines",
       "tip_sun": "{start} → {end} : production solaire, {kwh} kWh",
