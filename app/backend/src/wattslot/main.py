@@ -758,9 +758,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         """Enregistre le modèle de la maison. Les types propres et le type propre d'un équipement
         absents de la requête (formulaire qui ne les connaît pas) sont gardés ; 422 avec les
         anomalies du modèle."""
-        model = _keep_types(model, home_model.load(request.app.state.graph))
+        before = home_model.load(request.app.state.graph)
+        model = _keep_types(model, before)
         _save_home(request.app.state.graph, model)
         saved = home_model.load(request.app.state.graph)
+        # Équipement remplacé (autre capteur, donc autre clé) : ses réglages le suivent.
+        configuration.follow_replaced(request.app.state.graph, before, saved)
         ingestor: Ingestor | None = request.app.state.ingestor
         if ingestor:
             await ingestor.reload(saved)  # l'ingestion suit aussitôt les entités retenues

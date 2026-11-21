@@ -11,6 +11,7 @@ from wattslot.configuration import Automation, Behavior, Configuration, DeviceSe
 from wattslot.detection import DeviceKind, Role
 from wattslot.home_model import HomeDevice, HomeModel, HomeSensor
 from wattslot.main import create_app
+from wattslot.runtime_settings import RuntimeSettings, Speed
 from wattslot.storage.graph import GraphStore
 
 HOME = HomeModel(
@@ -76,6 +77,87 @@ def test_saved_settings_survive_a_new_home_model(tmp_path: Path) -> None:
         "heater",
         "washer",
     ]
+
+
+def test_settings_follow_the_device_that_replaces_theirs(tmp_path: Path) -> None:
+    """21/11/2026 : le compteur de la filtration est remplacé, l'équipement revient sous une
+    autre clé. Ses vitesses restaient sous l'ancienne : il repartait des réglages par défaut."""
+    graph = GraphStore(tmp_path)
+    home_model.load_vocabulary(graph)
+    home_model.save(graph, HOME)
+    speeds = RuntimeSettings(speeds=[Speed(name="silence", kw=0.13), Speed(name="eco", kw=0.4)])
+    configuration.save(
+        graph,
+        Configuration(
+            devices=[
+                DeviceSettings(key="pool", behavior=Behavior.RUNTIME, runtime=speeds),
+                DeviceSettings(key="washer", behavior=Behavior.CYCLE, planned=False),
+                DeviceSettings(key="heater", behavior=Behavior.CYCLE, after="washer"),
+            ]
+        ),
+    )
+
+    def with_new(key: str, kind: DeviceKind) -> HomeModel:
+        old = next(d for d in HOME.devices if d.kind is kind)
+        return HomeModel(
+            devices=[d if d is not old else d.model_copy(update={"key": key}) for d in HOME.devices]
+        )
+
+    # La filtration revient sous une autre clé, dans le même enregistrement de la maison.
+    home = with_new("poolpump-sensor-new", DeviceKind.POOL_PUMP)
+    home_model.save(graph, home)
+    assert configuration.follow_replaced(graph, HOME, home) == {"pool": "poolpump-sensor-new"}
+    found = configuration.load(graph)
+    assert found.of("pool") is None
+    assert found.of("poolpump-sensor-new") == DeviceSettings(
+        key="poolpump-sensor-new", behavior=Behavior.RUNTIME, runtime=speeds
+    )
+    assert configuration.follow_replaced(graph, home, home) == {}  # rien de plus à suivre
+
+    # Le lave-linge aussi : le chauffe-eau qui démarre après lui suit le nouveau.
+    again = HomeModel(
+        devices=[
+            d if d.key != "washer" else d.model_copy(update={"key": "washer-2"})
+            for d in home.devices
+        ]
+    )
+    home_model.save(graph, again)
+    assert configuration.follow_replaced(graph, home, again) == {"washer": "washer-2"}
+    found = configuration.load(graph)
+    washer, heater = found.of("washer-2"), found.of("heater")
+    assert washer is not None and washer.planned is False
+    assert heater is not None and heater.after == "washer-2"
+
+
+def test_settings_are_not_guessed_between_several_devices(tmp_path: Path) -> None:
+    """Deux équipements du même type sans réglage, ou un nouvel équipement d'un autre type :
+    les réglages de l'ancien ne sont donnés à personne."""
+    graph = GraphStore(tmp_path)
+    home_model.load_vocabulary(graph)
+    home_model.save(graph, HOME)
+    configuration.save(
+        graph, Configuration(devices=[DeviceSettings(key="pool", behavior=Behavior.UNCONTROLLED)])
+    )
+    others = [d for d in HOME.devices if d.key != "pool"]
+
+    def pool(key: str) -> HomeDevice:
+        return HomeDevice(key=key, kind=DeviceKind.POOL_PUMP, name=key, sensors=[])
+
+    two = HomeModel(devices=[*others, pool("pool-a"), pool("pool-b")])
+    assert configuration.follow_replaced(graph, HOME, two) == {}
+    dryer = HomeDevice(key="dryer", kind=DeviceKind.DRYER, name="Sèche-linge", sensors=[])
+    assert configuration.follow_replaced(graph, HOME, HomeModel(devices=[*others, dryer])) == {}
+    # Retiré dans un enregistrement précédent : le type se lit dans la clé de l'ancien.
+    configuration.save(
+        graph,
+        Configuration(
+            devices=[DeviceSettings(key="poolpump-sensor-old", behavior=Behavior.UNCONTROLLED)]
+        ),
+    )
+    later = HomeModel(devices=[*others, pool("poolpump-sensor-new")])
+    assert configuration.follow_replaced(graph, HomeModel(devices=others), later) == {
+        "poolpump-sensor-old": "poolpump-sensor-new"
+    }
 
 
 def test_defaults_are_not_written(tmp_path: Path) -> None:
