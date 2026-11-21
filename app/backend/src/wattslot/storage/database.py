@@ -250,6 +250,10 @@ MIGRATIONS: tuple[str, ...] = (
     # d'un jour dont le plan n'était pas lisible. Le choix d'une demande close ne vaut plus pour
     # la demande suivante du même appareil.
     "ALTER TABLE chosen_starts ADD COLUMN request TEXT",
+    # 27 : demande (uid de la tâche) du cycle déclaré lancé ; aucune : déclaration d'avant, ou
+    # d'un cycle absent du plan gardé. La déclaration d'une demande close ne vaut plus pour la
+    # demande suivante du même appareil.
+    "ALTER TABLE declared_launches ADD COLUMN request TEXT",
 )
 
 

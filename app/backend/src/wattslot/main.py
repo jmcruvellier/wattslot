@@ -1505,6 +1505,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         found = user_requests.close(
             request.app.state.database, request_id, status, datetime.now(UTC)
         )
+        # Sa déclaration « C'est lancé » ne vaut pas pour la demande suivante de l'appareil.
+        declared.forget_request(
+            request.app.state.database, f"{user_requests.UID_PREFIX}{request_id}"
+        )
         if found is None:
             raise HTTPException(status_code=404, detail="Demande inconnue")
         return found

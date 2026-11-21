@@ -7,13 +7,23 @@ premier de la journée est une seconde charge lancée derrière la première ; l
 est coupée à la pause d'avant (``journal.real_cycles``), et le cycle est reconnu. Gardé en base
 jusqu'au jour suivant (``declared_launches``) ; un retour en arrière rend l'appareil à
 « Prochaine action » tant que son cycle n'est pas reconnu.
+
+Une déclaration vaut pour une demande (``request`` : uid de la tâche du cycle déclaré, lu dans
+le plan gardé) : quand elle est close, la déclaration est oubliée (``forget_request``,
+``forget_closed``). Attachée au seul nom de l'appareil, celle d'un sèche-linge annulé valait
+encore pour le sèche-linge redemandé ensuite, aussitôt dit « marqué comme lancé » (constaté le
+21/11/2026).
 """
 
 import sqlite3
+from collections.abc import Collection
 from datetime import UTC, date, datetime
 
 from fastapi import APIRouter, HTTPException, Request, Response
 from pydantic import BaseModel
+
+from wattslot.planning.choices import request_of
+from wattslot.planning.store import PlanStore
 
 
 def load(database: sqlite3.Connection, day: date) -> set[str]:
@@ -32,13 +42,45 @@ def moments(database: sqlite3.Connection, day: date) -> dict[str, datetime]:
     return {str(device): datetime.fromisoformat(str(at)) for device, at in rows}
 
 
-def declare(database: sqlite3.Connection, day: date, device: str, now: datetime) -> None:
+def declare(
+    database: sqlite3.Connection,
+    day: date,
+    device: str,
+    now: datetime,
+    request: str | None = None,
+) -> None:
+    """Déclare ``device`` lancé le jour ``day``. ``request`` : uid de la demande de son cycle,
+    si connu ; déjà déclaré, il garde son instant et prend cette demande."""
     with database:
         database.execute("DELETE FROM declared_launches WHERE day < ?", (day.isoformat(),))
         database.execute(
-            "INSERT INTO declared_launches VALUES (?, ?, ?) ON CONFLICT(day, device) DO NOTHING",
-            (day.isoformat(), device, now.astimezone(UTC).isoformat()),
+            "INSERT INTO declared_launches (day, device, created_at, request) VALUES (?, ?, ?, ?) "
+            "ON CONFLICT(day, device) DO UPDATE SET request = excluded.request",
+            (day.isoformat(), device, now.astimezone(UTC).isoformat(), request),
         )
+
+
+def forget_request(database: sqlite3.Connection, request: str) -> int:
+    """Oublie les déclarations de la demande ``request`` (close : faite ou annulée)."""
+    with database:
+        cursor = database.execute("DELETE FROM declared_launches WHERE request = ?", (request,))
+    return cursor.rowcount
+
+
+def forget_closed(database: sqlite3.Connection, day: date, open_requests: Collection[str]) -> int:
+    """Oublie les déclarations de ``day`` dont la demande n'est plus ouverte (uid absent de
+    ``open_requests``) ; celles sans demande connue restent. Renvoie leur nombre."""
+    rows = database.execute(
+        "SELECT device, request FROM declared_launches WHERE day = ? AND request IS NOT NULL",
+        (day.isoformat(),),
+    ).fetchall()
+    closed = [str(device) for device, request in rows if str(request) not in open_requests]
+    with database:
+        database.executemany(
+            "DELETE FROM declared_launches WHERE day = ? AND device = ?",
+            [(day.isoformat(), device) for device in closed],
+        )
+    return len(closed)
 
 
 def withdraw(database: sqlite3.Connection, day: date, device: str) -> bool:
@@ -75,7 +117,10 @@ def list_declared(request: Request) -> list[Declared]:
 @router.post("/api/planning/launched", status_code=201)
 def add_declared(request: Request, body: Declared) -> Declared:
     """« C'est lancé » : l'appareil n'est plus proposé aujourd'hui par « Prochaine action »."""
-    declare(request.app.state.database, _today(request), body.device, datetime.now(UTC))
+    database, today = request.app.state.database, _today(request)
+    stored = PlanStore(database).load("today")
+    planning = stored.content.get("planning", []) if stored and stored.day == today else []
+    declare(database, today, body.device, datetime.now(UTC), request_of(planning, body.device))
     return body
 
 
