@@ -120,6 +120,9 @@ class NextAction(BaseModel):
     # « Me le rappeler » (lot 6b.3) : rappel posé, et service de notification réglé.
     reminder: bool = False
     can_remind: bool = False
+    # Équipement dont ce cycle attend la fin (« démarre après ») quand elle n'est pas encore
+    # arrivée : le cycle ne peut pas avoir été lancé, « C'est lancé » n'est pas proposé.
+    waits_for: str | None = None
 
 
 TEXTS: dict[str, dict[str, str]] = {
@@ -330,6 +333,10 @@ def _soc(batteries: list[BatteryNow], levels: list[tuple[str | None, float]]) ->
     return round(total / sum(weights))
 
 
+# Âge au plus du dernier relevé d'un cycle en cours (le mesuré est relu tous les quarts d'heure).
+RUNNING_READING_MIN = 20
+
+
 def _to_start(timeline: Timeline, now_min: int) -> list[DeviceStatus]:
     """Appareils à cycle pas encore lancés d'après les mesures, dont la plage n'est pas finie."""
     cycles = {row.device for row in timeline.rows if row.kind == "cycle"}
@@ -392,6 +399,27 @@ def next_action(
         return None
     first = min(upcoming, key=lambda status: status.planned_start_min)
     detail = (details or {}).get(first.device)
+    # Le cycle suit celui d'un autre équipement (liaison de la frise) qui n'est pas fini : il
+    # attend. Lave-linge déclaré lancé, la carte passait au sèche-linge prévu deux heures plus
+    # tard avec le même bouton « C'est lancé » au même endroit : un second appui le déclarait
+    # lancé lui aussi, et la carte disait « Tout est lancé » (constaté le 21/11/2026).
+    appliance = first.appliance or first.device
+    running = {s.appliance or s.device for s in timeline.statuses if s.running}
+    parent = next(
+        (
+            link
+            for link in timeline.links
+            if link.target == appliance
+            and abs(link.to_hour * 60 - first.planned_start_min) < 1
+            # Fin du cycle suivi : prévue et à venir s'il n'est pas lancé ; s'il tourne, c'est
+            # son dernier relevé, au plus ``RUNNING_READING_MIN`` avant maintenant.
+            and (
+                link.from_hour * 60 > now_min
+                or (link.source in running and link.from_hour * 60 >= now_min - RUNNING_READING_MIN)
+            )
+        ),
+        None,
+    )
     length = first.planned_end_min - first.planned_start_min
     return NextAction(
         device=first.device,
@@ -411,4 +439,5 @@ def next_action(
             if a.start_min > now_min
         ],
         chosen=bool(detail and detail.chosen),
+        waits_for=parent.source if parent is not None else None,
     )
