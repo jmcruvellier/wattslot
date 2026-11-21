@@ -620,6 +620,9 @@ async def run(ctx: Context, now: datetime, manual: bool = False) -> RunReport:
     # De même pour « C'est lancé » : la déclaration d'une demande close ne vaut pas pour la
     # suivante du même appareil.
     declared.forget_closed(ctx.database, today, open_uids)
+    # Et pour « Annuler » : la demande suivante du même appareil est placée. Les demandes
+    # ouvertes sont lues avant que les annulations n'écartent leurs tâches du calcul.
+    cancelled.forget_closed(ctx.database, today, open_uids)
     data = replace(
         overnight.with_carried(data, carried),
         chosen_starts=choices.load(ctx.database, today),

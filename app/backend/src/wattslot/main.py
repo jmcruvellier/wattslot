@@ -80,7 +80,7 @@ from wattslot.maintenance import (
 from wattslot.notification_events import Candidate
 from wattslot.ontology import GRAPH_CONFIGURATION, GRAPH_HOME
 from wattslot.ontology import migration as ontology_migration
-from wattslot.planning import declared, journal, open_meteo, past, run_log
+from wattslot.planning import cancelled, declared, journal, open_meteo, past, run_log
 from wattslot.planning.assemble import TaskRules, build_input, rules_from_tasks, to_v1
 from wattslot.planning.cancelled import router as cancelled_routes
 from wattslot.planning.choices import router as choices_routes
@@ -1505,10 +1505,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         found = user_requests.close(
             request.app.state.database, request_id, status, datetime.now(UTC)
         )
-        # Sa déclaration « C'est lancé » ne vaut pas pour la demande suivante de l'appareil.
-        declared.forget_request(
-            request.app.state.database, f"{user_requests.UID_PREFIX}{request_id}"
-        )
+        # Sa déclaration « C'est lancé » et l'annulation de sa planification ne valent pas pour
+        # la demande suivante de l'appareil.
+        uid = f"{user_requests.UID_PREFIX}{request_id}"
+        declared.forget_request(request.app.state.database, uid)
+        cancelled.forget_request(request.app.state.database, uid)
         if found is None:
             raise HTTPException(status_code=404, detail="Demande inconnue")
         return found
