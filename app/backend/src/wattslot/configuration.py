@@ -449,6 +449,52 @@ def save(graph: GraphStore, configuration: Configuration) -> None:
     graph.replace_graph(GRAPH_CONFIGURATION, to_triples(explicit))
 
 
+def follow_replaced(graph: GraphStore, before: HomeModel, home: HomeModel) -> dict[str, str]:
+    """Réglages d'un équipement retiré de la maison, donnés à celui qui le remplace.
+
+    Les réglages sont rangés sous la clé de l'équipement, tirée de son compteur d'énergie. Un
+    équipement dont le capteur est remplacé (nouvelle prise, nouveau compteur) revient dans la
+    maison sous une autre clé : ses réglages restaient sous l'ancienne, et il repartait de ceux
+    par défaut, sans rien dire (vitesses d'une filtration perdues, constaté le 21/11/2026).
+
+    Un équipement de la maison sans réglage enregistré reprend ceux d'un équipement qui n'y est
+    plus, s'ils sont du même type et seuls dans ce cas de part et d'autre : avec plusieurs
+    candidats, rien n'est deviné. Le type de l'ancien est celui de la maison d'avant
+    (``before``), sinon celui que dit sa clé (« poolpump-… »). Les équipements qui démarrent
+    après l'ancien (``after``) suivent le nouveau. Rend les clés remplacées (ancienne →
+    nouvelle)."""
+    saved = load(graph)
+    present = {device.key for device in home.devices}
+    kinds = {device.key: device.kind for device in before.devices}
+
+    def kind_of(key: str) -> DeviceKind | None:
+        if key in kinds:
+            return kinds[key]
+        return next((kind for kind in DeviceKind if key.startswith(f"{slug(kind)}-")), None)
+
+    orphans = [settings for settings in saved.devices if settings.key not in present]
+    unset = [device for device in home.devices if saved.of(device.key) is None]
+    replaced: dict[str, str] = {}
+    for kind in DeviceKind:
+        old = [settings for settings in orphans if kind_of(settings.key) is kind]
+        new = [device for device in unset if device.kind is kind]
+        if len(old) == 1 and len(new) == 1:
+            replaced[old[0].key] = new[0].key
+    if not replaced:
+        return replaced
+    devices = [
+        settings.model_copy(
+            update={
+                "key": replaced.get(settings.key, settings.key),
+                "after": replaced.get(settings.after, settings.after) if settings.after else None,
+            }
+        )
+        for settings in saved.devices
+    ]
+    save(graph, saved.model_copy(update={"devices": devices}))
+    return replaced
+
+
 def load(graph: GraphStore) -> Configuration:
     """Réglages enregistrés (sans ceux par défaut : voir ``effective``)."""
     version = VERSION
