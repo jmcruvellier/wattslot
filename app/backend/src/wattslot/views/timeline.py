@@ -16,6 +16,7 @@ from typing import Any, Literal
 from pydantic import BaseModel
 
 from wattslot.planning.reference import ident, task_key
+from wattslot.runtime_settings import MEASURED_SPEED
 from wattslot.views.display import BATTERY, Context, find_item, is_runtime
 
 SHIFT_MIN = 15  # écart de démarrage toléré (« à l'heure »)
@@ -256,6 +257,15 @@ def _hours(iso: str, context: Context) -> float:
     return moment.hour + moment.minute / 60 + moment.second / 3600
 
 
+def _shown_mode(mode: Any) -> str | None:
+    """Mode à afficher d'un fonctionnement : le nom de sa vitesse, sauf celui de la vitesse
+    mesurée (``MEASURED_SPEED``). Un équipement sans vitesse réglée n'en a qu'une, que le calcul
+    nomme lui-même : la frise disait « mode normal » pour une filtration qui tournait en
+    silence, un mode que l'utilisateur n'a jamais nommé (constaté le 21/11/2026). Sans mode,
+    l'interface dit le nom de l'équipement."""
+    return mode if isinstance(mode, str) and mode != MEASURED_SPEED else None
+
+
 def _actual_bars(segments: Sequence[Mapping[str, Any]], context: Context) -> list[Bar]:
     bars = []
     for segment in segments:
@@ -270,7 +280,7 @@ def _actual_bars(segments: Sequence[Mapping[str, Any]], context: Context) -> lis
                 end_hour=round(end, 4),
                 energy_kwh=round(segment.get("energie_kwh", 0.0), 3),
                 action=action,  # type: ignore[arg-type]
-                mode=segment.get("mode"),
+                mode=_shown_mode(segment.get("mode")),
             )
         )
     return bars
@@ -640,7 +650,7 @@ def build_timeline(
                 energy_kwh=round(
                     (s["heure_fin"] - s["heure_debut"]) * context.speed_kw(s["mode"]), 3
                 ),
-                mode=s["mode"],
+                mode=_shown_mode(s["mode"]),
             )
             for s in item.get("segments", [])
             if s["mode"] != "off"

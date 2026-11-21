@@ -194,6 +194,41 @@ def test_rows_show_actual_bars_and_hide_empty_appliances() -> None:
     assert timeline.rows[2].planned == [] and timeline.rows[2].actual[0].energy_kwh == 1.0
 
 
+def test_the_measured_speed_of_a_runtime_is_not_shown_as_a_mode() -> None:
+    """21/11/2026 : une filtration sans vitesse réglée n'a qu'une vitesse, nommée « normal »
+    par le calcul. La frise disait « mode normal », un mode que l'utilisateur ne connaît pas."""
+    state = {
+        "planning": [
+            {
+                "equipement": "Piscine",
+                "segments": [
+                    {"heure_debut": 0, "heure_fin": 10, "mode": "off"},
+                    {"heure_debut": 10, "heure_fin": 12, "mode": "normal"},
+                    {"heure_debut": 12, "heure_fin": 24, "mode": "off"},
+                ],
+            },
+            {
+                "equipement": "Spa",
+                "segments": [{"heure_debut": 14, "heure_fin": 15, "mode": "eco"}],
+            },
+        ]
+    }
+    actual = {
+        "heure_maj_iso": iso(15),
+        "equipements_reels_horaire": {
+            "Piscine": [{**segment(iso(9), iso(9, 30), 0.05), "mode": "normal"}],
+            "Spa": [{**segment(iso(14), iso(15), 0.4), "mode": "eco"}],
+        },
+    }
+
+    timeline = build_timeline(state, actual, 15.0, 10.0, 8.0, Context(zone=PARIS))
+
+    rows = {row.device: row for row in timeline.rows}
+    assert [bar.mode for bar in rows["Piscine"].planned + rows["Piscine"].actual] == [None, None]
+    # Une vitesse réglée garde son nom.
+    assert [bar.mode for bar in rows["Spa"].planned + rows["Spa"].actual] == ["eco", "eco"]
+
+
 def test_a_battery_movement_of_a_few_wh_is_not_shown() -> None:
     """« 0,0 kWh » : quelques Wh au-dessus du plancher, pas un mouvement à montrer."""
     state = {
