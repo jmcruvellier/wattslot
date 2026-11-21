@@ -1662,6 +1662,7 @@
       "now": "maintenant",
       "launched": "C'est lancé",
       "launched_failed": "Le lancement n'a pas pu être enregistré.",
+      "waits_for": "À lancer après la fin de {device}.",
       "declared": "{device} : marqué comme lancé.",
       "undo": "Pas encore lancé",
       "undo_failed": "Le retour en arrière n'a pas abouti.",

@@ -349,10 +349,14 @@ function NextActionCard({
           : t("today.next.slot", { start, end: clock(action.end_min, language) })}
         {action.explanation && <> {action.explanation}</>}
       </p>
+      {action.waits_for && <p className="dim">{t("today.next.waits_for", { device: action.waits_for })}</p>}
       <div className="next-action-buttons">
-        <Button variant="primary" icon="check" disabled={launching} onClick={() => void markLaunched()}>
-          {t("today.next.launched")}
-        </Button>
+        {/* Un cycle qui attend la fin d'un autre ne peut pas avoir été lancé : pas de bouton. */}
+        {!action.waits_for && (
+          <Button variant="primary" icon="check" disabled={launching} onClick={() => void markLaunched()}>
+            {t("today.next.launched")}
+          </Button>
+        )}
         {action.can_remind && (
           <Button icon="bell" disabled={reminder} onClick={() => void remind()}>
             {t(reminder ? "today.next.reminder_set" : "today.next.remind")}

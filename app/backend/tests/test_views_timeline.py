@@ -10,6 +10,7 @@ import pytest
 from tests.test_views_day import PARIS, V1_CONTEXT, state_of
 from tests.v1_oracle import STATES, v1
 from wattslot.views.display import Context
+from wattslot.views.now import next_action
 from wattslot.views.timeline import (
     MIN_BATTERY_BAR_KWH,
     build_timeline,
@@ -420,6 +421,38 @@ def test_links_pair_the_cycles_of_the_day_in_order() -> None:
     assert {(link.source, link.target) for link in timeline.links} == {
         ("Lave-linge", "Sèche-linge")
     }
+
+
+def test_the_next_action_says_which_appliance_its_cycle_waits_for() -> None:
+    """21/11/2026 : lave-linge en cours, sèche-linge prévu derrière lui. La carte « Prochaine
+    action » proposait « C'est lancé » pour le sèche-linge, qui ne peut pas avoir été lancé."""
+    state = {"planning": [cycle("Lave-linge", 10, 12), cycle("Sèche-linge", 12, 14)]}
+    running = {
+        "heure_maj_iso": iso(10, 15),
+        "equipements_reels_horaire": {
+            "Lave-linge": [segment(iso(10, 5), iso(10, 15), 0.1, running=True)]
+        },
+    }
+    timeline = build_timeline(state, running, 10.25, 10.0, 8.0, LAUNDRY)
+
+    action = next_action(timeline, {}, datetime.fromisoformat(iso(10, 15)), LAUNDRY)
+
+    assert action is not None
+    assert (action.device, action.waits_for) == ("Sèche-linge", "Lave-linge")
+    # Lessive finie : le sèche-linge n'attend plus, il peut être déclaré lancé.
+    done = {
+        "heure_maj_iso": iso(11, 50),
+        "equipements_reels_horaire": {"Lave-linge": [segment(iso(10, 5), iso(11, 40), 0.9)]},
+    }
+    timeline = build_timeline(state, done, 11.83, 10.0, 8.0, LAUNDRY)
+    action = next_action(timeline, {}, datetime.fromisoformat(iso(11, 50)), LAUNDRY)
+    assert action is not None and (action.device, action.waits_for) == ("Sèche-linge", None)
+    # Un cycle qui ne suit rien n'attend personne.
+    alone = build_timeline(
+        {"planning": [cycle("Lave-linge", 12, 14)]}, None, 10.0, 10.0, 8.0, LAUNDRY
+    )
+    action = next_action(alone, {}, datetime.fromisoformat(iso(10, 15)), LAUNDRY)
+    assert action is not None and action.waits_for is None
 
 
 def test_a_cycle_started_before_the_other_appliance_has_no_link() -> None:

@@ -160,6 +160,15 @@ describe("TodayView", () => {
     expect(screen.getByText(/Lave-linge : marqué comme lancé\./)).toBeInTheDocument();
   });
 
+  it("ne propose pas « C'est lancé » pour un cycle qui attend la fin d'un autre", async () => {
+    // 21/11/2026 : lave-linge en cours, sèche-linge prévu derrière lui.
+    mockApi({ ...TODAY, now: NOW, next_action: { ...ACTION, device: "Sèche-linge", waits_for: "Lave-linge" } });
+    renderView();
+    expect(await screen.findByRole("heading", { name: "Lancez Sèche-linge" })).toBeInTheDocument();
+    expect(screen.getByText("À lancer après la fin de Lave-linge.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "C'est lancé" })).toBeNull();
+  });
+
   it("dit quand « C'est lancé » n'a pas pu être enregistré, et garde l'action", async () => {
     mockApi({ ...TODAY, now: NOW, next_action: ACTION }); // la route du lancement répond 404
     renderView();

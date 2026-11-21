@@ -263,6 +263,8 @@ export interface Now {
 }
 
 export interface NextAction {
+  // Équipement dont ce cycle attend la fin (« démarre après ») : pas de « C'est lancé ».
+  waits_for?: string | null;
   device: string;
   start_min: number;
   end_min: number;

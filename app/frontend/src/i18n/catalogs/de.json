@@ -1662,6 +1662,7 @@
       "now": "jetzt",
       "launched": "Ist gestartet",
       "launched_failed": "Der Start konnte nicht gespeichert werden.",
+      "waits_for": "Zu starten, sobald {device} fertig ist.",
       "declared": "{device}: als gestartet markiert.",
       "undo": "Noch nicht gestartet",
       "undo_failed": "Das Zurücknehmen ist fehlgeschlagen.",
