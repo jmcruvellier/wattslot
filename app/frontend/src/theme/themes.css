@@ -188,4 +188,6 @@
   --charge: var(--battery);
   --cycle: var(--go);
   --pool-eco: var(--sun);
+  /* Filtration en boost : entre le soleil (éco) et la décharge, plus soutenu que les deux autres modes. */
+  --pool-boost: color-mix(in srgb, var(--sun) 45%, var(--discharge));
 }
