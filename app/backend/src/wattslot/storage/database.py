@@ -254,6 +254,10 @@ MIGRATIONS: tuple[str, ...] = (
     # d'un cycle absent du plan gardé. La déclaration d'une demande close ne vaut plus pour la
     # demande suivante du même appareil.
     "ALTER TABLE declared_launches ADD COLUMN request TEXT",
+    # 28 : demande (uid de la tâche) du cycle dont la planification est annulée ; aucune :
+    # annulation d'avant, ou d'un besoin d'énergie, d'une durée à placer. L'annulation d'une
+    # demande close ne vaut plus pour la demande suivante du même appareil.
+    "ALTER TABLE cancelled_tasks ADD COLUMN request TEXT",
 )
 
 

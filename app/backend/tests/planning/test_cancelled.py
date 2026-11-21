@@ -75,6 +75,47 @@ def test_cancellations_are_kept_for_the_day_only(tmp_path: Path) -> None:
     assert not cancelled.restore(database, date(2026, 10, 21), "Chauffe-eau")
 
 
+def test_a_cancellation_is_forgotten_with_its_request(tmp_path: Path) -> None:
+    """21/11/2026 : l'annulation, gardée sous le seul nom de l'appareil, écartait aussi du
+    calcul la demande suivante du même appareil. Elle part avec sa demande."""
+    database = open_database(tmp_path)
+    day, now = date(2026, 11, 21), datetime(2026, 11, 21, 8, 0, tzinfo=UTC)
+    cancelled.cancel(database, day, "Sèche-linge", now, request="app-1")
+    cancelled.cancel(database, day, "Lave-linge", now, request="app-2")
+    cancelled.cancel(database, day, "Piscine", now)  # durée à placer : sans demande
+
+    assert cancelled.forget_request(database, "app-1") == 1  # demande annulée
+    assert cancelled.load(database, day) == {"Lave-linge", "Piscine"}
+    # Demande « app-2 » close ailleurs (cochée dans Home Assistant) : vue au calcul suivant.
+    assert cancelled.forget_closed(database, day, {"app-3"}) == 1
+    assert cancelled.load(database, day) == {"Piscine"}
+
+    # Annulé deux fois : la demande connue au premier appui reste (le bloc a quitté le plan).
+    cancelled.cancel(database, day, "Sèche-linge", now, request="app-3")
+    cancelled.cancel(database, day, "Sèche-linge", now)
+    assert cancelled.forget_closed(database, day, {"app-3"}) == 0  # demande ouverte : gardée
+    assert cancelled.forget_request(database, "app-3") == 1
+
+
+def test_the_route_ties_the_cancellation_to_the_request_of_the_cycle(tmp_path: Path) -> None:
+    app = FastAPI()
+    app.include_router(cancelled.router)
+    app.state.database = database = open_database(tmp_path)
+    app.state.raw = SimpleNamespace(zone=ZoneInfo("Europe/Paris"))
+    today = datetime.now(UTC).astimezone(ZoneInfo("Europe/Paris")).date()
+    planning = [
+        {"equipement": "Sèche-linge", "demande": "app-1"},
+        {"equipement": "Sèche-linge", "rang": 2, "demande": "app-7"},
+    ]
+    PlanStore(database).save("today", today, {"planning": planning}, 0.1, False)
+    with TestClient(app) as api:
+        for device in ("Sèche-linge #2", "Piscine"):
+            assert api.post("/api/planning/cancelled", json={"device": device}).status_code == 201
+
+    assert cancelled.forget_request(database, "app-7") == 1
+    assert cancelled.load(database, today) == {"Piscine"}  # hors du plan : sans demande
+
+
 def test_a_cancelled_equipment_leaves_the_plan_and_comes_back(tmp_path: Path) -> None:
     reader = reader_with_history()
     ctx = context(tmp_path, reader)
@@ -99,6 +140,19 @@ def test_a_cancelled_equipment_leaves_the_plan_and_comes_back(tmp_path: Path) ->
     back = store.load("today")
     assert back is not None
     assert "Lave-linge" in {item["equipement"] for item in back.content["planning"]}
+
+
+def test_the_run_forgets_the_cancellation_of_a_closed_request(tmp_path: Path) -> None:
+    ctx = context(tmp_path, reader_with_history())
+    store = PlanStore(ctx.database)
+    # Annulation faite pour une demande close depuis : elle ne vaut pas pour la suivante.
+    cancelled.cancel(ctx.database, TODAY, "Lave-linge", datetime.now(UTC), request="app-999")
+
+    assert asyncio.run(run(ctx, local(TODAY, 9, 20), manual=True)).errors == []
+    plan = store.load("today")
+    assert plan is not None
+    assert "Lave-linge" in {item["equipement"] for item in plan.content["planning"]}
+    assert cancelled.load(ctx.database, TODAY) == set()
 
 
 def test_routes(tmp_path: Path) -> None:

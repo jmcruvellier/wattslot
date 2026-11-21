@@ -3,17 +3,24 @@
 ni son besoin d'énergie, ni sa durée à placer ; un cycle déjà lancé reste, car les mesures
 réelles ne s'effacent pas. Gardé en base jusqu'au jour suivant (``cancelled_tasks``) ;
 « Rétablir » le rend au calcul. L'annulation d'un autre jour ne sert plus.
+
+Une annulation vaut pour une demande (``request`` : uid de la tâche du cycle annulé, lu dans le
+plan gardé) : quand elle est close, l'annulation est oubliée (``forget_request``,
+``forget_closed``). Attachée au seul nom de l'appareil, elle écartait aussi du calcul la demande
+suivante du même appareil, faite le même jour.
 """
 
 import sqlite3
-from collections.abc import Iterable
+from collections.abc import Collection, Iterable
 from dataclasses import replace
 from datetime import UTC, date, datetime
 
 from fastapi import APIRouter, HTTPException, Request, Response
 from pydantic import BaseModel
 
+from wattslot.planning.choices import request_of
 from wattslot.planning.inputs import PlanningInput
+from wattslot.planning.store import PlanStore
 
 
 def load(database: sqlite3.Connection, day: date) -> set[str]:
@@ -22,13 +29,45 @@ def load(database: sqlite3.Connection, day: date) -> set[str]:
     return {str(row[0]) for row in rows}
 
 
-def cancel(database: sqlite3.Connection, day: date, device: str, now: datetime) -> None:
+def cancel(
+    database: sqlite3.Connection,
+    day: date,
+    device: str,
+    now: datetime,
+    request: str | None = None,
+) -> None:
+    """Annule la planification de ``device`` le jour ``day``. ``request`` : uid de la demande de
+    son cycle, si connu ; déjà annulé, il garde sa demande (son bloc a quitté le plan)."""
     with database:
         database.execute("DELETE FROM cancelled_tasks WHERE day < ?", (day.isoformat(),))
         database.execute(
-            "INSERT INTO cancelled_tasks VALUES (?, ?, ?) ON CONFLICT(day, device) DO NOTHING",
-            (day.isoformat(), device, now.astimezone(UTC).isoformat()),
+            "INSERT INTO cancelled_tasks (day, device, created_at, request) VALUES (?, ?, ?, ?) "
+            "ON CONFLICT(day, device) DO NOTHING",
+            (day.isoformat(), device, now.astimezone(UTC).isoformat(), request),
         )
+
+
+def forget_request(database: sqlite3.Connection, request: str) -> int:
+    """Oublie les annulations de la demande ``request`` (close : faite ou annulée)."""
+    with database:
+        cursor = database.execute("DELETE FROM cancelled_tasks WHERE request = ?", (request,))
+    return cursor.rowcount
+
+
+def forget_closed(database: sqlite3.Connection, day: date, open_requests: Collection[str]) -> int:
+    """Oublie les annulations de ``day`` dont la demande n'est plus ouverte (uid absent de
+    ``open_requests``) ; celles sans demande connue restent. Renvoie leur nombre."""
+    rows = database.execute(
+        "SELECT device, request FROM cancelled_tasks WHERE day = ? AND request IS NOT NULL",
+        (day.isoformat(),),
+    ).fetchall()
+    closed = [str(device) for device, request in rows if str(request) not in open_requests]
+    with database:
+        database.executemany(
+            "DELETE FROM cancelled_tasks WHERE day = ? AND device = ?",
+            [(day.isoformat(), device) for device in closed],
+        )
+    return len(closed)
 
 
 def restore(database: sqlite3.Connection, day: date, device: str) -> bool:
@@ -83,7 +122,10 @@ def list_cancelled(request: Request) -> list[Cancelled]:
 def add_cancelled(request: Request, body: Cancelled) -> Cancelled:
     """Annule la planification d'un appareil pour aujourd'hui ; le calcul suivant ne le place
     plus (la page relance le calcul aussitôt)."""
-    cancel(request.app.state.database, _today(request), body.device, datetime.now(UTC))
+    database, today = request.app.state.database, _today(request)
+    stored = PlanStore(database).load("today")
+    planning = stored.content.get("planning", []) if stored and stored.day == today else []
+    cancel(database, today, body.device, datetime.now(UTC), request_of(planning, body.device))
     return body
 
 
