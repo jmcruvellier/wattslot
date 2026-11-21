@@ -37,6 +37,7 @@ import { hour, kwh } from "./format";
 import { freeSpan } from "./timelineSpan";
 import { rowLabel } from "./batteryLabel";
 import { cycleNames } from "./cycleNames";
+import { modeColor } from "./modeColor";
 import { laneOffset, linkShapes, stubPx, turnsBack } from "./timelineLinks";
 import { hourSun } from "./dayPoints";
 import type { Bar, HourPoint, TimelineRow, Timeline } from "./types";
@@ -68,7 +69,7 @@ function useTrackWidth(): [number, (element: HTMLDivElement | null) => void] {
 
 function color(row: TimelineRow, bar: Bar): string {
   if (bar.action) return bar.action === "charge" ? "var(--charge)" : "var(--discharge)";
-  if (row.kind === "runtime") return bar.mode === "eco" ? "var(--pool-eco)" : "var(--pool-silence)";
+  if (row.kind === "runtime") return modeColor(bar.mode);
   return "var(--cycle)";
 }
 
