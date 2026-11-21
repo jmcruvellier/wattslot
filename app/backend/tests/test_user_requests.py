@@ -15,6 +15,7 @@ from wattslot import user_requests
 from wattslot.aggregation import HOUR, QUARTER
 from wattslot.home_model import HomeModel
 from wattslot.main import create_app
+from wattslot.planning import declared
 from wattslot.planning.assemble import build_input
 from wattslot.planning.engine import Objective, plan_day
 from wattslot.planning.inputs import PlanningInput, TaskRequest
@@ -255,6 +256,25 @@ def test_an_open_request_says_its_cycle_of_the_day(tmp_path: Path) -> None:
     assert found[other.id].cycle is None  # pas dans le plan du jour
     (said,) = user_requests.with_cycles([second], planning, {"Sèche-linge #2"})
     assert said.declared
+
+
+def test_closing_a_request_forgets_its_declared_launch(tmp_path: Path) -> None:
+    """21/11/2026 : « C'est lancé » d'une demande annulée valait pour la demande suivante du
+    même appareil. La déclaration part avec la demande, annulée ou faite."""
+    with TestClient(create_app(_settings(tmp_path))) as api:
+        database = api.app.state.database  # type: ignore[attr-defined]
+        today = TODAY
+        for close in ("delete", "done"):
+            asked = user_requests.ask(database, "dryer", None, CREATED, another=True)
+            declared.declare(database, today, "Sèche-linge", CREATED, request=f"app-{asked.id}")
+            other = user_requests.ask(database, "washer", None, CREATED, another=True)
+            declared.declare(database, today, "Lave-linge", CREATED, request=f"app-{other.id}")
+            if close == "delete":
+                assert api.delete(f"/api/requests/{asked.id}").status_code == 200
+            else:
+                assert api.post(f"/api/requests/{asked.id}/done").status_code == 200
+            assert declared.load(database, today) == {"Lave-linge"}  # celle de l'autre reste
+            declared.forget_request(database, f"app-{other.id}")
 
 
 def test_routes(tmp_path: Path) -> None:
