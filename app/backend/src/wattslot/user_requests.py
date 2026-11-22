@@ -13,6 +13,11 @@ chacune est une tâche du calcul, qui les place l'une après l'autre et n'attrib
 qu'à une seule (``planning.occurrences``). Redemander un équipement change par défaut la date de
 sa demande ouverte pas encore lancée ; une demande de plus s'ouvre si toutes sont déjà lancées
 (elles sont alors faites), ou si on le demande (``another``).
+
+Une demande peut porter une heure limite (``finish_hour`` : « terminé avant 12 h »), qui vaut
+le jour où son cycle tourne : le jour de son échéance si elle en a une, sinon le jour que le
+calcul lui choisit, parmi ceux où un cycle peut finir avant cette heure. Elle est souple : si
+aucun créneau ne la tient, le cycle est placé quand même et le plan le dit (issue 273).
 """
 
 import sqlite3
@@ -43,6 +48,8 @@ class UserRequest(BaseModel):
     device: str  # clé de l'équipement
     created_at: datetime
     latest: date | None = None  # au plus tard ; aucun : dès que possible
+    # Terminé avant cette heure (1 à 24) le jour où le cycle tourne ; aucune : pas de limite.
+    finish_hour: int | None = None
     status: Status = Status.OPEN
     launched_on: date | None = None  # lancement constaté par un calcul
     closed_at: datetime | None = None
@@ -61,10 +68,11 @@ def _row(row: Sequence[object]) -> UserRequest:
         status=Status(str(row[4])),
         launched_on=date.fromisoformat(str(row[5])) if row[5] else None,
         closed_at=datetime.fromisoformat(str(row[6])) if row[6] else None,
+        finish_hour=int(str(row[7])) if row[7] is not None else None,
     )
 
 
-COLUMNS = "id, device, created_at, latest, status, launched_on, closed_at"
+COLUMNS = "id, device, created_at, latest, status, launched_on, closed_at, finish_hour"
 
 
 def open_requests(database: sqlite3.Connection) -> list[UserRequest]:
@@ -113,9 +121,11 @@ def ask(
     latest: date | None,
     now: datetime,
     another: bool = False,
+    finish_hour: int | None = None,
 ) -> UserRequest:
     """Demande pour ``device`` ; sa demande ouverte pas encore lancée (la plus récente) change
-    seulement de date. Sinon, ou avec ``another`` (un cycle de plus), une demande est ouverte ;
+    seulement de date et d'heure limite (``finish_hour``, aucune : sans limite d'heure).
+    Sinon, ou avec ``another`` (un cycle de plus), une demande est ouverte ;
     sans ``another``, ses demandes déjà lancées sont alors faites : leur cycle a tourné, et
     les clore à la main ne doit pas toucher à la nouvelle."""
     with database:
@@ -136,14 +146,15 @@ def ask(
             )
         if row:
             database.execute(
-                "UPDATE requests SET latest = ? WHERE id = ?",
-                (latest.isoformat() if latest else None, row[0]),
+                "UPDATE requests SET latest = ?, finish_hour = ? WHERE id = ?",
+                (latest.isoformat() if latest else None, finish_hour, row[0]),
             )
             found = int(row[0])
         else:
             cursor = database.execute(
-                "INSERT INTO requests (device, created_at, latest) VALUES (?, ?, ?)",
-                (device, now.isoformat(), latest.isoformat() if latest else None),
+                "INSERT INTO requests (device, created_at, latest, finish_hour) "
+                "VALUES (?, ?, ?, ?)",
+                (device, now.isoformat(), latest.isoformat() if latest else None, finish_hour),
             )
             found = int(cursor.lastrowid or 0)
     request = get(database, found)
@@ -245,6 +256,7 @@ def tasks(
             on_demand=True,
             needed_since=min(request.created_at.date(), zone_today),
             asked_at=request.created_at,
+            finish_hour=request.finish_hour,
         )
         (due if request.latest is not None else waiting).append(task)
     return due, waiting

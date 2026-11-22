@@ -11,6 +11,7 @@
   "reason.constraints": "Restricciones horarias respetadas: {constraints}.",
   "reason.launched": "Puesto en marcha a las {time}: franja ajustada al arranque real.",
   "reason.deadline": "{energy_kwh} kWh que entregar antes de las {hour} h.",
+  "reason.finish_before": "Terminado antes de las {hour} h, como se pidió.",
   "reason.minimum_hours": "Funcionamiento mínimo pendiente hoy: {hours} h.",
   "reason.skipped_full_charge": "Hoy no funciona: la batería debe hacer su carga completa (hasta el 100 %), el excedente solar se le reserva.",
   "reason.solar_hours": "{hours} h con el excedente solar.",

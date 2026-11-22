@@ -204,8 +204,8 @@ Ce que l'assistant peut faire : lire le plan d'un jour et ses explications, la s
 | POST | `/api/connection/oauth` | `{url, client_id}` (adresse de l'application vue du navigateur) : adresse de la page de connexion de HA |
 | GET | `/auth/callback` | Retour de HA : code échangé contre les jetons, enregistrés ; redirige vers l'application (`?connection=ok`, `failed` ou `expired`) et redémarre |
 | DELETE | `/api/connection` | Déconnexion : jeton de rafraîchissement révoqué auprès de HA, connexion oubliée, redémarrage |
-| GET | `/api/requests` | Demandes déclarées dans l'application (lot 4.5) : ouvertes, puis closes depuis 7 jours (`device`, `latest`, `status` : `open`, `done`, `cancelled`, `launched_on`) |
-| POST | `/api/requests` | Demande `{device, latest?}` ; une demande ouverte pour le même équipement change seulement de date ; 422 pour un équipement qu'on ne peut pas demander |
+| GET | `/api/requests` | Demandes déclarées dans l'application (lot 4.5) : ouvertes, puis closes depuis 7 jours (`device`, `latest`, `finish_hour`, `status` : `open`, `done`, `cancelled`, `launched_on`) |
+| POST | `/api/requests` | Demande `{device, latest?, finish_hour?}` (`finish_hour`, de 1 à 24 : cycle terminé avant cette heure le jour où il tourne, si un créneau le permet) ; une demande ouverte pour le même équipement change seulement de date et d'heure limite ; 422 pour un équipement qu'on ne peut pas demander |
 | POST | `/api/requests/{id}/done` | Demande faite (à la main) |
 | DELETE | `/api/requests/{id}` | Demande annulée |
 | GET | `/api/requests/devices` | Équipements qu'on peut demander : cycles à démarrer et besoins d'énergie |

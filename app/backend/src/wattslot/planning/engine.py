@@ -271,8 +271,10 @@ def solve(problem: Problem, objective: Goal = Objective.COST, time_limit_s: floa
         choices[task.name] = {s: var(0, 1, True) for s in sorted(allowed)}
         for s, x in choices[task.name].items():
             violated = problem.soft_violated(task.label, s, s + task.slot_min)
-            if violated:
-                penalties.append(len(violated) * x)
+            # Heure limite de la demande : souple, comptée comme une contrainte de plus.
+            broken = len(violated) + task.late(s)
+            if broken:
+                penalties.append(broken * x)
         skips[task.name] = var(0, 1, True)
         h.addConstr(sum(choices[task.name].values()) + skips[task.name] == 1)
     for task in problem.tasks:
@@ -921,6 +923,17 @@ def day_plan(problem: Problem, plan: Plan, run: BatteryRun) -> DayPlan:
             continue
         end = start + task.slot_min
         _check_soft(problem, task.label, [(start, end)], warnings)
+        if task.finish_min is not None and task.late(start):
+            warnings.append(
+                {
+                    "code": "heure_limite_depassee",
+                    "params": {
+                        "equipement": task.label,
+                        "heure_limite": task.finish_min // 60,
+                        "fin_min": end % (24 * 60),
+                    },
+                }
+            )
         parent = by_key.get(task.depends_on or "")
         after_end = (
             plan.starts[parent.name] + parent.slot_min

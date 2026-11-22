@@ -20,7 +20,10 @@ aujourd'hui et sa date limite :
 - **contraintes horaires** strictes de l'équipement (``time_constraints.py``) : un départ
   qu'elles interdisent ne compte pas, et un jour où elles n'en laissent aucun n'est pas
   candidat. Sans cela, une demande faite le soir pour un équipement « terminé avant 12 h »
-  restait sur aujourd'hui, où le calcul ne pouvait plus la placer (issue 273).
+  restait sur aujourd'hui, où le calcul ne pouvait plus la placer (issue 273) ;
+- **heure limite** d'une demande (``TaskRequest.finish_hour``) : comptée ici comme une
+  contrainte stricte, pour choisir un jour où elle tient ; si aucun ne convient, la tâche
+  reste sur aujourd'hui, où le calcul la place au mieux et signale le dépassement.
 
 Un sèche-linge qui dépend d'un lave-linge en attente lui est lié : le couple est évalué
 ensemble et affecté au même jour. Le surplus est celui du jour avant la batterie, comme en v1.
@@ -49,13 +52,18 @@ Cycle = tuple[int, float]  # (durée du créneau en minutes, puissance en kW)
 Blocked = Callable[[int, int], bool]
 
 
-def hard_blocked(constraints: Sequence[TimeConstraint]) -> Blocked | None:
-    """Test des contraintes strictes d'un équipement, comme ``Problem.hard_blocks`` ; None
-    s'il n'en a pas."""
+def hard_blocked(
+    constraints: Sequence[TimeConstraint], finish_min: int | None = None
+) -> Blocked | None:
+    """Test des contraintes strictes d'un équipement, comme ``Problem.hard_blocks``, et de
+    l'heure limite de la demande (``finish_min``, minute du jour) ; None sans l'un ni l'autre."""
     hard = [c for c in constraints if c.hard]
-    if not hard:
+    if not hard and finish_min is None:
         return None
-    return lambda start_min, end_min: any(c.blocks(start_min, end_min) for c in hard)
+    return lambda start_min, end_min: (
+        (finish_min is not None and end_min > finish_min)
+        or any(c.blocks(start_min, end_min) for c in hard)
+    )
 
 
 @dataclass(frozen=True)
@@ -271,7 +279,12 @@ def decide(
             energy, cycle_min = cycles[t.name]
             duration = slot_minutes(cycle_min, reference)
             group_cycles.append((duration, energy * 60 / duration))
-            group_blocked.append(hard_blocked((constraints or {}).get(t.name, ())))
+            group_blocked.append(
+                hard_blocked(
+                    (constraints or {}).get(t.name, ()),
+                    t.finish_hour * 60 if t.finish_hour is not None else None,
+                )
+            )
         ref = min(reference_day(t, memory, today) for t in group)
         delay = min((delays or {}).get(t.name, MAX_DELAY_DAYS) for t in group)
         limit = max(today, ref + timedelta(days=delay))

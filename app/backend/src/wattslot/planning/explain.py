@@ -129,6 +129,9 @@ def _alternatives(
             continue
         if problem.hard_blocks(task.label, start, start + task.slot_min):
             continue
+        # Heure limite de la demande tenue par le plan : pas d'autre départ qui la dépasse.
+        if task.late(start) and not task.late(starts[task.name]):
+            continue
         indicators = evaluate({**starts, task.name: start})
         found.append((score(indicators), start, indicators))
     found.sort(key=lambda item: (item[0], item[1]))
@@ -223,6 +226,8 @@ def explain(
             parent = by_key.get(task.depends_on or "")
             if parent is not None:
                 reasons.append(Reason(code="after", params={"device": parent.label}))
+            if task.finish_min is not None and not task.late(starts[task.name]):
+                reasons.append(Reason(code="finish_before", params={"hour": task.finish_min // 60}))
             alternatives, better = (
                 _alternatives(task, dict(starts), problem, base, evaluate, score)
                 if base is not None

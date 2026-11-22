@@ -258,6 +258,9 @@ MIGRATIONS: tuple[str, ...] = (
     # annulation d'avant, ou d'un besoin d'énergie, d'une durée à placer. L'annulation d'une
     # demande close ne vaut plus pour la demande suivante du même appareil.
     "ALTER TABLE cancelled_tasks ADD COLUMN request TEXT",
+    # 29 : heure limite d'une demande (« terminé avant … h », de 1 à 24), le jour où son cycle
+    # tourne ; aucune : pas de limite d'heure.
+    "ALTER TABLE requests ADD COLUMN finish_hour INTEGER",
 )
 
 
