@@ -12,6 +12,7 @@
   "reason.launched": "Avviato alle {time}: fascia allineata all'avvio reale.",
   "reason.deadline": "{energy_kwh} kWh da fornire entro le {hour}.",
   "reason.finish_before": "Finito entro le {hour}, come richiesto.",
+  "reason.finish_late": "Programmato il prima possibile: non può finire entro le {hour}, come richiesto.",
   "reason.minimum_hours": "Funzionamento minimo ancora da fare oggi: {hours} h.",
   "reason.skipped_full_charge": "Oggi non funziona: la batteria deve fare la carica completa (fino al 100 %), il surplus solare è riservato a lei.",
   "reason.solar_hours": "{hours} h sul surplus solare.",

@@ -12,6 +12,7 @@
   "reason.launched": "Started at {time}: time slot aligned with the actual start.",
   "reason.deadline": "{energy_kwh} kWh to deliver before {hour}h.",
   "reason.finish_before": "Finished before {hour}h, as requested.",
+  "reason.finish_late": "Scheduled as early as possible: it cannot be finished before {hour}h, as requested.",
   "reason.minimum_hours": "Minimum runtime still to do today: {hours} h.",
   "reason.skipped_full_charge": "Not running today: the battery must do its full charge (up to 100%), the solar surplus is kept for it.",
   "reason.solar_hours": "{hours} h on the solar surplus.",
