@@ -16,14 +16,18 @@ aujourd'hui et sa date limite :
   ``STABILITY_MARGIN`` ;
 - **verrouillage** : une tâche lancée aujourd'hui (bloc gelé ou cycle réel reconnu), ou qui
   dépend d'une tâche lancée, reste aujourd'hui ; une tâche dont l'utilisateur a choisi le départ
-  un jour donné (``choices.py``) reste ce jour-là.
+  un jour donné (``choices.py``) reste ce jour-là ;
+- **contraintes horaires** strictes de l'équipement (``time_constraints.py``) : un départ
+  qu'elles interdisent ne compte pas, et un jour où elles n'en laissent aucun n'est pas
+  candidat. Sans cela, une demande faite le soir pour un équipement « terminé avant 12 h »
+  restait sur aujourd'hui, où le calcul ne pouvait plus la placer (issue 273).
 
 Un sèche-linge qui dépend d'un lave-linge en attente lui est lié : le couple est évalué
 ensemble et affecté au même jour. Le surplus est celui du jour avant la batterie, comme en v1.
 """
 
 import math
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date, timedelta
 from typing import Any
@@ -33,6 +37,7 @@ from wattslot.planning.inputs import PlanningInput, TaskRequest
 from wattslot.planning.occurrences import numbered, today_tasks
 from wattslot.planning.problem import characteristics, real_cycles
 from wattslot.planning.reference import REFERENCE, Reference, task_key
+from wattslot.time_constraints import TimeConstraint
 
 DAY_PENALTY = 0.25
 STABILITY_MARGIN = 0.10
@@ -40,6 +45,17 @@ MAX_DELAY_DAYS = 2
 
 Surplus = Mapping[int, float]  # kWh de surplus par heure (heures sans donnée absentes)
 Cycle = tuple[int, float]  # (durée du créneau en minutes, puissance en kW)
+# Créneau [début, fin) en minutes interdit par une contrainte stricte de l'équipement ?
+Blocked = Callable[[int, int], bool]
+
+
+def hard_blocked(constraints: Sequence[TimeConstraint]) -> Blocked | None:
+    """Test des contraintes strictes d'un équipement, comme ``Problem.hard_blocks`` ; None
+    s'il n'en a pas."""
+    hard = [c for c in constraints if c.hard]
+    if not hard:
+        return None
+    return lambda start_min, end_min: any(c.blocks(start_min, end_min) for c in hard)
 
 
 @dataclass(frozen=True)
@@ -83,15 +99,21 @@ def slot_score(
 
 
 def best_start(
-    duration_min: int, surplus: Surplus, earliest_min: int, power_kw: float
+    duration_min: int,
+    surplus: Surplus,
+    earliest_min: int,
+    power_kw: float,
+    blocked: Blocked | None = None,
 ) -> int | None:
     """Départ qui absorbe le plus de surplus (au plus tôt, puis chaque heure pile), ou None
-    si le cycle ne tient plus dans la journée."""
+    si le cycle ne tient plus dans la journée ou si ``blocked`` interdit tous les départs."""
     best: int | None = None
     best_score: tuple[float, float] | None = None
     for start in _starts(earliest_min):
         if start + duration_min > DAY_MIN:
             break
+        if blocked is not None and blocked(start, start + duration_min):
+            continue
         score = slot_score(start, duration_min, surplus, power_kw)
         if best_score is None or score > best_score:
             best, best_score = start, score
@@ -99,7 +121,13 @@ def best_start(
 
 
 def best_start_with_next(
-    duration_min: int, power_kw: float, following: Cycle, surplus: Surplus, earliest_min: int
+    duration_min: int,
+    power_kw: float,
+    following: Cycle,
+    surplus: Surplus,
+    earliest_min: int,
+    blocked: Blocked | None = None,
+    following_blocked: Blocked | None = None,
 ) -> int | None:
     """Départ d'une tâche choisi avec celui de la suivante (qui démarre dès sa fin au plus
     tôt) ; repli sur la tâche seule si aucun couple ne tient."""
@@ -109,31 +137,51 @@ def best_start_with_next(
     for start in _starts(earliest_min):
         if start + duration_min > DAY_MIN:
             break
-        next_start = best_start(following_min, surplus, start + duration_min, following_kw)
+        if blocked is not None and blocked(start, start + duration_min):
+            continue
+        next_start = best_start(
+            following_min, surplus, start + duration_min, following_kw, following_blocked
+        )
         if next_start is None:
-            break
+            if following_blocked is None:
+                break  # la suivante ne tient plus dans la journée, ni après un départ plus tardif
+            continue  # écartée par ses contraintes : un départ plus tardif peut lui convenir
         first = slot_score(start, duration_min, surplus, power_kw)
         second = slot_score(next_start, following_min, surplus, following_kw)
         score = tuple(x + y for x, y in zip(first, second, strict=True))
         if best_score is None or score > best_score:
             best_score, best = score, start
     if best is None:
-        return best_start(duration_min, surplus, earliest_min, power_kw)
+        return best_start(duration_min, surplus, earliest_min, power_kw, blocked)
     return best
 
 
-def coverage(surplus: Surplus, cycles: Sequence[Cycle], earliest_min: int) -> float | None:
+def coverage(
+    surplus: Surplus,
+    cycles: Sequence[Cycle],
+    earliest_min: int,
+    blocked: Sequence[Blocked | None] = (),
+) -> float | None:
     """Part (0 à 1) de l'énergie des cycles (un seul, ou un couple) couverte par le surplus
-    sur le meilleur créneau du jour ; None s'ils ne tiennent pas."""
+    sur le meilleur créneau du jour ; None s'ils ne tiennent pas. ``blocked`` : par cycle,
+    le test de ses contraintes strictes (``hard_blocked``)."""
     (duration, power), *following = cycles
+    first_blocked = blocked[0] if blocked else None
     if following:
         next_duration, next_power = following[0]
+        next_blocked = blocked[1] if len(blocked) > 1 else None
         start = best_start_with_next(
-            duration, power, (next_duration, next_power), surplus, earliest_min
+            duration,
+            power,
+            (next_duration, next_power),
+            surplus,
+            earliest_min,
+            first_blocked,
+            next_blocked,
         )
         if start is None:
             return None
-        next_start = best_start(next_duration, surplus, start + duration, next_power)
+        next_start = best_start(next_duration, surplus, start + duration, next_power, next_blocked)
         if next_start is None:
             return None
         absorbed = (
@@ -142,7 +190,7 @@ def coverage(surplus: Surplus, cycles: Sequence[Cycle], earliest_min: int) -> fl
         )
         energy = power * duration / 60 + next_power * next_duration / 60
     else:
-        start = best_start(duration, surplus, earliest_min, power)
+        start = best_start(duration, surplus, earliest_min, power, first_blocked)
         if start is None:
             return None
         absorbed = slot_score(start, duration, surplus, power)[0]
@@ -198,6 +246,7 @@ def decide(
     delays: Mapping[str, int] | None = None,
     pinned: Mapping[str, date] | None = None,
     launched: set[str] | None = None,
+    constraints: Mapping[str, Sequence[TimeConstraint]] | None = None,
 ) -> tuple[dict[str, Assignment], list[dict[str, Any]]]:
     """(affectations par uid, avertissements de report).
 
@@ -207,7 +256,9 @@ def decide(
     ``pinned`` : jour du départ choisi par l'utilisateur, par nom de tâche ;
     ``launched`` : uid des tâches lancées (``launched_uids``) — avec lui, une tâche n'est
     verrouillée que si elle-même est lancée, pas une autre du même équipement ; celle qui en
-    suit une autre, sans tâche en attente à suivre, reste verrouillée par ``locked``.
+    suit une autre, sans tâche en attente à suivre, reste verrouillée par ``locked`` ;
+    ``constraints`` : contraintes horaires par nom de tâche — un jour où les strictes ne
+    laissent aucun départ n'est pas candidat.
     """
     assignments: dict[str, Assignment] = {}
     reports: list[dict[str, Any]] = []
@@ -215,16 +266,23 @@ def decide(
         if any(t.name not in cycles for t in group):
             continue  # profil indisponible : le calcul l'avertit déjà
         group_cycles: list[Cycle] = []
+        group_blocked: list[Blocked | None] = []
         for t in group:
             energy, cycle_min = cycles[t.name]
             duration = slot_minutes(cycle_min, reference)
             group_cycles.append((duration, energy * 60 / duration))
+            group_blocked.append(hard_blocked((constraints or {}).get(t.name, ())))
         ref = min(reference_day(t, memory, today) for t in group)
         delay = min((delays or {}).get(t.name, MAX_DELAY_DAYS) for t in group)
         limit = max(today, ref + timedelta(days=delay))
         candidates = sorted(d for d in surplus_by_day if today <= d <= limit)
         coverages = {
-            d: coverage(surplus_by_day[d], group_cycles, first_hour * 60 if d == today else 0)
+            d: coverage(
+                surplus_by_day[d],
+                group_cycles,
+                first_hour * 60 if d == today else 0,
+                group_blocked,
+            )
             for d in candidates
         }
         scores = {
