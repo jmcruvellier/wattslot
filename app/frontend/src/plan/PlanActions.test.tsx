@@ -44,13 +44,16 @@ describe("PlanActions (barre de titre)", () => {
     vi.restoreAllMocks();
   });
 
-  it("montre l'âge du dernier calcul et du dernier relevé à côté des icônes", async () => {
+  it("montre le verbe de chaque bouton, et dessous l'âge du dernier calcul et du dernier relevé", async () => {
     mockApi(lastRun(12, 5));
 
     renderActions();
 
     expect(await screen.findByText("il y a 12 minutes")).toBeInTheDocument();
     expect(screen.getByText("il y a 5 minutes")).toBeInTheDocument();
+    // Un verbe à côté de l'icône : l'icône et une durée seules ne disaient pas ce que fait le bouton.
+    expect(screen.getByText("Calculer")).toHaveClass("run-verb");
+    expect(screen.getByText("Rafraîchir")).toHaveClass("run-verb");
     // Le détail (heure, automatique ou à la main) est dans le nom du bouton.
     expect(await screen.findByRole("button", { name: /^Calculer — Calculé à .+ \(automatique\)$/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^Rafraîchir les données réelles — dernier relevé à .+$/ })).toBeInTheDocument();

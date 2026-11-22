@@ -24,7 +24,7 @@ Le plan en détail, pour **Hier**, **Aujourd'hui**, **Demain**, les jours suivan
 
 ![Planning](../images/fr/planning-desktop-light.png)
 
-- En haut, l'heure du calcul, **Calculer** (recalculer maintenant) et **Rafraîchir les données réelles**.
+- En haut, **Calculer** (recalculer maintenant) et **Rafraîchir** (relire les données réelles), chacun avec l'ancienneté de sa dernière exécution ; sur téléphone, leurs icônes seules.
 - Les avertissements, puis trois tuiles pour l'essentiel, chacune avec un chiffre et une pastille : la batterie à minuit, la production du jour, les appareils lancés. Touchez une tuile pour son détail (le plan de la veille, la prévision comparée à la production mesurée, l'heure et l'énergie de chaque appareil).
 - **La journée en agenda** : ce qui se passe, et quand, une ligne par événement. Touchez un appareil pour déplier la raison de son créneau ; aujourd'hui, ses autres départs possibles se choisissent là aussi.
   - Un appareil peut démarrer le soir et finir le lendemain, quand les heures de la nuit sont moins chères (ou que la batterie les couvre encore) : son heure de fin est celle du lendemain, et le lendemain commence par la fin du cycle.

@@ -210,6 +210,7 @@
       "compute": "Berechnen",
       "running": "Berechnung läuft…",
       "refresh": "Messdaten aktualisieren",
+      "refresh_short": "Aktualisieren",
       "failed": "Der Vorgang ist fehlgeschlagen: siehe Diagnose."
     },
     "freshness": {

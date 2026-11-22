@@ -24,7 +24,7 @@ The plan in detail, for **Yesterday**, **Today**, **Tomorrow**, the following da
 
 ![Planning](images/en/planning-desktop-light.png)
 
-- At the top, the computation time, **Compute** (recalculate now) and **Refresh actual data**.
+- At the top, **Compute** (recalculate now) and **Refresh** (read the actual data again), each with how long ago it last ran; on a phone, their icons only.
 - Warnings, then three tiles for what matters, each with a figure and a badge: the battery at midnight, the day's production, the appliances started. Tap a tile for its detail (the plan of the day before, the forecast compared with what was measured, each appliance's time and energy).
 - **The day as an agenda**: what happens and when, one line per event. Tap an appliance to unfold why it was placed there; today, its other possible starts can be chosen there too.
   - An appliance can start in the evening and finish the next day, when the night hours are cheaper (or the battery still covers them): its end time is the next day's, and the next day starts with the end of the cycle.
