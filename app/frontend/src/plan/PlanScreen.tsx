@@ -1,7 +1,7 @@
 // « Plan du jour », nouveau dashboard (lot 5.2, socle) : onglets Hier, Aujourd'hui, Demain et
 // Semaine sur l'API des vues, actualisation quand un nouveau calcul arrive (`planView`).
-// Section Planning (lot 6b.4) : chaque jour en agenda (`Agenda`), puis « Pourquoi ce plan » et
-// les indicateurs du plan côte à côte. Les courbes et les cartes de la phase 5 sont dans la
+// Section Planning (lot 6b.4) : chaque jour en agenda (`Agenda`, qui porte la raison de chaque
+// créneau et « Pourquoi ce plan », dépliés à la demande), puis les indicateurs du plan. Les courbes et les cartes de la phase 5 sont dans la
 // section Courbes (`CurvesScreen`). « Mes demandes » en bas, sous chaque onglet : ce que le plan
 // doit placer, à côté de ce qu'il prévoit (déplacé depuis la page Assistant).
 
@@ -9,7 +9,7 @@ import { useI18n } from "../i18n/I18nProvider";
 import RequestsSection from "../start/RequestsSection";
 import Agenda, { DaySummaryCard } from "./Agenda";
 import Banners from "./Banners";
-import { ExplanationsCard, IndicatorsCard } from "./InsightCards";
+import { IndicatorsCard } from "./InsightCards";
 import BatteriesCard from "./BatteryList";
 import PhasesCard from "./PhasesCard";
 import { availableDayCards } from "./layout";
@@ -48,13 +48,14 @@ export default function PlanScreen() {
           <Banners view={load.view} />
           <div className="plan-agenda">
             <DaySummaryCard view={load.view} />
-            <Agenda view={load.view} />
+            <Agenda
+              view={load.view}
+              onChanged={reload}
+              why={availableDayCards(load.view).includes("explanations")}
+            />
           </div>
           {/* Côte à côte quand la largeur le permet, l'un sous l'autre sur téléphone. */}
           <div className="plan-insights">
-            {availableDayCards(load.view).includes("explanations") && (
-              <ExplanationsCard view={load.view} onChanged={reload} />
-            )}
             <IndicatorsCard view={load.view} layout={layout.indicators} />
             <BatteriesCard view={load.view} />
             <PhasesCard view={load.view} />
