@@ -244,6 +244,29 @@ describe("Agenda", () => {
     expect(screen.queryByText("Maintenant")).toBeNull(); // demain : pas de repère
   });
 
+  it("sous Hier, « Pourquoi ce plan » ne redit pas le texte du plan, écrit au présent", () => {
+    const view: DayView = {
+      ...TODAY,
+      explanations: [...TODAY.explanations, { device: "Batterie", text: "Autoconsommation de 6 h à 22 h." }],
+      recommendation: "Équipements à lancer aujourd'hui : aucun.",
+    };
+    const { unmount } = render(
+      <I18nProvider>
+        <Agenda view={{ ...view, kind: "yesterday" }} why />
+      </I18nProvider>,
+    );
+    expect(screen.getByText("Autoconsommation de 6 h à 22 h.")).toBeInTheDocument();
+    expect(screen.queryByText(/à lancer aujourd'hui/)).toBeNull();
+    unmount();
+
+    render(
+      <I18nProvider>
+        <Agenda view={view} why />
+      </I18nProvider>,
+    );
+    expect(screen.getByText(/à lancer aujourd'hui/)).toBeInTheDocument();
+  });
+
   it("dit quand il n'y a rien à lancer", () => {
     renderAgenda({ ...TOMORROW, battery_capacity_kwh: null, timeline: { ...TODAY.timeline, rows: [] } });
     expect(screen.getByText("Rien à lancer ce jour-là.")).toBeInTheDocument();

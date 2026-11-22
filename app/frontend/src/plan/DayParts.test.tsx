@@ -105,6 +105,25 @@ describe("vue d'un jour", () => {
     expect(within(screen.getByLabelText("Équipements")).getByText("3 lancés")).toHaveClass("plan-tile-value");
   });
 
+  it("la nuit, trop tôt pour juger : la tuile du soleil ne compare pas 0,0 kWh à 0,0 kWh", () => {
+    const weather = { ...TODAY.cards!.weather!, badge: "too_early" as const, measured_kwh: 0, estimated_kwh: 0 };
+    renderDay({ ...TODAY, cards: { ...TODAY.cards!, weather } });
+
+    const tile = screen.getByLabelText("Météo");
+    expect(within(tile).getByText(/trop tôt pour juger/)).toBeInTheDocument();
+    expect(within(tile).queryByText("Mesuré au relevé")).toBeNull();
+    expect(within(tile).queryByText("Dernière prévision")).toBeNull();
+  });
+
+  it("un jour à venir sans appareil : « prévu » seul, pas « ni lancé »", () => {
+    const timeline = { ...TOMORROW.timeline, rows: [], statuses: [], unplanned: [], badge: null };
+    renderDay({ ...TOMORROW, timeline });
+
+    const tile = screen.getByLabelText("Équipements");
+    expect(within(tile).getByText("Aucun équipement prévu")).toBeInTheDocument();
+    expect(tile).not.toHaveTextContent("ni lancé");
+  });
+
   it("sans batterie : ni départ ni cartes de la batterie", () => {
     renderDay(WITHOUT_BATTERY);
 

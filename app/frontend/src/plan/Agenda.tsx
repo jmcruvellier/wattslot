@@ -127,7 +127,10 @@ export default function Agenda({
   const entries = agenda(view);
   const others = why ? otherExplanations(view, entries) : [];
   const [whyOpen, setWhyOpen] = useState(wideScreen);
-  const more = why && (others.length > 0 || view.recommendation !== null) && (
+  // Le texte entier du plan est rédigé pour la journée en cours (« à lancer aujourd'hui »,
+  // « reste de la journée ») : sous Hier, il ne s'affiche pas, les explications suffisent.
+  const recommendation = view.kind === "yesterday" ? null : view.recommendation;
+  const more = why && (others.length > 0 || recommendation !== null) && (
     <details className="plan-why" open={whyOpen} onToggle={(event) => setWhyOpen(event.currentTarget.open)}>
       <summary>
         {t("plan.explanations.title")}
@@ -142,7 +145,7 @@ export default function Agenda({
           ))}
         </ul>
       )}
-      {view.recommendation && <p className="recommendation">{view.recommendation}</p>}
+      {recommendation && <p className="recommendation">{recommendation}</p>}
     </details>
   );
   const upcoming = view.kind === "today" ? firstUpcoming(entries, nowMinute()) : -1;

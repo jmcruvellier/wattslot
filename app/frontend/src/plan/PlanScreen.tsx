@@ -38,6 +38,11 @@ export default function PlanScreen() {
       day={load.status === "day" ? load.view.day : undefined}
       today={tab === "today"}
       computedAt={load.status === "day" || load.status === "week" ? load.view.computed_at : null}
+      started={
+        load.status === "day" && tab === "today"
+          ? load.view.timeline.statuses.filter((status) => status.actual_start_min !== null).map((status) => status.device)
+          : []
+      }
     />
   );
 

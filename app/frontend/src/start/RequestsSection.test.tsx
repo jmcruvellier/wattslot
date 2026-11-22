@@ -237,6 +237,21 @@ describe("RequestsSection", () => {
     expect(await screen.findByText("Aucune demande ce jour-là.")).toBeInTheDocument();
   });
 
+  it("dit « lancé » dès que les mesures voient le cycle, sans attendre le calcul", async () => {
+    // 23/11/2026 : la tuile disait « lancé à 0h02, en cours », la demande « marqué comme lancé ».
+    mockApi(DEVICES, [{ ...OPEN, cycle: "Lave-vaisselle", declared: true }]);
+    render(
+      <I18nProvider>
+        <RequestsSection day="2026-10-18" today started={["Lave-vaisselle"]} />
+      </I18nProvider>,
+    );
+
+    const row = (await screen.findByText("Lave-vaisselle")).closest("li") as HTMLElement;
+    expect(row.querySelector(".requests-state")).toHaveTextContent("lancé");
+    expect(row).not.toHaveTextContent("marqué comme lancé");
+    expect(within(row).queryByRole("button", { name: "C'est lancé" })).toBeNull();
+  });
+
   it("ne montre rien sans appareil à lancer", async () => {
     const calls = mockApi([], []);
     renderSection();
