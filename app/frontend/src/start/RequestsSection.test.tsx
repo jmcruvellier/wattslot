@@ -110,6 +110,35 @@ describe("RequestsSection", () => {
     expect(await screen.findByText(/a déjà une demande en attente, dès que possible/)).toBeInTheDocument();
   });
 
+  it("demande un appareil à terminer avant une heure", async () => {
+    // Issue 273 : lave-vaisselle demandé le soir, à finir avant midi.
+    const user = userEvent.setup();
+    const calls = mockApi(DEVICES, []);
+    renderSection();
+
+    await user.selectOptions(await screen.findByLabelText("Terminé avant"), "12");
+    expect(screen.getByText(/Le cycle finira avant 12h, le jour où il tourne/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Demander" }));
+
+    expect(calls.find((call) => call.method === "POST")?.body).toEqual({
+      device: "washer",
+      latest: null,
+      finish_hour: 12,
+    });
+    // Le champ revient à « sans heure limite » pour la demande suivante.
+    expect(screen.getByLabelText("Terminé avant")).toHaveValue("");
+  });
+
+  it("dit l'heure limite d'une demande en cours, et que la changer la remplace", async () => {
+    mockApi(DEVICES, [{ ...OPEN, device: "washer", finish_hour: 12 }]);
+    renderSection();
+
+    expect(
+      await screen.findByText("Lave-linge : au plus tard dimanche 18 octobre, terminé avant 12h"),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Son heure limite : avant 12h\. « Changer la date » la remplace/)).toBeInTheDocument();
+  });
+
   it("marque une demande faite ou l'annule", async () => {
     const user = userEvent.setup();
     const calls = mockApi(DEVICES, [OPEN, { ...OPEN, id: 2, device: "washer", status: "done", closed_at: "2026-10-16T20:00:00Z" }]);
