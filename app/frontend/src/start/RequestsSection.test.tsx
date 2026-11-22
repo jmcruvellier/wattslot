@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -53,90 +53,41 @@ describe("RequestsSection", () => {
     vi.restoreAllMocks();
   });
 
-  it("demande un appareil, au plus tard un jour donné", async () => {
+  it("liste les demandes en cours, sans formulaire : une demande passe par la feuille", async () => {
+    // Le formulaire n'est plus répété sous chaque onglet de Planning : le bouton ouvre la même
+    // feuille que « Demander un appareil » du menu, et la liste est relue à sa fermeture.
     const user = userEvent.setup();
     const calls = mockApi();
     renderSection();
 
     expect(await screen.findByText(/Lave-vaisselle : au plus tard dimanche 18 octobre/)).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText("Au plus tard le"), { target: { value: "2026-10-19" } });
-    await user.click(screen.getByRole("button", { name: "Demander" }));
+    expect(screen.queryByLabelText("Au plus tard le")).toBeNull();
+    expect(screen.queryByText(/Demandez qu'un appareil tourne/)).toBeNull();
 
-    const posted = calls.find((call) => call.method === "POST");
-    expect(posted).toEqual({
+    await user.click(screen.getByRole("button", { name: "Demander un appareil" }));
+    const sheet = await screen.findByRole("dialog", { name: "Demander un appareil" });
+    fireEvent.change(await within(sheet).findByLabelText("Au plus tard le"), { target: { value: "2026-10-19" } });
+    await user.click(within(sheet).getByRole("button", { name: "Demander" }));
+    expect(calls.find((call) => call.method === "POST")).toEqual({
       url: "api/requests",
       method: "POST",
       body: { device: "washer", latest: "2026-10-19" },
     });
+
+    const reads = () => calls.filter((call) => call.url === "api/requests" && call.method === "GET").length;
+    const before = reads();
+    await user.click(await within(sheet).findByRole("button", { name: "Terminé" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    await vi.waitFor(() => expect(reads()).toBeGreaterThan(before));
   });
 
-  it("propose de changer la date ou d'ajouter un cycle pour un appareil déjà demandé", async () => {
-    const user = userEvent.setup();
-    const calls = mockApi(DEVICES, [{ ...OPEN, device: "washer" }]);
-    renderSection();
-
-    // Le lave-linge a une demande en attente : deux boutons, et l'aide qui les explique.
-    await user.click(await screen.findByRole("button", { name: "Ajouter un cycle" }));
-    expect(screen.queryByRole("button", { name: "Demander" })).toBeNull();
-    // L'aide dit la date de cette demande (19/11/2026 : « déjà une demande », sans dire laquelle).
-    expect(screen.getByText(/a déjà une demande en attente, au plus tard dimanche 18 octobre/)).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Changer la date" }));
-
-    const posted = calls.filter((call) => call.method === "POST").map((call) => call.body);
-    expect(posted).toEqual([
-      { device: "washer", latest: null, another: true },
-      { device: "washer", latest: null },
-    ]);
-  });
-
-  it("ne dépose pas la demande d'un appareil dont le cycle n'est pas connu", async () => {
-    // 20/11/2026 : chauffe-eau demandé, accepté, puis absent du plan.
-    const user = userEvent.setup();
-    const calls = mockApi([...DEVICES, { key: "heater", name: "Chauffe-eau", placeable: false }], []);
-    renderSection();
-
-    await user.selectOptions(await screen.findByLabelText("Appareil"), "heater");
-    expect(screen.getByText(/ne connaît pas encore le cycle de cet appareil/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Demander" })).toBeDisabled();
-    await user.selectOptions(screen.getByLabelText("Appareil"), "washer");
-    expect(screen.getByRole("button", { name: "Demander" })).toBeEnabled();
-    expect(calls.filter((call) => call.method === "POST")).toEqual([]);
-  });
-
-  it("dit qu'une demande en attente est sans date", async () => {
-    mockApi(DEVICES, [{ ...OPEN, device: "washer", latest: null }]);
-    renderSection();
-
-    expect(await screen.findByText(/a déjà une demande en attente, dès que possible/)).toBeInTheDocument();
-  });
-
-  it("demande un appareil à terminer avant une heure", async () => {
-    // Issue 273 : lave-vaisselle demandé le soir, à finir avant midi.
-    const user = userEvent.setup();
-    const calls = mockApi(DEVICES, []);
-    renderSection();
-
-    await user.selectOptions(await screen.findByLabelText("Terminé avant"), "12");
-    expect(screen.getByText(/Le cycle finira avant 12h, le jour où il tourne/)).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Demander" }));
-
-    expect(calls.find((call) => call.method === "POST")?.body).toEqual({
-      device: "washer",
-      latest: null,
-      finish_hour: 12,
-    });
-    // Le champ revient à « sans heure limite » pour la demande suivante.
-    expect(screen.getByLabelText("Terminé avant")).toHaveValue("");
-  });
-
-  it("dit l'heure limite d'une demande en cours, et que la changer la remplace", async () => {
+  it("dit l'heure limite d'une demande en cours", async () => {
     mockApi(DEVICES, [{ ...OPEN, device: "washer", finish_hour: 12 }]);
     renderSection();
 
     expect(
       await screen.findByText("Lave-linge : au plus tard dimanche 18 octobre, terminé avant 12h"),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Son heure limite : avant 12h\. « Changer la date » la remplace/)).toBeInTheDocument();
   });
 
   it("marque une demande faite ou l'annule", async () => {

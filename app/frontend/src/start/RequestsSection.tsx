@@ -1,16 +1,21 @@
-// « Mes demandes » (lot 4.5) : demander qu'un équipement tourne, sans date ou au plus tard tel
-// jour, sans créer de liste de tâches dans Home Assistant. Le calcul place la demande comme une
-// tâche « à la demande » de HA ; elle devient « faite » le lendemain du lancement constaté, ou à
-// la main.
+// « Mes demandes » (lot 4.5) : les équipements qu'on a demandé de faire tourner, sans date ou au
+// plus tard tel jour, sans créer de liste de tâches dans Home Assistant. Le calcul place la
+// demande comme une tâche « à la demande » de HA ; elle devient « faite » le lendemain du
+// lancement constaté, ou à la main. Ici, la liste seulement : une nouvelle demande passe par la
+// feuille « Demander un appareil » (`RequestSheet`), la même que celle du menu, au lieu d'un
+// second formulaire sous chaque onglet de Planning.
 
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 
 import { getJson, postJson } from "../api";
 import { useI18n } from "../i18n/I18nProvider";
 import { declareLaunched } from "../plan/declared";
 import { hour } from "../plan/format";
-import RequestForm, { type RequestDevice } from "./RequestForm";
-import { pendingFinish, pendingLatest } from "./pendingLatest";
+import Button from "../ui/Button";
+import type { RequestDevice } from "./RequestForm";
+
+// Lue à la première ouverture, comme depuis le menu (App).
+const RequestSheet = lazy(() => import("./RequestSheet"));
 
 export interface UserRequest {
   id: number;
@@ -39,6 +44,7 @@ export default function RequestsSection() {
   const [load, setLoad] = useState<Load>({ status: "loading" });
   const [version, setVersion] = useState(0);
   const [failed, setFailed] = useState(false);
+  const [asking, setAsking] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -93,52 +99,53 @@ export default function RequestsSection() {
 
   return (
     <section aria-labelledby="requests-title">
-      <h2 id="requests-title">{t("requests.title")}</h2>
-      <p>{t("requests.intro")}</p>
-      <RequestForm
-        devices={devices}
-        // Demandes en attente, pas encore lancées : le formulaire propose d'en changer la date
-        // ou d'ajouter un cycle.
-        waiting={opened.filter((r) => !r.launched_on).map((r) => r.device)}
-        waitingLatest={pendingLatest(opened)}
-        waitingFinish={pendingFinish(opened)}
-        onAsked={() => setVersion((count) => count + 1)}
-      />
+      <div className="requests-head">
+        <h2 id="requests-title">{t("requests.title")}</h2>
+        <Button icon="plus" onClick={() => setAsking(true)}>
+          {t("nav.request")}
+        </Button>
+      </div>
+      {asking && (
+        <Suspense fallback={null}>
+          <RequestSheet
+            onClose={() => {
+              // La feuille fermée, la liste est relue : la demande déposée y apparaît.
+              setAsking(false);
+              setVersion((count) => count + 1);
+            }}
+          />
+        </Suspense>
+      )}
       {failed && <p role="alert">{t("requests.failed")}</p>}
       {opened.length === 0 ? (
         <p>{t("requests.none")}</p>
       ) : (
-        <ul aria-label={t("requests.open_list")}>
+        // Une demande par ligne : son texte, puis ses boutons, à droite quand la place le permet.
+        <ul className="requests-list" aria-label={t("requests.open_list")}>
           {opened.map((request) => (
             <li key={request.id}>
-              {describe(request)}{" "}
-              {request.cycle && !request.launched_on && !request.declared && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => void act(() => declareLaunched(request.cycle ?? ""))}
-                  >
+              <span>{describe(request)}</span>
+              <span className="requests-actions">
+                {request.cycle && !request.launched_on && !request.declared && (
+                  <button type="button" onClick={() => void act(() => declareLaunched(request.cycle ?? ""))}>
                     {t("requests.mark_launched")}
-                  </button>{" "}
-                </>
-              )}
-              <button
-                type="button"
-                onClick={() => void act(() => postJson(`api/requests/${request.id}/done`, {}))}
-              >
-                {t("requests.mark_done")}
-              </button>{" "}
-              <button
-                type="button"
-                onClick={() =>
-                  void act(async () => {
-                    const response = await fetch(`api/requests/${request.id}`, { method: "DELETE" });
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                  })
-                }
-              >
-                {t("requests.cancel")}
-              </button>
+                  </button>
+                )}
+                <button type="button" onClick={() => void act(() => postJson(`api/requests/${request.id}/done`, {}))}>
+                  {t("requests.mark_done")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    void act(async () => {
+                      const response = await fetch(`api/requests/${request.id}`, { method: "DELETE" });
+                      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    })
+                  }
+                >
+                  {t("requests.cancel")}
+                </button>
+              </span>
             </li>
           ))}
         </ul>
