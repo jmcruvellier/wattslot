@@ -209,6 +209,36 @@ def test_an_old_warning_about_a_device_now_placed_is_dropped() -> None:
     assert merged["avertissements"] == [other, "texte"]
 
 
+def test_an_old_warning_about_a_request_since_cancelled_is_dropped() -> None:
+    """22/11/2026 : demande du lave-vaisselle annulée après un calcul qui l'avait signalée
+    (« ne sera pas terminé avant 13h »). L'avertissement restait affiché jusqu'à minuit."""
+    late = {
+        "code": "heure_limite_depassee",
+        "params": {"equipement": "Lave-vaisselle", "heure_limite": 13, "fin_min": 2},
+    }
+    waiting = {"code": "heures_insuffisantes_attente", "params": {"equipement": "Lave-linge"}}
+    pool = {"code": "duree_minimale_non_tenue", "params": {"equipement": "Piscine (filtration)"}}
+    old = {
+        "date_cible": DAY,
+        "planning": [],
+        "avertissements": [late, waiting, pool, "texte"],
+        "taches_placees": [{"summary": "Lave-vaisselle", "due": DAY.isoformat()}],
+        "taches_en_attente": [{"summary": "Lave-linge"}],
+    }
+    new = {
+        "date_cible": DAY,
+        "planning": [],
+        "avertissements": [],
+        "taches_en_attente": [{"summary": "Lave-linge"}],
+    }
+
+    merged = merge_plans(new, old, 13)
+
+    # Le lave-vaisselle n'est plus demandé : son avertissement part. Celui du lave-linge,
+    # toujours demandé, et celui d'un élément sans tâche restent.
+    assert merged["avertissements"] == [waiting, pool, "texte"]
+
+
 @pytest.mark.parametrize("seed", range(300))
 def test_rollover_same_as_v1(seed: int) -> None:
     rng = random.Random(seed)
