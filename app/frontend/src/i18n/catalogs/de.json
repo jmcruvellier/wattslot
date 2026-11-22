@@ -191,7 +191,6 @@
       },
       "off_peak": "Nebenzeiten",
       "agenda": "Wochenablauf",
-      "battery_line": "Batterie: {start} %, bis {max} %, {end} % am Abend",
       "open_day": "{day} öffnen",
       "missing": "Kein Plan für diesen Tag: Die Berechnung wurde vorher beendet, siehe Meldung oben in der Woche.",
       "missing_curves": "Kein Plan für diesen Tag: Die Berechnung wurde vorher beendet. Die Ursache steht unter Planung, Reiter Woche.",
@@ -199,7 +198,11 @@
         "day": "Tag",
         "weather": "Wetter",
         "battery": "Batterie"
-      }
+      },
+      "heading": "Die Woche",
+      "battery_panel": "Batterie über die Woche",
+      "lowest": "Tiefststand",
+      "highest": "Höchststand"
     },
     "header": {
       "computed": "Berechnet um {time} ({how})",
@@ -1702,7 +1705,7 @@
       "cancel": "Abbrechen",
       "cancel_failed": "Der Abbruch ist fehlgeschlagen.",
       "other_time": "Andere Uhrzeit",
-      "end": "Fertig gegen {end}"
+      "start": "Start um {start}"
     },
     "battery": {
       "eyebrow": "Batterie",
@@ -1715,7 +1718,8 @@
       "done_label": "Bereits erzeugt",
       "forecast_label": "Heute erwartet"
     },
-    "trend": "Abweichung von der Prognose bei der Messung"
+    "trend": "Abweichung von der Prognose bei der Messung",
+    "trend_early": "zu früh"
   },
   "home_summary": {
     "loading": "Zuhause wird gelesen…",

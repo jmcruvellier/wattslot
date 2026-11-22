@@ -1,6 +1,6 @@
 // Écran Aujourd'hui (lot 6b.3) : répond à « que dois-je faire, et quand ? » et « que se
 // passe-t-il maintenant ? ». En panneaux à petit titre (ui/Panel) : la prochaine action (son
-// heure de fin, sa raison en quelques mots, ses boutons) et le moment (quatre tuiles, le dernier
+// heure de départ, sa raison en quelques mots, ses boutons) et le moment (quatre tuiles, le dernier
 // quart d'heure) côte à côte ; la frise du jour ; puis les indicateurs du plan à côté de la
 // batterie et du soleil, en lignes « libellé, valeur ». Sur téléphone, les panneaux s'empilent
 // dans cet ordre. Le détail (agenda, raisons, courbes) est dans Planning et Courbes. Vue relue
@@ -53,12 +53,19 @@ function kw(watts: number): string {
   return value < 1000 ? `${kwh(value, 0)} W` : `${kwh(value / 1000, 1)} kW`;
 }
 
-/** Tendance d'une ligne au relevé (mesuré contre estimé), en pilule en tête de carte ; rien sans
- * mesure. Pilule et non marque des cartes de résumé : elle doit se lire d'un coup d'œil. */
+/** Tendance d'une ligne au relevé (mesuré contre estimé), en pilule en tête de carte. Sans
+ * mesure à comparer (juste après minuit, avant le premier relevé), la pilule dit « trop tôt »
+ * au lieu de disparaître : on ne se demande pas où elle est passée. */
 function TrendBadge({ view, line }: { view: DayView; line: LineKey }) {
   const { t } = useI18n();
   const trend = view.cards?.at_reading.find((card) => card.key === line)?.trend;
-  if (!trend || trend.direction === "none") return null;
+  if (!trend || trend.direction === "none") {
+    return (
+      <span className="trend-pill trend-neutral" title={t("today.trend")}>
+        {t("today.trend_early")}
+      </span>
+    );
+  }
   return <TrendMark trend={trend} label={t("today.trend")} className="trend-pill" />;
 }
 
@@ -147,6 +154,7 @@ export default function TodayView({ onNavigate }: { onNavigate?: (target: string
         choices={startChoices(view)}
         onChanged={() => setAttempt((count) => count + 1)}
         hours={view.hours}
+        declared={view.declared_launches ?? []}
       />
       <div className={hasBattery || hasSun ? "today-row today-row-split" : "today-row"}>
         <IndicatorsCard view={view} layout={DEFAULT_LAYOUT.indicators} compact />
@@ -358,7 +366,7 @@ function NextActionCard({
   // à venir, ni une heure de fin qui ne vaut plus.
   const late = action.late ?? false;
   const chosen = action.chosen ?? false;
-  // La raison en quelques mots (« 100 % solaire »), à côté de l'heure de fin ; la phrase
+  // La raison en quelques mots (« 100 % solaire »), à côté de l'heure de départ ; la phrase
   // complète du serveur est sous « Autre heure ».
   const reason = shortReason(view.explanations.find((item) => item.device === action.device)?.explanation, t);
   return (
@@ -366,7 +374,8 @@ function NextActionCard({
       <div className="ui-panel-head">
         <p className="ui-panel-title">
           <Icon name="play" size={16} />
-          {t("today.next.eyebrow")} · {late ? t("today.next.now") : start}
+          {t("today.next.eyebrow")}
+          {late && ` · ${t("today.next.now")}`}
         </p>
       </div>
       <h3 id="next-action-title" className="next-action-title">
@@ -380,7 +389,8 @@ function NextActionCard({
             {action.explanation && <> {action.explanation}</>}
           </>
         ) : (
-          [t("today.next.end", { end: clock(action.end_min, language) }), reason].filter(Boolean).join(" · ")
+          // L'heure de départ, pas celle de fin : on n'a pas demandé qu'il finisse avant une heure.
+          [t("today.next.start", { start }), reason].filter(Boolean).join(" · ")
         )}
       </p>
       {action.waits_for && <p className="dim">{t("today.next.waits_for", { device: action.waits_for })}</p>}

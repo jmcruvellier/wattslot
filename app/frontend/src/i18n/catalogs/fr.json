@@ -191,7 +191,6 @@
       },
       "off_peak": "Heures creuses",
       "agenda": "Agenda de la semaine",
-      "battery_line": "Batterie : {start} %, jusqu'à {max} %, {end} % le soir",
       "open_day": "Ouvrir {day}",
       "missing": "Pas de plan pour ce jour : le calcul s'est arrêté avant, voir le message en haut de la semaine.",
       "missing_curves": "Pas de plan pour ce jour : le calcul s'est arrêté avant. La cause est expliquée dans Planning, onglet Semaine.",
@@ -199,7 +198,11 @@
         "day": "Jour",
         "weather": "Météo",
         "battery": "Batterie"
-      }
+      },
+      "heading": "La semaine",
+      "battery_panel": "Batterie sur la semaine",
+      "lowest": "Au plus bas",
+      "highest": "Au plus haut"
     },
     "header": {
       "computed": "Calculé à {time} ({how})",
@@ -1702,7 +1705,7 @@
       "cancel": "Annuler",
       "cancel_failed": "L'annulation n'a pas abouti.",
       "other_time": "Autre heure",
-      "end": "Fin vers {end}"
+      "start": "Départ à {start}"
     },
     "battery": {
       "eyebrow": "Batterie",
@@ -1715,7 +1718,8 @@
       "done_label": "Déjà produit",
       "forecast_label": "Prévu aujourd'hui"
     },
-    "trend": "Écart avec la prévision au relevé"
+    "trend": "Écart avec la prévision au relevé",
+    "trend_early": "trop tôt"
   },
   "home_summary": {
     "loading": "Lecture de la maison…",

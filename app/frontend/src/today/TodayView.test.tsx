@@ -114,7 +114,7 @@ describe("TodayView", () => {
     expect(screen.queryByText("Lancez le lave-linge à 13 h.")).not.toBeInTheDocument();
   });
 
-  it("dit l'heure de fin et la raison en quelques mots ; le reste sous « Autre heure »", async () => {
+  it("dit l'heure de départ et la raison en quelques mots ; le reste sous « Autre heure »", async () => {
     vi.setSystemTime(new Date("2026-10-17T12:00:00"));
     const alternatives = [{ start_min: 960, end_min: 1080, cost_eur_delta: 0.03, import_kwh_delta: 0.1 }];
     // Raisons structurées du plan : la part de surplus solaire donne « 100 % solaire ».
@@ -128,7 +128,9 @@ describe("TodayView", () => {
     mockApi({ ...TODAY, explanations, now: NOW, next_action: { ...ACTION, alternatives } });
     const user = userEvent.setup();
     renderView();
-    expect(await screen.findByText("Fin vers 15h00 · 100 % solaire")).toBeInTheDocument();
+    // Le départ, pas la fin : on n'a pas demandé que le cycle finisse avant une heure.
+    expect(await screen.findByText("Départ à 13h00 · 100 % solaire")).toBeInTheDocument();
+    expect(screen.queryByText(/Fin vers/)).not.toBeInTheDocument();
     expect(screen.queryByText("Au plus fort du soleil.")).not.toBeInTheDocument();
     expect(screen.queryByText("Autres départs possibles :")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Annuler" })).toBeNull();
@@ -172,7 +174,7 @@ describe("TodayView", () => {
     });
     renderView();
     expect(await screen.findByRole("heading", { name: "Lancez Lave-linge" })).toBeInTheDocument();
-    expect(screen.getByText("Fin vers 15h00")).toBeInTheDocument();
+    expect(screen.getByText("Départ à 13h00")).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: "C'est lancé" }));
     expect(await screen.findByRole("heading", { name: "Lancez Lave-vaisselle" })).toBeInTheDocument();
@@ -336,12 +338,15 @@ describe("TodayView", () => {
     expect(screen.getByRole("heading", { name: "Rien à lancer d'ici ce soir" })).toBeInTheDocument();
   });
 
-  it("sans mesure au relevé : pas d'indicateur de tendance", async () => {
+  it("sans mesure au relevé : « trop tôt » à la place de la tendance", async () => {
     mockApi({ ...TODAY, now: NOW, next_action: null, cards: null });
     renderView();
     expect(await screen.findByRole("heading", { name: "Batterie" })).toBeInTheDocument();
     expect(screen.getByText("Prévu aujourd'hui").closest("div")).toHaveTextContent("9,5 kWh");
     expect(screen.queryByText(/[▲▼]/)).not.toBeInTheDocument();
+    // Juste après minuit, avant le premier relevé : la pastille ne disparaît pas.
+    expect(screen.getAllByText("trop tôt")).toHaveLength(2);
+    expect(screen.getAllByText("trop tôt")[0]).toHaveClass("trend-pill");
   });
 
   it("sans solaire : pas de carte Soleil", async () => {

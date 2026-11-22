@@ -191,7 +191,6 @@
       },
       "off_peak": "Daluren",
       "agenda": "Weekagenda",
-      "battery_line": "Batterij: {start}%, tot {max}%, {end}% 's avonds",
       "open_day": "{day} openen",
       "missing": "Geen plan voor deze dag: de berekening is ervoor gestopt, zie het bericht bovenaan de week.",
       "missing_curves": "Geen plan voor deze dag: de berekening is ervoor gestopt. De oorzaak staat onder Planning, tabblad Week.",
@@ -199,7 +198,11 @@
         "day": "Dag",
         "weather": "Weer",
         "battery": "Batterij"
-      }
+      },
+      "heading": "De week",
+      "battery_panel": "Batterij over de week",
+      "lowest": "Laagste stand",
+      "highest": "Hoogste stand"
     },
     "header": {
       "computed": "Berekend om {time} ({how})",
@@ -1702,7 +1705,7 @@
       "cancel": "Annuleren",
       "cancel_failed": "Het annuleren is mislukt.",
       "other_time": "Ander tijdstip",
-      "end": "Klaar rond {end}"
+      "start": "Start om {start}"
     },
     "battery": {
       "eyebrow": "Batterij",
@@ -1715,7 +1718,8 @@
       "done_label": "Al opgewekt",
       "forecast_label": "Verwacht vandaag"
     },
-    "trend": "Verschil met de voorspelling bij de meting"
+    "trend": "Verschil met de voorspelling bij de meting",
+    "trend_early": "te vroeg"
   },
   "home_summary": {
     "loading": "Huis wordt gelezen…",

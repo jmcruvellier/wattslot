@@ -47,6 +47,7 @@ import Button from "../ui/Button";
 import Sheet from "../ui/Sheet";
 import OtherStarts from "./OtherStarts";
 import { cancelTask, restoreTask } from "./cancelled";
+import { withdrawLaunched } from "./declared";
 import type { StartChoice } from "./startChoices";
 
 const AXIS = [0, 4, 8, 12, 16, 20, 24];
@@ -138,6 +139,7 @@ export default function TimelineCard({
   onChanged,
   day,
   hours,
+  declared = [],
 }: {
   timeline: Timeline;
   readingHour: number | null;
@@ -145,6 +147,9 @@ export default function TimelineCard({
   onChanged?: () => void;
   day?: string; // jour d'un plan à venir ; aucun : aujourd'hui
   hours?: HourPoint[]; // heures de la journée : fond des heures creuses et bande de soleil
+  // Cycles déclarés lancés (« C'est lancé ») que les mesures n'ont pas encore vus : leur départ
+  // ne se change plus, il faut d'abord revenir sur la déclaration (« Pas encore lancé »).
+  declared?: string[];
 }) {
   const { language, t } = useI18n();
   // Heure choisie sur une piste : sa ligne, l'heure d'horloge marquée, les phrases affichées.
@@ -185,6 +190,7 @@ export default function TimelineCard({
       if (status.running) return t("plan.timeline.state.running");
       if (status.actual_start_min !== null)
         return t("plan.timeline.state.started", { time: hour(status.actual_start_min / 60, lang) });
+      if (declared.includes(status.device)) return t("requests.state_declared");
       return status.status === "no_cycle"
         ? t("plan.timeline.state.no_cycle")
         : t("plan.timeline.state.planned", { time: hour(status.planned_start_min / 60, lang) });
@@ -496,18 +502,32 @@ export default function TimelineCard({
               kwh: kwh(picked.bar.energy_kwh),
             })}
           </p>
-          <OtherStarts
-            device={picked.device}
-            alternatives={choices?.[picked.device]?.alternatives ?? []}
-            chosen={choices?.[picked.device]?.chosen ?? false}
-            onChanged={() => {
-              setPicked(null); // le plan recalcule, la frise va suivre
-              onChanged?.();
-            }}
-            day={day}
-            freeFrom={nowMin}
-          />
-          {day === undefined && (
+          {declared.includes(picked.device) ? (
+            // Déclaré lancé : ni autre départ ni annulation tant qu'on n'est pas revenu dessus.
+            <p className="other-starts-buttons">
+              {t("today.next.declared", { device: picked.device })}{" "}
+              <Button
+                icon="refresh"
+                disabled={cancelling === "running"}
+                onClick={() => void run(() => withdrawLaunched(picked.device))}
+              >
+                {t("today.next.undo")}
+              </Button>
+            </p>
+          ) : (
+            <OtherStarts
+              device={picked.device}
+              alternatives={choices?.[picked.device]?.alternatives ?? []}
+              chosen={choices?.[picked.device]?.chosen ?? false}
+              onChanged={() => {
+                setPicked(null); // le plan recalcule, la frise va suivre
+                onChanged?.();
+              }}
+              day={day}
+              freeFrom={nowMin}
+            />
+          )}
+          {day === undefined && !declared.includes(picked.device) && (
             <p className="other-starts-buttons">
               <Button
                 icon="close"

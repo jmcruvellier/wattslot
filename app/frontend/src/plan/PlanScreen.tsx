@@ -84,12 +84,12 @@ export default function PlanScreen() {
         <>
           {/* Mesures impossibles : celles du jour qui ouvre la semaine seulement. */}
           <DiscardedNote hours={load.view.discarded_hours ?? []} />
-          <WeekScreen view={load.view} onOpen={open} />
+          <WeekScreen view={load.view} onOpen={open} side={requests} />
         </>
       )}
 
-      {/* Semaine, ou plan pas encore lu : « Mes demandes » sous le reste. */}
-      {load.status !== "day" && requests}
+      {/* Plan pas encore lu, ou manquant : « Mes demandes » seul. */}
+      {load.status !== "day" && load.status !== "week" && requests}
     </section>
   );
 }
