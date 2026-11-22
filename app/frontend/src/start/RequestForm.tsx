@@ -7,6 +7,7 @@ import { useState } from "react";
 import { postJson } from "../api";
 import { useI18n } from "../i18n/I18nProvider";
 import { hour } from "../plan/format";
+import Button from "../ui/Button";
 
 export interface RequestDevice {
   key: string;
@@ -84,24 +85,27 @@ export default function RequestForm({
   };
 
   return (
-    <>
-      <p className="request-form">
+    // Un champ par ligne, libellé au-dessus ; la date et l'heure limite côte à côte quand la
+    // place le permet ; l'aide, puis les boutons (styles.css, « .request-form »). Avant : tout
+    // sur une ligne de texte, qui se coupait au hasard dans la feuille (22/11/2026).
+    <div className="request-form">
+      <label>
+        <span>{t("requests.device")}</span>
+        <select value={selected} onChange={(event) => setDevice(event.target.value)}>
+          {devices.map((d) => (
+            <option key={d.key} value={d.key}>
+              {d.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <div className="request-form-when">
         <label>
-          {t("requests.device")}{" "}
-          <select value={selected} onChange={(event) => setDevice(event.target.value)}>
-            {devices.map((d) => (
-              <option key={d.key} value={d.key}>
-                {d.name}
-              </option>
-            ))}
-          </select>
-        </label>{" "}
-        <label>
-          {t("requests.latest")}{" "}
+          <span>{t("requests.latest")}</span>
           <input type="date" value={latest} onChange={(event) => setLatest(event.target.value)} />
-        </label>{" "}
+        </label>
         <label>
-          {t("requests.finish_before")}{" "}
+          <span>{t("requests.finish_before")}</span>
           <select value={finish} onChange={(event) => setFinish(event.target.value)}>
             <option value="">{t("requests.finish_none")}</option>
             {FINISH_HOURS.map((h) => (
@@ -110,31 +114,32 @@ export default function RequestForm({
               </option>
             ))}
           </select>
-        </label>{" "}
-        {pending ? (
-          <>
-            <button type="button" disabled={unknown} onClick={() => void ask()}>
-              {t("requests.change_date")}
-            </button>{" "}
-            <button type="button" disabled={unknown} onClick={() => void ask(true)}>
-              {t("requests.add_cycle")}
-            </button>
-          </>
-        ) : (
-          <button type="button" disabled={unknown} onClick={() => void ask()}>
-            {t("requests.ask")}
-          </button>
+        </label>
+      </div>
+      <p className="request-form-help">
+        {unknown ? t("requests.unknown_cycle") : pending ? waitingHint : t("requests.hint")}
+        {!unknown && pending && pendingFinish != null && (
+          <> {t("requests.waiting_finish", { hour: hour(pendingFinish, language) })}</>
         )}
-        <br />
-        <small>
-          {unknown ? t("requests.unknown_cycle") : pending ? waitingHint : t("requests.hint")}
-          {!unknown && pending && pendingFinish != null && (
-            <> {t("requests.waiting_finish", { hour: hour(pendingFinish, language) })}</>
-          )}
-          {!unknown && finish && <> {t("requests.finish_hint", { hour: hour(Number(finish), language) })}</>}
-        </small>
+        {!unknown && finish && <> {t("requests.finish_hint", { hour: hour(Number(finish), language) })}</>}
       </p>
       {failed && <p role="alert">{t("requests.failed")}</p>}
-    </>
+      <div className="request-form-actions">
+        {pending ? (
+          <>
+            <Button disabled={unknown} onClick={() => void ask(true)}>
+              {t("requests.add_cycle")}
+            </Button>
+            <Button variant="primary" disabled={unknown} onClick={() => void ask()}>
+              {t("requests.change_date")}
+            </Button>
+          </>
+        ) : (
+          <Button variant="primary" disabled={unknown} onClick={() => void ask()}>
+            {t("requests.ask")}
+          </Button>
+        )}
+      </div>
+    </div>
   );
 }

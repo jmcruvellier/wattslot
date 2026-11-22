@@ -1613,6 +1613,61 @@ pre {
   transform: translateX(1.15rem);
 }
 
+/* Formulaire de demande (feuille « Demander un appareil » et « Mes demandes ») : un champ par
+   ligne, libellé au-dessus ; la date et l'heure limite côte à côte quand la place le permet. */
+.request-form {
+  display: grid;
+  gap: 1rem;
+  max-width: 32rem;
+  margin: 1rem 0 0.5rem;
+}
+
+.request-form label {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.request-form label > span {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.request-form label > select,
+.request-form label > input {
+  width: 100%;
+}
+
+.request-form-when {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 1rem;
+}
+
+.request-form-help {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.request-form [role="alert"] {
+  margin: 0;
+}
+
+/* L'action principale à droite, à portée du pouce ; pleine largeur sur un écran étroit. */
+.request-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+
+@media (max-width: 30rem) {
+  .request-form-actions > .ui-button {
+    flex: 1 1 100%;
+  }
+}
+
 .ui-sheet-backdrop {
   position: fixed;
   inset: 0;
