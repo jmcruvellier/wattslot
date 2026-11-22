@@ -57,6 +57,9 @@ class UserRequest(BaseModel):
     # l'utilisateur l'a déclaré lancé (« C'est lancé »). Remplis par ``with_cycles``.
     cycle: str | None = None
     declared: bool = False
+    # Jour où la demande tourne : celui de son lancement constaté, sinon celui où le calcul la
+    # place ; aucun : pas encore placée. « Mes demandes » la montre sous ce jour (``with_days``).
+    planned_day: date | None = None
 
 
 def _row(row: Sequence[object]) -> UserRequest:
@@ -91,6 +94,28 @@ def recent(database: sqlite3.Connection, now: datetime) -> list[UserRequest]:
         (since,),
     ).fetchall()
     return [_row(r) for r in rows]
+
+
+def with_days(
+    requests: Sequence[UserRequest], assigned: Mapping[str, date | None], today: date
+) -> list[UserRequest]:
+    """Demandes ouvertes complétées du jour où elles tournent : le jour du lancement constaté ;
+    sinon, pour une demande datée, celui de son échéance (aujourd'hui si elle est passée : le
+    calcul ne place une tâche datée que ce jour-là, voir ``tasks``) ; pour une demande sans
+    date, le jour que le calcul lui a affecté (``assigned`` : uid de la tâche → jour), aucun
+    tant qu'il ne l'a pas placée. « Mes demandes » liste sous chaque jour celles de ce jour."""
+    found = []
+    for request in requests:
+        if request.status == Status.OPEN:
+            if request.launched_on is not None:
+                day: date | None = request.launched_on
+            elif request.latest is not None:
+                day = max(request.latest, today)
+            else:
+                day = assigned.get(f"{UID_PREFIX}{request.id}")
+            request = request.model_copy(update={"planned_day": day})
+        found.append(request)
+    return found
 
 
 def with_cycles(

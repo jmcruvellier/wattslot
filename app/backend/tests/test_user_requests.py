@@ -258,6 +258,36 @@ def test_an_open_request_says_its_cycle_of_the_day(tmp_path: Path) -> None:
     assert said.declared
 
 
+def test_an_open_request_says_the_day_it_runs(tmp_path: Path) -> None:
+    """« Mes demandes » liste sous chaque jour les demandes de ce jour : lancée, le jour du
+    lancement ; datée, son échéance (aujourd'hui si elle est passée) ; sans date, le jour que
+    le calcul lui a affecté, aucun tant qu'il ne l'a pas placée."""
+    database = open_database(tmp_path)
+    today = date(2026, 11, 22)
+    tomorrow = today + timedelta(days=1)
+    dated = user_requests.ask(database, "heater", tomorrow, CREATED)
+    late = user_requests.ask(database, "dishwasher", today - timedelta(days=2), CREATED)
+    placed = user_requests.ask(database, "washer", None, CREATED)
+    waiting = user_requests.ask(database, "dryer", None, CREATED)
+    done = user_requests.close(
+        database, user_requests.ask(database, "pool", None, CREATED).id, Status.DONE, CREATED
+    )
+    assert done is not None
+    launched = waiting.model_copy(update={"id": 99, "launched_on": today - timedelta(days=1)})
+    assigned = {f"app-{placed.id}": today + timedelta(days=3), f"app-{waiting.id}": None}
+
+    found = user_requests.with_days([dated, late, placed, waiting, done, launched], assigned, today)
+
+    assert {r.id: r.planned_day for r in found} == {
+        dated.id: tomorrow,
+        late.id: today,
+        placed.id: today + timedelta(days=3),
+        waiting.id: None,
+        done.id: None,  # demande close
+        99: today - timedelta(days=1),
+    }
+
+
 def test_closing_a_request_forgets_its_declared_launch(tmp_path: Path) -> None:
     """21/11/2026 : « C'est lancé » d'une demande annulée valait pour la demande suivante du
     même appareil. La déclaration part avec la demande, annulée ou faite."""

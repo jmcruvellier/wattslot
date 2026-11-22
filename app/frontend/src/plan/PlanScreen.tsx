@@ -29,9 +29,16 @@ export default function PlanScreen() {
   // Indicateur mis en avant et indicateurs masqués, choisis dans « Personnaliser » (Courbes).
   const { layout } = useDashboardLayout();
 
-  // « Fait » et « C'est lancé » sous Hier et Aujourd'hui seulement : sous un jour à venir (et la
-  // semaine), une demande ne peut pas avoir été faite, seulement annulée.
-  const requests = <RequestsSection future={tab !== "yesterday" && tab !== "today"} />;
+  // « Mes demandes » : celles du jour affiché ; toutes sous Semaine (ou tant que le jour n'est
+  // pas lu). « Fait » et « C'est lancé » sous Hier et Aujourd'hui seulement : sous un jour à
+  // venir (et la semaine), une demande ne peut pas avoir été faite, seulement annulée.
+  const requests = (
+    <RequestsSection
+      future={tab !== "yesterday" && tab !== "today"}
+      day={load.status === "day" ? load.view.day : undefined}
+      today={tab === "today"}
+    />
+  );
 
   return (
     <section aria-labelledby="plan-title">

@@ -521,7 +521,12 @@
     "state_asap": "as soon as possible",
     "state_latest": "at the latest {latest}",
     "state_launched": "started today",
-    "state_declared": "marked as started"
+    "state_declared": "marked as started",
+    "planned_on": "planned {day}",
+    "not_placed": "not placed yet",
+    "none_day": "No request that day.",
+    "state_done": "done",
+    "state_cancelled": "cancelled"
   },
   "settings": {
     "loading": "Reading the settings…",

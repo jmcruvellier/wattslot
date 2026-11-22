@@ -19,6 +19,7 @@ const OPEN: UserRequest = {
   status: "open",
   launched_on: null,
   closed_at: null,
+  planned_day: "2026-10-18",
 };
 
 type Call = { url: string; method: string; body: unknown };
@@ -129,6 +130,72 @@ describe("RequestsSection", () => {
     expect(await screen.findByRole("button", { name: "Annuler" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Fait" })).toBeNull();
     expect(screen.queryByRole("button", { name: "C'est lancé" })).toBeNull();
+  });
+
+  it("sous un jour : les demandes de ce jour seulement ; sous Aujourd'hui, celles pas encore placées aussi", async () => {
+    // 22/11/2026 : la même liste sous tous les onglets, alors qu'on attend les demandes du jour.
+    const monday = { ...OPEN, id: 1, device: "dishwasher", latest: "2026-10-19", planned_day: "2026-10-19" };
+    const chosen = { ...OPEN, id: 2, device: "washer", latest: null, planned_day: "2026-10-18" };
+    const waiting = { ...OPEN, id: 3, device: "dryer", latest: null, planned_day: null };
+    const devices = [...DEVICES, { key: "dryer", name: "Sèche-linge" }];
+    const show = (props: Parameters<typeof RequestsSection>[0]) => {
+      mockApi(devices, [monday, chosen, waiting]);
+      return render(
+        <I18nProvider>
+          <RequestsSection {...props} />
+        </I18nProvider>,
+      );
+    };
+    const names = async () => {
+      const list = await screen.findByRole("list", { name: "Demandes en cours" });
+      return within(list)
+        .getAllByRole("listitem")
+        .map((item) => item.querySelector(".requests-name")?.textContent);
+    };
+
+    // Un jour à venir : la demande que le calcul y place, rien d'autre.
+    const tomorrow = show({ day: "2026-10-18", future: true });
+    expect(await names()).toEqual(["Lave-linge"]);
+    expect(screen.queryByText("Dernières demandes")).toBeNull();
+    tomorrow.unmount();
+
+    // Aujourd'hui : rien n'y est placé, mais la demande pas encore placée s'y montre.
+    const today = show({ day: "2026-10-17", today: true });
+    expect(await names()).toEqual(["Sèche-linge"]);
+    expect(screen.getByText("dès que possible · pas encore placée")).toBeInTheDocument();
+    today.unmount();
+
+    // Semaine : toutes, avec le jour choisi par le calcul pour une demande sans date.
+    show({ future: true });
+    expect(await names()).toEqual(["Lave-vaisselle", "Lave-linge", "Sèche-linge"]);
+    expect(screen.getByText("dès que possible · prévu dimanche 18 octobre")).toBeInTheDocument();
+    expect(screen.getByText("au plus tard lundi 19 octobre")).toBeInTheDocument();
+  });
+
+  it("sous Hier : la demande lancée hier, même close, sans bouton", async () => {
+    const done = { ...OPEN, id: 5, device: "washer", status: "done" as const, launched_on: "2026-10-16", planned_day: null };
+    mockApi(DEVICES, [OPEN, done]);
+    render(
+      <I18nProvider>
+        <RequestsSection day="2026-10-16" />
+      </I18nProvider>,
+    );
+
+    const row = (await screen.findByText("Lave-linge")).closest("li") as HTMLElement;
+    expect(row).toHaveTextContent("Lave-lingefait");
+    expect(within(row).queryByRole("button")).toBeNull();
+    expect(screen.queryByText("Lave-vaisselle")).toBeNull(); // demande d'un autre jour
+  });
+
+  it("dit quand aucune demande ne concerne le jour affiché", async () => {
+    mockApi(DEVICES, [{ ...OPEN, planned_day: "2026-10-18" }]);
+    render(
+      <I18nProvider>
+        <RequestsSection day="2026-10-20" future />
+      </I18nProvider>,
+    );
+
+    expect(await screen.findByText("Aucune demande ce jour-là.")).toBeInTheDocument();
   });
 
   it("ne montre rien sans appareil à lancer", async () => {

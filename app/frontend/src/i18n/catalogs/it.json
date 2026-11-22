@@ -521,7 +521,12 @@
     "state_asap": "il prima possibile",
     "state_latest": "al più tardi il {latest}",
     "state_launched": "avviato oggi",
-    "state_declared": "segnato come avviato"
+    "state_declared": "segnato come avviato",
+    "planned_on": "previsto {day}",
+    "not_placed": "non ancora pianificata",
+    "none_day": "Nessuna richiesta quel giorno.",
+    "state_done": "fatto",
+    "state_cancelled": "annullato"
   },
   "settings": {
     "loading": "Lettura delle impostazioni…",

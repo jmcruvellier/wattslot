@@ -2,8 +2,12 @@
 // plus tard tel jour, sans créer de liste de tâches dans Home Assistant. Le calcul place la
 // demande comme une tâche « à la demande » de HA ; elle devient « faite » le lendemain du
 // lancement constaté, ou à la main. Ici, la liste seulement : pour chaque demande, l'appareil,
-// à droite son échéance, et dessous ses boutons, toujours visibles. Sous un jour à venir
-// (`future` : Demain, J+2…, Semaine), rien ne peut avoir été lancé ni fait : seul « Annuler » reste. Une nouvelle demande passe par
+// à droite son échéance, et dessous ses boutons, toujours visibles. Sous un jour de Planning
+// (`day`), seulement les demandes de ce jour : celles que le calcul y place ou qui y ont été
+// lancées (`planned_day`, donné par le serveur) ; sous Aujourd'hui (`today`), aussi celles qu'il
+// n'a encore placées nulle part. Sans `day` (Semaine), toutes, avec leur jour prévu. Sous un
+// jour à venir (`future` : Demain, J+2…, Semaine), rien ne peut avoir été lancé ni fait : seul
+// « Annuler » reste. Une nouvelle demande passe par
 // « Demander un appareil » (menu, ou `+` de la barre du haut) : la liste est relue quand une
 // demande est déposée (`REQUESTS_EVENT`).
 
@@ -31,6 +35,9 @@ export interface UserRequest {
   // l'utilisateur l'a déjà déclaré lancé (« C'est lancé »).
   cycle?: string | null;
   declared?: boolean;
+  // Jour où la demande tourne (lancement constaté, sinon jour choisi par le calcul) ; aucun :
+  // pas encore placée.
+  planned_day?: string | null;
 }
 
 type Load =
@@ -38,7 +45,15 @@ type Load =
   | { status: "error" }
   | { status: "ready"; devices: RequestDevice[]; requests: UserRequest[] };
 
-export default function RequestsSection({ future = false }: { future?: boolean }) {
+export default function RequestsSection({
+  future = false,
+  day: shownDay,
+  today = false,
+}: {
+  future?: boolean; // jour à venir ou semaine : ni « Fait » ni « C'est lancé »
+  day?: string; // jour affiché (AAAA-MM-JJ) : ses demandes seulement ; aucun : toutes
+  today?: boolean; // le jour affiché est aujourd'hui : les demandes pas encore placées aussi
+}) {
   const { language, t } = useI18n();
   const [load, setLoad] = useState<Load>({ status: "loading" });
   const [version, setVersion] = useState(0);
@@ -69,8 +84,18 @@ export default function RequestsSection({ future = false }: { future?: boolean }
   const { devices, requests } = load;
   if (devices.length === 0) return null; // aucun équipement qu'on lance : rien à demander
   const names = new Map(devices.map((d) => [d.key, d.name]));
-  const opened = requests.filter((r) => r.status === "open");
-  const closed = requests.filter((r) => r.status !== "open");
+  const everyOpen = requests.filter((r) => r.status === "open");
+  const opened =
+    shownDay === undefined
+      ? everyOpen
+      : everyOpen.filter(
+          (r) => r.planned_day === shownDay || r.launched_on === shownDay || (today && r.planned_day == null),
+        );
+  // Demandes closes : sous un jour, celles qui y ont été lancées (hier : la lessive faite), à la
+  // suite des demandes en cours et sans bouton ; l'historique entier sous Semaine seulement.
+  const everyClosed = requests.filter((r) => r.status !== "open");
+  const closedThatDay = shownDay === undefined ? [] : everyClosed.filter((r) => r.launched_on === shownDay);
+  const closed = shownDay === undefined ? everyClosed : [];
   const day = (iso: string) =>
     new Date(`${iso.slice(0, 10)}T12:00:00`).toLocaleDateString(language, {
       weekday: "long",
@@ -97,16 +122,24 @@ export default function RequestsSection({ future = false }: { future?: boolean }
     const text = request.latest
       ? t("requests.state_latest", { latest: day(request.latest) })
       : t("requests.state_asap");
-    return request.finish_hour == null
-      ? text
-      : t("requests.with_finish", { request: text, hour: hour(request.finish_hour, language) });
+    const asked =
+      request.finish_hour == null
+        ? text
+        : t("requests.with_finish", { request: text, hour: hour(request.finish_hour, language) });
+    // Pas encore placée par le calcul ; ou, sous Semaine, le jour qu'il a choisi pour une
+    // demande sans date (une demande datée tourne le jour de son échéance, déjà dit).
+    if (request.planned_day == null) return `${asked} · ${t("requests.not_placed")}`;
+    if (shownDay === undefined && !request.latest) {
+      return `${asked} · ${t("requests.planned_on", { day: day(request.planned_day) })}`;
+    }
+    return asked;
   };
 
   return (
     <Panel title={t("requests.title")} className="plan-requests">
       {failed && <p role="alert">{t("requests.failed")}</p>}
-      {opened.length === 0 ? (
-        <p className="dim">{t("requests.none")}</p>
+      {opened.length + closedThatDay.length === 0 ? (
+        <p className="dim">{t(shownDay === undefined ? "requests.none" : "requests.none_day")}</p>
       ) : (
         <ul className="requests-list" aria-label={t("requests.open_list")}>
           {opened.map((request) => (
@@ -135,6 +168,14 @@ export default function RequestsSection({ future = false }: { future?: boolean }
                   >
                     {t("requests.cancel")}
                   </button>
+              </span>
+            </li>
+          ))}
+          {closedThatDay.map((request) => (
+            <li key={request.id}>
+              <span className="requests-name">{name(request)}</span>
+              <span className="requests-state">
+                {t(request.status === "done" ? "requests.state_done" : "requests.state_cancelled")}
               </span>
             </li>
           ))}

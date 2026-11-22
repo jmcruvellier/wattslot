@@ -521,7 +521,12 @@
     "state_asap": "zo snel mogelijk",
     "state_latest": "uiterlijk op {latest}",
     "state_launched": "vandaag gestart",
-    "state_declared": "gemarkeerd als gestart"
+    "state_declared": "gemarkeerd als gestart",
+    "planned_on": "gepland {day}",
+    "not_placed": "nog niet ingepland",
+    "none_day": "Geen aanvraag die dag.",
+    "state_done": "klaar",
+    "state_cancelled": "geannuleerd"
   },
   "settings": {
     "loading": "Instellingen worden gelezen…",

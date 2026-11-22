@@ -521,7 +521,12 @@
     "state_asap": "lo antes posible",
     "state_latest": "como muy tarde el {latest}",
     "state_launched": "puesto en marcha hoy",
-    "state_declared": "marcado como en marcha"
+    "state_declared": "marcado como en marcha",
+    "planned_on": "previsto el {day}",
+    "not_placed": "aún sin colocar",
+    "none_day": "Ninguna solicitud ese día.",
+    "state_done": "hecho",
+    "state_cancelled": "cancelado"
   },
   "settings": {
     "loading": "Leyendo los ajustes…",
