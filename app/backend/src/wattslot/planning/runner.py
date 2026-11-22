@@ -399,6 +399,7 @@ async def with_assignments(
         delays=data.max_delay_days,
         pinned=pinned_days(ctx.database, today),
         launched=launched_uids(data),
+        constraints=data.constraints,
     )
     store.save_assignments(assignments)
     return replace(data, assignments={uid: a.day for uid, a in assignments.items()}), reports

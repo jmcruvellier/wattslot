@@ -10,6 +10,7 @@ import pytest
 from tests.v1_oracle import STATES, load, v1
 from wattslot.planning.assignment import Previous, decide, launched_keys
 from wattslot.planning.inputs import TaskRequest, from_v1
+from wattslot.time_constraints import ConstraintKind, TimeConstraint
 
 TODAY = date(2026, 10, 12)
 TASKS: list[dict[str, Any]] = [
@@ -146,6 +147,106 @@ def test_a_chosen_start_keeps_the_task_on_its_day() -> None:
         [washer], surplus, TODAY, 8, cycles, {}, {"lavelinge"}, pinned={"Lave-linge": later}
     )
     assert locked["ll"].day == TODAY
+
+
+DISHWASHER = TaskRequest(name="Lave-vaisselle", uid="lv", on_demand=True, needed_since=TODAY)
+DISHWASHER_CYCLES = {"Lave-vaisselle": (1.2, 120.0)}
+TOMORROW = TODAY + timedelta(days=1)
+BEFORE_NOON = TimeConstraint(kind=ConstraintKind.FINISH_BEFORE, end_hour=12)
+
+
+def test_an_evening_request_finished_before_noon_goes_to_tomorrow() -> None:
+    """Demande faite à 20 h, équipement « terminé avant 12 h », pas de soleil : aujourd'hui
+    ne laisse aucun départ, la tâche va à demain. Elle restait sur aujourd'hui, où le calcul
+    la disait impossible à placer jusqu'après minuit (issue 273)."""
+    dull: dict[date, dict[int, float]] = {TODAY: {}, TOMORROW: {}}
+
+    free, _ = decide([DISHWASHER], dull, TODAY, 20, DISHWASHER_CYCLES, {}, set())
+    strict, reports = decide(
+        [DISHWASHER],
+        dull,
+        TODAY,
+        20,
+        DISHWASHER_CYCLES,
+        {},
+        set(),
+        constraints={"Lave-vaisselle": (BEFORE_NOON,)},
+    )
+    # Souple : le calcul peut la violer, aujourd'hui reste candidat.
+    soft, _ = decide(
+        [DISHWASHER],
+        dull,
+        TODAY,
+        20,
+        DISHWASHER_CYCLES,
+        {},
+        set(),
+        constraints={"Lave-vaisselle": (BEFORE_NOON.model_copy(update={"hard": False}),)},
+    )
+
+    assert free["lv"].day == TODAY and soft["lv"].day == TODAY
+    assert strict["lv"].day == TOMORROW and strict["lv"].coverage_today is None
+    assert [r["params"]["equipement"] for r in reports] == ["Lave-vaisselle"]
+
+
+def test_coverage_counts_only_the_allowed_starts() -> None:
+    """Soleil l'après-midi aujourd'hui, le matin demain : « terminé avant 12 h » ne peut pas
+    profiter de l'après-midi, demain l'emporte."""
+    surplus = {TODAY: {h: 2.0 for h in range(13, 17)}, TOMORROW: {h: 2.0 for h in range(9, 12)}}
+
+    free, _ = decide([DISHWASHER], surplus, TODAY, 8, DISHWASHER_CYCLES, {}, set())
+    strict, _ = decide(
+        [DISHWASHER],
+        surplus,
+        TODAY,
+        8,
+        DISHWASHER_CYCLES,
+        {},
+        set(),
+        constraints={"Lave-vaisselle": (BEFORE_NOON,)},
+    )
+
+    assert free["lv"].day == TODAY
+    assert strict["lv"].day == TOMORROW
+    assert strict["lv"].coverage_today == 0 and strict["lv"].coverage == 1
+
+
+def test_no_allowed_day_keeps_the_task_today() -> None:
+    """Aucun report toléré et aucun départ permis aujourd'hui : la tâche reste aujourd'hui,
+    où le calcul signale la contrainte impossible."""
+    found, reports = decide(
+        [DISHWASHER],
+        {TODAY: {}, TOMORROW: {}},
+        TODAY,
+        20,
+        DISHWASHER_CYCLES,
+        {},
+        set(),
+        delays={"Lave-vaisselle": 0},
+        constraints={"Lave-vaisselle": (BEFORE_NOON,)},
+    )
+
+    assert found["lv"].day == TODAY and reports == []
+
+
+def test_a_couple_follows_the_constraints_of_each_appliance() -> None:
+    """Lave-linge à 17 h, sèche-linge interdit de 18 h à minuit : le couple ne tient plus
+    aujourd'hui, il va à demain."""
+    washer = TaskRequest(name="Lave-linge", uid="ll", on_demand=True, needed_since=TODAY)
+    dryer = TaskRequest(
+        name="Sèche-linge", uid="sl", on_demand=True, needed_since=TODAY, depends_on="Lave-linge"
+    )
+    cycles = {"Lave-linge": (1.0, 90.0), "Sèche-linge": (2.0, 60.0)}
+    dull: dict[date, dict[int, float]] = {TODAY: {}, TOMORROW: {}}
+    evening = TimeConstraint(kind=ConstraintKind.FORBIDDEN, start_hour=18, end_hour=24)
+
+    free, _ = decide([washer, dryer], dull, TODAY, 17, cycles, {}, set())
+    strict, _ = decide(
+        [washer, dryer], dull, TODAY, 17, cycles, {}, set(), constraints={"Sèche-linge": (evening,)}
+    )
+
+    assert {a.day for a in free.values()} == {TODAY}
+    assert {uid: a.day for uid, a in strict.items()} == {"ll": TOMORROW, "sl": TOMORROW}
 
 
 def test_task_request_reads_the_detected_need() -> None:
