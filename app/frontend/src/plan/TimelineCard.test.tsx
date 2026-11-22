@@ -28,7 +28,13 @@ function mockChoices(): Call[] {
 function renderTimeline(
   timeline: Timeline,
   readingHour: number | null = 14.5,
-  props: { choices?: Record<string, StartChoice>; onChanged?: () => void; day?: string; hours?: DayView["hours"] } = {},
+  props: {
+    choices?: Record<string, StartChoice>;
+    onChanged?: () => void;
+    day?: string;
+    hours?: DayView["hours"];
+    declared?: string[];
+  } = {},
 ) {
   render(
     <I18nProvider>
@@ -285,6 +291,31 @@ describe("frise des équipements", () => {
     // Sans autre départ proposé, la feuille propose d'annuler la planification.
     expect(within(sheet).queryByText("Autres départs possibles :")).toBeNull();
     expect(within(sheet).getByRole("button", { name: "Annuler le lancement" })).toBeInTheDocument();
+  });
+
+  it("un appareil déclaré lancé ne change plus de départ : seulement « Pas encore lancé »", async () => {
+    // 23/11/2026 : chauffe-eau marqué « C'est lancé », et la feuille proposait encore d'autres
+    // départs et « Annuler le lancement ».
+    vi.setSystemTime(new Date("2026-10-17T09:00:00"));
+    const user = userEvent.setup();
+    const calls = mockChoices();
+    const onChanged = vi.fn();
+    renderTimeline({ ...TODAY.timeline, rows: [MISSED] }, 9, {
+      choices: { "Sèche-linge": { alternatives: [{ start_min: 780, cost_eur_delta: 0, import_kwh_delta: 0 }], chosen: false } },
+      onChanged,
+      declared: ["Sèche-linge"],
+    });
+
+    await user.click(screen.getByRole("button", { name: "Prévu 10h → 11h : Sèche-linge, 1,00 kWh" }));
+    const sheet = screen.getByRole("dialog");
+    expect(within(sheet).getByText(/Sèche-linge : marqué comme lancé/)).toBeInTheDocument();
+    expect(within(sheet).queryByText("Autres départs possibles :")).toBeNull();
+    expect(within(sheet).queryByLabelText("Autre heure de départ :")).toBeNull();
+    expect(within(sheet).queryByRole("button", { name: "Annuler le lancement" })).toBeNull();
+
+    await user.click(within(sheet).getByRole("button", { name: "Pas encore lancé" }));
+    expect(calls.some((call) => call.method === "DELETE" && call.url.startsWith("api/planning/launched/"))).toBe(true);
+    await vi.waitFor(() => expect(onChanged).toHaveBeenCalled());
   });
 
   it("ouvre la feuille des autres départs d'un équipement pas encore lancé", async () => {

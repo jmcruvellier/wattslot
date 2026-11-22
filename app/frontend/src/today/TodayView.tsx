@@ -154,6 +154,7 @@ export default function TodayView({ onNavigate }: { onNavigate?: (target: string
         choices={startChoices(view)}
         onChanged={() => setAttempt((count) => count + 1)}
         hours={view.hours}
+        declared={view.declared_launches ?? []}
       />
       <div className={hasBattery || hasSun ? "today-row today-row-split" : "today-row"}>
         <IndicatorsCard view={view} layout={DEFAULT_LAYOUT.indicators} compact />
