@@ -119,6 +119,24 @@ def test_a_finish_hour_that_cannot_be_met_starts_the_cycle_at_the_earliest() -> 
     assert late.start_min == earliest
 
 
+def test_no_other_start_is_proposed_further_past_the_finish_hour() -> None:
+    """Essai du 22/11/2026 : cycle fini à 15 h 46 au lieu de 14 h, signalé, et son explication
+    proposait « Autre départ possible à 22h », encore plus tard."""
+    free = slot(planned(state()), HEATER)
+    on_time = slot(planned(with_limit(10)), HEATER)
+    late = slot(planned(with_limit(6)), HEATER)
+
+    assert free.explanation is not None and free.explanation.alternatives  # sans limite : oui
+    # Limite tenue : les autres départs la tiennent aussi.
+    assert on_time.explanation is not None and on_time.cycle_min is not None
+    for other in on_time.explanation.alternatives:
+        assert other.start_min + round(on_time.cycle_min) <= 10 * 60
+    # Limite intenable, cycle au plus tôt : tout autre départ serait plus en retard.
+    assert late.explanation is not None
+    assert late.explanation.alternatives == [] and late.explanation.alternative is None
+    assert "Autre départ" not in render(late.explanation, "fr")
+
+
 def test_an_evening_request_to_finish_before_noon_goes_to_tomorrow() -> None:
     """Demande faite à 20 h, à finir avant 12 h : aucun cycle d'aujourd'hui ne la tient, la
     tâche va à demain."""

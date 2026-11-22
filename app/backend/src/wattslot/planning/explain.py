@@ -129,8 +129,11 @@ def _alternatives(
             continue
         if problem.hard_blocks(task.label, start, start + task.slot_min):
             continue
-        # Heure limite de la demande tenue par le plan : pas d'autre départ qui la dépasse.
-        if task.late(start) and not task.late(starts[task.name]):
+        # Heure limite de la demande : pas d'autre départ qui la dépasse quand le plan la
+        # tient, ni qui la dépasse davantage quand il est déjà en retard (« Autre départ
+        # possible à 22h » sous l'avertissement d'un cycle fini à 15 h 46 au lieu de 14 h,
+        # essai du 22/11/2026).
+        if task.late_min(start) > task.late_min(starts[task.name]):
             continue
         indicators = evaluate({**starts, task.name: start})
         found.append((score(indicators), start, indicators))
