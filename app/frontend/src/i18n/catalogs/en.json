@@ -210,6 +210,7 @@
       "compute": "Compute",
       "running": "Computing…",
       "refresh": "Refresh actual data",
+      "refresh_short": "Refresh",
       "failed": "The operation failed: see the diagnostic."
     },
     "freshness": {

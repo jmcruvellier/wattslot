@@ -1,7 +1,8 @@
 // Actions de la barre de titre des sections Aujourd'hui, Planning et Courbes (App.tsx) :
-// « Calculer » et « Rafraîchir les données réelles » en icônes, l'âge du dernier calcul et du
-// dernier relevé à côté de chacune (api/planning/last-run), le détail (heure, automatique ou à
-// la main) dans l'infobulle et pour les lecteurs d'écran. L'échec passe sous la barre (styles.css).
+// « Calculer » et « Rafraîchir les données réelles » : l'icône, le verbe (« Calculer »,
+// « Rafraîchir ») et dessous l'âge du dernier calcul ou du dernier relevé (api/planning/last-run) ;
+// sur petit écran, l'icône seule. Le détail (heure, automatique ou à la main) est dans
+// l'infobulle et pour les lecteurs d'écran. L'échec passe sous la barre (styles.css).
 
 import { useEffect, useState, type ReactNode } from "react";
 
@@ -99,8 +100,9 @@ export default function PlanActions({ leading }: { leading?: ReactNode }) {
           aria-label={computeLabel}
         >
           <Icon name="play" size={18} />
-          <span className="run-when" aria-hidden="true">
-            {last?.computed_at ? since(last.computed_at, language) : "—"}
+          <span className="run-text" aria-hidden="true">
+            <span className="run-verb">{t("plan.header.compute")}</span>
+            <span className="run-when">{last?.computed_at ? since(last.computed_at, language) : "—"}</span>
           </span>
         </button>
         <button
@@ -112,8 +114,9 @@ export default function PlanActions({ leading }: { leading?: ReactNode }) {
           aria-label={refreshLabel}
         >
           <Icon name="refresh" size={18} />
-          <span className="run-when" aria-hidden="true">
-            {last?.actual_updated_at ? since(last.actual_updated_at, language) : "—"}
+          <span className="run-text" aria-hidden="true">
+            <span className="run-verb">{t("plan.header.refresh_short")}</span>
+            <span className="run-when">{last?.actual_updated_at ? since(last.actual_updated_at, language) : "—"}</span>
           </span>
         </button>
       </div>

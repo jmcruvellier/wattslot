@@ -210,6 +210,7 @@
       "compute": "Calcola",
       "running": "Calcolo in corso…",
       "refresh": "Aggiorna i dati reali",
+      "refresh_short": "Aggiorna",
       "failed": "L'operazione non è riuscita: veda la diagnostica."
     },
     "freshness": {
