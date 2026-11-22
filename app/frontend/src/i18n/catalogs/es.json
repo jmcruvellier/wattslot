@@ -444,13 +444,7 @@
     },
     "agenda": {
       "title": "Agenda del día",
-      "day_quality": "{day}, día {quality}",
-      "quality": {
-        "sunny": "soleado",
-        "mixed": "variable",
-        "cloudy": "nublado"
-      },
-      "sun_window": "{kwh} kWh de sol, sobre todo entre las {start} y las {end} h",
+      "sun_hours": "Sol sobre todo entre las {start} y las {end} h",
       "sun_none": "No se prevé producción solar.",
       "cycle": "Ponga {device}",
       "runtime": "{device}, {duration}",

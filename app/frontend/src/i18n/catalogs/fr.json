@@ -444,13 +444,7 @@
     },
     "agenda": {
       "title": "Agenda de la journée",
-      "day_quality": "{day}, journée {quality}",
-      "quality": {
-        "sunny": "ensoleillée",
-        "mixed": "mitigée",
-        "cloudy": "couverte"
-      },
-      "sun_window": "{kwh} kWh de soleil, surtout entre {start} h et {end} h",
+      "sun_hours": "Soleil surtout entre {start} h et {end} h",
       "sun_none": "Pas de production solaire prévue.",
       "cycle": "Lancez {device}",
       "runtime": "{device}, {duration}",

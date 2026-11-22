@@ -444,13 +444,7 @@
     },
     "agenda": {
       "title": "Agenda della giornata",
-      "day_quality": "{day}, giornata {quality}",
-      "quality": {
-        "sunny": "soleggiata",
-        "mixed": "variabile",
-        "cloudy": "nuvolosa"
-      },
-      "sun_window": "{kwh} kWh di sole, soprattutto tra le {start} e le {end}",
+      "sun_hours": "Sole soprattutto tra le {start} e le {end}",
       "sun_none": "Nessuna produzione solare prevista.",
       "cycle": "Avvii {device}",
       "runtime": "{device}, {duration}",

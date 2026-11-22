@@ -444,13 +444,7 @@
     },
     "agenda": {
       "title": "Dagagenda",
-      "day_quality": "{day}, {quality} dag",
-      "quality": {
-        "sunny": "zonnige",
-        "mixed": "wisselende",
-        "cloudy": "bewolkte"
-      },
-      "sun_window": "{kwh} kWh zon, vooral tussen {start} en {end} uur",
+      "sun_hours": "Zon vooral tussen {start} en {end} uur",
       "sun_none": "Geen zonne-opwekking verwacht.",
       "cycle": "Start {device}",
       "runtime": "{device}, {duration}",

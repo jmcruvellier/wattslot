@@ -1,5 +1,6 @@
-// Agenda d'un jour (lot 6b.4) : la journée en une phrase, puis les actions datées, une ligne
-// chacune. Pour Aujourd'hui, les actions passées sont grisées et un repère « maintenant » les
+// Agenda d'un jour (lot 6b.4) : les heures où le soleil produit le plus, en une ligne (la date
+// est dans l'en-tête de la vue, la météo et la production du jour dans les tuiles), puis les
+// actions datées, une ligne chacune. Pour Aujourd'hui, les actions passées sont grisées et un repère « maintenant » les
 // sépare des suivantes. La raison d'un créneau se déplie au toucher, avec ses autres départs
 // (Aujourd'hui) ; ce que « Pourquoi ce plan » disait d'autre (la batterie, le texte entier de
 // la recommandation) se déplie sous la liste.
@@ -10,7 +11,7 @@ import { useI18n } from "../i18n/I18nProvider";
 import { minuteOfDay } from "../i18n/homeTime";
 import { agenda, type AgendaEntry, firstUpcoming, otherExplanations, sunWindow } from "./agendaEntries";
 import { batteryLabel } from "./batteryLabel";
-import { clock, duration, kwh, percent } from "./format";
+import { clock, duration, percent } from "./format";
 import OtherStarts from "./OtherStarts";
 import type { DayView } from "./types";
 import Card from "../ui/Card";
@@ -20,26 +21,16 @@ function nowMinute(): number {
   return minuteOfDay(); // heure de la maison, celle des heures du plan
 }
 
-export function DaySummaryCard({ view }: { view: DayView }) {
-  const { language, t } = useI18n();
-  const weekday = new Date(`${view.day}T12:00:00`).toLocaleDateString(language, { weekday: "long" });
-  const day = weekday.charAt(0).toUpperCase() + weekday.slice(1);
-  const quality = view.weather.quality;
+/** Les heures où le soleil produit le plus, en tête de l'agenda. */
+export function SunHours({ view }: { view: DayView }) {
+  const { t } = useI18n();
   const sun = sunWindow(view);
-  // Mesuré puis prévu (Aujourd'hui), comme le bandeau météo : pas la somme des prévisions seules.
-  const production = kwh(view.weather.production_kwh, 1);
   if (view.solar === false) return null; // sans panneaux, la journée n'a pas de soleil à raconter
   return (
-    <Card
-      tone="sun"
-      title={quality ? t("plan.agenda.day_quality", { day, quality: t(`plan.agenda.quality.${quality}`) }) : day}
-    >
-      <p>
-        {sun
-          ? t("plan.agenda.sun_window", { kwh: production, start: sun[0], end: sun[1] })
-          : t("plan.agenda.sun_none")}
-      </p>
-    </Card>
+    <p className="agenda-sun">
+      <Icon name="today" size={18} />
+      {sun ? t("plan.agenda.sun_hours", { start: sun[0], end: sun[1] }) : t("plan.agenda.sun_none")}
+    </p>
   );
 }
 

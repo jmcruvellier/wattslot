@@ -444,13 +444,7 @@
     },
     "agenda": {
       "title": "Tagesablauf",
-      "day_quality": "{day}, {quality} Tag",
-      "quality": {
-        "sunny": "sonniger",
-        "mixed": "wechselhafter",
-        "cloudy": "bewölkter"
-      },
-      "sun_window": "{kwh} kWh Sonne, vor allem zwischen {start} und {end} Uhr",
+      "sun_hours": "Sonne vor allem zwischen {start} und {end} Uhr",
       "sun_none": "Keine Solarerzeugung erwartet.",
       "cycle": "Starten Sie {device}",
       "runtime": "{device}, {duration}",
