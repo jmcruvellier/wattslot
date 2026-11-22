@@ -105,7 +105,7 @@ Elles ne servent pas aux captures de la documentation.
 
 ## Banc d'essai de l'assistant
 
-`dev/tools/assistant_bench.py` pose les 18 questions de la suite de test de l'assistant à des modèles locaux d'Ollama, plusieurs fois chacune, avec les outils du serveur MCP d'une installation de WattSlot (sans Open WebUI). Il ne dépend que de la bibliothèque standard de Python.
+`dev/tools/assistant_bench.py` pose les 19 questions de la suite de test de l'assistant à des modèles locaux d'Ollama, plusieurs fois chacune, avec les outils du serveur MCP d'une installation de WattSlot (sans Open WebUI). Il ne dépend que de la bibliothèque standard de Python.
 
 ```bash
 python dev/tools/assistant_bench.py --wattslot http://192.0.2.10:8100 --ollama http://192.0.2.20:11434 --models qwen3,lfm3 --runs 3

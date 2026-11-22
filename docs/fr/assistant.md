@@ -38,7 +38,7 @@ La carte de discussion de l'écran **Assistant** propose des questions, par thè
 | Aujourd'hui | *Que dois-je faire aujourd'hui ?* · *Quel est le prochain appareil à lancer ?* · *Pourquoi le lave-linge est-il prévu à 11 h ?* · *Qu'est-ce qui alimente la maison en ce moment ?* · *Combien va me coûter la journée ?* | le plan du jour, son coût et le prochain appareil, avec ses autres heures de départ possibles ; les mesures du moment |
 | Demain et la semaine | *Combien les panneaux produiront-ils demain ?* · *Quel jour de la semaine sera le plus ensoleillé ?* · *Quand sont les heures creuses demain ?* | la prévision, les jours suivants, le tarif (prix heure par heure, heures creuses, couleur du jour) |
 | Mesures | *Combien les panneaux ont-ils produit hier ?* · *Le lave-vaisselle a-t-il démarré à l'heure ?* | l'énergie mesurée d'un jour, par appareil ; ce qu'a fait chaque appareil par rapport au plan |
-| Demandes et état | *Lance le lave-vaisselle au meilleur moment avant demain soir.* · *Quelles sont mes demandes en cours ?* · *Est-ce que quelque chose ne va pas ?* | les demandes (comme dans **Mes demandes**), les problèmes de l'application |
+| Demandes et état | *Lance le lave-vaisselle au meilleur moment avant demain soir.* · *Lance le lave-vaisselle pour qu'il soit terminé demain avant midi.* · *Quelles sont mes demandes en cours ?* · *Est-ce que quelque chose ne va pas ?* | les demandes (comme dans **Mes demandes**), les problèmes de l'application |
 
 ## Ce que l'assistant peut faire, et ne fait pas
 

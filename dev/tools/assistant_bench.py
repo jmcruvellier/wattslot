@@ -79,7 +79,7 @@ def _q(number: int, text: str, *tools: str) -> Turn:
     return Turn(text=text, question=number, tools=frozenset(tools))
 
 
-# La suite de 18 questions du comparatif : une conversation par scénario.
+# La suite de 19 questions du comparatif : une conversation par scénario.
 SCENARIOS: tuple[Scenario, ...] = (
     Scenario("1", (_q(1, "Qu'est-ce qui est prévu aujourd'hui ?", "get_day_plan"),)),
     Scenario("2", (_q(2, "Combien va coûter la journée ?", "get_day_plan"),)),
@@ -128,6 +128,18 @@ SCENARIOS: tuple[Scenario, ...] = (
         (_q(17, "Quelle sera la production solaire dans 10 jours ?", "get_week", "get_forecast"),),
     ),
     Scenario("18", (_q(18, "Quel est le prix du kWh ?", "get_tariff"),)),
+    # Heure limite d'une demande (issue 273) : « terminé avant midi », en plus de la date.
+    Scenario(
+        "19",
+        (
+            _q(
+                19,
+                "Lance le lave-vaisselle pour qu'il soit terminé demain avant midi.",
+                "request_device",
+            ),
+            Turn("non"),
+        ),
+    ),
 )
 
 # Défauts visibles dans une réponse (le fond se juge à la lecture).
