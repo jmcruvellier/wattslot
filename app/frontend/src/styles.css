@@ -2578,55 +2578,95 @@ a.ui-setting-row {
   margin: 0.75rem 0 1rem;
 }
 
-/* Semaine en agenda (lot 6b.4). */
+/* « La semaine » (Planning) : une ligne par jour — le jour, sa météo et sa production, la
+   batterie du matin au soir, le chevron ; dessous, les appareils prévus. La ligne ouvre le jour. */
 .week-agenda {
-  margin: 0.75rem 0 1rem;
-  padding: 0.25rem 1.1rem;
+  margin: 0;
+  padding: 0;
   list-style: none;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 1.25rem;
 }
 
-.week-row {
-  padding: 0.85rem 0;
-  border-bottom: 1px solid var(--border);
+.week-row + .week-row {
+  border-top: 1px solid var(--border);
 }
 
-.week-row:last-child {
-  border-bottom: 0;
+.week-line {
+  display: grid;
+  grid-template-columns: 9.5rem minmax(0, 1fr) auto 1rem;
+  align-items: center;
+  gap: 0.15rem 0.75rem;
+  width: 100%;
+  padding: 0.55rem 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
 }
 
-.week-row-head {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 0.25rem 0.75rem;
+button.week-line {
+  min-height: 0;
+  cursor: pointer;
 }
 
 .week-row-day {
-  font-weight: 800;
+  display: inline-flex;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  align-items: center;
+  gap: 0.3rem;
+  font-weight: 700;
 }
 
 .week-row-day::first-letter {
   text-transform: uppercase;
 }
 
-.week-row-sun {
+.week-row-sun > .icon {
+  vertical-align: -0.15em;
   color: var(--text-dim);
-  font-weight: 600;
 }
 
-.week-row p {
-  margin: 0.25rem 0 0;
+.week-row-battery {
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
-.week-row-devices {
-  font-weight: 600;
+.week-line > .icon {
+  color: var(--text-dim);
+}
+
+.week-row-devices,
+.week-row-notice {
+  grid-column: 2 / 4;
+  font-size: 0.9rem;
 }
 
 .week-row-today .week-row-day {
   color: var(--link);
+}
+
+/* Téléphone : la batterie passe sous la météo. */
+@media (max-width: 30rem) {
+  .week-line {
+    grid-template-columns: 4.5rem minmax(0, 1fr) 1rem;
+  }
+
+  .week-row-day {
+    flex-wrap: wrap;
+  }
+
+  .week-row-battery {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .week-row-devices,
+  .week-row-notice {
+    grid-column: 2;
+  }
 }
 
 /* Jour que le calcul n'a pas atteint : grisé, sans données. */

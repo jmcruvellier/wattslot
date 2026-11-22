@@ -2,10 +2,12 @@
 // l'horizon, un tableau d'une ligne par jour (production et météo, SoC, achat dont heures pleines,
 // surplus, équipements placés ce jour-là, avertissements), avertissements du calcul de l'horizon ;
 // graphiques de la production, de la consommation de base et du SoC sur toute la semaine.
-// Section Planning (lot 6b.4) : la semaine d'abord en agenda, une ligne par jour (`WeekAgenda`) ;
-// le tableau des jours et les graphiques (`WeekDetails`) vont dans la section Courbes.
+// Section Planning (lot 6b.4) : « La semaine », une ligne par jour (`WeekAgenda` : le jour, sa
+// météo et sa production, la batterie du matin au soir, les appareils prévus ; la ligne ouvre le
+// jour), et à sa droite « Mes demandes » puis la batterie et le soleil sur la semaine
+// (`WeekSummary`) ; le tableau des jours et les graphiques (`WeekDetails`) vont dans Courbes.
 
-import { Fragment, Suspense, useState } from "react";
+import { Fragment, Suspense, useState, type ReactNode } from "react";
 
 import { useI18n } from "../i18n/I18nProvider";
 import { clock, kwh, percent, time } from "./format";
@@ -15,6 +17,7 @@ import type { DayKind, Notice, WeekView } from "./types";
 import type { WeekSeries } from "./Charts";
 import Icon from "../ui/Icon";
 import type { IconName } from "../ui/iconPaths";
+import Panel from "../ui/Panel";
 
 // Météo du jour : soleil, nuages et soleil, nuages (lot 6b.7, à la place des emojis).
 const WEATHER_ICONS = { sunny: "today", mixed: "cloud-sun", cloudy: "cloud" } as const;
@@ -180,64 +183,118 @@ function dayName(iso: string, language: string): string {
   return new Date(`${iso}T12:00:00`).toLocaleDateString(language, { weekday: "long", day: "numeric" });
 }
 
+/** Jour en court : « dim. 22 ». */
+function shortDay(iso: string, language: string): string {
+  return new Date(`${iso}T12:00:00`).toLocaleDateString(language, { weekday: "short", day: "numeric" });
+}
+
 function WeekAgenda({ view, onOpen }: { view: WeekView; onOpen: (kind: DayKind) => void }) {
   const { language, t } = useI18n();
   return (
-    <ol className="week-agenda" aria-label={t("plan.week.agenda")}>
-      {view.days.map((day) => {
-        const name = dayName(day.day, language);
-        const devices = day.devices.filter((device) => device.device !== "Batterie");
-        const withBattery = day.soc_max_percent !== null;
-        return (
-          <li key={day.day} className={day.detail_view === "today" ? "week-row week-row-today" : "week-row"}>
-            <div className="week-row-head">
+    <Panel title={t("plan.week.heading")} level={3} className="week-panel">
+      <ol className="week-agenda" aria-label={t("plan.week.agenda")}>
+        {view.days.map((day) => {
+          const devices = day.devices.filter((device) => device.device !== "Batterie");
+          const withBattery = day.soc_max_percent !== null;
+          const line = (
+            <>
               <span className="week-row-day">
-                {name}
-                {(day.detail_view === "today" || day.detail_view === "tomorrow") && <span className="week-tag">{t(`plan.tabs.${day.detail_view}`)}</span>}
+                {shortDay(day.day, language)}
+                {(day.detail_view === "today" || day.detail_view === "tomorrow") && (
+                  <span className="week-tag">{t(`plan.tabs.${day.detail_view}`)}</span>
+                )}
               </span>
-              {view.solar !== false && (
-                <span className="week-row-sun">
-                  {day.weather && <Icon name={WEATHER_ICONS[day.weather]} size={18} />}{" "}
-                  {day.weather ? `${t(`plan.week.weather.${day.weather}`)} · ` : ""}
-                  {kwh(day.production_kwh, 1)} kWh
-                </span>
+              <span className="week-row-sun">
+                {view.solar !== false && (
+                  <>
+                    {day.weather && <Icon name={WEATHER_ICONS[day.weather]} size={16} />}{" "}
+                    {day.weather ? `${t(`plan.week.weather.${day.weather}`)} · ` : ""}
+                    {kwh(day.production_kwh, 1)} kWh
+                  </>
+                )}
+              </span>
+              {/* Batterie du matin au soir, en passant par son plus haut. */}
+              <span className="week-row-battery">
+                {withBattery &&
+                  `${percent(day.soc_start_percent)} → ${percent(day.soc_max_percent)} → ${percent(day.soc_end_percent)} %`}
+              </span>
+              {day.detail_view && <Icon name="chevron-right" size={16} />}
+              <span className={devices.length ? "week-row-devices" : "week-row-devices dim"}>
+                {devices.length
+                  ? devices.map((device) => `${device.device} ${clock(device.start_min, language)}`).join(" · ")
+                  : t("plan.week.no_device")}
+              </span>
+              {day.notices.length > 0 && (
+                <span className="week-row-notice dim">{day.notices.map((notice) => notice.text).join(" ")}</span>
               )}
+            </>
+          );
+          return (
+            <li key={day.day} className={day.detail_view === "today" ? "week-row week-row-today" : "week-row"}>
+              {day.detail_view ? (
+                <button
+                  type="button"
+                  className="week-line"
+                  title={t("plan.week.open_day", { day: t(`plan.tabs.${day.detail_view}`) })}
+                  onClick={() => onOpen(day.detail_view!)}
+                >
+                  {line}
+                </button>
+              ) : (
+                <div className="week-line">{line}</div>
+              )}
+            </li>
+          );
+        })}
+        {/* Jours que le calcul n'a pas atteints : affichés quand même, sans données. */}
+        {view.missing_days.map((day) => (
+          <li key={day} className="week-row week-row-missing">
+            <div className="week-line">
+              <span className="week-row-day">{shortDay(day, language)}</span>
+              <span className="week-row-devices dim">{t("plan.week.missing")}</span>
             </div>
-            {withBattery && (
-              <p className="week-row-battery">
-                {t("plan.week.battery_line", {
-                  start: percent(day.soc_start_percent),
-                  max: percent(day.soc_max_percent),
-                  end: percent(day.soc_end_percent),
-                })}
-              </p>
-            )}
-            <p className="week-row-devices">
-              {devices.length
-                ? devices.map((device) => `${device.device} ${clock(device.start_min, language)}`).join(" · ")
-                : t("plan.week.no_device")}
-            </p>
-            {day.notices.length > 0 && (
-              <p className="week-row-notice dim">{day.notices.map((notice) => notice.text).join(" ")}</p>
-            )}
-            {day.detail_view && (
-              <button type="button" className="link" onClick={() => onOpen(day.detail_view!)}>
-                {t("plan.week.open_day", { day: t(`plan.tabs.${day.detail_view}`) })} →
-              </button>
-            )}
           </li>
-        );
-      })}
-      {/* Jours que le calcul n'a pas atteints : affichés quand même, sans données. */}
-      {view.missing_days.map((day) => (
-        <li key={day} className="week-row week-row-missing">
-          <div className="week-row-head">
-            <span className="week-row-day">{dayName(day, language)}</span>
+        ))}
+      </ol>
+    </Panel>
+  );
+}
+
+/** La batterie et le soleil sur toute la semaine, en trois lignes. */
+function WeekSummary({ view }: { view: WeekView }) {
+  const { language, t } = useI18n();
+  const levels = view.points.map((point) => point.soc_percent).filter((level): level is number => level !== null);
+  const top = view.days
+    .filter((day) => day.soc_max_percent !== null)
+    .sort((a, b) => (b.soc_max_percent ?? 0) - (a.soc_max_percent ?? 0))[0];
+  const sun = view.solar !== false;
+  if (!top && !sun) return null;
+  const weekday = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString(language, { weekday: "long" });
+  return (
+    <Panel title={t("plan.week.battery_panel")} level={3}>
+      <dl className="indicators">
+        {levels.length > 0 && (
+          <div className="indicator">
+            <dt>{t("plan.week.lowest")}</dt>
+            <dd>{percent(Math.min(...levels))} %</dd>
           </div>
-          <p className="dim">{t("plan.week.missing")}</p>
-        </li>
-      ))}
-    </ol>
+        )}
+        {top && (
+          <div className="indicator">
+            <dt>{t("plan.week.highest")}</dt>
+            <dd>
+              {percent(top.soc_max_percent)} % · {weekday(top.day)}
+            </dd>
+          </div>
+        )}
+        {sun && (
+          <div className="indicator">
+            <dt>{t("plan.banner.weather_tile_forecast")}</dt>
+            <dd>{kwh(view.days.reduce((total, day) => total + day.production_kwh, 0), 1)} kWh</dd>
+          </div>
+        )}
+      </dl>
+    </Panel>
   );
 }
 
@@ -276,7 +333,15 @@ export function WeekDetails({
 }
 
 // « Calculer » est à droite des onglets (`PlanActions`).
-export default function WeekScreen({ view, onOpen }: { view: WeekView; onOpen: (kind: DayKind) => void }) {
+export default function WeekScreen({
+  view,
+  onOpen,
+  side,
+}: {
+  view: WeekView;
+  onOpen: (kind: DayKind) => void;
+  side?: ReactNode; // colonne de droite, avant le résumé de la semaine : « Mes demandes »
+}) {
   const { language, t } = useI18n();
   const longDay = (iso: string) =>
     new Date(`${iso}T12:00:00`).toLocaleDateString(language, { weekday: "long", day: "numeric", month: "long" });
@@ -304,7 +369,13 @@ export default function WeekScreen({ view, onOpen }: { view: WeekView; onOpen: (
       <Notices notices={view.notices} label={t("plan.notices")} />
       {view.waiting_not_assigned && <p className="pill">ℹ️ {t("plan.week.waiting")}</p>}
       {view.days.length === 0 && <p className="pill">ℹ️ {t("plan.missing_week")}</p>}
-      {view.days.length > 0 && <WeekAgenda view={view} onOpen={onOpen} />}
+      <div className="plan-columns">
+        <div className="plan-agenda">{view.days.length > 0 && <WeekAgenda view={view} onOpen={onOpen} />}</div>
+        <div className="plan-side">
+          {side}
+          {view.days.length > 0 && <WeekSummary view={view} />}
+        </div>
+      </div>
     </>
   );
 }

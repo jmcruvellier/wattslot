@@ -84,14 +84,26 @@ describe("vue Semaine", () => {
     const { onOpen } = renderWeek(WEEK);
     const rows = within(screen.getByRole("list", { name: "Agenda de la semaine" })).getAllByRole("listitem");
     expect(rows).toHaveLength(3);
-    expect(rows[0]).toHaveTextContent("samedi 17Aujourd'hui");
+    expect(rows[0]).toHaveTextContent("sam. 17Aujourd'hui");
     expect(rows[0]).toHaveTextContent("ensoleillée · 12,3 kWh");
-    expect(rows[0]).toHaveTextContent("Batterie : 40 %, jusqu'à 98 %, 55 % le soir");
+    // La batterie du matin au soir, en passant par son plus haut.
+    expect(rows[0]).toHaveTextContent("40 → 98 → 55 %");
     expect(rows[0]).toHaveTextContent("Lave-linge 10h05");
     expect(rows[1]).toHaveTextContent("Aucun équipement prévu");
-    await user.click(within(rows[1]).getByRole("button", { name: /Ouvrir Demain/ }));
+    // Toute la ligne du jour l'ouvre.
+    await user.click(within(rows[1]).getByTitle("Ouvrir Demain"));
     expect(onOpen).toHaveBeenCalledWith("tomorrow");
     expect(within(rows[2]).queryByRole("button")).toBeNull();
+  });
+
+  it("résume la batterie et le soleil sur la semaine", () => {
+    renderWeek(WEEK);
+    const panel = screen.getByRole("heading", { name: "Batterie sur la semaine" }).closest("section") as HTMLElement;
+    const total = WEEK.days.reduce((sum, day) => sum + day.production_kwh, 0);
+    expect(within(panel).getByText("Au plus haut").closest("div")).toHaveTextContent("98 % · samedi");
+    expect(within(panel).getByText("Soleil prévu").closest("div")).toHaveTextContent(
+      `${total.toFixed(1).replace(".", ",")} kWh`,
+    );
   });
 
   it("« Voir le détail » ouvre la vue du jour", async () => {
@@ -146,8 +158,8 @@ describe("vue Semaine", () => {
 
     const agenda = screen.getByRole("list", { name: "Agenda de la semaine" });
     const rows = within(agenda).getAllByRole("listitem");
-    expect(rows.at(-2)).toHaveTextContent("mardi 20");
-    expect(rows.at(-1)).toHaveTextContent("mercredi 21");
+    expect(rows.at(-2)).toHaveTextContent("mar. 20");
+    expect(rows.at(-1)).toHaveTextContent("mer. 21");
     expect(rows.at(-1)).toHaveTextContent("Pas de plan pour ce jour : le calcul s'est arrêté avant");
     expect(screen.getByText("Semaine du samedi 17 octobre au mercredi 21 octobre")).toBeInTheDocument();
     const missing = within(screen.getByRole("table")).getByRole("rowheader", { name: "mardi 20" }).closest("tr")!;

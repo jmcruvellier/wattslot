@@ -191,7 +191,6 @@
       },
       "off_peak": "Ore fuori punta",
       "agenda": "Agenda della settimana",
-      "battery_line": "Batteria: {start}%, fino al {max}%, {end}% la sera",
       "open_day": "Apri {day}",
       "missing": "Nessun piano per questo giorno: il calcolo si è fermato prima, vedere il messaggio in cima alla settimana.",
       "missing_curves": "Nessun piano per questo giorno: il calcolo si è fermato prima. La causa è spiegata in Pianificazione, scheda Settimana.",
@@ -199,7 +198,11 @@
         "day": "Giorno",
         "weather": "Meteo",
         "battery": "Batteria"
-      }
+      },
+      "heading": "La settimana",
+      "battery_panel": "Batteria nella settimana",
+      "lowest": "Al minimo",
+      "highest": "Al massimo"
     },
     "header": {
       "computed": "Calcolato alle {time} ({how})",
@@ -1702,7 +1705,7 @@
       "cancel": "Annulla",
       "cancel_failed": "L'annullamento non è riuscito.",
       "other_time": "Altro orario",
-      "end": "Fine verso le {end}"
+      "start": "Avvio alle {start}"
     },
     "battery": {
       "eyebrow": "Batteria",
@@ -1715,7 +1718,8 @@
       "done_label": "Già prodotti",
       "forecast_label": "Previsto oggi"
     },
-    "trend": "Differenza con la previsione alla lettura"
+    "trend": "Differenza con la previsione alla lettura",
+    "trend_early": "troppo presto"
   },
   "home_summary": {
     "loading": "Lettura della casa…",
