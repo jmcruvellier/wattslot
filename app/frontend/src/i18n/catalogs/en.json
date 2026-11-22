@@ -1692,14 +1692,16 @@
     "battery": {
       "eyebrow": "Battery",
       "title": "{pct}% right now",
-      "max": "Highest around {time}: {pct}%.",
-      "end": "Tonight at midnight: {pct}%."
+      "max_label": "Highest",
+      "max_value": "{pct}% around {time}",
+      "end_label": "Tonight at midnight",
+      "end_value": "{pct}%"
     },
     "sun": {
       "eyebrow": "Sun",
       "title": "{kwh} kWh expected today",
-      "done": "{kwh} kWh already produced.",
-      "at_reading": "{kwh} kWh forecast by this time.",
+      "done_label": "Already produced",
+      "at_reading_label": "Forecast by this time",
       "none": "No production measured yet."
     },
     "trend": "Difference from the forecast at the reading"

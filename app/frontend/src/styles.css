@@ -2106,8 +2106,20 @@ a.ui-setting-row {
 
 .today-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
   gap: 1rem;
+}
+
+/* Deux cartes côte à côte quand la largeur le permet (ordinateur), l'une sous l'autre sinon ;
+   une carte seule prend toute la largeur. */
+.today-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr));
+  gap: 1rem;
+}
+
+.today-row:empty {
+  display: none;
 }
 
 .setup-card {
