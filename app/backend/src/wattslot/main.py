@@ -1472,15 +1472,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.get("/api/requests")
     def get_requests(request: Request) -> list[user_requests.UserRequest]:
-        """Demandes ouvertes, puis celles closes depuis 7 jours ; une demande placée dans le
-        plan du jour dit son cycle, et s'il a été déclaré lancé."""
+        """Demandes ouvertes, puis celles closes depuis 7 jours ; une demande ouverte dit le
+        jour où elle tourne, et, placée dans le plan du jour, son cycle et s'il a été déclaré
+        lancé."""
         database = request.app.state.database
         now = datetime.now(UTC)
         today = now.astimezone(request.app.state.raw.zone).date()
-        plan = PlanStore(database).load("today")
+        store = PlanStore(database)
+        plan = store.load("today")
         planning = plan.content.get("planning", []) if plan and plan.day == today else []
+        assigned = {uid: previous.day for uid, previous in store.assignments(today).items()}
         return user_requests.with_cycles(
-            user_requests.recent(database, now), planning, declared.load(database, today)
+            user_requests.with_days(user_requests.recent(database, now), assigned, today),
+            planning,
+            declared.load(database, today),
         )
 
     @app.post("/api/requests")

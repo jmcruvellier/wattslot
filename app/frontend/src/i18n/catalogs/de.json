@@ -521,7 +521,12 @@
     "state_asap": "so bald wie möglich",
     "state_latest": "spätestens am {latest}",
     "state_launched": "heute gestartet",
-    "state_declared": "als gestartet markiert"
+    "state_declared": "als gestartet markiert",
+    "planned_on": "geplant {day}",
+    "not_placed": "noch nicht eingeplant",
+    "none_day": "Keine Anfrage an diesem Tag.",
+    "state_done": "erledigt",
+    "state_cancelled": "abgebrochen"
   },
   "settings": {
     "loading": "Einstellungen werden gelesen…",
