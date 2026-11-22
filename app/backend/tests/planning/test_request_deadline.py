@@ -15,6 +15,7 @@ from wattslot.main import create_app
 from wattslot.planning.assignment import decide
 from wattslot.planning.explain import render
 from wattslot.planning.inputs import PlanningInput, TaskRequest
+from wattslot.planning.problem import from_input
 from wattslot.planning.warning_texts import warning_text
 from wattslot.storage.database import open_database
 
@@ -103,6 +104,19 @@ def test_a_finish_hour_that_cannot_be_met_is_reported_and_the_cycle_placed() -> 
     for lang in LANGUAGES:
         text = warning_text(warning, lang)
         assert text != "heure_limite_depassee" and "{" not in text
+
+
+def test_a_finish_hour_that_cannot_be_met_starts_the_cycle_at_the_earliest() -> None:
+    """Limite intenable : le cycle finit au plus tôt, pas au créneau le moins cher. Essai du
+    22/11/2026 : « avant 13 h » demandé à 12 h 37, cycle placé à 22 h, onze heures trop tard."""
+    data = with_limit(6)
+    free = slot(planned(state()), HEATER)
+    late = slot(planned(data), HEATER)
+    earliest = next(t.earliest_min for t in from_input(data).tasks if t.label == HEATER)
+
+    # Sans limite, le calcul choisit un créneau plus tardif (soleil) ; avec, l'instant du calcul.
+    assert free.start_min is not None and free.start_min > earliest
+    assert late.start_min == earliest
 
 
 def test_an_evening_request_to_finish_before_noon_goes_to_tomorrow() -> None:

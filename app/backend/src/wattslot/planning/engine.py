@@ -271,8 +271,11 @@ def solve(problem: Problem, objective: Goal = Objective.COST, time_limit_s: floa
         choices[task.name] = {s: var(0, 1, True) for s in sorted(allowed)}
         for s, x in choices[task.name].items():
             violated = problem.soft_violated(task.label, s, s + task.slot_min)
-            # Heure limite de la demande : souple, comptée comme une contrainte de plus.
-            broken = len(violated) + task.late(s)
+            # Heure limite de la demande : souple, comptée comme une contrainte de plus, et
+            # chaque heure de retard autant. Sans ce retard, tous les créneaux trop tardifs se
+            # valaient et le moins cher gagnait : « avant 13 h » demandé à 12 h 37 partait à
+            # 22 h (essai du 22/11/2026). Le cycle finit maintenant au plus tôt.
+            broken = len(violated) + task.late(s) + task.late_min(s) / 60
             if broken:
                 penalties.append(broken * x)
         skips[task.name] = var(0, 1, True)

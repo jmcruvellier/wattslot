@@ -85,12 +85,20 @@ class Task:
     after_label: str | None = None
     after_end_min: int | None = None
     # Heure limite de la demande (minute du jour) : le cycle doit finir avant. Souple : un
-    # créneau qui la dépasse coûte comme une contrainte souple violée, et le plan le signale.
+    # créneau qui la dépasse coûte comme une contrainte souple violée, plus son retard, et le
+    # plan le signale.
     finish_min: int | None = None
+
+    def late_min(self, start_min: int) -> int:
+        """Minutes de retard sur l'heure limite de la demande d'un départ à ``start_min``
+        (0 : cycle fini à temps, ou pas d'heure limite)."""
+        if self.finish_min is None:
+            return 0
+        return max(0, start_min + self.slot_min - self.finish_min)
 
     def late(self, start_min: int) -> bool:
         """Un départ à ``start_min`` fait finir le cycle après l'heure limite de sa demande."""
-        return self.finish_min is not None and start_min + self.slot_min > self.finish_min
+        return self.late_min(start_min) > 0
 
     @property
     def label(self) -> str:
