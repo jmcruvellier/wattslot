@@ -265,6 +265,7 @@
       },
       "equip_title": "Apparaten",
       "equip": {
+        "started": "{started} van {total} gestart",
         "on_time": "{device} op tijd ({time}), {kwh}",
         "shifted": "{device} {shift} ({actual} in plaats van {planned}), {kwh}",
         "no_cycle": "{device}: geen cyclus ({start}–{end}, {kwh} kWh gepland)",

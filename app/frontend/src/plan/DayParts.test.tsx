@@ -34,6 +34,9 @@ describe("vue d'un jour", () => {
     expect(screen.getByText(/Sèche-linge reporté au dimanche 18 octobre/)).toBeInTheDocument();
 
     const departure = screen.getByLabelText("Départ de la batterie");
+    // Tuile : le chiffre et la pastille d'abord, la phrase complète repliée dessous.
+    expect(departure).not.toHaveAttribute("open");
+    expect(within(departure).getByText("50 %")).toHaveClass("plan-tile-value");
     expect(departure).toHaveTextContent("Départ à 0h : 2,56 kWh (50 %) mesuré");
     expect(departure).toHaveTextContent("(+1 pts)");
     expect(departure).toHaveTextContent("Dernière charge à 100 % : il y a 2 jours");

@@ -1,12 +1,16 @@
 // Bandeaux d'une vue de jour (lot 5.3) : départ de la batterie (et dernière charge complète),
 // météo (et fiabilité de la prévision au relevé), bilan des équipements — les bandeaux du
-// dashboard de la v1, en données de l'API.
+// dashboard de la v1, en données de l'API. Chacun est une tuile : un titre, un chiffre et sa
+// pastille ; la phrase complète se déplie au toucher, pour ne pas allonger la page.
 
 import { useI18n } from "../i18n/I18nProvider";
 import type { Language } from "../i18n/translate";
 import { clock, duration, kwh, percent, time } from "./format";
+import type { ReactNode } from "react";
+
 import type { DayView, Departure, DeviceStatus, ReadingWeather, Timeline, WeatherBanner } from "./types";
 import Icon from "../ui/Icon";
+import type { IconName } from "../ui/iconPaths";
 
 // Météo du jour : soleil, nuages et soleil, nuages (lot 6b.7, à la place des emojis).
 const WEATHER_ICONS = { sunny: "today", mixed: "cloud-sun", cloudy: "cloud" } as const;
@@ -15,13 +19,48 @@ function Badge({ tone, children }: { tone: "ok" | "medium" | "bad" | "neutral"; 
   return <span className={`badge badge-${tone}`}>{children}</span>;
 }
 
+function Tile({
+  label,
+  icon,
+  title,
+  value,
+  badge,
+  children,
+}: {
+  label: string; // nom de la tuile pour les lecteurs d'écran
+  icon: IconName;
+  title: string;
+  value: string;
+  badge?: ReactNode;
+  children: ReactNode; // le détail, déplié au toucher
+}) {
+  return (
+    <details className="plan-tile" aria-label={label}>
+      <summary>
+        <span className="plan-tile-title">
+          <Icon name={icon} size={18} /> {title}
+        </span>
+        <strong className="plan-tile-value">{value}</strong>
+        {badge}
+        <Icon name="chevron-right" size={18} />
+      </summary>
+      <div className="plan-tile-detail">{children}</div>
+    </details>
+  );
+}
+
 function DepartureBanner({ departure }: { departure: Departure }) {
   const { language, t } = useI18n();
   const charge = departure.full_charge;
   const tone = { ok: "ok", reliable: "ok", medium: "medium", large: "bad", approximate: "bad" } as const;
   return (
-    <div className="pill" aria-label={t("plan.banner.departure_title")}>
-      <Icon name="battery" size={20} />
+    <Tile
+      label={t("plan.banner.departure_title")}
+      icon="battery"
+      title={t("plan.banner.departure_title")}
+      value={`${percent(departure.soc_percent)} %`}
+      badge={departure.badge && <Badge tone={tone[departure.badge]}>{t(`plan.banner.departure_badge.${departure.badge}`)}</Badge>}
+    >
       <span>
         {t(`plan.banner.departure.${departure.source}`, { kwh: kwh(departure.soc_kwh), pct: percent(departure.soc_percent) })}
         {departure.expected_kwh !== null &&
@@ -45,8 +84,7 @@ function DepartureBanner({ departure }: { departure: Departure }) {
           </>
         )}
       </span>
-      {departure.badge && <Badge tone={tone[departure.badge]}>{t(`plan.banner.departure_badge.${departure.badge}`)}</Badge>}
-    </div>
+    </Tile>
   );
 }
 
@@ -81,13 +119,15 @@ function WeatherPill({ weather, reading }: { weather: WeatherBanner; reading: Re
   }
   const tone = { reliable: "ok", moderate: "medium", important: "bad", too_early: "neutral" } as const;
   return (
-    <div className="pill" aria-label={t("plan.banner.weather_title")}>
-      <Icon name={weather.quality ? WEATHER_ICONS[weather.quality] : "today"} size={20} />
-      <span>
-        <strong>{t(`plan.banner.weather.quality.${weather.quality ?? "unknown"}`)}</strong> — {parts.join(" · ")}
-      </span>
-      {reading?.badge && <Badge tone={tone[reading.badge]}>{t(`plan.banner.weather.badge.${reading.badge}`)}</Badge>}
-    </div>
+    <Tile
+      label={t("plan.banner.weather_title")}
+      icon={weather.quality ? WEATHER_ICONS[weather.quality] : "today"}
+      title={t(`plan.banner.weather.quality.${weather.quality ?? "unknown"}`)}
+      value={`${kwh(weather.production_kwh, 1)} kWh`}
+      badge={reading?.badge && <Badge tone={tone[reading.badge]}>{t(`plan.banner.weather.badge.${reading.badge}`)}</Badge>}
+    >
+      <span>{parts.join(" · ")}</span>
+    </Tile>
   );
 }
 
@@ -129,16 +169,26 @@ function EquipmentPill({ timeline }: { timeline: Timeline }) {
       t("plan.banner.equip.unplanned", { device: u.device, time: clock(u.start_min, language), kwh: kwh(u.energy_kwh) }),
     ),
   ];
+  // Lancés : vus dans les mesures, à l'heure, décalés ou hors plan.
+  const started =
+    timeline.statuses.filter((status) => status.status === "on_time" || status.status === "shifted").length +
+    timeline.unplanned.length;
   return (
-    <div className="pill" aria-label={t("plan.banner.equip_title")}>
-      <Icon name="plug" size={20} />
+    <Tile
+      label={t("plan.banner.equip_title")}
+      icon="plug"
+      title={t("plan.banner.equip_title")}
+      value={t("plan.banner.equip.started", { started, total: lines.length })}
+      badge={
+        timeline.badge && (
+          <Badge tone={timeline.badge === "on_time" ? "ok" : "medium"}>{t(`plan.banner.equip.badge.${timeline.badge}`)}</Badge>
+        )
+      }
+    >
       <ul className="equip">
         {lines.length ? lines.map((line) => <li key={line}>{line}</li>) : <li>{t("plan.banner.equip.none")}</li>}
       </ul>
-      {timeline.badge && (
-        <Badge tone={timeline.badge === "on_time" ? "ok" : "medium"}>{t(`plan.banner.equip.badge.${timeline.badge}`)}</Badge>
-      )}
-    </div>
+    </Tile>
   );
 }
 

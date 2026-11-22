@@ -516,6 +516,69 @@ pre {
   list-style: none;
 }
 
+/* Bandeaux du plan en tuiles : côte à côte quand la largeur le permet, un titre, un chiffre et
+   sa pastille ; la phrase complète se déplie au toucher. */
+.banners {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  gap: 0.6rem;
+  align-items: start;
+}
+
+.plan-tile {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  padding: 0.65rem 0.9rem;
+}
+
+.plan-tile > summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.15rem 0.6rem;
+  margin: 0;
+  color: inherit;
+  list-style: none;
+}
+
+.plan-tile > summary::-webkit-details-marker {
+  display: none;
+}
+
+.plan-tile-title {
+  flex-basis: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+.plan-tile-value {
+  flex: 1;
+  white-space: nowrap;
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.plan-tile > summary > .icon {
+  color: var(--text-dim);
+  transition: transform 0.15s;
+}
+
+.plan-tile[open] > summary > .icon {
+  transform: rotate(90deg);
+}
+
+.plan-tile-detail {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+
 .pill {
   display: flex;
   gap: 0.6rem;
