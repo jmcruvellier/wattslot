@@ -12,6 +12,11 @@ import type { DayView, Indicators, ObjectivePreset } from "./types";
 import Icon from "../ui/Icon";
 import OtherStarts from "./OtherStarts";
 import { QualityBadge } from "./QualityBadge";
+import { useShowMore } from "../ui/ShowMore";
+
+// Version compacte (Aujourd'hui, Planning) : les quatre premières lignes, libellés courts.
+const COMPACT_ROWS = 4;
+const SHORT_LABELS: IndicatorKey[] = ["cost_eur", "export_kwh"];
 
 type IndicatorKey = keyof Indicators;
 
@@ -32,37 +37,54 @@ function value(key: IndicatorKey, indicators: Indicators, money: (value: number)
   return `${kwh(raw)}\u00a0kWh`;
 }
 
-export function IndicatorsCard({ view, layout }: { view: DayView; layout: IndicatorLayout }) {
+export function IndicatorsCard({
+  view,
+  layout,
+  compact = false,
+  expandable = false,
+}: {
+  view: DayView;
+  layout: IndicatorLayout;
+  compact?: boolean; // panneau à petit titre : quatre lignes, libellés courts, sans phrase
+  expandable?: boolean; // compact : « Afficher les autres » déplie le reste (Planning)
+}) {
   const { t } = useI18n();
   const { money } = useCurrency();
   const indicators = view.indicators;
-  if (!indicators) return null;
   // Celui choisi dans la disposition, sinon celui de l'objectif du calcul.
   const main = layout.highlight ?? HIGHLIGHT[view.objective];
   const keys = availableIndicators(view).filter((key) => !layout.hidden.includes(key));
   // L'indicateur visé d'abord.
   const sorted = main && keys.includes(main) ? [main, ...keys.filter((key) => key !== main)] : keys;
+  const { shown, toggle } = useShowMore(sorted, compact ? COMPACT_ROWS : sorted.length);
+  if (!indicators) return null;
+  const rows = compact && !expandable ? sorted.slice(0, COMPACT_ROWS) : shown;
   return (
-    <article className="card" aria-label={t("plan.indicators.title")}>
+    <article className={compact ? "ui-card ui-panel" : "card"} aria-label={t("plan.indicators.title")}>
       {/* Qualité des prévisions au coin droit, comme la tendance des cartes de la vue Aujourd'hui. */}
-      <div className="card-head">
-        <h3>
-          <Icon name="target" size={20} /> {t("plan.indicators.title")}
+      <div className={compact ? "ui-panel-head" : "card-head"}>
+        <h3 className={compact ? "ui-panel-title" : undefined}>
+          <Icon name="target" size={compact ? 16 : 20} /> {t("plan.indicators.title")}
         </h3>
         {view.forecast_quality && <QualityBadge quality={view.forecast_quality} />}
       </div>
-      <p className="dim">
-        {layout.highlight
-          ? t("plan.indicators.chosen")
-          : t("plan.indicators.goal", { goal: t(`objective.presets.${view.objective}`) })}
-      </p>
+      {!compact && (
+        <p className="dim">
+          {layout.highlight
+            ? t("plan.indicators.chosen")
+            : t("plan.indicators.goal", { goal: t(`objective.presets.${view.objective}`) })}
+        </p>
+      )}
       <dl className="indicators">
-        {sorted.map((key) => (
-          <div key={key} className={key === main ? "indicator indicator-main" : "indicator"}>
-            <dt>{t(`plan.indicators.${key}`)}</dt>
+        {rows.map((key) => (
+          <div
+            key={key}
+            className={key !== main ? "indicator" : compact ? "indicator indicator-strong" : "indicator indicator-main"}
+          >
+            <dt>{t(compact && SHORT_LABELS.includes(key) ? `plan.indicators.short.${key}` : `plan.indicators.${key}`)}</dt>
             <dd>
               {value(key, indicators, money)}
-              {key === "cost_eur" && (indicators.subscription_eur ?? 0) > 0 && (
+              {!compact && key === "cost_eur" && (indicators.subscription_eur ?? 0) > 0 && (
                 <small className="dim">
                   {" "}
                   {t("plan.indicators.subscription_part", { amount: money(indicators.subscription_eur ?? 0) })}
@@ -72,6 +94,7 @@ export function IndicatorsCard({ view, layout }: { view: DayView; layout: Indica
           </div>
         ))}
       </dl>
+      {compact && expandable && toggle}
     </article>
   );
 }

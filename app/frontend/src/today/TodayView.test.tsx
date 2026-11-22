@@ -80,21 +80,23 @@ describe("TodayView", () => {
     vi.restoreAllMocks();
   });
 
-  it("résume le moment en une phrase et quatre flux", async () => {
+  it("résume le moment en quatre tuiles, la phrase pour les lecteurs d'écran", async () => {
     mockApi({ ...TODAY, now: NOW, next_action: ACTION });
     renderView();
-    const card = (await screen.findByRole("heading", { name: "Le soleil couvre 82 % de la maison" })).closest("section");
+    const card = (await screen.findByRole("heading", { name: "En ce moment" })).closest("section");
     const now = within(card as HTMLElement);
     expect(now.getByText("1,8 kW")).toBeInTheDocument();
     expect(now.getByText("2,2 kW")).toBeInTheDocument();
     expect(now.getByText("64 % · fournit 200 W")).toBeInTheDocument();
-    expect(now.getByText("achat 200 W")).toBeInTheDocument();
+    // Le libellé dit le sens de l'échange avec le réseau, la valeur la puissance.
+    expect(now.getByText("Achat").nextElementSibling).toHaveTextContent("200 W");
+    expect(now.getByText("Le soleil couvre 82 % de la maison")).toHaveClass("visually-hidden");
   });
 
   it("affiche les puissances sous 1 kW en watts", async () => {
     mockApi({ ...TODAY, now: { ...NOW, production_w: 48, consumption_w: 0, battery_w: 288.4, grid_w: -999.6 }, next_action: ACTION });
     renderView();
-    const card = (await screen.findByRole("heading", { name: "Le soleil couvre 82 % de la maison" })).closest("section");
+    const card = (await screen.findByRole("heading", { name: "En ce moment" })).closest("section");
     const now = within(card as HTMLElement);
     expect(now.getByText("48 W")).toBeInTheDocument();
     expect(now.getByText("0 W")).toBeInTheDocument();
@@ -112,22 +114,33 @@ describe("TodayView", () => {
     expect(screen.queryByText("Lancez le lave-linge à 13 h.")).not.toBeInTheDocument();
   });
 
-  it("replie la raison du créneau et les autres départs de la prochaine action", async () => {
+  it("dit l'heure de fin et la raison en quelques mots ; le reste sous « Autre heure »", async () => {
     vi.setSystemTime(new Date("2026-10-17T12:00:00"));
     const alternatives = [{ start_min: 960, end_min: 1080, cost_eur_delta: 0.03, import_kwh_delta: 0.1 }];
-    mockApi({ ...TODAY, now: NOW, next_action: { ...ACTION, alternatives } });
+    // Raisons structurées du plan : la part de surplus solaire donne « 100 % solaire ».
+    const explanations = [
+      {
+        device: "Lave-linge",
+        text: "Au plus fort du soleil.",
+        explanation: { raisons: [{ code: "objective" }, { code: "solar_share", params: { percent: 100 } }] },
+      },
+    ];
+    mockApi({ ...TODAY, explanations, now: NOW, next_action: { ...ACTION, alternatives } });
     const user = userEvent.setup();
     renderView();
-    const why = (await screen.findByText("Pourquoi cette heure ?")).closest("details");
-    expect(why).not.toHaveAttribute("open");
-    expect(why).toHaveTextContent("Au plus fort du soleil.");
+    expect(await screen.findByText("Fin vers 15h00 · 100 % solaire")).toBeInTheDocument();
+    expect(screen.queryByText("Au plus fort du soleil.")).not.toBeInTheDocument();
     expect(screen.queryByText("Autres départs possibles :")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Annuler" })).toBeNull();
     const other = screen.getByRole("button", { name: "Autre heure" });
     expect(other).toHaveAttribute("aria-expanded", "false");
     await user.click(other);
     expect(other).toHaveAttribute("aria-expanded", "true");
+    // Dépliés : la phrase complète, les autres départs, l'heure libre et l'annulation.
+    expect(screen.getByText("Au plus fort du soleil.")).toBeInTheDocument();
     expect(screen.getByText("Autres départs possibles :")).toBeInTheDocument();
     expect(screen.getByLabelText("Autre heure de départ :")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Annuler" })).toBeInTheDocument();
   });
 
   it("un départ choisi laisse « Revenir au choix du calcul » sous les yeux", async () => {
@@ -159,7 +172,7 @@ describe("TodayView", () => {
     });
     renderView();
     expect(await screen.findByRole("heading", { name: "Lancez Lave-linge" })).toBeInTheDocument();
-    expect(screen.getByText("Départ à 13h00, fin vers 15h00.")).toBeInTheDocument();
+    expect(screen.getByText("Fin vers 15h00")).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: "C'est lancé" }));
     expect(await screen.findByRole("heading", { name: "Lancez Lave-vaisselle" })).toBeInTheDocument();
@@ -310,13 +323,12 @@ describe("TodayView", () => {
     // la somme des prévisions seules (10 kWh ici) donnait « 10 kWh prévus, 14 déjà produits ».
     mockApi({ ...TODAY, weather: { ...TODAY.weather, production_kwh: 16.5 }, now: NOW, next_action: null });
     renderView();
-    expect(await screen.findByRole("heading", { name: "64 % en ce moment" })).toBeInTheDocument();
-    expect(screen.getByText("Au plus haut").closest("div")).toHaveTextContent("Au plus haut98 % vers 16h00");
-    expect(screen.getByText("Ce soir à minuit")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "16,5 kWh prévus aujourd'hui" })).toBeInTheDocument();
-    expect(screen.getByText("Déjà produits").closest("div")).toHaveTextContent("Déjà produits14,0 kWh");
-    // La référence de la pastille (+8 % : 6,5 kWh mesurés pour 6,0 prévus au relevé) est dite.
-    expect(screen.getByText("Prévus à cette heure").closest("div")).toHaveTextContent("Prévus à cette heure6,0 kWh");
+    const battery = within((await screen.findByRole("heading", { name: "Batterie" })).closest("section") as HTMLElement);
+    expect(battery.getByText("Maintenant").closest("div")).toHaveTextContent("Maintenant64 %");
+    expect(battery.getByText("À minuit").closest("div")).toHaveTextContent("À minuit");
+    const sun = within(screen.getByRole("heading", { name: "Soleil" }).closest("section") as HTMLElement);
+    expect(sun.getByText("Prévu aujourd'hui").closest("div")).toHaveTextContent("Prévu aujourd'hui16,5 kWh");
+    expect(sun.getByText("Déjà produit").closest("div")).toHaveTextContent("Déjà produit14,0 kWh");
     // Tendances de TODAY : SoC +25 %, production +8 %, en pilule en tête de chaque carte.
     expect(screen.getAllByTitle("Écart avec la prévision au relevé")).toHaveLength(2);
     expect(screen.getByText("▲ +25%")).toHaveClass("trend-pill");
@@ -327,18 +339,17 @@ describe("TodayView", () => {
   it("sans mesure au relevé : pas d'indicateur de tendance", async () => {
     mockApi({ ...TODAY, now: NOW, next_action: null, cards: null });
     renderView();
-    expect(await screen.findByRole("heading", { name: "64 % en ce moment" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "9,5 kWh prévus aujourd'hui" })).toBeInTheDocument();
-    expect(screen.queryByText(/[▲▼●]/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Prévus à cette heure/)).not.toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Batterie" })).toBeInTheDocument();
+    expect(screen.getByText("Prévu aujourd'hui").closest("div")).toHaveTextContent("9,5 kWh");
+    expect(screen.queryByText(/[▲▼]/)).not.toBeInTheDocument();
   });
 
   it("sans solaire : pas de carte Soleil", async () => {
     mockApi({ ...TODAY, solar: false, now: NOW, next_action: null });
     renderView();
-    expect(await screen.findByRole("heading", { name: "64 % en ce moment" })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "9,5 kWh prévus aujourd'hui" })).not.toBeInTheDocument();
-    expect(screen.queryByText("Soleil")).not.toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Batterie" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Soleil" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Prévu aujourd'hui")).not.toBeInTheDocument();
   });
 
   it("sans appareil à placer : invite à en ajouter un", async () => {
@@ -435,7 +446,9 @@ describe("TodayView", () => {
     const user = userEvent.setup();
     renderView();
 
-    await user.click(await screen.findByRole("button", { name: "Annuler" }));
+    // L'annulation pour aujourd'hui est sous « Autre heure », avec les autres départs.
+    await user.click(await screen.findByRole("button", { name: "Autre heure" }));
+    await user.click(screen.getByRole("button", { name: "Annuler" }));
 
     const posts = fetchMock.mock.calls.filter((call) => String(call[0]) === "api/planning/cancelled");
     expect(posts).toHaveLength(1);

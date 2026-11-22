@@ -16,6 +16,10 @@ export type AgendaEntry =
       // Autres départs proposés par le plan et départ choisi : dépliés sous l'explication.
       alternatives: OtherStart[];
       chosen: boolean;
+      // À droite de la ligne : l'énergie prévue, ou mesurée une fois le cycle vu (« lancé »).
+      energy_kwh: number;
+      launched: boolean;
+      actual_kwh: number | null;
     }
   | { kind: "runtime"; minute: number; end: number; device: string; mode: string | null }
   // `phase` : les batteries d'une phase (calcul par phase), 0 : celles qui compensent le total.
@@ -26,6 +30,7 @@ const toMinute = (hour: number) => Math.round(hour * 60);
 
 export function agenda(view: DayView): AgendaEntry[] {
   const explanations = new Map(view.explanations.map((item) => [item.device, item]));
+  const statuses = new Map(view.timeline.statuses.map((status) => [status.device, status]));
   const entries: AgendaEntry[] = [];
   for (const row of view.timeline.rows) {
     // La fin d'un cycle commencé la veille n'est pas une action du jour.
@@ -38,6 +43,7 @@ export function agenda(view: DayView): AgendaEntry[] {
         // Identité du cycle : l'équipement, et son rang à partir de son deuxième cycle du jour.
         const cycle = bar.cycle ?? row.device;
         const why = explanations.get(cycle);
+        const status = statuses.get(cycle);
         entries.push({
           kind: "cycle",
           minute,
@@ -50,6 +56,9 @@ export function agenda(view: DayView): AgendaEntry[] {
             import_kwh_delta: other.ecart_soutirage_kwh,
           })),
           chosen: why?.explanation?.choisi ?? false,
+          energy_kwh: bar.energy_kwh,
+          launched: status != null && status.actual_start_min !== null,
+          actual_kwh: status?.actual_kwh ?? null,
         });
       } else {
         entries.push({ kind: "runtime", minute, end, device: row.device, mode: bar.mode });

@@ -266,7 +266,6 @@
       },
       "equip_title": "Appliances",
       "equip": {
-        "started": "{started} of {total} started",
         "on_time": "{device} on time ({time}), {kwh}",
         "shifted": "{device} {shift} ({actual} instead of {planned}), {kwh}",
         "no_cycle": "{device}: no cycle ({start}–{end}, {kwh} kWh planned)",
@@ -277,8 +276,14 @@
         "badge": {
           "on_time": "as planned",
           "shifted": "shifted"
-        }
-      }
+        },
+        "count": "{started} started, {planned} planned",
+        "nothing": "Nothing planned"
+      },
+      "departure_tile": "Battery at midnight",
+      "weather_tile_forecast": "Sun forecast",
+      "weather_tile_measured": "Sun measured",
+      "equip_tile": "Appliances"
     },
     "summary": {
       "cards": {
@@ -352,7 +357,11 @@
       "end_soc_percent": "SoC at end of day",
       "battery_throughput_kwh": "Battery throughput",
       "chosen": "Highlighted indicator chosen in “Customize”.",
-      "subscription_part": "including subscription {amount}"
+      "subscription_part": "including subscription {amount}",
+      "short": {
+        "cost_eur": "Cost today",
+        "export_kwh": "Surplus"
+      }
     },
     "quality": {
       "title": "Forecast quality",
@@ -447,17 +456,18 @@
       "title": "Day agenda",
       "sun_hours": "Sun mostly between {start}:00 and {end}:00",
       "sun_none": "No solar production expected.",
-      "cycle": "Start the {device}",
       "runtime": "{device}, {duration}",
       "mode": "Speed {mode}",
       "battery_charge": "The battery charges",
       "battery_discharge": "The battery takes over",
       "battery_max": "Battery at its highest, {pct}%",
-      "until": "Until {time}",
+      "until": "until {time}",
       "empty": "Nothing to start that day.",
       "now": "Now",
       "battery_charge_of": "{battery}: charging",
-      "battery_discharge_of": "{battery}: takes over"
+      "battery_discharge_of": "{battery}: takes over",
+      "heading": "The day",
+      "launched": "started"
     },
     "discarded": "Impossible measurement set aside at {hours}: probably a sensor dropout.",
     "discarded_link": "See the data",
@@ -470,7 +480,11 @@
       "running": "Recalculating with this start…",
       "failed": "The start could not be changed."
     },
-    "provisional": "Provisional plan: WattSlot is still importing the Home Assistant history ({count} meter(s) left). Your usual consumption is not known yet: the figures will become accurate at the first calculation after the import."
+    "provisional": "Provisional plan: WattSlot is still importing the Home Assistant history ({count} meter(s) left). Your usual consumption is not known yet: the figures will become accurate at the first calculation after the import.",
+    "reason": {
+      "solar": "{pct}% solar",
+      "cheap": "off-peak hours"
+    }
   },
   "requests": {
     "title": "My requests",
@@ -494,20 +508,20 @@
     "error": "Unable to read the requests.",
     "none": "No request in progress.",
     "open_list": "Requests in progress",
-    "open_asap": "{device}: as soon as possible",
-    "open_latest": "{device}: at the latest {latest}",
-    "launched": "{device}: started today",
     "done_item": "{device}: done",
     "cancelled_item": "{device}: cancelled",
     "mark_done": "Done",
     "mark_launched": "It's started",
-    "declared_item": "{device}: marked as started",
     "cancel": "Cancel",
     "recent": "Recent requests",
     "loading": "Reading the appliances…",
     "no_device": "None of your home's appliances can be started on request.",
     "sheet_done": "Request saved: the next calculation will place it at the best time.",
-    "sheet_close": "Done"
+    "sheet_close": "Done",
+    "state_asap": "as soon as possible",
+    "state_latest": "at the latest {latest}",
+    "state_launched": "started today",
+    "state_declared": "marked as started"
   },
   "settings": {
     "loading": "Reading the settings…",
@@ -1649,15 +1663,14 @@
       "grid": "Grid",
       "charging": "charging {kw}",
       "discharging": "supplying {kw}",
-      "buying": "buying {kw}",
-      "selling": "surplus {kw}",
       "idle": "idle",
-      "measured": "Powers: average from {start} to {end}. Battery: last reading."
+      "measured": "Powers: average from {start} to {end}. Battery: last reading.",
+      "grid_buying": "Buying",
+      "grid_selling": "Surplus"
     },
     "next": {
       "eyebrow": "Next action",
       "title": "Start the {device}",
-      "slot": "Start at {start}, done around {end}.",
       "slot_late": "The planned start at {start} has passed: start it as soon as you can.",
       "now": "now",
       "launched": "It's started",
@@ -1682,23 +1695,19 @@
       "add_appliance": "Add an appliance",
       "cancel": "Cancel",
       "cancel_failed": "The cancellation failed.",
-      "why": "Why this time?",
-      "other_time": "Another time"
+      "other_time": "Another time",
+      "end": "Done around {end}"
     },
     "battery": {
       "eyebrow": "Battery",
-      "title": "{pct}% right now",
-      "max_label": "Highest",
-      "max_value": "{pct}% around {time}",
-      "end_label": "Tonight at midnight",
-      "end_value": "{pct}%"
+      "end_label": "At midnight",
+      "end_value": "{pct}%",
+      "now_label": "Now"
     },
     "sun": {
       "eyebrow": "Sun",
-      "title": "{kwh} kWh expected today",
       "done_label": "Already produced",
-      "at_reading_label": "Forecast by this time",
-      "none": "No production measured yet."
+      "forecast_label": "Forecast today"
     },
     "trend": "Difference from the forecast at the reading"
   },

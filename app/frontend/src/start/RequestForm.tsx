@@ -8,6 +8,7 @@ import { postJson } from "../api";
 import { useI18n } from "../i18n/I18nProvider";
 import { hour } from "../plan/format";
 import Button from "../ui/Button";
+import { REQUESTS_EVENT } from "./pendingLatest";
 
 export interface RequestDevice {
   key: string;
@@ -78,6 +79,7 @@ export default function RequestForm({
       });
       setLatest("");
       setFinish("");
+      window.dispatchEvent(new Event(REQUESTS_EVENT));
       onAsked();
     } catch {
       setFailed(true);

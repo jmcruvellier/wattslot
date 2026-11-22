@@ -266,7 +266,6 @@
       },
       "equip_title": "Geräte",
       "equip": {
-        "started": "{started} von {total} gestartet",
         "on_time": "{device} pünktlich ({time}), {kwh}",
         "shifted": "{device} {shift} ({actual} statt {planned}), {kwh}",
         "no_cycle": "{device}: kein Zyklus ({start}–{end}, {kwh} kWh geplant)",
@@ -277,8 +276,14 @@
         "badge": {
           "on_time": "wie geplant",
           "shifted": "verschoben"
-        }
-      }
+        },
+        "count": "{started} gestartet, {planned} geplant",
+        "nothing": "Nichts geplant"
+      },
+      "departure_tile": "Batterie um Mitternacht",
+      "weather_tile_forecast": "Sonne erwartet",
+      "weather_tile_measured": "Sonne gemessen",
+      "equip_tile": "Geräte"
     },
     "summary": {
       "cards": {
@@ -352,7 +357,11 @@
       "end_soc_percent": "Ladestand am Tagesende",
       "battery_throughput_kwh": "Durch die Batterie geflossene Energie",
       "chosen": "Hervorgehobene Kennzahl unter „Anpassen“ gewählt.",
-      "subscription_part": "davon Grundgebühr {amount}"
+      "subscription_part": "davon Grundgebühr {amount}",
+      "short": {
+        "cost_eur": "Kosten heute",
+        "export_kwh": "Überschuss"
+      }
     },
     "quality": {
       "title": "Prognosequalität",
@@ -447,17 +456,18 @@
       "title": "Tagesablauf",
       "sun_hours": "Sonne vor allem zwischen {start} und {end} Uhr",
       "sun_none": "Keine Solarerzeugung erwartet.",
-      "cycle": "Starten Sie {device}",
       "runtime": "{device}, {duration}",
       "mode": "Stufe {mode}",
       "battery_charge": "Die Batterie lädt",
       "battery_discharge": "Die Batterie übernimmt",
       "battery_max": "Batterie am höchsten, {pct} %",
-      "until": "Bis {time}",
+      "until": "bis {time}",
       "empty": "An diesem Tag nichts zu starten.",
       "now": "Jetzt",
       "battery_charge_of": "{battery}: lädt",
-      "battery_discharge_of": "{battery}: übernimmt"
+      "battery_discharge_of": "{battery}: übernimmt",
+      "heading": "Der Tag",
+      "launched": "gestartet"
     },
     "discarded": "Unmöglicher Messwert um {hours} verworfen: vermutlich ein Sensorausfall.",
     "discarded_link": "Daten ansehen",
@@ -470,7 +480,11 @@
       "running": "Neue Berechnung mit diesem Start…",
       "failed": "Der Start konnte nicht geändert werden."
     },
-    "provisional": "Vorläufiger Plan: WattSlot übernimmt noch den Verlauf von Home Assistant ({count} Zähler übrig). Ihr üblicher Verbrauch ist noch nicht bekannt: Die Zahlen werden bei der ersten Berechnung nach der Übernahme genauer."
+    "provisional": "Vorläufiger Plan: WattSlot übernimmt noch den Verlauf von Home Assistant ({count} Zähler übrig). Ihr üblicher Verbrauch ist noch nicht bekannt: Die Zahlen werden bei der ersten Berechnung nach der Übernahme genauer.",
+    "reason": {
+      "solar": "{pct} % Solar",
+      "cheap": "Niedertarif"
+    }
   },
   "requests": {
     "title": "Meine Anfragen",
@@ -494,20 +508,20 @@
     "error": "Die Anfragen können nicht gelesen werden.",
     "none": "Keine laufende Anfrage.",
     "open_list": "Laufende Anfragen",
-    "open_asap": "{device}: so bald wie möglich",
-    "open_latest": "{device}: spätestens am {latest}",
-    "launched": "{device}: heute gestartet",
     "done_item": "{device}: erledigt",
     "cancelled_item": "{device}: abgebrochen",
     "mark_done": "Erledigt",
     "mark_launched": "Ist gestartet",
-    "declared_item": "{device}: als gestartet markiert",
     "cancel": "Abbrechen",
     "recent": "Letzte Anfragen",
     "loading": "Geräte werden gelesen…",
     "no_device": "Keines Ihrer Geräte lässt sich auf Anfrage starten.",
     "sheet_done": "Anfrage gespeichert: Die nächste Berechnung legt sie auf den besten Zeitpunkt.",
-    "sheet_close": "Fertig"
+    "sheet_close": "Fertig",
+    "state_asap": "so bald wie möglich",
+    "state_latest": "spätestens am {latest}",
+    "state_launched": "heute gestartet",
+    "state_declared": "als gestartet markiert"
   },
   "settings": {
     "loading": "Einstellungen werden gelesen…",
@@ -1649,15 +1663,14 @@
       "grid": "Netz",
       "charging": "lädt {kw}",
       "discharging": "liefert {kw}",
-      "buying": "Bezug {kw}",
-      "selling": "Überschuss {kw}",
       "idle": "nichts",
-      "measured": "Leistungen: Mittelwert von {start} bis {end}. Batterie: letzte Messung."
+      "measured": "Leistungen: Mittelwert von {start} bis {end}. Batterie: letzte Messung.",
+      "grid_buying": "Bezug",
+      "grid_selling": "Überschuss"
     },
     "next": {
       "eyebrow": "Nächste Aktion",
       "title": "Starten Sie {device}",
-      "slot": "Start um {start}, Ende gegen {end}.",
       "slot_late": "Der geplante Start um {start} ist vorbei: Starten Sie so bald wie möglich.",
       "now": "jetzt",
       "launched": "Ist gestartet",
@@ -1682,23 +1695,19 @@
       "add_appliance": "Gerät hinzufügen",
       "cancel": "Abbrechen",
       "cancel_failed": "Der Abbruch ist fehlgeschlagen.",
-      "why": "Warum diese Uhrzeit?",
-      "other_time": "Andere Uhrzeit"
+      "other_time": "Andere Uhrzeit",
+      "end": "Fertig gegen {end}"
     },
     "battery": {
       "eyebrow": "Batterie",
-      "title": "{pct} % gerade jetzt",
-      "max_label": "Höchststand",
-      "max_value": "{pct} % gegen {time}",
-      "end_label": "Heute um Mitternacht",
-      "end_value": "{pct} %"
+      "end_label": "Um Mitternacht",
+      "end_value": "{pct} %",
+      "now_label": "Jetzt"
     },
     "sun": {
       "eyebrow": "Sonne",
-      "title": "{kwh} kWh heute erwartet",
       "done_label": "Bereits erzeugt",
-      "at_reading_label": "Bis jetzt erwartet",
-      "none": "Noch keine Erzeugung gemessen."
+      "forecast_label": "Heute erwartet"
     },
     "trend": "Abweichung von der Prognose bei der Messung"
   },

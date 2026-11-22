@@ -516,27 +516,30 @@ pre {
   list-style: none;
 }
 
-/* Bandeaux du plan en tuiles : côte à côte quand la largeur le permet, un titre, un chiffre et
-   sa pastille ; la phrase complète se déplie au toucher. */
+/* Tuiles du plan (Planning) : côte à côte quand la largeur le permet ; le titre et, en haut à
+   droite, sa pastille ; dessous le chiffre. La phrase complète se déplie au toucher (chevron
+   en bas à droite). */
 .banners {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
-  gap: 0.6rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+  gap: 0.75rem;
   align-items: start;
 }
 
 .plan-tile {
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: var(--surface-alt);
   border-radius: 1rem;
-  padding: 0.65rem 0.9rem;
+  padding: 0.75rem 1rem;
 }
 
 .plan-tile > summary {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "title badge"
+    "value more";
   align-items: center;
-  gap: 0.15rem 0.6rem;
+  gap: 0.3rem 0.6rem;
   margin: 0;
   color: inherit;
   list-style: none;
@@ -547,23 +550,27 @@ pre {
 }
 
 .plan-tile-title {
-  flex-basis: 100%;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
+  grid-area: title;
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--text-dim);
 }
 
 .plan-tile-value {
-  flex: 1;
-  white-space: nowrap;
-  font-size: 1.2rem;
+  grid-area: value;
+  font-size: 1.25rem;
   font-weight: 800;
+  line-height: 1.2;
+}
+
+.plan-tile > summary > .badge {
+  grid-area: badge;
+  justify-self: end;
 }
 
 .plan-tile > summary > .icon {
+  grid-area: more;
+  justify-self: end;
   color: var(--text-dim);
   transition: transform 0.15s;
 }
@@ -573,10 +580,14 @@ pre {
 }
 
 .plan-tile-detail {
-  margin-top: 0.5rem;
-  padding-top: 0.5rem;
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
   border-top: 1px solid var(--border);
   font-size: 0.9rem;
+}
+
+.plan-tile-detail > p {
+  margin: 0 0 0.35rem;
 }
 
 .pill {
@@ -2168,28 +2179,59 @@ a.ui-setting-row {
 }
 
 /* Écran Aujourd'hui (lot 6b.3). */
+/* Panneau (ui/Panel) : carte à petit titre, pour les écrans denses. */
+.ui-panel {
+  padding: 0.9rem 1.1rem 1rem;
+}
+
+.ui-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-height: 1.6rem;
+  margin-bottom: 0.6rem;
+}
+
+.ui-panel-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: normal;
+  color: var(--text-dim);
+}
+
+.ui-panel > .indicators {
+  gap: 0.45rem;
+}
+
 .today {
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
 
-.today-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
-  gap: 1rem;
-}
-
-/* Deux cartes côte à côte quand la largeur le permet (ordinateur), l'une sous l'autre sinon ;
-   une carte seule prend toute la largeur. */
+/* Deux panneaux côte à côte quand la largeur le permet, l'un sous l'autre sinon ; le premier
+   un peu plus large. Un panneau seul prend toute la largeur. */
 .today-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr));
   gap: 1rem;
 }
 
-.today-row:empty {
-  display: none;
+@media (min-width: 52rem) {
+  .today-row-split {
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  }
+}
+
+/* Batterie et soleil, l'un sous l'autre à côté des indicateurs. */
+.today-stack {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
 }
 
 .setup-card {
@@ -2203,24 +2245,16 @@ a.ui-setting-row {
 
 .now-tiles {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(5.5rem, 1fr));
   gap: 0.6rem;
-  margin: 0.75rem 0 0.5rem;
+  margin: 0;
 }
 
 .now-tile {
   margin: 0;
-  padding: 0.7rem 0.85rem;
-  border-radius: 0.9rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.8rem;
   background: var(--surface-alt);
-}
-
-.now-tile-sun {
-  background: var(--sun-soft);
-}
-
-.now-tile-battery {
-  background: var(--battery-soft);
 }
 
 .now-tile dt {
@@ -2235,48 +2269,38 @@ a.ui-setting-row {
   font-weight: 800;
 }
 
+/* Prochaine action : le seul panneau cerclé de la couleur d'action. */
 .next-action {
-  padding: 1.1rem 1.25rem;
-  border-radius: 1.25rem;
-  background: var(--accent);
-  color: var(--accent-text);
+  border: 2px solid var(--accent);
 }
 
-.next-action .ui-eyebrow {
-  color: inherit;
-  opacity: 0.85;
+.next-action-title {
+  margin: 0 0 0.2rem;
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.next-action-line {
+  margin: 0;
+  color: var(--text-dim);
 }
 
 .next-action-buttons {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  margin-top: 0.75rem;
+  margin-top: 0.85rem;
 }
 
-/* « Pourquoi cette heure ? » : la raison du créneau, repliée sous sa phrase. */
-.next-action-why > summary {
-  color: inherit;
-  padding: 0.25rem 0;
-  font-weight: 700;
-  cursor: pointer;
+/* « Autre heure » déplié : la raison complète, les autres départs, l'annulation. */
+.next-action-more {
+  margin-top: 0.85rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
 }
 
-.next-action-why > p {
-  margin: 0.25rem 0 0;
-}
-
-.next-action .ui-button-primary,
-.next-action .ui-button-primary:hover:not(:disabled) {
-  background: var(--accent-text);
-  border-color: var(--accent-text);
-  color: var(--accent);
-}
-
-.next-action .ui-button-secondary {
-  background: transparent;
-  border-color: var(--accent-text);
-  color: var(--accent-text);
+.next-action-more > p:first-child {
+  margin-top: 0;
 }
 
 /* Planning en agenda (lot 6b.4). */
@@ -2322,61 +2346,46 @@ a.ui-setting-row {
 }
 
 .plan-agenda {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  margin: 0.75rem 0 1rem;
-}
-
-/* Les heures de soleil, en une ligne au-dessus de l'agenda. */
-.agenda-sun {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
   margin: 0;
-  font-size: 0.9rem;
-  color: var(--text-dim);
 }
 
-.agenda-sun > .icon {
-  color: var(--sun);
+/* Planning : les tuiles, puis l'agenda à gauche, les indicateurs et « Mes demandes » à droite
+   quand la largeur le permet ; l'un sous l'autre sinon. */
+.plan-columns {
+  display: grid;
+  gap: 1rem;
+  margin: 1rem 0;
 }
 
-/* Planning sur un écran large : l'agenda à gauche, les indicateurs et « Mes demandes » à
-   droite ; l'un sous l'autre sinon. */
-@media (min-width: 1100px) {
+.plan-side {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+}
+
+@media (min-width: 52rem) {
   .plan-columns {
-    display: grid;
-    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
     align-items: start;
-    gap: 1rem;
-  }
-
-  .plan-side > .plan-requests {
-    margin-top: 0;
   }
 }
 
 .agenda {
   margin: 0;
-  padding: 0.25rem 1.1rem;
+  padding: 0;
   list-style: none;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 1.25rem;
 }
 
 .agenda-entry {
-  padding: 0.55rem 0;
-  border-bottom: 1px solid var(--border);
+  padding: 0.4rem 0;
 }
 
-/* Une ligne par action : l'heure, le titre, puis à droite la fin (« Jusqu'à 10h00 ») ou le
-   chevron qui déplie la raison d'un créneau. */
+/* Une ligne par événement : l'heure, ce qui se passe, puis à droite la fin (« jusqu'à 10h »)
+   ou l'énergie de l'appareil. */
 .agenda-row {
   display: grid;
-  grid-template-columns: 3.5rem 1fr auto;
-  align-items: baseline;
+  grid-template-columns: 3.25rem 1fr auto;
+  align-items: center;
   gap: 0.75rem;
 }
 
@@ -2390,18 +2399,18 @@ a.ui-setting-row {
   display: none;
 }
 
-.agenda-entry > details > summary > .icon {
-  align-self: center;
+.agenda-title > .icon {
+  vertical-align: -0.15em;
   color: var(--text-dim);
   transition: transform 0.15s;
 }
 
-.agenda-entry > details[open] > summary > .icon {
+.agenda-entry > details[open] .agenda-title > .icon {
   transform: rotate(90deg);
 }
 
 .agenda-why {
-  margin: 0.35rem 0 0.25rem 4.25rem;
+  margin: 0.3rem 0 0.35rem 4rem;
   font-size: 0.9rem;
 }
 
@@ -2410,62 +2419,41 @@ a.ui-setting-row {
   color: var(--text-dim);
 }
 
-/* « Pourquoi ce plan », replié sous l'agenda : la batterie et le texte entier du plan. */
-.plan-why {
-  margin-top: 0.6rem;
-}
-
-.plan-why > summary {
-  margin: 0;
-  font-weight: 700;
-  color: inherit;
-}
-
-.agenda-entry:last-child {
-  border-bottom: 0;
-}
-
 .agenda-time {
-  font-weight: 800;
+  color: var(--text-dim);
   font-variant-numeric: tabular-nums;
 }
 
 .agenda-title {
   min-width: 0;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .agenda-detail {
-  font-size: 0.9rem;
-  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
   text-align: right;
 }
 
-.agenda-entry[data-kind="cycle"] .agenda-time {
-  color: var(--ok);
-}
-
-.agenda-past {
-  opacity: 0.55;
-}
-
 .agenda-now {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.25rem 0;
+  margin: 0.35rem 0 0.15rem;
+  padding-top: 0.25rem;
+  border-top: 1px solid var(--danger);
   color: var(--danger);
   font-size: 0.8rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-weight: 600;
 }
 
-.agenda-now::after {
-  content: "";
-  flex: 1;
-  height: 2px;
-  background: var(--danger);
+/* « Pourquoi ce plan », replié en bas de la carte : la batterie et le texte entier du plan. */
+.plan-why {
+  margin-top: 0.6rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.plan-why > summary {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
 }
 
 .plan-more {
@@ -2480,6 +2468,10 @@ a.ui-setting-row {
 
 /* « Pourquoi ce plan » et indicateurs du plan : côte à côte et de même hauteur quand la
    largeur le permet. */
+.indicator-strong dd {
+  font-weight: 800;
+}
+
 .plan-insights {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
@@ -2557,47 +2549,60 @@ a.ui-setting-row {
 }
 
 /* « Mes demandes » sous le plan, dans Planning. */
-.plan-requests {
-  margin-top: 1rem;
-}
-
-/* « Mes demandes » : le titre, et à droite le bouton qui ouvre la feuille de demande. */
-.requests-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-
-.requests-head > h2 {
-  margin: 0;
-}
-
+/* « Mes demandes » : une ligne par demande (l'appareil, et à droite son échéance) ; ses
+   boutons se déplient au toucher. */
 .requests-list {
-  margin: 0.75rem 0;
+  margin: 0;
   padding: 0;
   list-style: none;
 }
 
 .requests-list > li {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.35rem 0.75rem;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid var(--border);
+  padding: 0.35rem 0;
 }
 
-.requests-list > li:last-child {
-  border-bottom: 0;
+.requests-list summary {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0;
+  color: inherit;
+  list-style: none;
+}
+
+.requests-list summary::-webkit-details-marker {
+  display: none;
+}
+
+.requests-name {
+  font-weight: 600;
+}
+
+.requests-name > .icon {
+  vertical-align: -0.15em;
+  color: var(--text-dim);
+  transition: transform 0.15s;
+}
+
+.requests-list details[open] .requests-name > .icon {
+  transform: rotate(90deg);
+}
+
+.requests-state {
+  color: var(--text-dim);
+  text-align: right;
 }
 
 .requests-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
+  margin: 0.5rem 0 0.25rem;
+}
+
+.requests-recent > summary {
+  font-size: 0.85rem;
 }
 
 /* Ma maison en phrases (lot 6b.5). */
@@ -4116,4 +4121,32 @@ p[role="status"]:not(.state-message) {
   .battery-table td:last-child {
     white-space: normal;
   }
+}
+
+.plan-side > .plan-insights {
+  margin: 0;
+}
+
+/* « Afficher les autres » dans un panneau : discret, sous les lignes. */
+.ui-panel > .show-more {
+  margin-top: 0.35rem;
+}
+
+.ui-panel > .show-more > .ui-button {
+  min-height: 2rem;
+  padding: 0;
+  font-size: 0.85rem;
+}
+
+/* Petit écran : les quatre tuiles du moment sur deux rangs ; le nom d'une demande ne se coupe
+   pas de son chevron. */
+@media (max-width: 30rem) {
+  .now-tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.requests-name {
+  flex: none;
+  white-space: nowrap;
 }

@@ -266,7 +266,6 @@
       },
       "equip_title": "Équipements",
       "equip": {
-        "started": "{started} sur {total} lancés",
         "on_time": "{device} à l'heure ({time}), {kwh}",
         "shifted": "{device} {shift} ({actual} au lieu de {planned}), {kwh}",
         "no_cycle": "{device} : aucun cycle ({start}–{end}, {kwh} kWh prévus)",
@@ -277,8 +276,14 @@
         "badge": {
           "on_time": "conforme",
           "shifted": "décalé"
-        }
-      }
+        },
+        "count": "{started} lancés, {planned} prévus",
+        "nothing": "Rien de prévu"
+      },
+      "departure_tile": "Batterie à minuit",
+      "weather_tile_forecast": "Soleil prévu",
+      "weather_tile_measured": "Soleil mesuré",
+      "equip_tile": "Appareils"
     },
     "summary": {
       "cards": {
@@ -352,7 +357,11 @@
       "end_soc_percent": "SoC en fin de journée",
       "battery_throughput_kwh": "Énergie passée par la batterie",
       "chosen": "Indicateur mis en avant choisi dans « Personnaliser ».",
-      "subscription_part": "dont abonnement {amount}"
+      "subscription_part": "dont abonnement {amount}",
+      "short": {
+        "cost_eur": "Coût du jour",
+        "export_kwh": "Surplus"
+      }
     },
     "quality": {
       "title": "Qualité des prévisions",
@@ -447,17 +456,18 @@
       "title": "Agenda de la journée",
       "sun_hours": "Soleil surtout entre {start} h et {end} h",
       "sun_none": "Pas de production solaire prévue.",
-      "cycle": "Lancez {device}",
       "runtime": "{device}, {duration}",
       "mode": "Vitesse {mode}",
       "battery_charge": "La batterie se charge",
       "battery_discharge": "La batterie prend le relais",
       "battery_max": "Batterie au plus haut, {pct} %",
-      "until": "Jusqu'à {time}",
+      "until": "jusqu'à {time}",
       "empty": "Rien à lancer ce jour-là.",
       "now": "Maintenant",
       "battery_charge_of": "{battery} : charge",
-      "battery_discharge_of": "{battery} : prend le relais"
+      "battery_discharge_of": "{battery} : prend le relais",
+      "heading": "La journée",
+      "launched": "lancé"
     },
     "discarded": "Mesure impossible écartée à {hours} : sans doute une coupure d'un capteur.",
     "discarded_link": "Voir les données",
@@ -470,7 +480,11 @@
       "running": "Nouveau calcul avec ce départ…",
       "failed": "Le départ n'a pas pu être changé."
     },
-    "provisional": "Plan provisoire : WattSlot reprend encore l'historique de Home Assistant ({count} compteur(s) restant(s)). Votre consommation habituelle n'est pas encore connue : les chiffres se préciseront au premier calcul après la reprise."
+    "provisional": "Plan provisoire : WattSlot reprend encore l'historique de Home Assistant ({count} compteur(s) restant(s)). Votre consommation habituelle n'est pas encore connue : les chiffres se préciseront au premier calcul après la reprise.",
+    "reason": {
+      "solar": "{pct} % solaire",
+      "cheap": "heures creuses"
+    }
   },
   "requests": {
     "title": "Mes demandes",
@@ -494,20 +508,20 @@
     "error": "Impossible de lire les demandes.",
     "none": "Aucune demande en cours.",
     "open_list": "Demandes en cours",
-    "open_asap": "{device} : dès que possible",
-    "open_latest": "{device} : au plus tard {latest}",
-    "launched": "{device} : lancé aujourd'hui",
     "done_item": "{device} : fait",
     "cancelled_item": "{device} : annulé",
     "mark_done": "Fait",
     "mark_launched": "C'est lancé",
-    "declared_item": "{device} : marqué comme lancé",
     "cancel": "Annuler",
     "recent": "Dernières demandes",
     "loading": "Lecture des appareils…",
     "no_device": "Aucun appareil de votre maison ne se lance à la demande.",
     "sheet_done": "Demande enregistrée : le prochain calcul la placera au meilleur moment.",
-    "sheet_close": "Terminé"
+    "sheet_close": "Terminé",
+    "state_asap": "dès que possible",
+    "state_latest": "au plus tard {latest}",
+    "state_launched": "lancé aujourd'hui",
+    "state_declared": "marqué comme lancé"
   },
   "settings": {
     "loading": "Lecture des réglages…",
@@ -1649,15 +1663,14 @@
       "grid": "Réseau",
       "charging": "charge {kw}",
       "discharging": "fournit {kw}",
-      "buying": "achat {kw}",
-      "selling": "surplus {kw}",
       "idle": "rien",
-      "measured": "Puissances : moyenne de {start} à {end}. Batterie : dernier relevé."
+      "measured": "Puissances : moyenne de {start} à {end}. Batterie : dernier relevé.",
+      "grid_buying": "Achat",
+      "grid_selling": "Surplus"
     },
     "next": {
       "eyebrow": "Prochaine action",
       "title": "Lancez {device}",
-      "slot": "Départ à {start}, fin vers {end}.",
       "slot_late": "Le départ prévu à {start} est passé : lancez-le dès que possible.",
       "now": "maintenant",
       "launched": "C'est lancé",
@@ -1682,23 +1695,19 @@
       "add_appliance": "Ajouter un appareil",
       "cancel": "Annuler",
       "cancel_failed": "L'annulation n'a pas abouti.",
-      "why": "Pourquoi cette heure ?",
-      "other_time": "Autre heure"
+      "other_time": "Autre heure",
+      "end": "Fin vers {end}"
     },
     "battery": {
       "eyebrow": "Batterie",
-      "title": "{pct} % en ce moment",
-      "max_label": "Au plus haut",
-      "max_value": "{pct} % vers {time}",
-      "end_label": "Ce soir à minuit",
-      "end_value": "{pct} %"
+      "end_label": "À minuit",
+      "end_value": "{pct} %",
+      "now_label": "Maintenant"
     },
     "sun": {
       "eyebrow": "Soleil",
-      "title": "{kwh} kWh prévus aujourd'hui",
-      "done_label": "Déjà produits",
-      "at_reading_label": "Prévus à cette heure",
-      "none": "Pas encore de production mesurée."
+      "done_label": "Déjà produit",
+      "forecast_label": "Prévu aujourd'hui"
     },
     "trend": "Écart avec la prévision au relevé"
   },

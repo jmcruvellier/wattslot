@@ -4,7 +4,7 @@ import { render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { I18nProvider } from "../i18n/I18nProvider";
-import Agenda, { SunHours } from "./Agenda";
+import Agenda from "./Agenda";
 import { agenda, firstUpcoming, sunWindow } from "./agendaEntries";
 import { TODAY } from "./testViews";
 import type { DayView } from "./types";
@@ -102,34 +102,36 @@ describe("Agenda", () => {
     vi.restoreAllMocks();
   });
 
+  // À droite d'un appareil : son énergie prévue, ou « lancé · … » une fois vu dans les mesures.
+  const washer = TODAY.timeline.statuses.find((status) => status.device === "Lave-linge");
+  const planned = TODAY.timeline.rows.find((row) => row.device === "Lave-linge")?.planned[0].energy_kwh ?? 0;
+  const kwh1 = (value: number) => value.toFixed(1).replace(".", ",");
+  const energy =
+    washer && washer.actual_start_min !== null
+      ? `lancé · ${kwh1(washer.actual_kwh ?? planned)} kWh`
+      : `${kwh1(planned)} kWh`;
+
   function renderAgenda(view: DayView) {
     return render(
       <I18nProvider>
-        <SunHours view={view} />
         <Agenda view={view} />
       </I18nProvider>,
     );
   }
 
-  it("sans panneaux : pas de résumé du soleil", () => {
-    renderAgenda({ ...TOMORROW, solar: false });
-    expect(screen.queryByText(/Soleil surtout/)).toBeNull();
-    expect(screen.getByRole("list", { name: "Agenda de la journée" })).toBeInTheDocument();
-  });
-
-  it("dit les heures de soleil en une ligne et liste les actions", () => {
+  it("liste la journée, une ligne par événement : l'heure, ce qui se passe, la fin ou l'énergie", () => {
     renderAgenda(TOMORROW);
-    // La date est dans l'en-tête de la vue, la météo et la production dans les tuiles : plus de
-    // carte « Samedi, journée ensoleillée — 9,5 kWh de soleil » qui les redisait.
-    expect(screen.queryByRole("heading")).toBeNull();
-    expect(screen.getByText("Soleil surtout entre 8 h et 18 h")).toBeInTheDocument();
-    const items = within(screen.getByRole("list", { name: "Agenda de la journée" })).getAllByRole("listitem");
+    expect(screen.getByRole("heading", { name: "La journée" })).toBeInTheDocument();
+    const list = screen.getByRole("list", { name: "Agenda de la journée" });
+    const items = within(list).getAllByRole("listitem");
     expect(items.map((item) => item.textContent)).toEqual([
-      "9h00La batterie se chargeJusqu'à 13h00",
-      "10h00Lancez Lave-lingePlacé à 10h pour profiter du soleil.",
-      "11h00Piscine, 4hVitesse eco",
-      "16h00Batterie au plus haut, 98 %",
+      "9hLa batterie se chargejusqu'à 13h",
+      `10hLave-linge ${energy}Placé à 10h pour profiter du soleil.`,
+      "11hPiscine, 4hVitesse eco",
+      "16hBatterie au plus haut, 98 %",
     ]);
+    // La raison du créneau est repliée sous la ligne de l'appareil.
+    expect(within(list).getByText("Lave-linge").closest("details")).not.toHaveAttribute("open");
     expect(screen.queryByText("Maintenant")).toBeNull(); // demain : pas de repère
   });
 

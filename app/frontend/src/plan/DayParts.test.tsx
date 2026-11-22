@@ -36,6 +36,7 @@ describe("vue d'un jour", () => {
     const departure = screen.getByLabelText("Départ de la batterie");
     // Tuile : le chiffre et la pastille d'abord, la phrase complète repliée dessous.
     expect(departure).not.toHaveAttribute("open");
+    expect(within(departure).getByText("Batterie à minuit")).toHaveClass("plan-tile-title");
     expect(within(departure).getByText("50 %")).toHaveClass("plan-tile-value");
     expect(departure).toHaveTextContent("Départ à 0h : 2,56 kWh (50 %) mesuré");
     expect(departure).toHaveTextContent("(+1 pts)");
@@ -45,7 +46,7 @@ describe("vue d'un jour", () => {
     const weather = screen.getByLabelText("Météo");
     expect(weather).toHaveTextContent("Journée ensoleillée");
     expect(weather).toHaveTextContent("au relevé : 6,5 kWh mesurés, +8 % par rapport à la dernière prévision (6,0 kWh)");
-    expect(within(weather).getByText("prévision fiable")).toHaveClass("badge-ok");
+    expect(within(weather).getByText("prévision fiable · +8 %")).toHaveClass("badge-ok");
 
     const equipment = screen.getByLabelText("Équipements");
     expect(equipment).toHaveTextContent("Lave-linge à l'heure (10h05), 1,30 kWh (+30 %)");

@@ -1,6 +1,9 @@
 // Date et heure limite de la demande en attente de chaque appareil, pour l'aide du formulaire
 // de demande (RequestForm). À part : un fichier de composant n'exporte que des composants.
 
+/** Événement de la fenêtre : une demande vient d'être déposée, « Mes demandes » se relit. */
+export const REQUESTS_EVENT = "wattslot:requests-changed";
+
 /** Date de la demande en attente (pas encore lancée) de chaque appareil : celle que
  * « Changer la date » modifie, la plus récente. La liste du serveur donne les plus récentes
  * d'abord. */
