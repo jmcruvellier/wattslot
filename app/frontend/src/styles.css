@@ -2527,9 +2527,31 @@ a.ui-setting-row {
 }
 
 .plan-why > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
   margin: 0;
   font-size: 0.85rem;
   font-weight: 600;
+  list-style: none;
+}
+
+.plan-why > summary::-webkit-details-marker {
+  display: none;
+}
+
+/* Le même chevron que les tuiles : vers la droite replié, vers le bas déplié. */
+.plan-why > summary > .icon {
+  transition: transform 0.15s;
+}
+
+.plan-why[open] > summary > .icon {
+  transform: rotate(90deg);
+}
+
+.plan-why[open] > summary {
+  margin-bottom: 0.5rem;
 }
 
 .plan-more {

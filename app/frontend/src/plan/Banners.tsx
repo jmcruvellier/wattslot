@@ -13,14 +13,10 @@ import { useState, type ReactNode } from "react";
 
 import type { DayView, Departure, DeviceStatus, ReadingWeather, Timeline, WeatherBanner } from "./types";
 import Icon from "../ui/Icon";
+import { wideScreen } from "./wideScreen";
 
 function Badge({ tone, children }: { tone: "ok" | "medium" | "bad" | "neutral"; children: string }) {
   return <span className={`badge badge-${tone}`}>{children}</span>;
-}
-
-/** Écran large (les tuiles sont côte à côte) : le détail y est déplié d'emblée. */
-function wideScreen(): boolean {
-  return typeof window.matchMedia === "function" && window.matchMedia("(min-width: 52rem)").matches;
 }
 
 function Tile({
