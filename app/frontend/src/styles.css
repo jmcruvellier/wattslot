@@ -2172,6 +2172,18 @@ a.ui-setting-row {
   margin-top: 0.75rem;
 }
 
+/* « Pourquoi cette heure ? » : la raison du créneau, repliée sous sa phrase. */
+.next-action-why > summary {
+  color: inherit;
+  padding: 0.25rem 0;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.next-action-why > p {
+  margin: 0.25rem 0 0;
+}
+
 .next-action .ui-button-primary,
 .next-action .ui-button-primary:hover:not(:disabled) {
   background: var(--accent-text);

@@ -1647,7 +1647,6 @@
     "unplaced": "Aparatos no colocados",
     "now": {
       "eyebrow": "Ahora mismo",
-      "no_flows": "El plan del día",
       "panels": "Paneles",
       "home": "Casa",
       "battery": "Batería",
@@ -1686,7 +1685,9 @@
       "no_appliance_help": "WattSlot coloca sus aparatos en el mejor momento: lavadora, lavavajillas, termo… Añada uno para saber cuándo ponerlo.",
       "add_appliance": "Añadir un aparato",
       "cancel": "Cancelar",
-      "cancel_failed": "La cancelación no se ha completado."
+      "cancel_failed": "La cancelación no se ha completado.",
+      "why": "¿Por qué esta hora?",
+      "other_time": "Otra hora"
     },
     "battery": {
       "eyebrow": "Batería",

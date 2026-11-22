@@ -1647,7 +1647,6 @@
     "unplaced": "Nicht eingeplante Geräte",
     "now": {
       "eyebrow": "Gerade jetzt",
-      "no_flows": "Der Tagesplan",
       "panels": "Module",
       "home": "Haus",
       "battery": "Batterie",
@@ -1686,7 +1685,9 @@
       "no_appliance_help": "WattSlot legt Ihre Geräte auf den besten Zeitpunkt: Waschmaschine, Geschirrspüler, Warmwasserbereiter… Fügen Sie eines hinzu, um zu wissen, wann Sie es starten.",
       "add_appliance": "Gerät hinzufügen",
       "cancel": "Abbrechen",
-      "cancel_failed": "Der Abbruch ist fehlgeschlagen."
+      "cancel_failed": "Der Abbruch ist fehlgeschlagen.",
+      "why": "Warum diese Uhrzeit?",
+      "other_time": "Andere Uhrzeit"
     },
     "battery": {
       "eyebrow": "Batterie",

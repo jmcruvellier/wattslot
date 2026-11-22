@@ -51,7 +51,7 @@ describe("StateMessage", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("Impossible de lire le plan du jour.");
     failing = false;
     await userEvent.click(screen.getByRole("button", { name: "Réessayer" }));
-    expect(await screen.findByText("En ce moment")).toBeInTheDocument();
+    expect(await screen.findByText(/Prochaine action/)).toBeInTheDocument();
     expect(screen.queryByRole("alert")).toBeNull();
   });
 });

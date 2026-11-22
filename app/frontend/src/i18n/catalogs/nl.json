@@ -1647,7 +1647,6 @@
     "unplaced": "Niet ingeplande apparaten",
     "now": {
       "eyebrow": "Op dit moment",
-      "no_flows": "Het dagplan",
       "panels": "Panelen",
       "home": "Huis",
       "battery": "Batterij",
@@ -1686,7 +1685,9 @@
       "no_appliance_help": "WattSlot plant je apparaten op het beste moment: wasmachine, vaatwasser, boiler… Voeg er een toe om te weten wanneer je hem start.",
       "add_appliance": "Apparaat toevoegen",
       "cancel": "Annuleren",
-      "cancel_failed": "Het annuleren is mislukt."
+      "cancel_failed": "Het annuleren is mislukt.",
+      "why": "Waarom dit tijdstip?",
+      "other_time": "Ander tijdstip"
     },
     "battery": {
       "eyebrow": "Batterij",

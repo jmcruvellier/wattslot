@@ -1647,7 +1647,6 @@
     "unplaced": "Appliances not scheduled",
     "now": {
       "eyebrow": "Right now",
-      "no_flows": "Today's plan",
       "panels": "Panels",
       "home": "Home",
       "battery": "Battery",
@@ -1686,7 +1685,9 @@
       "no_appliance_help": "WattSlot places your appliances at the best time: washing machine, dishwasher, water heater… Add one to know when to start it.",
       "add_appliance": "Add an appliance",
       "cancel": "Cancel",
-      "cancel_failed": "The cancellation failed."
+      "cancel_failed": "The cancellation failed.",
+      "why": "Why this time?",
+      "other_time": "Another time"
     },
     "battery": {
       "eyebrow": "Battery",

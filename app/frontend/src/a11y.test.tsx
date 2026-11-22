@@ -90,7 +90,7 @@ async function violations(): Promise<string[]> {
 
 // Section, et un texte qui dit que l'écran est chargé.
 const PAGES: [string, string | RegExp][] = [
-  ["#/today", "En ce moment"],
+  ["#/today", "Prochaine action"],
   ["#/planning", "Pourquoi ce plan"],
   ["#/curves", "Production et consommation"],
   ["#/home", "Ma priorité"],

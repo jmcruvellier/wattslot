@@ -87,7 +87,7 @@ describe("StartScreen", () => {
     renderScreen();
 
     expect(await screen.findByText("Mise en route : 1 étape(s) facultative(s) à faire")).toBeInTheDocument();
-    expect(await screen.findByText("En ce moment")).toBeInTheDocument();
+    expect(await screen.findByText(/Prochaine action/)).toBeInTheDocument();
   });
 
   it("ne montre plus la mise en route quand tout est fait", async () => {
@@ -97,7 +97,7 @@ describe("StartScreen", () => {
     );
     renderScreen();
 
-    expect(await screen.findByText("En ce moment")).toBeInTheDocument();
+    expect(await screen.findByText(/Prochaine action/)).toBeInTheDocument();
     expect(screen.queryByText(/Mise en route/)).not.toBeInTheDocument();
   });
 });
