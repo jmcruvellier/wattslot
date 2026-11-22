@@ -220,14 +220,6 @@
     "notices": "Hinweise zum Plan",
     "banner": {
       "departure_title": "Batterie zum Tagesbeginn",
-      "departure": {
-        "measured": "Stand um Mitternacht: {kwh} kWh ({pct} %) gemessen",
-        "plan": "Stand um Mitternacht: {kwh} kWh ({pct} %) laut Plan",
-        "tonight": "Stand um Mitternacht: {kwh} kWh ({pct} %), für heute Mitternacht erwarteter Ladestand",
-        "now": "Stand um Mitternacht: {kwh} kWh ({pct} %), aktueller Ladestand mangels Tagesplan",
-        "eve": "Stand um Mitternacht: {kwh} kWh ({pct} %), für das Ende des Vortags erwarteter Ladestand",
-        "expected": "der Plan vom Vorabend ({time}) erwartete {kwh} kWh ({pct} %)"
-      },
       "departure_badge": {
         "ok": "wie erwartet",
         "medium": "Abweichung",
@@ -236,10 +228,6 @@
         "approximate": "ungefähr"
       },
       "charge": {
-        "today": "Letzte Vollladung: heute",
-        "yesterday": "Letzte Vollladung: gestern",
-        "days": "Letzte Vollladung: vor {days} Tagen",
-        "none": "Keine Vollladung seit {days} Tagen",
         "priority": "Vorrangtag für das Laden"
       },
       "weather_title": "Wetter",
@@ -250,13 +238,7 @@
           "cloudy": "Bedeckter Tag",
           "unknown": "Erzeugung"
         },
-        "forecast": "{kwh} kWh prognostiziert",
-        "measured": "{kwh} kWh gemessen",
-        "share": "{pct} % des besten Tages der letzten {days} Tage ({kwh} kWh)",
-        "vs_today": "{gap} % im Vergleich zu heute ({kwh} kWh prognostiziert)",
         "no_reading": "noch keine Messung",
-        "reading": "bei der Messung: {mes} kWh gemessen, {gap}gegenüber der letzten Prognose ({est} kWh)",
-        "day": "{gap}gegenüber der Prognose von {time} ({est} kWh)",
         "badge": {
           "reliable": "zuverlässige Prognose",
           "moderate": "mäßige Abweichung",
@@ -266,11 +248,6 @@
       },
       "equip_title": "Geräte",
       "equip": {
-        "on_time": "{device} pünktlich ({time}), {kwh}",
-        "shifted": "{device} {shift} ({actual} statt {planned}), {kwh}",
-        "no_cycle": "{device}: kein Zyklus ({start}–{end}, {kwh} kWh geplant)",
-        "planned": "{device} geplant um {start}",
-        "unplanned": "{device} nicht geplant ({time}), {kwh} kWh",
         "running": "läuft",
         "none": "Kein Gerät geplant oder gestartet",
         "badge": {
@@ -283,7 +260,30 @@
       "departure_tile": "Batterie um Mitternacht",
       "weather_tile_forecast": "Sonne erwartet",
       "weather_tile_measured": "Sonne gemessen",
-      "equip_tile": "Geräte"
+      "equip_tile": "Geräte",
+      "rows": {
+        "src_measured": "Um 0 Uhr gemessen",
+        "src_plan": "Laut Plan",
+        "src_tonight": "Heute um 24 Uhr erwartet",
+        "src_now": "Aktueller Stand",
+        "src_eve": "Für das Ende des Vortags erwartet",
+        "expected": "Am Vortag geplant ({time})",
+        "gap": "Abweichung",
+        "full_charge": "Letzte Ladung auf 100 %",
+        "none_since": "keine seit {days} Tagen",
+        "best_day": "Bester Tag ({days} T.)",
+        "vs_today": "Gegenüber heute",
+        "at_reading": "Bei der Ablesung gemessen",
+        "last_forecast": "Letzte Prognose",
+        "forecast_at": "Prognose von {time}",
+        "reading": "Ablesung",
+        "full_sun": "Volle Sonne",
+        "started": "um {time} gestartet",
+        "started_shifted": "um {time} gestartet ({shift})",
+        "not_started": "nicht gestartet ({start}–{end})",
+        "planned": "für {time} geplant",
+        "unplanned": "außerhalb des Plans, {time}"
+      }
     },
     "summary": {
       "cards": {

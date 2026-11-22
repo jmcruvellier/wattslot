@@ -220,14 +220,6 @@
     "notices": "Avvisi del piano",
     "banner": {
       "departure_title": "Batteria a inizio giornata",
-      "departure": {
-        "measured": "Partenza a mezzanotte: {kwh} kWh ({pct} %) misurati",
-        "plan": "Partenza a mezzanotte: {kwh} kWh ({pct} %) secondo il piano",
-        "tonight": "Partenza a mezzanotte: {kwh} kWh ({pct} %), livello previsto stanotte a mezzanotte",
-        "now": "Partenza a mezzanotte: {kwh} kWh ({pct} %), livello attuale in mancanza del piano del giorno",
-        "eve": "Partenza a mezzanotte: {kwh} kWh ({pct} %), livello previsto alla fine del giorno prima",
-        "expected": "il piano della sera prima ({time}) prevedeva {kwh} kWh ({pct} %)"
-      },
       "departure_badge": {
         "ok": "come previsto",
         "medium": "scarto",
@@ -236,10 +228,6 @@
         "approximate": "approssimativo"
       },
       "charge": {
-        "today": "Ultima carica completa: oggi",
-        "yesterday": "Ultima carica completa: ieri",
-        "days": "Ultima carica completa: {days} giorni fa",
-        "none": "Nessuna carica completa da {days} giorni",
         "priority": "giorno prioritario per la carica"
       },
       "weather_title": "Meteo",
@@ -250,13 +238,7 @@
           "cloudy": "Giornata nuvolosa",
           "unknown": "Produzione"
         },
-        "forecast": "{kwh} kWh previsti",
-        "measured": "{kwh} kWh misurati",
-        "share": "{pct} % del giorno migliore degli ultimi {days} giorni ({kwh} kWh)",
-        "vs_today": "{gap} % rispetto a oggi ({kwh} kWh previsti)",
         "no_reading": "ancora nessuna lettura",
-        "reading": "alla lettura: {mes} kWh misurati, {gap}rispetto all'ultima previsione ({est} kWh)",
-        "day": "{gap}rispetto alla previsione delle {time} ({est} kWh)",
         "badge": {
           "reliable": "previsione affidabile",
           "moderate": "scarto moderato",
@@ -266,11 +248,6 @@
       },
       "equip_title": "Apparecchi",
       "equip": {
-        "on_time": "{device} in orario ({time}), {kwh}",
-        "shifted": "{device} {shift} ({actual} invece di {planned}), {kwh}",
-        "no_cycle": "{device}: nessun ciclo ({start}–{end}, {kwh} kWh previsti)",
-        "planned": "{device} previsto alle {start}",
-        "unplanned": "{device} non previsto ({time}), {kwh} kWh",
         "running": "in corso",
         "none": "Nessun apparecchio previsto o avviato",
         "badge": {
@@ -283,7 +260,30 @@
       "departure_tile": "Batteria a mezzanotte",
       "weather_tile_forecast": "Sole previsto",
       "weather_tile_measured": "Sole misurato",
-      "equip_tile": "Apparecchi"
+      "equip_tile": "Apparecchi",
+      "rows": {
+        "src_measured": "Misurato alle 0",
+        "src_plan": "Secondo il piano",
+        "src_tonight": "Previsto stasera alle 24",
+        "src_now": "Livello attuale",
+        "src_eve": "Previsto a fine giornata precedente",
+        "expected": "Previsto il giorno prima ({time})",
+        "gap": "Scarto",
+        "full_charge": "Ultima carica al 100%",
+        "none_since": "nessuna da {days} giorni",
+        "best_day": "Giorno migliore ({days} g)",
+        "vs_today": "Rispetto a oggi",
+        "at_reading": "Misurato alla lettura",
+        "last_forecast": "Ultima previsione",
+        "forecast_at": "Previsione delle {time}",
+        "reading": "Lettura",
+        "full_sun": "Pieno sole",
+        "started": "avviato alle {time}",
+        "started_shifted": "avviato alle {time} ({shift})",
+        "not_started": "non avviato ({start}–{end})",
+        "planned": "previsto alle {time}",
+        "unplanned": "fuori piano, {time}"
+      }
     },
     "summary": {
       "cards": {

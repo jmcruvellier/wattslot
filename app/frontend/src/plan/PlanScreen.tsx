@@ -29,7 +29,9 @@ export default function PlanScreen() {
   // Indicateur mis en avant et indicateurs masqués, choisis dans « Personnaliser » (Courbes).
   const { layout } = useDashboardLayout();
 
-  const requests = <RequestsSection />;
+  // « Fait » et « C'est lancé » sous Hier et Aujourd'hui seulement : sous un jour à venir (et la
+  // semaine), une demande ne peut pas avoir été faite, seulement annulée.
+  const requests = <RequestsSection future={tab !== "yesterday" && tab !== "today"} />;
 
   return (
     <section aria-labelledby="plan-title">
@@ -60,7 +62,7 @@ export default function PlanScreen() {
             </div>
             <div className="plan-side">
               <div className="plan-insights">
-                <IndicatorsCard view={load.view} layout={layout.indicators} compact expandable />
+                <IndicatorsCard view={load.view} layout={layout.indicators} compact all />
                 <BatteriesCard view={load.view} />
                 <PhasesCard view={load.view} />
               </div>

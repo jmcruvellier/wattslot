@@ -220,14 +220,6 @@
     "notices": "Plan warnings",
     "banner": {
       "departure_title": "Battery start",
-      "departure": {
-        "measured": "Start at midnight: {kwh} kWh ({pct}%) measured",
-        "plan": "Start at midnight: {kwh} kWh ({pct}%) from the plan",
-        "tonight": "Start at midnight: {kwh} kWh ({pct}%), SoC expected tonight at midnight",
-        "now": "Start at midnight: {kwh} kWh ({pct}%), current SoC for lack of today's plan",
-        "eve": "Start at midnight: {kwh} kWh ({pct}%), SoC expected at the end of the previous day",
-        "expected": "the plan of the evening before ({time}) expected {kwh} kWh ({pct}%)"
-      },
       "departure_badge": {
         "ok": "as expected",
         "medium": "gap",
@@ -236,10 +228,6 @@
         "approximate": "approximate"
       },
       "charge": {
-        "today": "Last full charge: today",
-        "yesterday": "Last full charge: yesterday",
-        "days": "Last full charge: {days} days ago",
-        "none": "No full charge for {days} days",
         "priority": "priority day for charging"
       },
       "weather_title": "Weather",
@@ -250,13 +238,7 @@
           "cloudy": "Cloudy day",
           "unknown": "Production"
         },
-        "forecast": "{kwh} kWh forecast",
-        "measured": "{kwh} kWh measured",
-        "share": "{pct}% of the best day of the last {days} days ({kwh} kWh)",
-        "vs_today": "{gap}% compared with today ({kwh} kWh forecast)",
         "no_reading": "no reading yet",
-        "reading": "at the reading: {mes} kWh measured, {gap}compared with the last forecast ({est} kWh)",
-        "day": "{gap}compared with the forecast of {time} ({est} kWh)",
         "badge": {
           "reliable": "reliable forecast",
           "moderate": "moderate gap",
@@ -266,11 +248,6 @@
       },
       "equip_title": "Appliances",
       "equip": {
-        "on_time": "{device} on time ({time}), {kwh}",
-        "shifted": "{device} {shift} ({actual} instead of {planned}), {kwh}",
-        "no_cycle": "{device}: no cycle ({start}–{end}, {kwh} kWh planned)",
-        "planned": "{device} planned at {start}",
-        "unplanned": "{device} not planned ({time}), {kwh} kWh",
         "running": "running",
         "none": "No appliance planned or started",
         "badge": {
@@ -283,7 +260,30 @@
       "departure_tile": "Battery at midnight",
       "weather_tile_forecast": "Sun forecast",
       "weather_tile_measured": "Sun measured",
-      "equip_tile": "Appliances"
+      "equip_tile": "Appliances",
+      "rows": {
+        "src_measured": "Measured at midnight",
+        "src_plan": "From the plan",
+        "src_tonight": "Expected tonight at midnight",
+        "src_now": "Current level",
+        "src_eve": "Expected at the end of the day before",
+        "expected": "Planned the day before ({time})",
+        "gap": "Gap",
+        "full_charge": "Last charge to 100%",
+        "none_since": "none for {days} days",
+        "best_day": "Best day ({days} d)",
+        "vs_today": "Compared with today",
+        "at_reading": "Measured at the reading",
+        "last_forecast": "Latest forecast",
+        "forecast_at": "Forecast of {time}",
+        "reading": "Reading",
+        "full_sun": "Peak sun",
+        "started": "started at {time}",
+        "started_shifted": "started at {time} ({shift})",
+        "not_started": "not started ({start}–{end})",
+        "planned": "planned at {time}",
+        "unplanned": "outside the plan, {time}"
+      }
     },
     "summary": {
       "cards": {

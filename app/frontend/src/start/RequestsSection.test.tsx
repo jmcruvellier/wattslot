@@ -54,15 +54,18 @@ describe("RequestsSection", () => {
     vi.restoreAllMocks();
   });
 
-  it("liste les demandes en cours, une ligne chacune, ses boutons repliés", async () => {
+  it("liste les demandes en cours : l'appareil, son échéance, et ses boutons toujours visibles", async () => {
     // Ni formulaire ni texte d'introduction ici : une demande passe par « Demander un appareil ».
     const calls = mockApi();
     renderSection();
 
     const list = await screen.findByRole("list", { name: "Demandes en cours" });
-    const row = within(list).getByText("Lave-vaisselle").closest("details");
-    expect(row).not.toHaveAttribute("open");
+    const row = within(list).getByText("Lave-vaisselle").closest("li") as HTMLElement;
     expect(row).toHaveTextContent("au plus tard dimanche 18 octobre");
+    // Pas de dépliant : « Fait » et « Annuler » sont sous les yeux.
+    expect(row.querySelector("details")).toBeNull();
+    expect(within(row).getByRole("button", { name: "Fait" })).toBeVisible();
+    expect(within(row).getByRole("button", { name: "Annuler" })).toBeVisible();
     expect(screen.queryByLabelText("Au plus tard le")).toBeNull();
     expect(screen.queryByText(/Demandez qu'un appareil tourne/)).toBeNull();
 
@@ -112,6 +115,20 @@ describe("RequestsSection", () => {
     // Un cycle après le premier : sa déclaration change le plan, le calcul est relancé.
     expect(calls.some((c) => c.url === "api/planning/run" && c.method === "POST")).toBe(true);
     expect(screen.getByText("marqué comme lancé")).toBeInTheDocument();
+  });
+
+  it("sous un jour à venir : une demande s'annule, mais ne peut pas avoir été faite ni lancée", async () => {
+    // Onglets Demain et suivants de Planning (22/11/2026 : « Fait » proposé pour demain).
+    mockApi(DEVICES, [{ ...OPEN, cycle: "Lave-vaisselle" }]);
+    render(
+      <I18nProvider>
+        <RequestsSection future />
+      </I18nProvider>,
+    );
+
+    expect(await screen.findByRole("button", { name: "Annuler" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Fait" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "C'est lancé" })).toBeNull();
   });
 
   it("ne montre rien sans appareil à lancer", async () => {

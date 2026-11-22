@@ -160,7 +160,7 @@ describe("PlanScreen", () => {
     const names = (await screen.findAllByRole("tab")).map((tab) => tab.textContent);
     expect(names).toEqual(["Hier", "Aujourd'hui", "Demain", "J+2", "J+3", "J+4", "J+5", "J+6", "Semaine"]);
     await user.click(screen.getByRole("tab", { name: "J+3" }));
-    expect(await screen.findByText(/SoC prévu à la fin de la veille/)).toBeInTheDocument();
+    expect(await screen.findByText("Prévu à la fin de la veille")).toBeInTheDocument();
     expect(window.localStorage.getItem("plan.tab")).toBe("d3");
     await user.click(screen.getByRole("tab", { name: "J+5" }));
     expect(await screen.findByText(/Pas encore de plan pour cette vue/)).toBeInTheDocument();

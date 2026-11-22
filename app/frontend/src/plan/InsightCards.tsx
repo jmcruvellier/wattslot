@@ -12,9 +12,9 @@ import type { DayView, Indicators, ObjectivePreset } from "./types";
 import Icon from "../ui/Icon";
 import OtherStarts from "./OtherStarts";
 import { QualityBadge } from "./QualityBadge";
-import { useShowMore } from "../ui/ShowMore";
 
-// Version compacte (Aujourd'hui, Planning) : les quatre premières lignes, libellés courts.
+// Version compacte (Aujourd'hui, Planning) : libellés courts ; les quatre premières lignes sur
+// Aujourd'hui, toutes dans Planning.
 const COMPACT_ROWS = 4;
 const SHORT_LABELS: IndicatorKey[] = ["cost_eur", "export_kwh"];
 
@@ -41,12 +41,12 @@ export function IndicatorsCard({
   view,
   layout,
   compact = false,
-  expandable = false,
+  all = false,
 }: {
   view: DayView;
   layout: IndicatorLayout;
   compact?: boolean; // panneau à petit titre : quatre lignes, libellés courts, sans phrase
-  expandable?: boolean; // compact : « Afficher les autres » déplie le reste (Planning)
+  all?: boolean; // compact : toutes les lignes (Planning)
 }) {
   const { t } = useI18n();
   const { money } = useCurrency();
@@ -56,9 +56,8 @@ export function IndicatorsCard({
   const keys = availableIndicators(view).filter((key) => !layout.hidden.includes(key));
   // L'indicateur visé d'abord.
   const sorted = main && keys.includes(main) ? [main, ...keys.filter((key) => key !== main)] : keys;
-  const { shown, toggle } = useShowMore(sorted, compact ? COMPACT_ROWS : sorted.length);
   if (!indicators) return null;
-  const rows = compact && !expandable ? sorted.slice(0, COMPACT_ROWS) : shown;
+  const rows = compact && !all ? sorted.slice(0, COMPACT_ROWS) : sorted;
   return (
     <article className={compact ? "ui-card ui-panel" : "card"} aria-label={t("plan.indicators.title")}>
       {/* Qualité des prévisions au coin droit, comme la tendance des cartes de la vue Aujourd'hui. */}
@@ -94,7 +93,6 @@ export function IndicatorsCard({
           </div>
         ))}
       </dl>
-      {compact && expandable && toggle}
     </article>
   );
 }
