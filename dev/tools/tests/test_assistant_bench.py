@@ -151,7 +151,7 @@ def test_the_summary_gives_one_dot_per_run(tmp_path: Path) -> None:
     assert ab.load_profiles(profiles) == {"a": ab.Profile("a", "m", True, {})}
 
 
-def test_the_suite_covers_the_eighteen_questions() -> None:
+def test_the_suite_covers_the_nineteen_questions() -> None:
     numbers = [t.question for s in ab.SCENARIOS for t in s.turns if t.question]
-    assert numbers == list(range(1, 19))
+    assert numbers == list(range(1, 20))
     assert set(json.loads(ab.PROFILES.read_text(encoding="utf-8"))) >= {"qwen3", "lfm3"}

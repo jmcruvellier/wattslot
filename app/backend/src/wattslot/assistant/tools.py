@@ -23,6 +23,7 @@ from wattslot.languages import number
 from wattslot.planning.explain import catalog
 from wattslot.planning.journal import cycle_appliances
 from wattslot.planning.tariff_sources import needs_states, tariff_context
+from wattslot.planning.warning_texts import hour as hour_text
 from wattslot.planning.warning_texts import long_date
 from wattslot.tariff import NO_CONTEXT, Tariff, TariffContext, TariffKind, off_peak_ranges
 from wattslot.views.day import DayView
@@ -71,6 +72,9 @@ HOME_GROUPS = (
     "other_loads",
 )
 OBJECTIVE_TEXT = {"autonomy": "import"}  # objectif → texte du catalogue (« objective.… »)
+# Dates relatives acceptées par request_device, en anglais et dans les langues de l'application.
+TODAY_WORDS = ("today", "aujourd'hui", "heute", "hoy", "oggi", "vandaag")
+TOMORROW_WORDS = ("tomorrow", "demain", "morgen", "mañana", "domani")
 # Une question de request_device vaut confirmation pendant ce délai.
 PENDING_FOR = timedelta(minutes=10)
 FRESH = timedelta(hours=2)  # au-delà, un relevé ne dit plus « en ce moment »
@@ -928,10 +932,11 @@ async def get_problems(
     }
 
 
-def _pending(state: Any) -> dict[tuple[str, date | None], datetime]:
-    """Questions posées par request_device et pas encore confirmées : (équipement, date limite)
-    → moment de la question. En mémoire : une question ne survit pas à un redémarrage."""
-    found: dict[tuple[str, date | None], datetime] | None = getattr(
+def _pending(state: Any) -> dict[tuple[str, date | None, int | None], datetime]:
+    """Questions posées par request_device et pas encore confirmées : (équipement, date limite,
+    heure limite) → moment de la question. En mémoire : une question ne survit pas à un
+    redémarrage."""
+    found: dict[tuple[str, date | None, int | None], datetime] | None = getattr(
         state, "assistant_pending", None
     )
     if found is None:
@@ -941,9 +946,14 @@ def _pending(state: Any) -> dict[tuple[str, date | None], datetime]:
 
 
 def request_device(
-    state: Any, device: str, latest_date: str | None = None, confirm: bool = False
+    state: Any,
+    device: str,
+    latest_date: str | None = None,
+    confirm: bool = False,
+    finish_hour: int | None = None,
 ) -> dict[str, Any]:
-    """Demande pour un équipement (lot 4.5), au plus tard ``latest_date`` (AAAA-MM-JJ). Le
+    """Demande pour un équipement (lot 4.5), au plus tard ``latest_date`` (AAAA-MM-JJ), cycle
+    terminé avant ``finish_hour`` (1 à 23) le jour où il tourne (issue 273). Le
     calcul suivant la place. Si l'équipement a déjà une demande en attente, c'est un cycle de
     plus qui est demandé (deux lessives le même jour) : la question le dit, et la demande
     s'ajoute à la première au lieu d'en changer la date.
@@ -969,12 +979,18 @@ def request_device(
             "to start it themselves; it can be requested once its cycles are known.",
         }
     today = datetime.now(state.raw.zone).date()
-    # « Avant demain soir » : les modèles passent « tomorrow » sans connaître la date du jour.
-    relative = {"today": today, "tomorrow": today + timedelta(days=1)}
+    # « Avant demain soir » : les modèles passent « tomorrow » sans connaître la date du jour,
+    # ou le mot de la question (« demain » refusé : réponse incohérente, banc du 22/11/2026).
+    relative = {
+        **dict.fromkeys(TODAY_WORDS, today),
+        **dict.fromkeys(TOMORROW_WORDS, today + timedelta(days=1)),
+    }
     latest = None
     if latest_date:
         try:
-            latest = relative.get(latest_date.strip().lower()) or date.fromisoformat(latest_date)
+            # Apostrophe typographique ramenée à l'apostrophe droite.
+            word = latest_date.strip().lower().replace(chr(0x2019), "'")
+            latest = relative.get(word) or date.fromisoformat(latest_date)
         except ValueError:
             return {
                 "error": "invalid_date",
@@ -985,12 +1001,18 @@ def request_device(
                 "error": "invalid_date",
                 "hint": f"The date is in the past; today is {today.isoformat()}.",
             }
+    if finish_hour is not None and not 1 <= finish_hour <= 23:
+        return {
+            "error": "invalid_hour",
+            "hint": "finish_hour is a whole hour of the day from 1 to 23 (12 for noon); leave "
+            "it out when the user gives no time.",
+        }
     key = next(a.key for a in requestable if a.name == name)
     now = datetime.now(UTC)
     pending = _pending(state)
     another = user_requests.waiting(state.database, key)
     if not confirm:
-        pending[(key, latest)] = now
+        pending[(key, latest, finish_hour)] = now
         lang = language(state)
         texts = catalog(lang)
         # Demande déjà en attente pour lui : la question annonce un cycle de plus.
@@ -1000,26 +1022,36 @@ def request_device(
             if latest
             else texts[text].format(device=name)
         )
+        if finish_hour is not None:
+            # L'heure limite entre parenthèses, après la question. En tête (« Cycle à terminer
+            # avant 12h. »), le modèle répondait à un refus « la demande est annulée », comme
+            # si la demande déjà en attente l'était (banc du 22/11/2026).
+            limit = texts["assistant.request_finish"].format(hour=hour_text(finish_hour, lang))
+            question = f"{question} ({limit})"
         return {
             "device": name,
             "latest_date": latest.isoformat() if latest else None,
+            **({"finish_hour": finish_hour} if finish_hour is not None else {}),
             "filed": False,
             "another_cycle": another,
             "question": question,
             "next": "Nothing filed yet. Ask the user this question as it is. Only if they agree, "
-            "call again with the same device and latest_date and confirm true.",
+            "call again with the same device, latest_date and finish_hour and confirm true.",
         }
-    asked = pending.pop((key, latest), None)
+    asked = pending.pop((key, latest, finish_hour), None)
     if asked is None or now - asked > PENDING_FOR:
         return {
             "error": "not_asked",
             "hint": "Nothing filed. Call request_device without confirm, ask the user the "
             "question it returns and wait for their answer.",
         }
-    found = user_requests.ask(state.database, key, latest, now, another=another)
+    found = user_requests.ask(
+        state.database, key, latest, now, another=another, finish_hour=finish_hour
+    )
     return {
         "device": name,
         "latest_date": found.latest.isoformat() if found.latest else None,
+        **({"finish_hour": found.finish_hour} if found.finish_hour is not None else {}),
         "filed": True,
         "another_cycle": another,
         "status": found.status.value,
@@ -1049,6 +1081,12 @@ def get_requests(state: Any) -> dict[str, Any]:
             ),
             "asked_on": _when(r.created_at.astimezone(state.raw.zone).date(), today, lang),
             "latest_date": _when(r.latest, today, lang) if r.latest else None,
+            # En clair (« 12h », « 12 PM ») : un nombre seul était lu comme une durée.
+            **(
+                {"finished_before": hour_text(r.finish_hour, lang)}
+                if r.finish_hour is not None
+                else {}
+            ),
             **({"launched_on": _when(r.launched_on, today, lang)} if r.launched_on else {}),
         }
 

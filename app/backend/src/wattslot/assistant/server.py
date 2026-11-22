@@ -107,12 +107,15 @@ def build(state: Callable[[], Any], problems: Callable[[], Awaitable[Sequence[An
 
     @server.tool(annotations=REQUEST)
     def request_device(
-        device: str, latest_date: str | None = None, confirm: bool = False
+        device: str,
+        latest_date: str | None = None,
+        confirm: bool = False,
+        finish_hour: int | None = None,
     ) -> dict[str, Any]:
-        """Run an appliance at the best time, by latest_date (today, tomorrow, YYYY-MM-DD); one
-        more cycle if already requested. First without confirm: nothing is filed, ask the user
-        the returned question; then confirm true."""
-        return tools.request_device(state(), device, latest_date, confirm)
+        """Run an appliance at the best time, by latest_date (today, tomorrow, YYYY-MM-DD),
+        done before finish_hour (1-23); one more cycle if pending. First without
+        confirm: ask the user the returned question, then confirm true."""
+        return tools.request_device(state(), device, latest_date, confirm, finish_hour)
 
     return server
 

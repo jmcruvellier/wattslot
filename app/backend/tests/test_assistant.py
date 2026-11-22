@@ -490,7 +490,7 @@ def test_request_device_files_a_request_like_my_requests(api: TestClient) -> Non
 
     unknown = _call(api, "request_device", {"device": "voiture"})
     assert unknown["error"] == "unknown_device" and "Lave-linge" in unknown["devices"]
-    for wrong in ("demain", "2001-01-01"):
+    for wrong in ("bientôt", "2001-01-01"):
         found = _call(api, "request_device", {"device": "Lave-linge", "latest_date": wrong})
         assert found["error"] == "invalid_date" and "today is 20" in found["hint"]
 
@@ -528,6 +528,41 @@ def test_request_device_understands_today_and_tomorrow(api: TestClient) -> None:
     found = _call(api, "request_device", {"device": "Lave-linge", "latest_date": "Tomorrow"})
     assert found["latest_date"] == (today + timedelta(days=1)).isoformat()
     assert "Ask the user this question" in found["next"]
+    # Le mot de la question, dans la langue de l'utilisateur : « demain » était refusé.
+    for word, days in (("demain", 1), ("Aujourd'hui", 0), ("morgen", 1), ("oggi", 0)):
+        found = _call(api, "request_device", {"device": "Lave-linge", "latest_date": word})
+        assert found["latest_date"] == (today + timedelta(days=days)).isoformat(), word
+
+
+def test_request_device_with_a_finish_hour(api: TestClient) -> None:
+    """« Lance le lave-linge pour qu'il soit terminé avant midi » (issue 273)."""
+    home_model.save(api.app.state.graph, HOME)  # type: ignore[attr-defined]
+    for wrong in (0, 24):
+        refused = _call(api, "request_device", {"device": "Lave-linge", "finish_hour": wrong})
+        assert refused["error"] == "invalid_hour"
+    asked = _call(api, "request_device", {"device": "Lave-linge", "finish_hour": 12})
+    assert asked["filed"] is False and asked["finish_hour"] == 12
+    # L'heure limite en clair, entre parenthèses après la question.
+    assert asked["question"].startswith("Faire tourner « Lave-linge »")
+    assert asked["question"].endswith("je dépose la demande ? (à terminer avant 12h)")
+    assert "finish_hour" in asked["next"]
+    # La question vaut pour cette heure limite seulement.
+    other = _call(api, "request_device", {"device": "Lave-linge", "confirm": True})
+    assert other["error"] == "not_asked" and api.get("/api/requests").json() == []
+
+    filed = _call(
+        api, "request_device", {"device": "Lave-linge", "finish_hour": 12, "confirm": True}
+    )
+    assert filed["filed"] is True and filed["finish_hour"] == 12
+    (opened,) = api.get("/api/requests").json()
+    assert opened["finish_hour"] == 12
+    (listed,) = _call(api, "get_requests")["open"]
+    assert listed["finished_before"] == "12h"
+    # Sans heure limite, ni la question ni la liste n'en parlent.
+    plain = _call(api, "request_device", {"device": "Lave-linge"})
+    assert "finish_hour" not in plain and plain["question"].startswith("« Lave-linge » a déjà")
+    for lang in LANGUAGES:
+        assert "{hour}" in catalog(lang)["assistant.request_finish"]
 
 
 def test_the_tool_schemas_stay_under_the_token_budget(api: TestClient) -> None:
