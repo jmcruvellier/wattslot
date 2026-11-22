@@ -2,7 +2,8 @@
 // plus tard tel jour, sans créer de liste de tâches dans Home Assistant. Le calcul place la
 // demande comme une tâche « à la demande » de HA ; elle devient « faite » le lendemain du
 // lancement constaté, ou à la main. Ici, la liste seulement : pour chaque demande, l'appareil,
-// à droite son échéance, et dessous ses boutons, toujours visibles. Sous un jour de Planning
+// à droite où elle en est (et son heure de fin souhaitée), et dessous ses boutons, toujours
+// visibles. Sous un jour de Planning
 // (`day`), seulement les demandes de ce jour : celles que le calcul y place ou qui y ont été
 // lancées (`planned_day`, donné par le serveur) ; sous Aujourd'hui (`today`), aussi celles qu'il
 // n'a encore placées nulle part. Sans `day` (Semaine), toutes, avec leur jour prévu. Sous un
@@ -49,10 +50,13 @@ export default function RequestsSection({
   future = false,
   day: shownDay,
   today = false,
+  computedAt = null,
 }: {
   future?: boolean; // jour à venir ou semaine : ni « Fait » ni « C'est lancé »
   day?: string; // jour affiché (AAAA-MM-JJ) : ses demandes seulement ; aucun : toutes
   today?: boolean; // le jour affiché est aujourd'hui : les demandes pas encore placées aussi
+  // Heure du calcul du plan affiché : une demande déposée après lui n'y est pas encore.
+  computedAt?: string | null;
 }) {
   const { language, t } = useI18n();
   const [load, setLoad] = useState<Load>({ status: "loading" });
@@ -115,24 +119,29 @@ export default function RequestsSection({
 
   const name = (request: UserRequest) => names.get(request.device) ?? request.device;
 
-  // Où en est une demande en cours : lancée, déclarée lancée, ou son échéance.
+  // Où en est une demande en cours : lancée, déclarée lancée, pas encore calculée ou placée ; sinon rien,
+  // sauf l'heure de fin souhaitée si elle en a une. Sous un jour, sa date ne se redit pas (« au
+  // plus tard lundi » sous lundi n'apprenait rien, et passait pour une échéance qu'on n'avait
+  // pas donnée) ; sous Semaine, le jour où elle tourne.
   const state = (request: UserRequest) => {
-    if (request.launched_on) return t("requests.state_launched");
-    if (request.declared) return t("requests.state_declared");
-    const text = request.latest
-      ? t("requests.state_latest", { latest: day(request.latest) })
-      : t("requests.state_asap");
-    const asked =
-      request.finish_hour == null
-        ? text
-        : t("requests.with_finish", { request: text, hour: hour(request.finish_hour, language) });
-    // Pas encore placée par le calcul ; ou, sous Semaine, le jour qu'il a choisi pour une
-    // demande sans date (une demande datée tourne le jour de son échéance, déjà dit).
-    if (request.planned_day == null) return `${asked} · ${t("requests.not_placed")}`;
-    if (shownDay === undefined && !request.latest) {
-      return `${asked} · ${t("requests.planned_on", { day: day(request.planned_day) })}`;
+    const week = shownDay === undefined;
+    if (request.launched_on) {
+      return week ? `${t("plan.agenda.launched")} · ${day(request.launched_on)}` : t("plan.agenda.launched");
     }
-    return asked;
+    if (request.declared) return t("requests.state_declared");
+    // Déposée après le calcul du plan affiché : il ne la connaît pas encore (« La journée » ne
+    // la montre pas) ; le prochain calcul, ou « Calculer », la placera.
+    const pending = computedAt != null && new Date(request.created_at) > new Date(computedAt);
+    const when = pending
+      ? t("requests.not_computed")
+      : request.planned_day == null
+        ? t("requests.not_placed")
+        : week
+          ? t("requests.planned_on", { day: day(request.planned_day) })
+          : null;
+    const finish =
+      request.finish_hour == null ? null : t("requests.state_finish", { hour: hour(request.finish_hour, language) });
+    return [when, finish].filter(Boolean).join(" · ");
   };
 
   return (

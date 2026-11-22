@@ -105,7 +105,7 @@ describe("Agenda", () => {
   // À droite d'un appareil : son énergie prévue, ou « lancé · … » une fois vu dans les mesures.
   const washer = TODAY.timeline.statuses.find((status) => status.device === "Lave-linge");
   const planned = TODAY.timeline.rows.find((row) => row.device === "Lave-linge")?.planned[0].energy_kwh ?? 0;
-  const kwh1 = (value: number) => value.toFixed(1).replace(".", ",");
+  const kwh1 = (value: number) => value.toFixed(2).replace(".", ","); // deux décimales, comme la tuile
   const energy =
     washer && washer.actual_start_min !== null
       ? `lancé · ${kwh1(washer.actual_kwh ?? planned)} kWh`

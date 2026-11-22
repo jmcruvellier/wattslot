@@ -254,8 +254,11 @@
           "on_time": "conforme",
           "shifted": "décalé"
         },
-        "count": "{started} lancés, {planned} prévus",
-        "nothing": "Rien de prévu"
+        "nothing": "Rien de prévu",
+        "started_one": "{n} lancé",
+        "started_other": "{n} lancés",
+        "planned_one": "{n} prévu",
+        "planned_other": "{n} prévus"
       },
       "departure_tile": "Batterie à minuit",
       "weather_tile_forecast": "Soleil prévu",
@@ -495,7 +498,6 @@
     "finish_none": "sans heure limite",
     "finish_hint": "Le cycle finira avant {hour}, le jour où il tourne ; si aucun créneau ne le permet, le plan le place quand même et le signale.",
     "waiting_finish": "Son heure limite : avant {hour}. « Changer la date » la remplace par celle choisie ici.",
-    "with_finish": "{request}, terminé avant {hour}",
     "ask": "Demander",
     "hint": "Sans date : dès que le soleil le permet. Un même appareil peut être demandé plusieurs fois : chaque demande est un cycle, placé après le précédent.",
     "change_date": "Changer la date",
@@ -518,15 +520,14 @@
     "no_device": "Aucun appareil de votre maison ne se lance à la demande.",
     "sheet_done": "Demande enregistrée : le prochain calcul la placera au meilleur moment.",
     "sheet_close": "Terminé",
-    "state_asap": "dès que possible",
-    "state_latest": "au plus tard {latest}",
-    "state_launched": "lancé aujourd'hui",
     "state_declared": "marqué comme lancé",
     "planned_on": "prévu {day}",
     "not_placed": "pas encore placée",
     "none_day": "Aucune demande ce jour-là.",
     "state_done": "fait",
-    "state_cancelled": "annulé"
+    "state_cancelled": "annulé",
+    "state_finish": "terminé avant {hour}",
+    "not_computed": "pas encore calculé"
   },
   "settings": {
     "loading": "Lecture des réglages…",

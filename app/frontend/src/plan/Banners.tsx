@@ -13,14 +13,10 @@ import { useState, type ReactNode } from "react";
 
 import type { DayView, Departure, DeviceStatus, ReadingWeather, Timeline, WeatherBanner } from "./types";
 import Icon from "../ui/Icon";
+import { wideScreen } from "./wideScreen";
 
 function Badge({ tone, children }: { tone: "ok" | "medium" | "bad" | "neutral"; children: string }) {
   return <span className={`badge badge-${tone}`}>{children}</span>;
-}
-
-/** Écran large (les tuiles sont côte à côte) : le détail y est déplié d'emblée. */
-function wideScreen(): boolean {
-  return typeof window.matchMedia === "function" && window.matchMedia("(min-width: 52rem)").matches;
 }
 
 function Tile({
@@ -215,7 +211,7 @@ function deviceLine(status: DeviceStatus, t: Translate, lang: Language): [string
 
 function EquipmentPill({ timeline }: { timeline: Timeline }) {
   const { language, t } = useI18n();
-  const lines: [string, string, string][] = [
+  const judged: [string, string, string][] = [
     ...timeline.statuses.map((status) => deviceLine(status, t, language)),
     ...timeline.unplanned.map((u): [string, string, string] => [
       u.device,
@@ -223,10 +219,30 @@ function EquipmentPill({ timeline }: { timeline: Timeline }) {
       `${kwh(u.energy_kwh)} kWh`,
     ]),
   ];
+  // Jour à venir : pas de bilan au relevé, mais les créneaux prévus de la frise (la fin d'un
+  // cycle commencé la veille n'en est pas un).
+  const lines =
+    judged.length > 0
+      ? judged
+      : timeline.rows
+          .filter((row) => row.kind === "cycle")
+          .flatMap((row) =>
+            row.planned
+              .filter((bar) => !bar.carried)
+              .map((bar): [string, string, string] => [
+                bar.cycle ?? row.device,
+                t("plan.banner.rows.planned", { time: clock(bar.start_hour * 60, language) }),
+                `${kwh(bar.energy_kwh)} kWh`,
+              ]),
+          );
   // Lancés : vus dans les mesures, à l'heure, décalés ou hors plan.
   const started =
     timeline.statuses.filter((status) => status.status === "on_time" || status.status === "shifted").length +
     timeline.unplanned.length;
+  const planned = lines.length - started;
+  // « 3 lancés », « 2 prévus » ou « 2 lancés, 2 prévus » : jamais « 0 prévus » pour un jour passé.
+  const count = (kind: "started" | "planned", n: number) => t(`plan.banner.equip.${kind}_${n === 1 ? "one" : "other"}`, { n });
+  const counts = [started > 0 ? count("started", started) : null, planned > 0 ? count("planned", planned) : null];
   return (
     <Tile
       label={t("plan.banner.equip_title")}
@@ -234,7 +250,7 @@ function EquipmentPill({ timeline }: { timeline: Timeline }) {
       value={
         lines.length === 0
           ? t("plan.banner.equip.nothing")
-          : t("plan.banner.equip.count", { started, planned: lines.length - started })
+          : counts.filter(Boolean).join(", ")
       }
       badge={
         timeline.badge && (
@@ -266,7 +282,7 @@ export default function Banners({ view }: { view: DayView }) {
       {view.solar !== false && (
         <WeatherPill weather={view.weather} reading={view.cards?.weather ?? null} sun={sunWindow(view)} />
       )}
-      {view.kind !== "tomorrow" && <EquipmentPill timeline={view.timeline} />}
+      <EquipmentPill timeline={view.timeline} />
     </div>
   );
 }

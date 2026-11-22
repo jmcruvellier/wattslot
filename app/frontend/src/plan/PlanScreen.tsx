@@ -37,6 +37,7 @@ export default function PlanScreen() {
       future={tab !== "yesterday" && tab !== "today"}
       day={load.status === "day" ? load.view.day : undefined}
       today={tab === "today"}
+      computedAt={load.status === "day" || load.status === "week" ? load.view.computed_at : null}
     />
   );
 

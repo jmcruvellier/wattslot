@@ -62,7 +62,9 @@ describe("RequestsSection", () => {
 
     const list = await screen.findByRole("list", { name: "Demandes en cours" });
     const row = within(list).getByText("Lave-vaisselle").closest("li") as HTMLElement;
-    expect(row).toHaveTextContent("au plus tard dimanche 18 octobre");
+    // Sans jour affiché (Semaine) : le jour où elle tourne, pas « au plus tard ».
+    expect(row).toHaveTextContent("prévu dimanche 18 octobre");
+    expect(row).not.toHaveTextContent("au plus tard");
     // Pas de dépliant : « Fait » et « Annuler » sont sous les yeux.
     expect(row.querySelector("details")).toBeNull();
     expect(within(row).getByRole("button", { name: "Fait" })).toBeVisible();
@@ -81,7 +83,7 @@ describe("RequestsSection", () => {
     mockApi(DEVICES, [{ ...OPEN, device: "washer", finish_hour: 12 }]);
     renderSection();
 
-    expect(await screen.findByText("au plus tard dimanche 18 octobre, terminé avant 12h")).toBeInTheDocument();
+    expect(await screen.findByText("prévu dimanche 18 octobre · terminé avant 12h")).toBeInTheDocument();
     expect(screen.getByText("Lave-linge")).toBeInTheDocument();
   });
 
@@ -162,14 +164,14 @@ describe("RequestsSection", () => {
     // Aujourd'hui : rien n'y est placé, mais la demande pas encore placée s'y montre.
     const today = show({ day: "2026-10-17", today: true });
     expect(await names()).toEqual(["Sèche-linge"]);
-    expect(screen.getByText("dès que possible · pas encore placée")).toBeInTheDocument();
+    expect(screen.getByText("pas encore placée")).toBeInTheDocument();
     today.unmount();
 
     // Semaine : toutes, avec le jour choisi par le calcul pour une demande sans date.
     show({ future: true });
     expect(await names()).toEqual(["Lave-vaisselle", "Lave-linge", "Sèche-linge"]);
-    expect(screen.getByText("dès que possible · prévu dimanche 18 octobre")).toBeInTheDocument();
-    expect(screen.getByText("au plus tard lundi 19 octobre")).toBeInTheDocument();
+    expect(screen.getByText("prévu dimanche 18 octobre")).toBeInTheDocument();
+    expect(screen.getByText("prévu lundi 19 octobre")).toBeInTheDocument();
   });
 
   it("sous Hier : la demande lancée hier, même close, sans bouton", async () => {
@@ -185,6 +187,43 @@ describe("RequestsSection", () => {
     expect(row).toHaveTextContent("Lave-lingefait");
     expect(within(row).queryByRole("button")).toBeNull();
     expect(screen.queryByText("Lave-vaisselle")).toBeNull(); // demande d'un autre jour
+  });
+
+  it("sous un jour : pas de date redite, seulement l'heure de fin souhaitée s'il y en a une", async () => {
+    // 22/11/2026 : « au plus tard lundi 23 novembre » sous lundi, pour deux appareils demandés
+    // ce jour-là sans échéance voulue.
+    const plain = { ...OPEN, id: 1, device: "dishwasher", latest: "2026-10-19", planned_day: "2026-10-19" };
+    const timed = { ...OPEN, id: 2, device: "washer", latest: "2026-10-19", planned_day: "2026-10-19", finish_hour: 12 };
+    mockApi(DEVICES, [plain, timed]);
+    render(
+      <I18nProvider>
+        <RequestsSection day="2026-10-19" future />
+      </I18nProvider>,
+    );
+
+    const row = (name: string) => screen.getByText(name).closest("li") as HTMLElement;
+    await screen.findByText("Lave-vaisselle");
+    expect(row("Lave-vaisselle").querySelector(".requests-state")).toHaveTextContent("");
+    expect(row("Lave-linge").querySelector(".requests-state")).toHaveTextContent("terminé avant 12h");
+    expect(screen.queryByText(/au plus tard/)).toBeNull();
+  });
+
+  it("dit qu'une demande déposée après le calcul du plan n'est pas encore calculée", async () => {
+    // 22/11/2026 : lave-vaisselle demandé pour demain après le calcul de 22:59, absent de
+    // « La journée » sans que rien ne le dise.
+    const before = { ...OPEN, id: 1, device: "dishwasher", created_at: "2026-10-17T08:00:00Z" };
+    const after = { ...OPEN, id: 2, device: "washer", created_at: "2026-10-17T21:30:00Z" };
+    mockApi(DEVICES, [before, after]);
+    render(
+      <I18nProvider>
+        <RequestsSection day="2026-10-18" future computedAt="2026-10-17T20:59:00Z" />
+      </I18nProvider>,
+    );
+
+    const row = (name: string) => screen.getByText(name).closest("li") as HTMLElement;
+    await screen.findByText("Lave-linge");
+    expect(row("Lave-linge").querySelector(".requests-state")).toHaveTextContent("pas encore calculé");
+    expect(row("Lave-vaisselle").querySelector(".requests-state")).toHaveTextContent("");
   });
 
   it("dit quand aucune demande ne concerne le jour affiché", async () => {

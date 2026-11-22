@@ -76,15 +76,33 @@ describe("vue d'un jour", () => {
     expect(screen.getByRole("article", { name: "Production" })).not.toHaveTextContent("Journée");
   });
 
-  it("Demain : une valeur prévue par carte, pas de bilan des équipements", () => {
-    renderDay(TOMORROW);
+  it("Demain : une valeur prévue par carte, et les appareils prévus sans bilan au relevé", () => {
+    renderDay({ ...TOMORROW, timeline: { ...TOMORROW.timeline, statuses: [], unplanned: [], badge: null } });
 
-    expect(screen.queryByLabelText("Équipements")).not.toBeInTheDocument();
+    // Pas de bilan (rien n'est mesuré), mais la tuile liste les créneaux prévus de la frise.
+    const equipment = screen.getByLabelText("Équipements");
+    const cycles = TOMORROW.timeline.rows
+      .filter((row) => row.kind === "cycle")
+      .flatMap((row) => row.planned.filter((bar) => !bar.carried));
+    const count = cycles.length === 1 ? "1 prévu" : `${cycles.length} prévus`;
+    expect(within(equipment).getByText(cycles.length === 0 ? "Rien de prévu" : count)).toHaveClass("plan-tile-value");
+    expect(equipment).not.toHaveTextContent("lancé");
     expect(screen.getByRole("article", { name: "SoC max" })).toHaveTextContent("5,00 kWh 98 % · 16h");
     expect(within(screen.getByLabelText("Météo")).getByText("Par rapport à aujourd'hui").closest("div")).toHaveTextContent(
       "Par rapport à aujourd'hui−12 % · 9,5 kWh",
     );
     expect(within(screen.getByLabelText("Départ de la batterie")).getByText("fiable")).toBeInTheDocument();
+  });
+
+  it("Hier : « 3 lancés », sans « 0 prévus »", () => {
+    const [first] = TODAY.timeline.statuses;
+    const started = (device: string) => ({ ...first, device, status: "on_time" as const, actual_start_min: 600, actual_kwh: 1 });
+    renderDay({
+      ...YESTERDAY,
+      timeline: { ...YESTERDAY.timeline, statuses: [started("A"), started("B"), started("C")], unplanned: [] },
+    });
+
+    expect(within(screen.getByLabelText("Équipements")).getByText("3 lancés")).toHaveClass("plan-tile-value");
   });
 
   it("sans batterie : ni départ ni cartes de la batterie", () => {

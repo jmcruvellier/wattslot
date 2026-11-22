@@ -2,9 +2,10 @@
 // passe, et à droite sa fin (batterie) ou son énergie (appareil : « lancé · 3,8 kWh » une fois
 // vu dans les mesures). Pour Aujourd'hui, un repère « Maintenant » sépare le passé de la suite.
 // La raison d'un créneau se déplie au toucher, avec ses autres départs (Aujourd'hui) ; ce que
-// « Pourquoi ce plan » dit d'autre (la batterie, le texte entier du plan) se déplie en bas.
+// « Pourquoi ce plan » dit d'autre (la batterie, le texte entier du plan) est en bas, déplié
+// d'emblée sur un écran large comme les tuiles, avec le même chevron.
 
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
 import { useI18n } from "../i18n/I18nProvider";
 import { minuteOfDay } from "../i18n/homeTime";
@@ -14,6 +15,7 @@ import { clock, duration, hour, kwh, percent } from "./format";
 import OtherStarts from "./OtherStarts";
 import type { DayView } from "./types";
 import Icon from "../ui/Icon";
+import { wideScreen } from "./wideScreen";
 
 function nowMinute(): number {
   return minuteOfDay(); // heure de la maison, celle des heures du plan
@@ -43,10 +45,10 @@ function Entry({
     // Vu dans les mesures : l'énergie mesurée, en pastille ; sinon l'énergie prévue.
     const energy = entry.launched ? (
       <span className="badge badge-ok">
-        {t("plan.agenda.launched")} · {kwh(entry.actual_kwh ?? entry.energy_kwh, 1)} kWh
+        {t("plan.agenda.launched")} · {kwh(entry.actual_kwh ?? entry.energy_kwh)} kWh
       </span>
     ) : (
-      <span className="agenda-detail">{kwh(entry.energy_kwh, 1)} kWh</span>
+      <span className="agenda-detail">{kwh(entry.energy_kwh)} kWh</span>
     );
     if (!entry.explanation && !entry.chosen) {
       return (
@@ -124,9 +126,13 @@ export default function Agenda({
   const { language, t } = useI18n();
   const entries = agenda(view);
   const others = why ? otherExplanations(view, entries) : [];
+  const [whyOpen, setWhyOpen] = useState(wideScreen);
   const more = why && (others.length > 0 || view.recommendation !== null) && (
-    <details className="plan-why">
-      <summary>{t("plan.explanations.title")}</summary>
+    <details className="plan-why" open={whyOpen} onToggle={(event) => setWhyOpen(event.currentTarget.open)}>
+      <summary>
+        {t("plan.explanations.title")}
+        <Icon name="chevron-right" size={16} />
+      </summary>
       {others.length > 0 && (
         <ul className="explanations">
           {others.map((item, index) => (

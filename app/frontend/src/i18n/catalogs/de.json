@@ -254,8 +254,11 @@
           "on_time": "wie geplant",
           "shifted": "verschoben"
         },
-        "count": "{started} gestartet, {planned} geplant",
-        "nothing": "Nichts geplant"
+        "nothing": "Nichts geplant",
+        "started_one": "{n} gestartet",
+        "started_other": "{n} gestartet",
+        "planned_one": "{n} geplant",
+        "planned_other": "{n} geplant"
       },
       "departure_tile": "Batterie um Mitternacht",
       "weather_tile_forecast": "Sonne erwartet",
@@ -495,7 +498,6 @@
     "finish_none": "ohne Zeitlimit",
     "finish_hint": "Der Zyklus endet vor {hour} an dem Tag, an dem er läuft; lässt kein Zeitfenster das zu, plant der Plan ihn trotzdem ein und weist darauf hin.",
     "waiting_finish": "Ihr Zeitlimit: vor {hour}. „Datum ändern“ ersetzt es durch das hier gewählte.",
-    "with_finish": "{request}, fertig vor {hour}",
     "ask": "Anfragen",
     "hint": "Ohne Datum: sobald die Sonne es erlaubt. Dasselbe Gerät kann mehrmals angefragt werden: Jede Anfrage ist ein Zyklus, der nach dem vorherigen eingeplant wird.",
     "change_date": "Datum ändern",
@@ -518,15 +520,14 @@
     "no_device": "Keines Ihrer Geräte lässt sich auf Anfrage starten.",
     "sheet_done": "Anfrage gespeichert: Die nächste Berechnung legt sie auf den besten Zeitpunkt.",
     "sheet_close": "Fertig",
-    "state_asap": "so bald wie möglich",
-    "state_latest": "spätestens am {latest}",
-    "state_launched": "heute gestartet",
     "state_declared": "als gestartet markiert",
     "planned_on": "geplant {day}",
     "not_placed": "noch nicht eingeplant",
     "none_day": "Keine Anfrage an diesem Tag.",
     "state_done": "erledigt",
-    "state_cancelled": "abgebrochen"
+    "state_cancelled": "abgebrochen",
+    "state_finish": "fertig vor {hour}",
+    "not_computed": "noch nicht berechnet"
   },
   "settings": {
     "loading": "Einstellungen werden gelesen…",
