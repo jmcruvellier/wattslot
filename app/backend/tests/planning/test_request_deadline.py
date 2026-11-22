@@ -137,6 +137,27 @@ def test_no_other_start_is_proposed_further_past_the_finish_hour() -> None:
     assert "Autre départ" not in render(late.explanation, "fr")
 
 
+def test_a_late_cycle_is_explained_by_its_finish_hour_not_by_the_objective() -> None:
+    """Essai du 22/11/2026 : cycle parti aussitôt faute de pouvoir finir avant 15 h, et son
+    explication commençait par « Placé pour le coût le plus bas »."""
+    on_time = slot(planned(with_limit(10)), HEATER)
+    late = slot(planned(with_limit(6)), HEATER)
+
+    assert on_time.explanation is not None and late.explanation is not None
+    # Limite tenue : l'objectif explique le créneau, comme avant.
+    assert "objective" in [r.code for r in on_time.explanation.reasons]
+    codes_late = [r.code for r in late.explanation.reasons]
+    assert codes_late[0] == "finish_late" and "objective" not in codes_late
+    assert late.explanation.reasons[0].params == {"hour": 6}
+    text = render(late.explanation, "fr")
+    assert text.startswith(
+        "Placé au plus tôt : il ne peut pas être terminé avant 6 h, comme demandé."
+    )
+    assert "Placé pour" not in text
+    for lang in LANGUAGES:
+        assert "{" not in render(late.explanation, lang)
+
+
 def test_an_evening_request_to_finish_before_noon_goes_to_tomorrow() -> None:
     """Demande faite à 20 h, à finir avant 12 h : aucun cycle d'aujourd'hui ne la tient, la
     tâche va à demain."""

@@ -240,6 +240,12 @@ def explain(
             if chosen:
                 # Départ choisi par l'utilisateur : ni objectif ni « batterie d'abord ».
                 reasons = [Reason(code="chosen")] + [r for r in reasons if r.code != "objective"]
+            elif task.finish_min is not None and task.late(starts[task.name]):
+                # Heure limite intenable : le cycle est placé au plus tôt, pas pour l'objectif
+                # (« Placé pour le coût le plus bas » sous un cycle parti aussitôt, essai du
+                # 22/11/2026).
+                late = Reason(code="finish_late", params={"hour": task.finish_min // 60})
+                reasons = [late] + [r for r in reasons if r.code != "objective"]
             elif better and problem.battery.full_priority:
                 # Un autre départ coûterait moins : le surplus va d'abord à la charge complète.
                 reasons = [Reason(code="full_charge_first")] + [

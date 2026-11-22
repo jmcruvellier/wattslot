@@ -12,6 +12,7 @@
   "reason.launched": "Lancé à {time} : créneau calé sur le démarrage réel.",
   "reason.deadline": "{energy_kwh} kWh à fournir avant {hour} h.",
   "reason.finish_before": "Terminé avant {hour} h, comme demandé.",
+  "reason.finish_late": "Placé au plus tôt : il ne peut pas être terminé avant {hour} h, comme demandé.",
   "reason.minimum_hours": "Durée minimale restant à faire aujourd'hui : {hours} h.",
   "reason.skipped_full_charge": "Pas de fonctionnement aujourd'hui : la batterie doit faire sa charge complète (jusqu'à 100 %), le surplus solaire lui est réservé.",
   "reason.solar_hours": "{hours} h sur le surplus solaire.",
