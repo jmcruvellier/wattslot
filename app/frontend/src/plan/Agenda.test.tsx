@@ -13,7 +13,7 @@ const TOMORROW: DayView = { ...TODAY, kind: "tomorrow" };
 
 describe("construction de l'agenda", () => {
   it("lit la frise prévue comme des actions datées, triées par heure", () => {
-    const entries = agenda(TODAY);
+    const entries = agenda(TOMORROW); // jour à venir : rien de mesuré, tout vient du plan
     expect(entries.map((entry) => [entry.kind, entry.minute])).toEqual([
       ["battery_charge", 540],
       ["cycle", 600],
@@ -53,7 +53,7 @@ describe("construction de l'agenda", () => {
   it("à la même heure : les appareils, puis le maximum de la batterie avant son relais", () => {
     const [battery, washer] = TODAY.timeline.rows;
     const view: DayView = {
-      ...TODAY,
+      ...TOMORROW,
       summary: { ...TODAY.summary, soc_max_hour: 15, soc_max_percent: 32 },
       timeline: {
         ...TODAY.timeline,
@@ -74,6 +74,115 @@ describe("construction de l'agenda", () => {
       ["cycle", 900],
       ["battery_max", 900],
       ["battery_discharge", 900],
+    ]);
+  });
+
+  it("aujourd'hui : la batterie d'après ses mesures jusqu'au relevé, d'après le plan ensuite", () => {
+    // Relevé à 14 h 30. Charge prévue de 9 h à 16 h, mesurée de 9 h 15 à 14 h 15 : une seule
+    // ligne, du début mesuré à la fin prévue ; le relais du soir reste celui du plan.
+    const [battery, ...others] = TODAY.timeline.rows;
+    const view: DayView = {
+      ...TODAY,
+      timeline: {
+        ...TODAY.timeline,
+        rows: [
+          {
+            ...battery,
+            planned: [
+              { start_hour: 9, end_hour: 16, energy_kwh: 3, action: "charge", mode: null },
+              { start_hour: 19, end_hour: 23, energy_kwh: 2, action: "discharge", mode: null },
+            ],
+            actual: [
+              { start_hour: 9.25, end_hour: 14.25, energy_kwh: 2.1, action: "charge", mode: null },
+              { start_hour: 12, end_hour: 12.1, energy_kwh: 0.02, action: "discharge", mode: null }, // trop petit
+            ],
+          },
+          ...others,
+        ],
+      },
+    };
+    const moves = agenda(view).filter((entry) => entry.kind === "battery_charge" || entry.kind === "battery_discharge");
+    expect(moves.map((entry) => [entry.kind, entry.minute, "end" in entry ? entry.end : null])).toEqual([
+      ["battery_charge", 555, 960],
+      ["battery_discharge", 1140, 1380],
+    ]);
+  });
+
+  it("hier : le plus haut niveau vient des mesures, à sa place parmi les phases mesurées", () => {
+    // 22/11/2026 : le plan gardé prévoyait la décharge dès 15 h, la batterie a chargé jusqu'à
+    // 16 h ; l'agenda disait « 15 h prend le relais » puis « 16 h au plus haut ».
+    const [battery, ...others] = TODAY.timeline.rows;
+    const view: DayView = {
+      ...TODAY,
+      kind: "yesterday",
+      summary: { ...TODAY.summary, soc_max_hour: 15, soc_max_percent: 55 },
+      hours: TODAY.hours.map((hour) => ({
+        ...hour,
+        soc_percent: hour.hour === 14 ? 55 : 20,
+        soc_actual_percent: hour.hour === 15 ? 60 : hour.hour < 15 ? 20 + hour.hour : 30,
+      })),
+      timeline: {
+        ...TODAY.timeline,
+        rows: [
+          {
+            ...battery,
+            planned: [
+              { start_hour: 9, end_hour: 15, energy_kwh: 3, action: "charge", mode: null },
+              { start_hour: 15, end_hour: 24, energy_kwh: 2, action: "discharge", mode: null },
+            ],
+            actual: [
+              { start_hour: 9.25, end_hour: 16, energy_kwh: 3.2, action: "charge", mode: null },
+              { start_hour: 16, end_hour: 22, energy_kwh: 2.4, action: "discharge", mode: null },
+            ],
+          },
+          ...others,
+        ],
+      },
+    };
+    const battery_story = agenda(view)
+      .filter((entry) => entry.kind.startsWith("battery"))
+      .map((entry) => [entry.kind, entry.minute]);
+    expect(battery_story).toEqual([
+      ["battery_charge", 555],
+      ["battery_max", 960],
+      ["battery_discharge", 960],
+    ]);
+    expect(agenda(view).find((entry) => entry.kind === "battery_max")).toMatchObject({ percent: 60 });
+  });
+
+  it("place le plus haut niveau juste avant une décharge commencée dans la même heure", () => {
+    // Le niveau n'est connu qu'en fin d'heure (18 h) ; la décharge mesurée commence à 17 h 55.
+    const [battery, ...others] = TODAY.timeline.rows;
+    const view: DayView = {
+      ...TODAY,
+      kind: "yesterday",
+      hours: TODAY.hours.map((hour) => ({
+        ...hour,
+        soc_percent: 20,
+        soc_actual_percent: hour.hour === 17 ? 100 : 40,
+      })),
+      timeline: {
+        ...TODAY.timeline,
+        rows: [
+          {
+            ...battery,
+            planned: [],
+            actual: [
+              { start_hour: 9, end_hour: 17.8, energy_kwh: 4, action: "charge", mode: null },
+              { start_hour: 17.92, end_hour: 21.5, energy_kwh: 4, action: "discharge", mode: null },
+            ],
+          },
+          ...others,
+        ],
+      },
+    };
+    const story = agenda(view)
+      .filter((entry) => entry.kind.startsWith("battery"))
+      .map((entry) => [entry.kind, entry.minute]);
+    expect(story).toEqual([
+      ["battery_charge", 540],
+      ["battery_max", 1075],
+      ["battery_discharge", 1075],
     ]);
   });
 
