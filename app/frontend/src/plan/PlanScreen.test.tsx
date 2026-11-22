@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -57,20 +57,24 @@ describe("PlanScreen", () => {
     vi.restoreAllMocks();
   });
 
-  it("montre la journée en agenda, puis « Pourquoi ce plan » et les indicateurs côte à côte, sans courbes", async () => {
+  it("montre la journée en agenda, la raison de chaque créneau repliée, puis les indicateurs, sans courbes", async () => {
     mockApi(() => ({ yesterday: null, today: 1, tomorrow: null, week: null }));
     const { container } = renderScreen();
 
-    expect(await screen.findByRole("list", { name: "Agenda de la journée" })).toBeInTheDocument();
-    const insights = container.querySelector(".plan-insights");
-    const why = screen.getByRole("article", { name: "Pourquoi ce plan" });
-    const indicators = screen.getByRole("article", { name: "Indicateurs du plan" });
-    expect(why.parentElement).toBe(insights);
-    expect(indicators.parentElement).toBe(insights);
-    expect(why.compareDocumentPosition(indicators)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
-    // Un seul « Pourquoi ce plan », ouvert ; plus de courbes ni de « Personnaliser » ici.
+    const list = await screen.findByRole("list", { name: "Agenda de la journée" });
+    // La raison du créneau : repliée sous la ligne de l'appareil, plus dans une carte à part.
+    const cycle = within(list).getByText("Lancez Lave-linge").closest("details");
+    expect(cycle).not.toHaveAttribute("open");
+    expect(cycle).toHaveTextContent("Placé à 10h pour profiter du soleil.");
+    expect(screen.queryByRole("article", { name: "Pourquoi ce plan" })).toBeNull();
+    // « Pourquoi ce plan » : un seul, replié sous l'agenda, avec le texte entier du plan.
     expect(screen.getAllByText("Pourquoi ce plan")).toHaveLength(1);
-    expect(screen.getByText("Lave-linge")).toBeVisible();
+    const why = screen.getByText("Pourquoi ce plan").closest("details");
+    expect(why).not.toHaveAttribute("open");
+    expect(why).toHaveTextContent("Chauffe-eau : 15h00");
+    expect(why?.parentElement).toBe(container.querySelector(".plan-agenda"));
+    const indicators = screen.getByRole("article", { name: "Indicateurs du plan" });
+    expect(indicators.parentElement).toBe(container.querySelector(".plan-insights"));
     expect(screen.queryByText(/graphique/)).toBeNull();
     expect(screen.queryByRole("button", { name: "Personnaliser" })).toBeNull();
   });

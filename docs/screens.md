@@ -26,10 +26,9 @@ The plan in detail, for **Yesterday**, **Today**, **Tomorrow**, the following da
 
 - At the top, the computation time, **Compute** (recalculate now) and **Refresh actual data**.
 - Warnings, then three tiles for what matters, each with a figure and a badge: the battery at midnight, the day's production, the appliances started. Tap a tile for its detail (the plan of the day before, the forecast compared with what was measured, each appliance's time and energy).
-- **The day as an agenda**: what happens and when.
+- **The day as an agenda**: what happens and when, one line per event. Tap an appliance to unfold why it was placed there; today, its other possible starts can be chosen there too.
   - An appliance can start in the evening and finish the next day, when the night hours are cheaper (or the battery still covers them): its end time is the next day's, and the next day starts with the end of the cycle.
-- **Why this plan**: the explanation of each decision, in plain words.
-  - Today, the other possible starts of each appliance can be chosen here too.
+- **Why this plan**, folded under the agenda: what the battery does and the full text of the plan.
 - **Plan indicators** (cost, purchases, surplus, self-consumption…): for the whole day, measured for the hours already past, planned for the rest.
   - In its corner, the **forecast quality** (reliable, fair or uncertain) tells how far to trust the planned production and consumption, from the data the calculation had: days of history behind the usual consumption, its regularity, the source of the solar forecast, how many days ahead the weather is forecast. Tap it for the reason behind each criterion.
 - **My requests** (under each tab): the appliances you asked for, with or without a deadline, to mark done or cancel.

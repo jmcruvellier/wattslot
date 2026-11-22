@@ -2331,11 +2331,58 @@ a.ui-setting-row {
 }
 
 .agenda-entry {
-  display: grid;
-  grid-template-columns: 3.5rem 1fr;
-  gap: 0.75rem;
-  padding: 0.8rem 0;
+  padding: 0.55rem 0;
   border-bottom: 1px solid var(--border);
+}
+
+/* Une ligne par action : l'heure, le titre, puis à droite la fin (« Jusqu'à 10h00 ») ou le
+   chevron qui déplie la raison d'un créneau. */
+.agenda-row {
+  display: grid;
+  grid-template-columns: 3.5rem 1fr auto;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+.agenda-entry > details > summary {
+  margin: 0;
+  color: inherit;
+  list-style: none;
+}
+
+.agenda-entry > details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.agenda-entry > details > summary > .icon {
+  align-self: center;
+  color: var(--text-dim);
+  transition: transform 0.15s;
+}
+
+.agenda-entry > details[open] > summary > .icon {
+  transform: rotate(90deg);
+}
+
+.agenda-why {
+  margin: 0.35rem 0 0.25rem 4.25rem;
+  font-size: 0.9rem;
+}
+
+.agenda-why > p {
+  margin: 0;
+  color: var(--text-dim);
+}
+
+/* « Pourquoi ce plan », replié sous l'agenda : la batterie et le texte entier du plan. */
+.plan-why {
+  margin-top: 0.6rem;
+}
+
+.plan-why > summary {
+  margin: 0;
+  font-weight: 700;
+  color: inherit;
 }
 
 .agenda-entry:last-child {
@@ -2348,14 +2395,14 @@ a.ui-setting-row {
 }
 
 .agenda-title {
-  display: block;
+  min-width: 0;
   font-weight: 700;
 }
 
 .agenda-detail {
-  display: block;
   font-size: 0.9rem;
   color: var(--text-dim);
+  text-align: right;
 }
 
 .agenda-entry[data-kind="cycle"] .agenda-time {

@@ -26,10 +26,9 @@ Le plan en détail, pour **Hier**, **Aujourd'hui**, **Demain**, les jours suivan
 
 - En haut, l'heure du calcul, **Calculer** (recalculer maintenant) et **Rafraîchir les données réelles**.
 - Les avertissements, puis trois tuiles pour l'essentiel, chacune avec un chiffre et une pastille : la batterie à minuit, la production du jour, les appareils lancés. Touchez une tuile pour son détail (le plan de la veille, la prévision comparée à la production mesurée, l'heure et l'énergie de chaque appareil).
-- **La journée en agenda** : ce qui se passe, et quand.
+- **La journée en agenda** : ce qui se passe, et quand, une ligne par événement. Touchez un appareil pour déplier la raison de son créneau ; aujourd'hui, ses autres départs possibles se choisissent là aussi.
   - Un appareil peut démarrer le soir et finir le lendemain, quand les heures de la nuit sont moins chères (ou que la batterie les couvre encore) : son heure de fin est celle du lendemain, et le lendemain commence par la fin du cycle.
-- **Pourquoi ce plan** : l'explication de chaque décision, en clair.
-  - Aujourd'hui, les autres départs possibles de chaque appareil se choisissent aussi ici.
+- **Pourquoi ce plan**, replié sous l'agenda : ce que fait la batterie et le texte entier du plan.
 - **Indicateurs du plan** (coût, achat, surplus, autoconsommation…) : sur la journée entière, mesurés pour les heures déjà passées, prévus pour la suite.
   - Dans son coin, la **qualité des prévisions** (fiables, moyennes ou incertaines) dit à quel point se fier à la production et à la consommation prévues, d'après les données dont disposait le calcul : jours d'historique derrière la consommation habituelle, sa régularité, source de la prévision solaire, nombre de jours d'avance de la météo. Touchez-la pour la raison de chaque critère.
 - **Mes demandes** (sous chaque onglet) : les appareils que vous avez demandés, avec ou sans échéance, à marquer faits ou à annuler.
