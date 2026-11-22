@@ -160,10 +160,17 @@ def _merge_battery(
 
 def _about(warning: Any, placed: set[str]) -> bool:
     """Avertissement d'un calcul précédent sur un équipement que le plan place désormais
-    (profil devenu disponible, temps suffisant…) : périmé, il n'est pas gardé."""
+    (profil devenu disponible, temps suffisant…) ou qui n'est plus demandé : périmé, il n'est
+    pas gardé."""
     if not isinstance(warning, dict):
         return False
     return warning.get("params", {}).get("equipement") in placed
+
+
+def _asked(plan: Mapping[str, Any]) -> set[str]:
+    """Équipements qui ont une tâche dans l'état du plan, datée ou en attente."""
+    tasks = [*(plan.get("taches_placees") or []), *(plan.get("taches_en_attente") or [])]
+    return {str(t["summary"]) for t in tasks if isinstance(t, Mapping) and "summary" in t}
 
 
 def _deduplicated(warnings: list[Any]) -> list[Any]:
@@ -325,8 +332,14 @@ def merge_plans(
         unfollowed,
     )
     placed = {item["equipement"] for item in merged["planning"]}
+    # Équipements qui avaient une tâche au calcul précédent et n'en ont plus (demande annulée
+    # ou faite, tâche retirée de la liste) sans être dans le plan : leurs avertissements sont
+    # périmés. L'avertissement d'une demande annulée restait affiché jusqu'à minuit (essai du
+    # 22/11/2026). Les avertissements des autres éléments (durées à placer, besoins d'énergie,
+    # prévision) ne sont pas concernés : ils n'ont pas de tâche.
+    gone = _asked(old) - _asked(new) - placed
     merged["avertissements"] = _deduplicated(
-        [w for w in old.get("avertissements", []) if not _about(w, placed)]
+        [w for w in old.get("avertissements", []) if not _about(w, placed | gone)]
         + new.get("avertissements", [])
     )
     merged["avertissements_prevision"] = _deduplicated(
