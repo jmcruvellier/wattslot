@@ -1,6 +1,7 @@
 // Écran Aujourd'hui (lot 6b.3) : répond à « que se passe-t-il maintenant ? » et « que dois-je
-// faire, et quand ? ». De haut en bas : le moment (phrase et flux du dernier quart d'heure), la
-// prochaine action et ses boutons, la frise du jour, la batterie, le soleil et le bilan. La
+// faire, et quand ? ». De haut en bas : le moment (phrase et flux du dernier quart d'heure ;
+// rien sans mesures du moment), la prochaine action et ses boutons (sa raison et les autres
+// départs se déplient), la frise du jour, la batterie, le soleil et le bilan. La
 // batterie et le soleil portent leur tendance au relevé (mesuré contre estimé). Le
 // détail (onglets, courbes) reste dans Planning. Vue relue toutes les minutes.
 
@@ -122,7 +123,7 @@ export default function TodayView({ onNavigate }: { onNavigate?: (target: string
       {/* Mesures impossibles du jour seulement : celles d'hier ne sont plus d'actualité ici. */}
       <DiscardedNote hours={view.discarded_hours ?? []} />
       <ProvisionalNote view={view} />
-      <NowCard now={view.now ?? null} recommendation={view.recommendation} />
+      <NowCard now={view.now ?? null} />
       <NextActionCard view={view} onChanged={() => setAttempt((count) => count + 1)} onNavigate={onNavigate} />
       {/* Appareils demandés que le calcul n'a pas placés : sans bloc ni prochaine action. */}
       {unplaced.length > 0 && (
@@ -170,25 +171,26 @@ export default function TodayView({ onNavigate }: { onNavigate?: (target: string
   );
 }
 
-function NowCard({ now, recommendation }: { now: Now | null; recommendation: string | null }) {
+/** Sans mesures du moment, pas de carte : le texte entier du plan, qui la remplissait, redisait
+ * la prochaine action, la frise, la batterie et le bilan ; il reste dans Planning (« Pourquoi ce
+ * plan »). */
+function NowCard({ now }: { now: Now | null }) {
   const { language, t } = useI18n();
-  const flows = now !== null && now.sentence !== null;
+  if (now === null || now.sentence === null) return null;
   const tiles: { key: string; label: string; value: string; tone?: "sun" | "battery" }[] = [];
-  if (flows && now) {
-    if (now.production_w !== null) tiles.push({ key: "sun", label: t("today.now.panels"), value: kw(now.production_w), tone: "sun" });
-    if (now.consumption_w !== null) tiles.push({ key: "home", label: t("today.now.home"), value: kw(now.consumption_w) });
-    if (now.battery_w !== null || now.soc_percent !== null) {
-      const parts = [now.soc_percent !== null ? `${percent(now.soc_percent)} %` : null];
-      if (now.battery_w) parts.push(t(now.battery_w > 0 ? "today.now.charging" : "today.now.discharging", { kw: kw(now.battery_w) }));
-      tiles.push({ key: "battery", label: t("today.now.battery"), value: parts.filter(Boolean).join(" · "), tone: "battery" });
-    }
-    if (now.grid_w !== null) {
-      const key = now.grid_w > 0 ? "today.now.buying" : now.grid_w < 0 ? "today.now.selling" : "today.now.idle";
-      tiles.push({ key: "grid", label: t("today.now.grid"), value: t(key, { kw: kw(now.grid_w) }) });
-    }
+  if (now.production_w !== null) tiles.push({ key: "sun", label: t("today.now.panels"), value: kw(now.production_w), tone: "sun" });
+  if (now.consumption_w !== null) tiles.push({ key: "home", label: t("today.now.home"), value: kw(now.consumption_w) });
+  if (now.battery_w !== null || now.soc_percent !== null) {
+    const parts = [now.soc_percent !== null ? `${percent(now.soc_percent)} %` : null];
+    if (now.battery_w) parts.push(t(now.battery_w > 0 ? "today.now.charging" : "today.now.discharging", { kw: kw(now.battery_w) }));
+    tiles.push({ key: "battery", label: t("today.now.battery"), value: parts.filter(Boolean).join(" · "), tone: "battery" });
+  }
+  if (now.grid_w !== null) {
+    const key = now.grid_w > 0 ? "today.now.buying" : now.grid_w < 0 ? "today.now.selling" : "today.now.idle";
+    tiles.push({ key: "grid", label: t("today.now.grid"), value: t(key, { kw: kw(now.grid_w) }) });
   }
   return (
-    <Card eyebrow={t("today.now.eyebrow")} title={flows && now?.sentence ? now.sentence : t("today.now.no_flows")}>
+    <Card eyebrow={t("today.now.eyebrow")} title={now.sentence}>
       {tiles.length > 0 && (
         <dl className="now-tiles">
           {tiles.map((tile) => (
@@ -199,7 +201,7 @@ function NowCard({ now, recommendation }: { now: Now | null; recommendation: str
           ))}
         </dl>
       )}
-      {flows && now?.since && now.until && (
+      {now.since && now.until && (
         <p className="dim">
           {t("today.now.measured", {
             start: new Date(now.since).toLocaleTimeString(language, zoned({ hour: "2-digit", minute: "2-digit" })),
@@ -207,7 +209,6 @@ function NowCard({ now, recommendation }: { now: Now | null; recommendation: str
           })}
         </p>
       )}
-      {!flows && recommendation && <p className="recommendation">{recommendation}</p>}
     </Card>
   );
 }
@@ -269,6 +270,8 @@ function NextActionCard({
   const [failed, setFailed] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [cancelFailed, setCancelFailed] = useState(false);
+  // Autres départs (ceux du plan et l'heure libre) : dépliés à la demande.
+  const [otherTime, setOtherTime] = useState(false);
 
   if (action === null) {
     // Aucun appareil placé par le calcul (tableau Énergie sans appareil) : rien ne sera jamais à
@@ -335,6 +338,9 @@ function NextActionCard({
   // Heure prévue dépassée, cycle pas encore vu : on ne dit plus « à 13:00 » comme si c'était
   // à venir, ni une heure de fin qui ne vaut plus.
   const late = action.late ?? false;
+  const chosen = action.chosen ?? false;
+  // Après 23 h et sans autre départ du plan, il n'y a plus d'heure à proposer.
+  const hasOtherTime = chosen || (action.alternatives ?? []).length > 0 || minuteOfDay() < 23 * 60;
   return (
     <section className="next-action" aria-labelledby="next-action-title">
       <p className="ui-eyebrow">
@@ -347,8 +353,15 @@ function NextActionCard({
         {late
           ? t("today.next.slot_late", { start })
           : t("today.next.slot", { start, end: clock(action.end_min, language) })}
-        {action.explanation && <> {action.explanation}</>}
+        {/* En retard, la raison dit quoi faire maintenant : elle reste sous les yeux. */}
+        {late && action.explanation && <> {action.explanation}</>}
       </p>
+      {!late && action.explanation && (
+        <details className="next-action-why">
+          <summary>{t("today.next.why")}</summary>
+          <p>{action.explanation}</p>
+        </details>
+      )}
       {action.waits_for && <p className="dim">{t("today.next.waits_for", { device: action.waits_for })}</p>}
       <div className="next-action-buttons">
         {/* Un cycle qui attend la fin d'un autre ne peut pas avoir été lancé : pas de bouton. */}
@@ -362,6 +375,11 @@ function NextActionCard({
             {t(reminder ? "today.next.reminder_set" : "today.next.remind")}
           </Button>
         )}
+        {hasOtherTime && (
+          <Button aria-expanded={otherTime || chosen} disabled={chosen} onClick={() => setOtherTime(!otherTime)}>
+            {t("today.next.other_time")}
+          </Button>
+        )}
         {/* Annule la planification de l'équipement pour aujourd'hui, sans quitter l'écran. */}
         <Button icon="close" disabled={cancelling} onClick={() => void cancel()}>
           {t("today.next.cancel")}
@@ -370,13 +388,16 @@ function NextActionCard({
       {launchFailed && <p role="alert">{t("today.next.launched_failed")}</p>}
       {failed && <p role="alert">{t("today.next.remind_failed")}</p>}
       {cancelFailed && <p role="alert">{t("today.next.cancel_failed")}</p>}
-      <OtherStarts
-        device={action.device}
-        alternatives={action.alternatives ?? []}
-        chosen={action.chosen ?? false}
-        onChanged={onChanged}
-        freeFrom={minuteOfDay()} // heure libre, comme la frise
-      />
+      {/* Un départ choisi garde le bloc ouvert : « Revenir au choix du calcul » reste visible. */}
+      {(otherTime || chosen) && (
+        <OtherStarts
+          device={action.device}
+          alternatives={action.alternatives ?? []}
+          chosen={chosen}
+          onChanged={onChanged}
+          freeFrom={minuteOfDay()} // heure libre, comme la frise
+        />
+      )}
       {declared}
     </section>
   );

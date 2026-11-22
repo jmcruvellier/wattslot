@@ -1647,7 +1647,6 @@
     "unplaced": "Appareils non placés",
     "now": {
       "eyebrow": "En ce moment",
-      "no_flows": "Le plan du jour",
       "panels": "Panneaux",
       "home": "Maison",
       "battery": "Batterie",
@@ -1686,7 +1685,9 @@
       "no_appliance_help": "WattSlot place vos appareils au meilleur moment : lave-linge, lave-vaisselle, chauffe-eau… Ajoutez-en un pour savoir quand le lancer.",
       "add_appliance": "Ajouter un appareil",
       "cancel": "Annuler",
-      "cancel_failed": "L'annulation n'a pas abouti."
+      "cancel_failed": "L'annulation n'a pas abouti.",
+      "why": "Pourquoi cette heure ?",
+      "other_time": "Autre heure"
     },
     "battery": {
       "eyebrow": "Batterie",

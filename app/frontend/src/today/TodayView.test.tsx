@@ -102,11 +102,39 @@ describe("TodayView", () => {
     expect(now.getByText(/1,0 kW/)).toBeInTheDocument();
   });
 
-  it("montre la recommandation du jour sans mesures du moment", async () => {
-    mockApi({ ...TODAY, now: { ...NOW, sentence: null }, recommendation: "Lancez le lave-linge à 13 h." });
+  it("sans mesures du moment, pas de carte « En ce moment » ni de texte du plan", async () => {
+    // Le texte entier du plan redisait la prochaine action, la frise et le bilan : il reste dans
+    // Planning (« Pourquoi ce plan »).
+    mockApi({ ...TODAY, now: { ...NOW, sentence: null }, next_action: ACTION, recommendation: "Lancez le lave-linge à 13 h." });
     renderView();
-    expect(await screen.findByRole("heading", { name: "Le plan du jour" })).toBeInTheDocument();
-    expect(screen.getByText("Lancez le lave-linge à 13 h.")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Lancez Lave-linge" })).toBeInTheDocument();
+    expect(screen.queryByText("En ce moment")).not.toBeInTheDocument();
+    expect(screen.queryByText("Lancez le lave-linge à 13 h.")).not.toBeInTheDocument();
+  });
+
+  it("replie la raison du créneau et les autres départs de la prochaine action", async () => {
+    vi.setSystemTime(new Date("2026-10-17T12:00:00"));
+    const alternatives = [{ start_min: 960, end_min: 1080, cost_eur_delta: 0.03, import_kwh_delta: 0.1 }];
+    mockApi({ ...TODAY, now: NOW, next_action: { ...ACTION, alternatives } });
+    const user = userEvent.setup();
+    renderView();
+    const why = (await screen.findByText("Pourquoi cette heure ?")).closest("details");
+    expect(why).not.toHaveAttribute("open");
+    expect(why).toHaveTextContent("Au plus fort du soleil.");
+    expect(screen.queryByText("Autres départs possibles :")).not.toBeInTheDocument();
+    const other = screen.getByRole("button", { name: "Autre heure" });
+    expect(other).toHaveAttribute("aria-expanded", "false");
+    await user.click(other);
+    expect(other).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByText("Autres départs possibles :")).toBeInTheDocument();
+    expect(screen.getByLabelText("Autre heure de départ :")).toBeInTheDocument();
+  });
+
+  it("un départ choisi laisse « Revenir au choix du calcul » sous les yeux", async () => {
+    vi.setSystemTime(new Date("2026-10-17T12:00:00"));
+    mockApi({ ...TODAY, now: NOW, next_action: { ...ACTION, chosen: true } });
+    renderView();
+    expect(await screen.findByRole("button", { name: "Revenir au choix du calcul" })).toBeInTheDocument();
   });
 
   it("« C'est lancé » est noté par le serveur, et l'appareil suivant prend la place", async () => {
@@ -131,7 +159,7 @@ describe("TodayView", () => {
     });
     renderView();
     expect(await screen.findByRole("heading", { name: "Lancez Lave-linge" })).toBeInTheDocument();
-    expect(screen.getByText(/Départ à 13h00, fin vers 15h00\. Au plus fort du soleil\./)).toBeInTheDocument();
+    expect(screen.getByText("Départ à 13h00, fin vers 15h00.")).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: "C'est lancé" }));
     expect(await screen.findByRole("heading", { name: "Lancez Lave-vaisselle" })).toBeInTheDocument();
@@ -204,7 +232,8 @@ describe("TodayView", () => {
     const fetchMock = mockApi({ ...TODAY, now: NOW, next_action: ACTION });
     const user = userEvent.setup();
     renderView();
-    const hour = await screen.findByLabelText("Autre heure de départ :");
+    await user.click(await screen.findByRole("button", { name: "Autre heure" }));
+    const hour = screen.getByLabelText("Autre heure de départ :");
     await user.selectOptions(hour, "16");
     await user.click(screen.getByRole("button", { name: "Démarrer à 16h00" }));
     const post = fetchMock.mock.calls.find(([url]) => String(url) === "api/planning/choices");
