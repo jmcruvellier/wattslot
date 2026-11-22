@@ -4,7 +4,7 @@ import { render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { I18nProvider } from "../i18n/I18nProvider";
-import Agenda, { DaySummaryCard } from "./Agenda";
+import Agenda, { SunHours } from "./Agenda";
 import { agenda, firstUpcoming, sunWindow } from "./agendaEntries";
 import { TODAY } from "./testViews";
 import type { DayView } from "./types";
@@ -105,7 +105,7 @@ describe("Agenda", () => {
   function renderAgenda(view: DayView) {
     return render(
       <I18nProvider>
-        <DaySummaryCard view={view} />
+        <SunHours view={view} />
         <Agenda view={view} />
       </I18nProvider>,
     );
@@ -113,14 +113,16 @@ describe("Agenda", () => {
 
   it("sans panneaux : pas de résumé du soleil", () => {
     renderAgenda({ ...TOMORROW, solar: false });
-    expect(screen.queryByText(/kWh de soleil/)).toBeNull();
+    expect(screen.queryByText(/Soleil surtout/)).toBeNull();
     expect(screen.getByRole("list", { name: "Agenda de la journée" })).toBeInTheDocument();
   });
 
-  it("résume la journée et liste les actions", () => {
+  it("dit les heures de soleil en une ligne et liste les actions", () => {
     renderAgenda(TOMORROW);
-    expect(screen.getByRole("heading", { name: "Samedi, journée ensoleillée" })).toBeInTheDocument();
-    expect(screen.getByText("9,5 kWh de soleil, surtout entre 8 h et 18 h")).toBeInTheDocument();
+    // La date est dans l'en-tête de la vue, la météo et la production dans les tuiles : plus de
+    // carte « Samedi, journée ensoleillée — 9,5 kWh de soleil » qui les redisait.
+    expect(screen.queryByRole("heading")).toBeNull();
+    expect(screen.getByText("Soleil surtout entre 8 h et 18 h")).toBeInTheDocument();
     const items = within(screen.getByRole("list", { name: "Agenda de la journée" })).getAllByRole("listitem");
     expect(items.map((item) => item.textContent)).toEqual([
       "9h00La batterie se chargeJusqu'à 13h00",

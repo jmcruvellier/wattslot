@@ -444,13 +444,7 @@
     },
     "agenda": {
       "title": "Day agenda",
-      "day_quality": "{day}, {quality} day",
-      "quality": {
-        "sunny": "sunny",
-        "mixed": "mixed",
-        "cloudy": "cloudy"
-      },
-      "sun_window": "{kwh} kWh of sun, mostly between {start}:00 and {end}:00",
+      "sun_hours": "Sun mostly between {start}:00 and {end}:00",
       "sun_none": "No solar production expected.",
       "cycle": "Start the {device}",
       "runtime": "{device}, {duration}",
