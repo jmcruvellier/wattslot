@@ -8,14 +8,17 @@ import { useEffect, useState } from "react";
 import { getJson, postJson } from "../api";
 import { useI18n } from "../i18n/I18nProvider";
 import { declareLaunched } from "../plan/declared";
+import { hour } from "../plan/format";
 import RequestForm, { type RequestDevice } from "./RequestForm";
-import { pendingLatest } from "./pendingLatest";
+import { pendingFinish, pendingLatest } from "./pendingLatest";
 
 export interface UserRequest {
   id: number;
   device: string;
   created_at: string;
   latest: string | null;
+  // Heure limite : cycle à terminer avant cette heure le jour où il tourne ; aucune : null.
+  finish_hour?: number | null;
   status: "open" | "done" | "cancelled";
   launched_on: string | null;
   closed_at: string | null;
@@ -80,9 +83,12 @@ export default function RequestsSection() {
     if (request.status === "cancelled") return t("requests.cancelled_item", { device: name });
     if (request.launched_on) return t("requests.launched", { device: name });
     if (request.declared) return t("requests.declared_item", { device: name });
-    return request.latest
+    const text = request.latest
       ? t("requests.open_latest", { device: name, latest: day(request.latest) })
       : t("requests.open_asap", { device: name });
+    return request.finish_hour == null
+      ? text
+      : t("requests.with_finish", { request: text, hour: hour(request.finish_hour, language) });
   };
 
   return (
@@ -95,6 +101,7 @@ export default function RequestsSection() {
         // ou d'ajouter un cycle.
         waiting={opened.filter((r) => !r.launched_on).map((r) => r.device)}
         waitingLatest={pendingLatest(opened)}
+        waitingFinish={pendingFinish(opened)}
         onAsked={() => setVersion((count) => count + 1)}
       />
       {failed && <p role="alert">{t("requests.failed")}</p>}

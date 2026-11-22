@@ -24,7 +24,7 @@ Décochez **Pris en compte par le calcul** sur un équipement pour seulement le 
 
 Un cycle (lave-linge…) est placé un jour où quelque chose le demande :
 
-- **Une demande** : **Demander un appareil** (`+`), *dès que possible* ou *au plus tard le* une date. Le plan choisit le meilleur moment avant cette date. **Planning › Mes demandes** les liste.
+- **Une demande** : **Demander un appareil** (`+`), *dès que possible* ou *au plus tard le* une date. Le plan choisit le meilleur moment avant cette date. Avec **Terminé avant**, le cycle finit aussi avant l'heure donnée, le jour où il tourne (lave-vaisselle demandé le soir, fini avant midi : la nuit ou dans la matinée) ; si aucun créneau ne le permet, le plan place quand même le cycle et le signale. **Planning › Mes demandes** les liste.
 - **Une liste de tâches de Home Assistant** : choisissez la liste dans **Réglages › Calcul automatique** ; une tâche comme « lancer le lave-linge », avec une échéance, devient une demande.
 - **Une récurrence**, dans les **Règles du cycle** de l'équipement : tous les N jours depuis le dernier cycle, certains jours de la semaine, ou une règle avancée (format iCalendar). Les tâches récurrentes de Home Assistant pour cet équipement sont alors ignorées.
 

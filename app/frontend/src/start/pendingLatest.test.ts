@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { pendingLatest } from "./pendingLatest";
+import { pendingFinish, pendingLatest } from "./pendingLatest";
 
 describe("pendingLatest", () => {
   const request = (device: string, latest: string | null, extra: object = {}) => ({
@@ -21,5 +21,16 @@ describe("pendingLatest", () => {
     ]);
 
     expect(found).toEqual({ washer: "2026-10-19", dryer: null });
+  });
+
+  it("donne l'heure limite de la même demande, ou aucune", () => {
+    const found = pendingFinish([
+      request("washer", "2026-10-19", { finish_hour: 12 }),
+      request("washer", "2026-10-18", { finish_hour: 18 }),
+      request("dryer", null),
+      request("heater", null, { finish_hour: 7, launched_on: "2026-10-17" }),
+    ]);
+
+    expect(found).toEqual({ washer: 12, dryer: null });
   });
 });

@@ -1,10 +1,12 @@
-// Formulaire d'une demande (lots 4.5 et 6b.2) : appareil et, si on veut, date « au plus tard ».
+// Formulaire d'une demande (lots 4.5 et 6b.2) : appareil et, si on veut, date « au plus tard »
+// et heure limite « terminé avant » (issue 273 : lave-vaisselle demandé le soir, fini avant midi).
 // Sert à « Mes demandes » et à la feuille « Demander un appareil ».
 
 import { useState } from "react";
 
 import { postJson } from "../api";
 import { useI18n } from "../i18n/I18nProvider";
+import { hour } from "../plan/format";
 
 export interface RequestDevice {
   key: string;
@@ -23,18 +25,32 @@ interface RequestFormProps {
   // dès que possible) : l'aide la dit. Sans elle, « déjà une demande en attente » ne disait pas
   // laquelle, et une demande à la date passée passait pour une erreur (constaté le 19/11/2026).
   waitingLatest?: Record<string, string | null>;
+  // Heure limite de la demande en attente de chaque appareil (clé → heure, ou null : aucune) :
+  // « Changer la date » la remplace par celle du formulaire, l'aide le dit.
+  waitingFinish?: Record<string, number | null>;
   onAsked: () => void;
 }
 
-export default function RequestForm({ devices, waiting = [], waitingLatest = {}, onAsked }: RequestFormProps) {
+// Heures limites proposées : « avant 24 h » ne limiterait rien.
+const FINISH_HOURS = Array.from({ length: 23 }, (_, index) => index + 1);
+
+export default function RequestForm({
+  devices,
+  waiting = [],
+  waitingLatest = {},
+  waitingFinish = {},
+  onAsked,
+}: RequestFormProps) {
   const { language, t } = useI18n();
   const [device, setDevice] = useState("");
   const [latest, setLatest] = useState("");
+  const [finish, setFinish] = useState(""); // heure limite choisie ; vide : aucune
   const [failed, setFailed] = useState(false);
   const selected = device || devices[0].key;
   const pending = waiting.includes(selected);
   const unknown = devices.find((d) => d.key === selected)?.placeable === false;
   const pendingLatest = waitingLatest[selected];
+  const pendingFinish = waitingFinish[selected];
   const waitingHint =
     pendingLatest === undefined
       ? t("requests.waiting_hint")
@@ -52,8 +68,15 @@ export default function RequestForm({ devices, waiting = [], waitingLatest = {},
     setFailed(false);
     try {
       // « another » : un cycle de plus, au lieu de changer la date de la demande en attente.
-      await postJson("api/requests", { device: selected, latest: latest || null, ...(another ? { another: true } : {}) });
+      // Sans heure limite, le champ n'est pas envoyé : le serveur n'en garde alors aucune.
+      await postJson("api/requests", {
+        device: selected,
+        latest: latest || null,
+        ...(finish ? { finish_hour: Number(finish) } : {}),
+        ...(another ? { another: true } : {}),
+      });
       setLatest("");
+      setFinish("");
       onAsked();
     } catch {
       setFailed(true);
@@ -77,6 +100,17 @@ export default function RequestForm({ devices, waiting = [], waitingLatest = {},
           {t("requests.latest")}{" "}
           <input type="date" value={latest} onChange={(event) => setLatest(event.target.value)} />
         </label>{" "}
+        <label>
+          {t("requests.finish_before")}{" "}
+          <select value={finish} onChange={(event) => setFinish(event.target.value)}>
+            <option value="">{t("requests.finish_none")}</option>
+            {FINISH_HOURS.map((h) => (
+              <option key={h} value={h}>
+                {hour(h, language)}
+              </option>
+            ))}
+          </select>
+        </label>{" "}
         {pending ? (
           <>
             <button type="button" disabled={unknown} onClick={() => void ask()}>
@@ -92,7 +126,13 @@ export default function RequestForm({ devices, waiting = [], waitingLatest = {},
           </button>
         )}
         <br />
-        <small>{unknown ? t("requests.unknown_cycle") : pending ? waitingHint : t("requests.hint")}</small>
+        <small>
+          {unknown ? t("requests.unknown_cycle") : pending ? waitingHint : t("requests.hint")}
+          {!unknown && pending && pendingFinish != null && (
+            <> {t("requests.waiting_finish", { hour: hour(pendingFinish, language) })}</>
+          )}
+          {!unknown && finish && <> {t("requests.finish_hint", { hour: hour(Number(finish), language) })}</>}
+        </small>
       </p>
       {failed && <p role="alert">{t("requests.failed")}</p>}
     </>
