@@ -2478,6 +2478,45 @@ a.ui-setting-row {
   margin-top: 1rem;
 }
 
+/* « Mes demandes » : le titre, et à droite le bouton qui ouvre la feuille de demande. */
+.requests-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.requests-head > h2 {
+  margin: 0;
+}
+
+.requests-list {
+  margin: 0.75rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.requests-list > li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.requests-list > li:last-child {
+  border-bottom: 0;
+}
+
+.requests-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
 /* Ma maison en phrases (lot 6b.5). */
 .home-summary {
   display: flex;
