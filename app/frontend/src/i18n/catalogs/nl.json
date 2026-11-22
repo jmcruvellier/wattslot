@@ -1692,14 +1692,16 @@
     "battery": {
       "eyebrow": "Batterij",
       "title": "{pct}% op dit moment",
-      "max": "Hoogste stand rond {time}: {pct}%.",
-      "end": "Vanavond om middernacht: {pct}%."
+      "max_label": "Hoogste stand",
+      "max_value": "{pct}% rond {time}",
+      "end_label": "Vanavond om middernacht",
+      "end_value": "{pct}%"
     },
     "sun": {
       "eyebrow": "Zon",
       "title": "{kwh} kWh verwacht vandaag",
-      "done": "{kwh} kWh al opgewekt.",
-      "at_reading": "{kwh} kWh verwacht op dit moment.",
+      "done_label": "Al opgewekt",
+      "at_reading_label": "Verwacht op dit moment",
       "none": "Nog geen opwekking gemeten."
     },
     "trend": "Verschil met de voorspelling bij de meting"

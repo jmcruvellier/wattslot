@@ -1,7 +1,8 @@
 // Écran Aujourd'hui (lot 6b.3) : répond à « que se passe-t-il maintenant ? » et « que dois-je
 // faire, et quand ? ». De haut en bas : le moment (phrase et flux du dernier quart d'heure ;
 // rien sans mesures du moment), la prochaine action et ses boutons (sa raison et les autres
-// départs se déplient), la frise du jour, la batterie, le soleil et le bilan. La
+// départs se déplient), la frise du jour, la batterie, le soleil et le bilan (en lignes
+// « libellé, valeur ») ; sur un écran large, les cartes se rangent deux par deux. La
 // batterie et le soleil portent leur tendance au relevé (mesuré contre estimé). Le
 // détail (onglets, courbes) reste dans Planning. Vue relue toutes les minutes.
 
@@ -112,6 +113,8 @@ export default function TodayView({ onNavigate }: { onNavigate?: (target: string
   const forecastAtReading = sunLine && sunLine.trend.direction !== "none" ? sunLine.estimated_kwh : null;
 
   const unplaced = unplacedNotices(view.notices);
+  const hasBattery = view.battery_capacity_kwh !== null;
+  const hasSun = view.solar !== false;
 
   return (
     <div className="today">
@@ -123,8 +126,12 @@ export default function TodayView({ onNavigate }: { onNavigate?: (target: string
       {/* Mesures impossibles du jour seulement : celles d'hier ne sont plus d'actualité ici. */}
       <DiscardedNote hours={view.discarded_hours ?? []} />
       <ProvisionalNote view={view} />
-      <NowCard now={view.now ?? null} />
-      <NextActionCard view={view} onChanged={() => setAttempt((count) => count + 1)} onNavigate={onNavigate} />
+      {/* Côte à côte quand la largeur le permet ; sans mesures du moment, la prochaine action
+          prend toute la largeur. */}
+      <div className="today-row">
+        <NowCard now={view.now ?? null} />
+        <NextActionCard view={view} onChanged={() => setAttempt((count) => count + 1)} onNavigate={onNavigate} />
+      </div>
       {/* Appareils demandés que le calcul n'a pas placés : sans bloc ni prochaine action. */}
       {unplaced.length > 0 && (
         <ul className="notices" aria-label={t("today.unplaced")}>
@@ -143,30 +150,55 @@ export default function TodayView({ onNavigate }: { onNavigate?: (target: string
         onChanged={() => setAttempt((count) => count + 1)}
         hours={view.hours}
       />
-      <div className="today-grid">
-        {view.battery_capacity_kwh !== null && (
-          <Card tone="battery" eyebrow={t("today.battery.eyebrow")} title={t("today.battery.title", {
-            pct: percent(view.now?.soc_percent ?? null),
-          })} meta={<TrendBadge view={view} line="soc" />}>
-            <p>
-              {t("today.battery.max", {
-                pct: percent(view.summary.soc_max_percent),
-                time: clock(view.summary.soc_max_hour * 60, language),
-              })}
-            </p>
-            <p>{t("today.battery.end", { pct: percent(view.summary.soc_end_percent) })}</p>
-            {/* Plusieurs batteries : l'état de charge de chacune, sous celui de la maison. */}
-            {(view.now?.batteries?.length ?? 0) > 1 && <BatteryList batteries={view.now?.batteries ?? []} />}
-          </Card>
+      <div className="today-row">
+        {(hasBattery || hasSun) && (
+          <div className="today-grid">
+            {hasBattery && (
+              <Card tone="battery" eyebrow={t("today.battery.eyebrow")} title={t("today.battery.title", {
+                pct: percent(view.now?.soc_percent ?? null),
+              })} meta={<TrendBadge view={view} line="soc" />}>
+                <dl className="indicators">
+                  <div className="indicator">
+                    <dt>{t("today.battery.max_label")}</dt>
+                    <dd>
+                      {t("today.battery.max_value", {
+                        pct: percent(view.summary.soc_max_percent),
+                        time: clock(view.summary.soc_max_hour * 60, language),
+                      })}
+                    </dd>
+                  </div>
+                  <div className="indicator">
+                    <dt>{t("today.battery.end_label")}</dt>
+                    <dd>{t("today.battery.end_value", { pct: percent(view.summary.soc_end_percent) })}</dd>
+                  </div>
+                </dl>
+                {/* Plusieurs batteries : l'état de charge de chacune, sous celui de la maison. */}
+                {(view.now?.batteries?.length ?? 0) > 1 && <BatteryList batteries={view.now?.batteries ?? []} />}
+              </Card>
+            )}
+            {hasSun && (
+              <Card tone="sun" eyebrow={t("today.sun.eyebrow")} title={t("today.sun.title", { kwh: kwh(expected, 1) })} meta={<TrendBadge view={view} line="production" />}>
+                {!measuredHours && <p>{t("today.sun.none")}</p>}
+                {measuredHours && (
+                  <dl className="indicators">
+                    <div className="indicator">
+                      <dt>{t("today.sun.done_label")}</dt>
+                      <dd>{kwh(produced, 1)} kWh</dd>
+                    </div>
+                    {forecastAtReading !== null && (
+                      <div className="indicator">
+                        <dt>{t("today.sun.at_reading_label")}</dt>
+                        <dd>{kwh(forecastAtReading, 1)} kWh</dd>
+                      </div>
+                    )}
+                  </dl>
+                )}
+              </Card>
+            )}
+          </div>
         )}
-        {view.solar !== false && (
-          <Card tone="sun" eyebrow={t("today.sun.eyebrow")} title={t("today.sun.title", { kwh: kwh(expected, 1) })} meta={<TrendBadge view={view} line="production" />}>
-            <p>{measuredHours ? t("today.sun.done", { kwh: kwh(produced, 1) }) : t("today.sun.none")}</p>
-            {measuredHours && forecastAtReading !== null && <p>{t("today.sun.at_reading", { kwh: kwh(forecastAtReading, 1) })}</p>}
-          </Card>
-        )}
+        <IndicatorsCard view={view} layout={DEFAULT_LAYOUT.indicators} />
       </div>
-      <IndicatorsCard view={view} layout={DEFAULT_LAYOUT.indicators} />
     </div>
   );
 }

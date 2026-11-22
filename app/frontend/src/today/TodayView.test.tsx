@@ -311,11 +311,12 @@ describe("TodayView", () => {
     mockApi({ ...TODAY, weather: { ...TODAY.weather, production_kwh: 16.5 }, now: NOW, next_action: null });
     renderView();
     expect(await screen.findByRole("heading", { name: "64 % en ce moment" })).toBeInTheDocument();
-    expect(screen.getByText("Au plus haut vers 16h00 : 98 %.")).toBeInTheDocument();
+    expect(screen.getByText("Au plus haut").closest("div")).toHaveTextContent("Au plus haut98 % vers 16h00");
+    expect(screen.getByText("Ce soir à minuit")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "16,5 kWh prévus aujourd'hui" })).toBeInTheDocument();
-    expect(screen.getByText("14,0 kWh déjà produits.")).toBeInTheDocument();
+    expect(screen.getByText("Déjà produits").closest("div")).toHaveTextContent("Déjà produits14,0 kWh");
     // La référence de la pastille (+8 % : 6,5 kWh mesurés pour 6,0 prévus au relevé) est dite.
-    expect(screen.getByText("6,0 kWh prévus à cette heure.")).toBeInTheDocument();
+    expect(screen.getByText("Prévus à cette heure").closest("div")).toHaveTextContent("Prévus à cette heure6,0 kWh");
     // Tendances de TODAY : SoC +25 %, production +8 %, en pilule en tête de chaque carte.
     expect(screen.getAllByTitle("Écart avec la prévision au relevé")).toHaveLength(2);
     expect(screen.getByText("▲ +25%")).toHaveClass("trend-pill");
@@ -329,7 +330,7 @@ describe("TodayView", () => {
     expect(await screen.findByRole("heading", { name: "64 % en ce moment" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "9,5 kWh prévus aujourd'hui" })).toBeInTheDocument();
     expect(screen.queryByText(/[▲▼●]/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/prévus à cette heure/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Prévus à cette heure/)).not.toBeInTheDocument();
   });
 
   it("sans solaire : pas de carte Soleil", async () => {
