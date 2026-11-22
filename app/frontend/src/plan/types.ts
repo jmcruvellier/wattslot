@@ -227,7 +227,13 @@ export interface DeviceExplanation {
   device: string;
   text: string;
   // Explication structurée : autres départs proposés, départ choisi par l'utilisateur.
-  explanation?: { alternatives?: PlanAlternative[]; choisi?: boolean };
+  // ``raisons`` : codes des raisons du créneau (« solar_share », « cheap_hours »…) et leurs
+  // paramètres, pour la raison en quelques mots (shortReason).
+  explanation?: {
+    raisons?: { code: string; params?: Record<string, unknown> }[];
+    alternatives?: PlanAlternative[];
+    choisi?: boolean;
+  };
 }
 
 // Aujourd'hui (lot 6b.3) : puissances moyennes du dernier quart d'heure clos, en watts.

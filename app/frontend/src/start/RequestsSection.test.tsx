@@ -1,9 +1,10 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { I18nProvider } from "../i18n/I18nProvider";
 import RequestsSection, { type UserRequest } from "./RequestsSection";
+import { REQUESTS_EVENT } from "./pendingLatest";
 
 const DEVICES: { key: string; name: string; placeable?: boolean }[] = [
   { key: "washer", name: "Lave-linge" },
@@ -53,31 +54,22 @@ describe("RequestsSection", () => {
     vi.restoreAllMocks();
   });
 
-  it("liste les demandes en cours, sans formulaire : une demande passe par la feuille", async () => {
-    // Le formulaire n'est plus répété sous chaque onglet de Planning : le bouton ouvre la même
-    // feuille que « Demander un appareil » du menu, et la liste est relue à sa fermeture.
-    const user = userEvent.setup();
+  it("liste les demandes en cours, une ligne chacune, ses boutons repliés", async () => {
+    // Ni formulaire ni texte d'introduction ici : une demande passe par « Demander un appareil ».
     const calls = mockApi();
     renderSection();
 
-    expect(await screen.findByText(/Lave-vaisselle : au plus tard dimanche 18 octobre/)).toBeInTheDocument();
+    const list = await screen.findByRole("list", { name: "Demandes en cours" });
+    const row = within(list).getByText("Lave-vaisselle").closest("details");
+    expect(row).not.toHaveAttribute("open");
+    expect(row).toHaveTextContent("au plus tard dimanche 18 octobre");
     expect(screen.queryByLabelText("Au plus tard le")).toBeNull();
     expect(screen.queryByText(/Demandez qu'un appareil tourne/)).toBeNull();
 
-    await user.click(screen.getByRole("button", { name: "Demander un appareil" }));
-    const sheet = await screen.findByRole("dialog", { name: "Demander un appareil" });
-    fireEvent.change(await within(sheet).findByLabelText("Au plus tard le"), { target: { value: "2026-10-19" } });
-    await user.click(within(sheet).getByRole("button", { name: "Demander" }));
-    expect(calls.find((call) => call.method === "POST")).toEqual({
-      url: "api/requests",
-      method: "POST",
-      body: { device: "washer", latest: "2026-10-19" },
-    });
-
+    // Une demande déposée ailleurs (feuille du menu) : la liste est relue.
     const reads = () => calls.filter((call) => call.url === "api/requests" && call.method === "GET").length;
     const before = reads();
-    await user.click(await within(sheet).findByRole("button", { name: "Terminé" }));
-    expect(screen.queryByRole("dialog")).toBeNull();
+    window.dispatchEvent(new Event(REQUESTS_EVENT));
     await vi.waitFor(() => expect(reads()).toBeGreaterThan(before));
   });
 
@@ -85,9 +77,8 @@ describe("RequestsSection", () => {
     mockApi(DEVICES, [{ ...OPEN, device: "washer", finish_hour: 12 }]);
     renderSection();
 
-    expect(
-      await screen.findByText("Lave-linge : au plus tard dimanche 18 octobre, terminé avant 12h"),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("au plus tard dimanche 18 octobre, terminé avant 12h")).toBeInTheDocument();
+    expect(screen.getByText("Lave-linge")).toBeInTheDocument();
   });
 
   it("marque une demande faite ou l'annule", async () => {
@@ -120,7 +111,7 @@ describe("RequestsSection", () => {
     expect(call).toMatchObject({ method: "POST", body: { device: "Lave-vaisselle #2" } });
     // Un cycle après le premier : sa déclaration change le plan, le calcul est relancé.
     expect(calls.some((c) => c.url === "api/planning/run" && c.method === "POST")).toBe(true);
-    expect(screen.getByText(/Lave-vaisselle : marqué comme lancé/)).toBeInTheDocument();
+    expect(screen.getByText("marqué comme lancé")).toBeInTheDocument();
   });
 
   it("ne montre rien sans appareil à lancer", async () => {

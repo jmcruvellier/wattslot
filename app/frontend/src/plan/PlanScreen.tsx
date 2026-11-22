@@ -8,7 +8,7 @@
 
 import { useI18n } from "../i18n/I18nProvider";
 import RequestsSection from "../start/RequestsSection";
-import Agenda, { SunHours } from "./Agenda";
+import Agenda from "./Agenda";
 import Banners from "./Banners";
 import { IndicatorsCard } from "./InsightCards";
 import BatteriesCard from "./BatteryList";
@@ -29,11 +29,7 @@ export default function PlanScreen() {
   // Indicateur mis en avant et indicateurs masqués, choisis dans « Personnaliser » (Courbes).
   const { layout } = useDashboardLayout();
 
-  const requests = (
-    <div className="ui-card plan-requests">
-      <RequestsSection />
-    </div>
-  );
+  const requests = <RequestsSection />;
 
   return (
     <section aria-labelledby="plan-title">
@@ -56,7 +52,6 @@ export default function PlanScreen() {
           {/* Deux colonnes sur un écran large, l'une sous l'autre sinon (styles.css). */}
           <div className="plan-columns">
             <div className="plan-agenda">
-              <SunHours view={load.view} />
               <Agenda
                 view={load.view}
                 onChanged={reload}
@@ -65,7 +60,7 @@ export default function PlanScreen() {
             </div>
             <div className="plan-side">
               <div className="plan-insights">
-                <IndicatorsCard view={load.view} layout={layout.indicators} />
+                <IndicatorsCard view={load.view} layout={layout.indicators} compact expandable />
                 <BatteriesCard view={load.view} />
                 <PhasesCard view={load.view} />
               </div>

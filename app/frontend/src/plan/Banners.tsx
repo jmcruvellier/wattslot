@@ -5,12 +5,12 @@
 
 import { useI18n } from "../i18n/I18nProvider";
 import type { Language } from "../i18n/translate";
+import { sunWindow } from "./agendaEntries";
 import { clock, duration, kwh, percent, time } from "./format";
 import type { ReactNode } from "react";
 
 import type { DayView, Departure, DeviceStatus, ReadingWeather, Timeline, WeatherBanner } from "./types";
 import Icon from "../ui/Icon";
-import type { IconName } from "../ui/iconPaths";
 
 // Météo du jour : soleil, nuages et soleil, nuages (lot 6b.7, à la place des emojis).
 const WEATHER_ICONS = { sunny: "today", mixed: "cloud-sun", cloudy: "cloud" } as const;
@@ -21,14 +21,12 @@ function Badge({ tone, children }: { tone: "ok" | "medium" | "bad" | "neutral"; 
 
 function Tile({
   label,
-  icon,
   title,
   value,
   badge,
   children,
 }: {
   label: string; // nom de la tuile pour les lecteurs d'écran
-  icon: IconName;
   title: string;
   value: string;
   badge?: ReactNode;
@@ -37,12 +35,10 @@ function Tile({
   return (
     <details className="plan-tile" aria-label={label}>
       <summary>
-        <span className="plan-tile-title">
-          <Icon name={icon} size={18} /> {title}
-        </span>
+        <span className="plan-tile-title">{title}</span>
         <strong className="plan-tile-value">{value}</strong>
         {badge}
-        <Icon name="chevron-right" size={18} />
+        <Icon name="chevron-right" size={16} />
       </summary>
       <div className="plan-tile-detail">{children}</div>
     </details>
@@ -56,8 +52,7 @@ function DepartureBanner({ departure }: { departure: Departure }) {
   return (
     <Tile
       label={t("plan.banner.departure_title")}
-      icon="battery"
-      title={t("plan.banner.departure_title")}
+      title={t("plan.banner.departure_tile")}
       value={`${percent(departure.soc_percent)} %`}
       badge={departure.badge && <Badge tone={tone[departure.badge]}>{t(`plan.banner.departure_badge.${departure.badge}`)}</Badge>}
     >
@@ -88,7 +83,15 @@ function DepartureBanner({ departure }: { departure: Departure }) {
   );
 }
 
-function WeatherPill({ weather, reading }: { weather: WeatherBanner; reading: ReadingWeather | null }) {
+function WeatherPill({
+  weather,
+  reading,
+  sun,
+}: {
+  weather: WeatherBanner;
+  reading: ReadingWeather | null;
+  sun: [number, number] | null; // heures où le soleil produit le plus
+}) {
   const { language, t } = useI18n();
   const parts = [
     t(weather.measured ? "plan.banner.weather.measured" : "plan.banner.weather.forecast", { kwh: kwh(weather.production_kwh, 1) }),
@@ -118,15 +121,27 @@ function WeatherPill({ weather, reading }: { weather: WeatherBanner; reading: Re
     );
   }
   const tone = { reliable: "ok", moderate: "medium", important: "bad", too_early: "neutral" } as const;
+  // Écart du mesuré à la prévision, à côté de la pastille (« fiable · +5 % »).
+  const gapPercent = reading && reading.mode !== "no_reading" ? reading.gap_percent : null;
+  const trend = gapPercent == null ? null : `${gapPercent >= 0 ? "+" : ""}${gapPercent} %`;
   return (
     <Tile
       label={t("plan.banner.weather_title")}
-      icon={weather.quality ? WEATHER_ICONS[weather.quality] : "today"}
-      title={t(`plan.banner.weather.quality.${weather.quality ?? "unknown"}`)}
+      title={t(weather.measured ? "plan.banner.weather_tile_measured" : "plan.banner.weather_tile_forecast")}
       value={`${kwh(weather.production_kwh, 1)} kWh`}
-      badge={reading?.badge && <Badge tone={tone[reading.badge]}>{t(`plan.banner.weather.badge.${reading.badge}`)}</Badge>}
+      badge={
+        reading?.badge && (
+          <Badge tone={tone[reading.badge]}>
+            {`${t(`plan.banner.weather.badge.${reading.badge}`)}${trend ? ` · ${trend}` : ""}`}
+          </Badge>
+        )
+      }
     >
-      <span>{parts.join(" · ")}</span>
+      <p>
+        <Icon name={weather.quality ? WEATHER_ICONS[weather.quality] : "today"} size={16} />{" "}
+        <strong>{t(`plan.banner.weather.quality.${weather.quality ?? "unknown"}`)}</strong> — {parts.join(" · ")}
+      </p>
+      {sun && <p>{t("plan.agenda.sun_hours", { start: sun[0], end: sun[1] })}</p>}
     </Tile>
   );
 }
@@ -176,9 +191,12 @@ function EquipmentPill({ timeline }: { timeline: Timeline }) {
   return (
     <Tile
       label={t("plan.banner.equip_title")}
-      icon="plug"
-      title={t("plan.banner.equip_title")}
-      value={t("plan.banner.equip.started", { started, total: lines.length })}
+      title={t("plan.banner.equip_tile")}
+      value={
+        lines.length === 0
+          ? t("plan.banner.equip.nothing")
+          : t("plan.banner.equip.count", { started, planned: lines.length - started })
+      }
       badge={
         timeline.badge && (
           <Badge tone={timeline.badge === "on_time" ? "ok" : "medium"}>{t(`plan.banner.equip.badge.${timeline.badge}`)}</Badge>
@@ -196,7 +214,9 @@ export default function Banners({ view }: { view: DayView }) {
   return (
     <div className="banners">
       {view.departure && <DepartureBanner departure={view.departure} />}
-      {view.solar !== false && <WeatherPill weather={view.weather} reading={view.cards?.weather ?? null} />}
+      {view.solar !== false && (
+        <WeatherPill weather={view.weather} reading={view.cards?.weather ?? null} sun={sunWindow(view)} />
+      )}
       {view.kind !== "tomorrow" && <EquipmentPill timeline={view.timeline} />}
     </div>
   );

@@ -63,7 +63,7 @@ describe("PlanScreen", () => {
 
     const list = await screen.findByRole("list", { name: "Agenda de la journée" });
     // La raison du créneau : repliée sous la ligne de l'appareil, plus dans une carte à part.
-    const cycle = within(list).getByText("Lancez Lave-linge").closest("details");
+    const cycle = within(list).getByText("Lave-linge").closest("details");
     expect(cycle).not.toHaveAttribute("open");
     expect(cycle).toHaveTextContent("Placé à 10h pour profiter du soleil.");
     expect(screen.queryByRole("article", { name: "Pourquoi ce plan" })).toBeNull();
@@ -72,7 +72,7 @@ describe("PlanScreen", () => {
     const why = screen.getByText("Pourquoi ce plan").closest("details");
     expect(why).not.toHaveAttribute("open");
     expect(why).toHaveTextContent("Chauffe-eau : 15h00");
-    expect(why?.parentElement).toBe(container.querySelector(".plan-agenda"));
+    expect(why?.closest(".plan-agenda")).toBe(container.querySelector(".plan-agenda"));
     const indicators = screen.getByRole("article", { name: "Indicateurs du plan" });
     expect(indicators.parentElement).toBe(container.querySelector(".plan-insights"));
     expect(screen.queryByText(/graphique/)).toBeNull();
@@ -84,7 +84,7 @@ describe("PlanScreen", () => {
     mockApi(() => ({ yesterday: null, today: 1, tomorrow: null, week: null }), TODAY, saved);
     const { container } = renderScreen();
 
-    await waitFor(() => expect(container.querySelector(".indicator-main dt")).toHaveTextContent("Coût"));
+    await waitFor(() => expect(container.querySelector(".indicator-strong dt")).toHaveTextContent("Coût"));
   });
 
   it("sans explication ni indicateur : rien sous l'agenda", async () => {

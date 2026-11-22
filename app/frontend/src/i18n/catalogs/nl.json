@@ -266,7 +266,6 @@
       },
       "equip_title": "Apparaten",
       "equip": {
-        "started": "{started} van {total} gestart",
         "on_time": "{device} op tijd ({time}), {kwh}",
         "shifted": "{device} {shift} ({actual} in plaats van {planned}), {kwh}",
         "no_cycle": "{device}: geen cyclus ({start}–{end}, {kwh} kWh gepland)",
@@ -277,8 +276,14 @@
         "badge": {
           "on_time": "volgens plan",
           "shifted": "verschoven"
-        }
-      }
+        },
+        "count": "{started} gestart, {planned} gepland",
+        "nothing": "Niets gepland"
+      },
+      "departure_tile": "Batterij om middernacht",
+      "weather_tile_forecast": "Zon verwacht",
+      "weather_tile_measured": "Zon gemeten",
+      "equip_tile": "Apparaten"
     },
     "summary": {
       "cards": {
@@ -352,7 +357,11 @@
       "end_soc_percent": "Laadniveau aan het eind van de dag",
       "battery_throughput_kwh": "Energie door de batterij",
       "chosen": "Uitgelicht kengetal gekozen in „Aanpassen”.",
-      "subscription_part": "waarvan vastrecht {amount}"
+      "subscription_part": "waarvan vastrecht {amount}",
+      "short": {
+        "cost_eur": "Kosten vandaag",
+        "export_kwh": "Overschot"
+      }
     },
     "quality": {
       "title": "Kwaliteit van de voorspellingen",
@@ -447,17 +456,18 @@
       "title": "Dagagenda",
       "sun_hours": "Zon vooral tussen {start} en {end} uur",
       "sun_none": "Geen zonne-opwekking verwacht.",
-      "cycle": "Start {device}",
       "runtime": "{device}, {duration}",
       "mode": "Stand {mode}",
       "battery_charge": "De batterij laadt",
       "battery_discharge": "De batterij neemt het over",
       "battery_max": "Batterij op het hoogst, {pct}%",
-      "until": "Tot {time}",
+      "until": "tot {time}",
       "empty": "Niets te starten die dag.",
       "now": "Nu",
       "battery_charge_of": "{battery}: laadt",
-      "battery_discharge_of": "{battery}: neemt het over"
+      "battery_discharge_of": "{battery}: neemt het over",
+      "heading": "De dag",
+      "launched": "gestart"
     },
     "discarded": "Onmogelijke meting weggelaten om {hours}: waarschijnlijk een sensoronderbreking.",
     "discarded_link": "Gegevens bekijken",
@@ -470,7 +480,11 @@
       "running": "Nieuwe berekening met deze start…",
       "failed": "De start kon niet worden gewijzigd."
     },
-    "provisional": "Voorlopig plan: WattSlot haalt de geschiedenis van Home Assistant nog op ({count} meter(s) over). Je gebruikelijke verbruik is nog niet bekend: de cijfers worden nauwkeuriger bij de eerste berekening na het ophalen."
+    "provisional": "Voorlopig plan: WattSlot haalt de geschiedenis van Home Assistant nog op ({count} meter(s) over). Je gebruikelijke verbruik is nog niet bekend: de cijfers worden nauwkeuriger bij de eerste berekening na het ophalen.",
+    "reason": {
+      "solar": "{pct}% zon",
+      "cheap": "daluren"
+    }
   },
   "requests": {
     "title": "Mijn verzoeken",
@@ -494,20 +508,20 @@
     "error": "De verzoeken kunnen niet worden gelezen.",
     "none": "Geen lopend verzoek.",
     "open_list": "Lopende verzoeken",
-    "open_asap": "{device}: zo snel mogelijk",
-    "open_latest": "{device}: uiterlijk op {latest}",
-    "launched": "{device}: vandaag gestart",
     "done_item": "{device}: klaar",
     "cancelled_item": "{device}: geannuleerd",
     "mark_done": "Klaar",
     "mark_launched": "Is gestart",
-    "declared_item": "{device}: gemarkeerd als gestart",
     "cancel": "Annuleren",
     "recent": "Recente verzoeken",
     "loading": "Apparaten worden gelezen…",
     "no_device": "Geen enkel apparaat in je huis kan op aanvraag starten.",
     "sheet_done": "Aanvraag opgeslagen: de volgende berekening plant hem op het beste moment.",
-    "sheet_close": "Klaar"
+    "sheet_close": "Klaar",
+    "state_asap": "zo snel mogelijk",
+    "state_latest": "uiterlijk op {latest}",
+    "state_launched": "vandaag gestart",
+    "state_declared": "gemarkeerd als gestart"
   },
   "settings": {
     "loading": "Instellingen worden gelezen…",
@@ -1649,15 +1663,14 @@
       "grid": "Net",
       "charging": "laadt {kw}",
       "discharging": "levert {kw}",
-      "buying": "afname {kw}",
-      "selling": "overschot {kw}",
       "idle": "niets",
-      "measured": "Vermogens: gemiddelde van {start} tot {end}. Batterij: laatste meting."
+      "measured": "Vermogens: gemiddelde van {start} tot {end}. Batterij: laatste meting.",
+      "grid_buying": "Afname",
+      "grid_selling": "Overschot"
     },
     "next": {
       "eyebrow": "Volgende actie",
       "title": "Start {device}",
-      "slot": "Start om {start}, klaar rond {end}.",
       "slot_late": "De geplande start om {start} is voorbij: start zo snel mogelijk.",
       "now": "nu",
       "launched": "Is gestart",
@@ -1682,23 +1695,19 @@
       "add_appliance": "Apparaat toevoegen",
       "cancel": "Annuleren",
       "cancel_failed": "Het annuleren is mislukt.",
-      "why": "Waarom dit tijdstip?",
-      "other_time": "Ander tijdstip"
+      "other_time": "Ander tijdstip",
+      "end": "Klaar rond {end}"
     },
     "battery": {
       "eyebrow": "Batterij",
-      "title": "{pct}% op dit moment",
-      "max_label": "Hoogste stand",
-      "max_value": "{pct}% rond {time}",
-      "end_label": "Vanavond om middernacht",
-      "end_value": "{pct}%"
+      "end_label": "Om middernacht",
+      "end_value": "{pct}%",
+      "now_label": "Nu"
     },
     "sun": {
       "eyebrow": "Zon",
-      "title": "{kwh} kWh verwacht vandaag",
       "done_label": "Al opgewekt",
-      "at_reading_label": "Verwacht op dit moment",
-      "none": "Nog geen opwekking gemeten."
+      "forecast_label": "Verwacht vandaag"
     },
     "trend": "Verschil met de voorspelling bij de meting"
   },

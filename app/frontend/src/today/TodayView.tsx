@@ -1,10 +1,10 @@
-// Écran Aujourd'hui (lot 6b.3) : répond à « que se passe-t-il maintenant ? » et « que dois-je
-// faire, et quand ? ». De haut en bas : le moment (phrase et flux du dernier quart d'heure ;
-// rien sans mesures du moment), la prochaine action et ses boutons (sa raison et les autres
-// départs se déplient), la frise du jour, la batterie, le soleil et le bilan (en lignes
-// « libellé, valeur ») ; sur un écran large, les cartes se rangent deux par deux. La
-// batterie et le soleil portent leur tendance au relevé (mesuré contre estimé). Le
-// détail (onglets, courbes) reste dans Planning. Vue relue toutes les minutes.
+// Écran Aujourd'hui (lot 6b.3) : répond à « que dois-je faire, et quand ? » et « que se
+// passe-t-il maintenant ? ». En panneaux à petit titre (ui/Panel) : la prochaine action (son
+// heure de fin, sa raison en quelques mots, ses boutons) et le moment (quatre tuiles, le dernier
+// quart d'heure) côte à côte ; la frise du jour ; puis les indicateurs du plan à côté de la
+// batterie et du soleil, en lignes « libellé, valeur ». Sur téléphone, les panneaux s'empilent
+// dans cet ordre. Le détail (agenda, raisons, courbes) est dans Planning et Courbes. Vue relue
+// toutes les minutes.
 
 import { useEffect, useState } from "react";
 
@@ -25,11 +25,12 @@ import OtherStarts from "../plan/OtherStarts";
 import { BatteryList } from "../plan/BatteryList";
 import DiscardedNote from "../plan/DiscardedNote";
 import ProvisionalNote from "../plan/ProvisionalNote";
+import { shortReason } from "../plan/shortReason";
 import { useHomeFeatures } from "../home/features";
 import type { DayView, LineKey, Now } from "../plan/types";
 import Button from "../ui/Button";
-import Card from "../ui/Card";
 import Icon from "../ui/Icon";
+import Panel from "../ui/Panel";
 import StateMessage from "../ui/StateMessage";
 
 export const REFRESH_MS = 60_000;
@@ -107,14 +108,11 @@ export default function TodayView({ onNavigate }: { onNavigate?: (target: string
   // prévisions seules pouvait être inférieure à ce qui est déjà produit (« 1,2 kWh prévus »
   // à côté de « 1,5 kWh déjà produits »).
   const expected = view.weather?.production_kwh ?? view.summary.production_kwh;
-  // Prévu jusqu'au relevé : la référence de la pastille de tendance. Sans lui, « 6,6 kWh prévus,
-  // 6,6 kWh déjà produits » à côté de « −7 % » se contredisaient (constaté le 13/11/2026).
-  const sunLine = view.cards?.at_reading.find((card) => card.key === "production");
-  const forecastAtReading = sunLine && sunLine.trend.direction !== "none" ? sunLine.estimated_kwh : null;
 
   const unplaced = unplacedNotices(view.notices);
   const hasBattery = view.battery_capacity_kwh !== null;
   const hasSun = view.solar !== false;
+  const hasNow = view.now != null && view.now.sentence !== null;
 
   return (
     <div className="today">
@@ -128,9 +126,9 @@ export default function TodayView({ onNavigate }: { onNavigate?: (target: string
       <ProvisionalNote view={view} />
       {/* Côte à côte quand la largeur le permet ; sans mesures du moment, la prochaine action
           prend toute la largeur. */}
-      <div className="today-row">
-        <NowCard now={view.now ?? null} />
+      <div className={hasNow ? "today-row today-row-split" : "today-row"}>
         <NextActionCard view={view} onChanged={() => setAttempt((count) => count + 1)} onNavigate={onNavigate} />
+        <NowCard now={view.now ?? null} />
       </div>
       {/* Appareils demandés que le calcul n'a pas placés : sans bloc ni prochaine action. */}
       {unplaced.length > 0 && (
@@ -150,22 +148,16 @@ export default function TodayView({ onNavigate }: { onNavigate?: (target: string
         onChanged={() => setAttempt((count) => count + 1)}
         hours={view.hours}
       />
-      <div className="today-row">
+      <div className={hasBattery || hasSun ? "today-row today-row-split" : "today-row"}>
+        <IndicatorsCard view={view} layout={DEFAULT_LAYOUT.indicators} compact />
         {(hasBattery || hasSun) && (
-          <div className="today-grid">
+          <div className="today-stack">
             {hasBattery && (
-              <Card tone="battery" eyebrow={t("today.battery.eyebrow")} title={t("today.battery.title", {
-                pct: percent(view.now?.soc_percent ?? null),
-              })} meta={<TrendBadge view={view} line="soc" />}>
+              <Panel icon="battery" title={t("today.battery.eyebrow")} meta={<TrendBadge view={view} line="soc" />}>
                 <dl className="indicators">
                   <div className="indicator">
-                    <dt>{t("today.battery.max_label")}</dt>
-                    <dd>
-                      {t("today.battery.max_value", {
-                        pct: percent(view.summary.soc_max_percent),
-                        time: clock(view.summary.soc_max_hour * 60, language),
-                      })}
-                    </dd>
+                    <dt>{t("today.battery.now_label")}</dt>
+                    <dd>{t("today.battery.end_value", { pct: percent(view.now?.soc_percent ?? null) })}</dd>
                   </div>
                   <div className="indicator">
                     <dt>{t("today.battery.end_label")}</dt>
@@ -174,74 +166,68 @@ export default function TodayView({ onNavigate }: { onNavigate?: (target: string
                 </dl>
                 {/* Plusieurs batteries : l'état de charge de chacune, sous celui de la maison. */}
                 {(view.now?.batteries?.length ?? 0) > 1 && <BatteryList batteries={view.now?.batteries ?? []} />}
-              </Card>
+              </Panel>
             )}
             {hasSun && (
-              <Card tone="sun" eyebrow={t("today.sun.eyebrow")} title={t("today.sun.title", { kwh: kwh(expected, 1) })} meta={<TrendBadge view={view} line="production" />}>
-                {!measuredHours && <p>{t("today.sun.none")}</p>}
-                {measuredHours && (
-                  <dl className="indicators">
-                    <div className="indicator">
-                      <dt>{t("today.sun.done_label")}</dt>
-                      <dd>{kwh(produced, 1)} kWh</dd>
-                    </div>
-                    {forecastAtReading !== null && (
-                      <div className="indicator">
-                        <dt>{t("today.sun.at_reading_label")}</dt>
-                        <dd>{kwh(forecastAtReading, 1)} kWh</dd>
-                      </div>
-                    )}
-                  </dl>
-                )}
-              </Card>
+              <Panel icon="today" title={t("today.sun.eyebrow")} meta={<TrendBadge view={view} line="production" />}>
+                <dl className="indicators">
+                  <div className="indicator">
+                    <dt>{t("today.sun.forecast_label")}</dt>
+                    <dd>{kwh(expected, 1)} kWh</dd>
+                  </div>
+                  <div className="indicator">
+                    <dt>{t("today.sun.done_label")}</dt>
+                    <dd>{measuredHours ? `${kwh(produced, 1)} kWh` : "—"}</dd>
+                  </div>
+                </dl>
+              </Panel>
             )}
           </div>
         )}
-        <IndicatorsCard view={view} layout={DEFAULT_LAYOUT.indicators} />
       </div>
     </div>
   );
 }
 
-/** Sans mesures du moment, pas de carte : le texte entier du plan, qui la remplissait, redisait
- * la prochaine action, la frise, la batterie et le bilan ; il reste dans Planning (« Pourquoi ce
- * plan »). */
+/** Le moment en quatre tuiles (moyenne du dernier quart d'heure ; la plage est en infobulle, la
+ * phrase du serveur pour les lecteurs d'écran). Sans mesures du moment, pas de panneau. */
 function NowCard({ now }: { now: Now | null }) {
   const { language, t } = useI18n();
   if (now === null || now.sentence === null) return null;
-  const tiles: { key: string; label: string; value: string; tone?: "sun" | "battery" }[] = [];
-  if (now.production_w !== null) tiles.push({ key: "sun", label: t("today.now.panels"), value: kw(now.production_w), tone: "sun" });
+  const tiles: { key: string; label: string; value: string }[] = [];
+  if (now.production_w !== null) tiles.push({ key: "sun", label: t("today.now.panels"), value: kw(now.production_w) });
   if (now.consumption_w !== null) tiles.push({ key: "home", label: t("today.now.home"), value: kw(now.consumption_w) });
   if (now.battery_w !== null || now.soc_percent !== null) {
     const parts = [now.soc_percent !== null ? `${percent(now.soc_percent)} %` : null];
     if (now.battery_w) parts.push(t(now.battery_w > 0 ? "today.now.charging" : "today.now.discharging", { kw: kw(now.battery_w) }));
-    tiles.push({ key: "battery", label: t("today.now.battery"), value: parts.filter(Boolean).join(" · "), tone: "battery" });
+    tiles.push({ key: "battery", label: t("today.now.battery"), value: parts.filter(Boolean).join(" · ") });
   }
   if (now.grid_w !== null) {
-    const key = now.grid_w > 0 ? "today.now.buying" : now.grid_w < 0 ? "today.now.selling" : "today.now.idle";
-    tiles.push({ key: "grid", label: t("today.now.grid"), value: t(key, { kw: kw(now.grid_w) }) });
+    // Le libellé dit le sens (« Achat », « Surplus »), la valeur la puissance.
+    const label = now.grid_w > 0 ? "today.now.grid_buying" : now.grid_w < 0 ? "today.now.grid_selling" : "today.now.grid";
+    tiles.push({ key: "grid", label: t(label), value: now.grid_w === 0 ? t("today.now.idle") : kw(now.grid_w) });
   }
+  const measured =
+    now.since && now.until
+      ? t("today.now.measured", {
+          start: new Date(now.since).toLocaleTimeString(language, zoned({ hour: "2-digit", minute: "2-digit" })),
+          end: new Date(now.until).toLocaleTimeString(language, zoned({ hour: "2-digit", minute: "2-digit" })),
+        })
+      : undefined;
   return (
-    <Card eyebrow={t("today.now.eyebrow")} title={now.sentence}>
+    <Panel icon="plug" title={t("today.now.eyebrow")}>
+      <p className="visually-hidden">{now.sentence}</p>
       {tiles.length > 0 && (
-        <dl className="now-tiles">
+        <dl className="now-tiles" title={measured}>
           {tiles.map((tile) => (
-            <div key={tile.key} className={tile.tone ? `now-tile now-tile-${tile.tone}` : "now-tile"}>
+            <div key={tile.key} className="now-tile">
               <dt>{tile.label}</dt>
               <dd>{tile.value}</dd>
             </div>
           ))}
         </dl>
       )}
-      {now.since && now.until && (
-        <p className="dim">
-          {t("today.now.measured", {
-            start: new Date(now.since).toLocaleTimeString(language, zoned({ hour: "2-digit", minute: "2-digit" })),
-            end: new Date(now.until).toLocaleTimeString(language, zoned({ hour: "2-digit", minute: "2-digit" })),
-          })}
-        </p>
-      )}
-    </Card>
+    </Panel>
   );
 }
 
@@ -314,15 +300,16 @@ function NextActionCard({
     const reason = noAppliance ? "no_appliance" : (view.idle_reason ?? "none");
     const devices = (view.timeline.cancelled ?? []).join(", ");
     return (
-      <Card eyebrow={t("today.next.eyebrow")} title={t(`today.next.${reason}`)}>
-        <p className="dim">{t(`today.next.${reason}_help`, { devices })}</p>
+      <Panel icon="play" title={t("today.next.eyebrow")} className="next-action">
+        <h3 className="next-action-title">{t(`today.next.${reason}`)}</h3>
+        <p className="next-action-line">{t(`today.next.${reason}_help`, { devices })}</p>
         {noAppliance && onNavigate && (
           <Button variant="primary" icon="plus" onClick={() => onNavigate("devices#add-device")}>
             {t("today.next.add_appliance")}
           </Button>
         )}
         {declared}
-      </Card>
+      </Panel>
     );
   }
 
@@ -371,29 +358,31 @@ function NextActionCard({
   // à venir, ni une heure de fin qui ne vaut plus.
   const late = action.late ?? false;
   const chosen = action.chosen ?? false;
-  // Après 23 h et sans autre départ du plan, il n'y a plus d'heure à proposer.
-  const hasOtherTime = chosen || (action.alternatives ?? []).length > 0 || minuteOfDay() < 23 * 60;
+  // La raison en quelques mots (« 100 % solaire »), à côté de l'heure de fin ; la phrase
+  // complète du serveur est sous « Autre heure ».
+  const reason = shortReason(view.explanations.find((item) => item.device === action.device)?.explanation, t);
   return (
-    <section className="next-action" aria-labelledby="next-action-title">
-      <p className="ui-eyebrow">
-        {t("today.next.eyebrow")} · {late ? t("today.next.now") : start}
-      </p>
-      <h3 id="next-action-title" className="ui-card-title">
+    <section className="ui-card ui-panel next-action" aria-labelledby="next-action-title">
+      <div className="ui-panel-head">
+        <p className="ui-panel-title">
+          <Icon name="play" size={16} />
+          {t("today.next.eyebrow")} · {late ? t("today.next.now") : start}
+        </p>
+      </div>
+      <h3 id="next-action-title" className="next-action-title">
         {t("today.next.title", { device: action.device })}
       </h3>
-      <p>
-        {late
-          ? t("today.next.slot_late", { start })
-          : t("today.next.slot", { start, end: clock(action.end_min, language) })}
-        {/* En retard, la raison dit quoi faire maintenant : elle reste sous les yeux. */}
-        {late && action.explanation && <> {action.explanation}</>}
+      <p className="next-action-line">
+        {late ? (
+          // En retard, la raison dit quoi faire maintenant : elle reste sous les yeux.
+          <>
+            {t("today.next.slot_late", { start })}
+            {action.explanation && <> {action.explanation}</>}
+          </>
+        ) : (
+          [t("today.next.end", { end: clock(action.end_min, language) }), reason].filter(Boolean).join(" · ")
+        )}
       </p>
-      {!late && action.explanation && (
-        <details className="next-action-why">
-          <summary>{t("today.next.why")}</summary>
-          <p>{action.explanation}</p>
-        </details>
-      )}
       {action.waits_for && <p className="dim">{t("today.next.waits_for", { device: action.waits_for })}</p>}
       <div className="next-action-buttons">
         {/* Un cycle qui attend la fin d'un autre ne peut pas avoir été lancé : pas de bouton. */}
@@ -407,28 +396,31 @@ function NextActionCard({
             {t(reminder ? "today.next.reminder_set" : "today.next.remind")}
           </Button>
         )}
-        {hasOtherTime && (
-          <Button aria-expanded={otherTime || chosen} disabled={chosen} onClick={() => setOtherTime(!otherTime)}>
-            {t("today.next.other_time")}
-          </Button>
-        )}
-        {/* Annule la planification de l'équipement pour aujourd'hui, sans quitter l'écran. */}
-        <Button icon="close" disabled={cancelling} onClick={() => void cancel()}>
-          {t("today.next.cancel")}
+        <Button aria-expanded={otherTime || chosen} disabled={chosen} onClick={() => setOtherTime(!otherTime)}>
+          {t("today.next.other_time")}
         </Button>
       </div>
       {launchFailed && <p role="alert">{t("today.next.launched_failed")}</p>}
       {failed && <p role="alert">{t("today.next.remind_failed")}</p>}
       {cancelFailed && <p role="alert">{t("today.next.cancel_failed")}</p>}
-      {/* Un départ choisi garde le bloc ouvert : « Revenir au choix du calcul » reste visible. */}
+      {/* « Autre heure » : la raison complète, les autres départs et l'heure libre, l'annulation
+          pour aujourd'hui. Un départ choisi garde le bloc ouvert : « Revenir au choix du calcul »
+          reste visible. */}
       {(otherTime || chosen) && (
-        <OtherStarts
-          device={action.device}
-          alternatives={action.alternatives ?? []}
-          chosen={chosen}
-          onChanged={onChanged}
-          freeFrom={minuteOfDay()} // heure libre, comme la frise
-        />
+        <div className="next-action-more">
+          {!late && action.explanation && <p className="dim">{action.explanation}</p>}
+          <OtherStarts
+            device={action.device}
+            alternatives={action.alternatives ?? []}
+            chosen={chosen}
+            onChanged={onChanged}
+            freeFrom={minuteOfDay()} // heure libre, comme la frise
+          />
+          {/* Annule la planification de l'équipement pour aujourd'hui, sans quitter l'écran. */}
+          <Button icon="close" disabled={cancelling} onClick={() => void cancel()}>
+            {t("today.next.cancel")}
+          </Button>
+        </div>
       )}
       {declared}
     </section>
