@@ -51,16 +51,19 @@ def test_a_runtime_that_does_not_run_is_not_said_to_be_placed(path: Path) -> Non
         if not isinstance(item, RuntimePlan) or item.explanation is None:
             continue
         codes = [reason.code for reason in item.explanation.reasons]
+        text = render(item.explanation, "fr")
+        assert codes[0] == "objective", item.device  # le texte du plan y lit l'objectif du jour
         if any(segment.mode != "off" for segment in item.segments):
-            assert codes[0] == "objective", item.device
             assert "runtime_off" not in codes
+            assert text.startswith("Placé pour")
         else:
-            assert "objective" not in codes, item.device
-            assert codes[0] in ("runtime_off", "skipped_full_charge")
+            assert "runtime_off" in codes or "skipped_full_charge" in codes, item.device
+            assert "Placé pour" not in text and text
 
 
 def test_a_runtime_off_all_day_says_so_in_each_language() -> None:
-    explanation = Explanation(reasons=[Reason(code="runtime_off")])
+    objective = Reason(code="objective", params={"objective": "cost"})
+    explanation = Explanation(reasons=[objective, Reason(code="runtime_off")])
 
     assert render(explanation, "fr") == "À l'arrêt toute la journée."
     assert len({render(explanation, lang) for lang in LANGUAGES}) == len(LANGUAGES)
