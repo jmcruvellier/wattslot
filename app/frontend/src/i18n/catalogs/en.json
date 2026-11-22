@@ -265,6 +265,7 @@
       },
       "equip_title": "Appliances",
       "equip": {
+        "started": "{started} of {total} started",
         "on_time": "{device} on time ({time}), {kwh}",
         "shifted": "{device} {shift} ({actual} instead of {planned}), {kwh}",
         "no_cycle": "{device}: no cycle ({start}–{end}, {kwh} kWh planned)",

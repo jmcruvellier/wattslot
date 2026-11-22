@@ -265,6 +265,7 @@
       },
       "equip_title": "Aparatos",
       "equip": {
+        "started": "{started} de {total} iniciados",
         "on_time": "{device} a su hora ({time}), {kwh}",
         "shifted": "{device} {shift} ({actual} en lugar de {planned}), {kwh}",
         "no_cycle": "{device}: ningún ciclo ({start}–{end}, {kwh} kWh previstos)",
