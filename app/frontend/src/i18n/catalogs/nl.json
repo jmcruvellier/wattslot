@@ -254,8 +254,11 @@
           "on_time": "volgens plan",
           "shifted": "verschoven"
         },
-        "count": "{started} gestart, {planned} gepland",
-        "nothing": "Niets gepland"
+        "nothing": "Niets gepland",
+        "started_one": "{n} gestart",
+        "started_other": "{n} gestart",
+        "planned_one": "{n} gepland",
+        "planned_other": "{n} gepland"
       },
       "departure_tile": "Batterij om middernacht",
       "weather_tile_forecast": "Zon verwacht",
@@ -495,7 +498,6 @@
     "finish_none": "zonder tijdslimiet",
     "finish_hint": "De cyclus is klaar vóór {hour} op de dag dat hij draait; als geen tijdvak dat toelaat, plant het plan hem toch in en meldt het dat.",
     "waiting_finish": "De tijdslimiet: vóór {hour}. ‘Datum wijzigen’ vervangt die door de hier gekozen limiet.",
-    "with_finish": "{request}, klaar vóór {hour}",
     "ask": "Aanvragen",
     "hint": "Zonder datum: zodra de zon het toelaat. Hetzelfde apparaat kan meerdere keren worden aangevraagd: elk verzoek is één cyclus, gepland na de vorige.",
     "change_date": "Datum wijzigen",
@@ -518,15 +520,14 @@
     "no_device": "Geen enkel apparaat in je huis kan op aanvraag starten.",
     "sheet_done": "Aanvraag opgeslagen: de volgende berekening plant hem op het beste moment.",
     "sheet_close": "Klaar",
-    "state_asap": "zo snel mogelijk",
-    "state_latest": "uiterlijk op {latest}",
-    "state_launched": "vandaag gestart",
     "state_declared": "gemarkeerd als gestart",
     "planned_on": "gepland {day}",
     "not_placed": "nog niet ingepland",
     "none_day": "Geen aanvraag die dag.",
     "state_done": "klaar",
-    "state_cancelled": "geannuleerd"
+    "state_cancelled": "geannuleerd",
+    "state_finish": "klaar vóór {hour}",
+    "not_computed": "nog niet berekend"
   },
   "settings": {
     "loading": "Instellingen worden gelezen…",

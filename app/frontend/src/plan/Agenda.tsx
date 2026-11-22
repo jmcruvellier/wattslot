@@ -43,10 +43,10 @@ function Entry({
     // Vu dans les mesures : l'énergie mesurée, en pastille ; sinon l'énergie prévue.
     const energy = entry.launched ? (
       <span className="badge badge-ok">
-        {t("plan.agenda.launched")} · {kwh(entry.actual_kwh ?? entry.energy_kwh, 1)} kWh
+        {t("plan.agenda.launched")} · {kwh(entry.actual_kwh ?? entry.energy_kwh)} kWh
       </span>
     ) : (
-      <span className="agenda-detail">{kwh(entry.energy_kwh, 1)} kWh</span>
+      <span className="agenda-detail">{kwh(entry.energy_kwh)} kWh</span>
     );
     if (!entry.explanation && !entry.chosen) {
       return (

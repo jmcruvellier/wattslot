@@ -254,8 +254,11 @@
           "on_time": "come previsto",
           "shifted": "spostato"
         },
-        "count": "{started} avviati, {planned} previsti",
-        "nothing": "Niente previsto"
+        "nothing": "Niente previsto",
+        "started_one": "{n} avviato",
+        "started_other": "{n} avviati",
+        "planned_one": "{n} previsto",
+        "planned_other": "{n} previsti"
       },
       "departure_tile": "Batteria a mezzanotte",
       "weather_tile_forecast": "Sole previsto",
@@ -495,7 +498,6 @@
     "finish_none": "senza orario limite",
     "finish_hint": "Il ciclo finirà entro le {hour} nel giorno in cui viene eseguito; se nessuna fascia lo permette, il piano lo colloca comunque e lo segnala.",
     "waiting_finish": "Il suo orario limite: entro le {hour}. «Cambia la data» lo sostituisce con quello scelto qui.",
-    "with_finish": "{request}, finito entro le {hour}",
     "ask": "Richiedi",
     "hint": "Senza data: non appena il sole lo permette. Lo stesso apparecchio può essere richiesto più volte: ogni richiesta è un ciclo, collocato dopo il precedente.",
     "change_date": "Cambia la data",
@@ -518,15 +520,14 @@
     "no_device": "Nessun apparecchio della casa si avvia su richiesta.",
     "sheet_done": "Richiesta salvata: il prossimo calcolo la collocherà nel momento migliore.",
     "sheet_close": "Fatto",
-    "state_asap": "il prima possibile",
-    "state_latest": "al più tardi il {latest}",
-    "state_launched": "avviato oggi",
     "state_declared": "segnato come avviato",
     "planned_on": "previsto {day}",
     "not_placed": "non ancora pianificata",
     "none_day": "Nessuna richiesta quel giorno.",
     "state_done": "fatto",
-    "state_cancelled": "annullato"
+    "state_cancelled": "annullato",
+    "state_finish": "finito entro le {hour}",
+    "not_computed": "non ancora calcolato"
   },
   "settings": {
     "loading": "Lettura delle impostazioni…",

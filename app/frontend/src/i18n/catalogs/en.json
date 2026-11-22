@@ -254,8 +254,11 @@
           "on_time": "as planned",
           "shifted": "shifted"
         },
-        "count": "{started} started, {planned} planned",
-        "nothing": "Nothing planned"
+        "nothing": "Nothing planned",
+        "started_one": "{n} started",
+        "started_other": "{n} started",
+        "planned_one": "{n} planned",
+        "planned_other": "{n} planned"
       },
       "departure_tile": "Battery at midnight",
       "weather_tile_forecast": "Sun forecast",
@@ -495,7 +498,6 @@
     "finish_none": "no time limit",
     "finish_hint": "The cycle will finish before {hour} on the day it runs; if no time slot allows it, the plan still schedules it and says so.",
     "waiting_finish": "Its time limit: before {hour}. “Change the date” replaces it with the one chosen here.",
-    "with_finish": "{request}, finished before {hour}",
     "ask": "Request",
     "hint": "No date: as soon as the sun allows. The same appliance can be requested several times: each request is one cycle, placed after the previous one.",
     "change_date": "Change the date",
@@ -518,15 +520,14 @@
     "no_device": "None of your home's appliances can be started on request.",
     "sheet_done": "Request saved: the next calculation will place it at the best time.",
     "sheet_close": "Done",
-    "state_asap": "as soon as possible",
-    "state_latest": "at the latest {latest}",
-    "state_launched": "started today",
     "state_declared": "marked as started",
     "planned_on": "planned {day}",
     "not_placed": "not placed yet",
     "none_day": "No request that day.",
     "state_done": "done",
-    "state_cancelled": "cancelled"
+    "state_cancelled": "cancelled",
+    "state_finish": "finished before {hour}",
+    "not_computed": "not computed yet"
   },
   "settings": {
     "loading": "Reading the settings…",
