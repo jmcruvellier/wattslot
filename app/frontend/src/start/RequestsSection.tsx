@@ -1,8 +1,9 @@
 // « Mes demandes » (lot 4.5) : les équipements qu'on a demandé de faire tourner, sans date ou au
 // plus tard tel jour, sans créer de liste de tâches dans Home Assistant. Le calcul place la
 // demande comme une tâche « à la demande » de HA ; elle devient « faite » le lendemain du
-// lancement constaté, ou à la main. Ici, la liste seulement, une ligne par demande (l'appareil,
-// et à droite son échéance) ; ses boutons se déplient au toucher. Une nouvelle demande passe par
+// lancement constaté, ou à la main. Ici, la liste seulement : pour chaque demande, l'appareil,
+// à droite son échéance, et dessous ses boutons, toujours visibles. Sous un jour à venir
+// (`future` : Demain, J+2…, Semaine), rien ne peut avoir été lancé ni fait : seul « Annuler » reste. Une nouvelle demande passe par
 // « Demander un appareil » (menu, ou `+` de la barre du haut) : la liste est relue quand une
 // demande est déposée (`REQUESTS_EVENT`).
 
@@ -12,7 +13,6 @@ import { getJson, postJson } from "../api";
 import { useI18n } from "../i18n/I18nProvider";
 import { declareLaunched } from "../plan/declared";
 import { hour } from "../plan/format";
-import Icon from "../ui/Icon";
 import Panel from "../ui/Panel";
 import type { RequestDevice } from "./RequestForm";
 import { REQUESTS_EVENT } from "./pendingLatest";
@@ -38,7 +38,7 @@ type Load =
   | { status: "error" }
   | { status: "ready"; devices: RequestDevice[]; requests: UserRequest[] };
 
-export default function RequestsSection() {
+export default function RequestsSection({ future = false }: { future?: boolean }) {
   const { language, t } = useI18n();
   const [load, setLoad] = useState<Load>({ status: "loading" });
   const [version, setVersion] = useState(0);
@@ -111,22 +111,19 @@ export default function RequestsSection() {
         <ul className="requests-list" aria-label={t("requests.open_list")}>
           {opened.map((request) => (
             <li key={request.id}>
-              <details>
-                <summary>
-                  <span className="requests-name">
-                    {name(request)} <Icon name="chevron-right" size={16} />
-                  </span>
-                  <span className="requests-state">{state(request)}</span>
-                </summary>
-                <div className="requests-actions">
-                  {request.cycle && !request.launched_on && !request.declared && (
+              <span className="requests-name">{name(request)}</span>
+              <span className="requests-state">{state(request)}</span>
+              <span className="requests-actions">
+                  {!future && request.cycle && !request.launched_on && !request.declared && (
                     <button type="button" onClick={() => void act(() => declareLaunched(request.cycle ?? ""))}>
                       {t("requests.mark_launched")}
                     </button>
                   )}
-                  <button type="button" onClick={() => void act(() => postJson(`api/requests/${request.id}/done`, {}))}>
-                    {t("requests.mark_done")}
-                  </button>
+                  {!future && (
+                    <button type="button" onClick={() => void act(() => postJson(`api/requests/${request.id}/done`, {}))}>
+                      {t("requests.mark_done")}
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() =>
@@ -138,8 +135,7 @@ export default function RequestsSection() {
                   >
                     {t("requests.cancel")}
                   </button>
-                </div>
-              </details>
+              </span>
             </li>
           ))}
         </ul>

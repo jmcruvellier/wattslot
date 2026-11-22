@@ -1,22 +1,26 @@
 // Bandeaux d'une vue de jour (lot 5.3) : départ de la batterie (et dernière charge complète),
 // météo (et fiabilité de la prévision au relevé), bilan des équipements — les bandeaux du
 // dashboard de la v1, en données de l'API. Chacun est une tuile : un titre, un chiffre et sa
-// pastille ; la phrase complète se déplie au toucher, pour ne pas allonger la page.
+// pastille, puis le détail en lignes « libellé, valeur » (une ligne par appareil pour les
+// équipements) : déplié d'emblée sur un écran large, où la place ne manque pas, replié sur
+// téléphone pour ne pas allonger la page ; le chevron le replie ou le déplie.
 
 import { useI18n } from "../i18n/I18nProvider";
 import type { Language } from "../i18n/translate";
 import { sunWindow } from "./agendaEntries";
-import { clock, duration, kwh, percent, time } from "./format";
-import type { ReactNode } from "react";
+import { clock, duration, hour, kwh, percent, time } from "./format";
+import { useState, type ReactNode } from "react";
 
 import type { DayView, Departure, DeviceStatus, ReadingWeather, Timeline, WeatherBanner } from "./types";
 import Icon from "../ui/Icon";
 
-// Météo du jour : soleil, nuages et soleil, nuages (lot 6b.7, à la place des emojis).
-const WEATHER_ICONS = { sunny: "today", mixed: "cloud-sun", cloudy: "cloud" } as const;
-
 function Badge({ tone, children }: { tone: "ok" | "medium" | "bad" | "neutral"; children: string }) {
   return <span className={`badge badge-${tone}`}>{children}</span>;
+}
+
+/** Écran large (les tuiles sont côte à côte) : le détail y est déplié d'emblée. */
+function wideScreen(): boolean {
+  return typeof window.matchMedia === "function" && window.matchMedia("(min-width: 52rem)").matches;
 }
 
 function Tile({
@@ -30,10 +34,16 @@ function Tile({
   title: string;
   value: string;
   badge?: ReactNode;
-  children: ReactNode; // le détail, déplié au toucher
+  children: ReactNode; // le détail, sous le chiffre
 }) {
+  const [open, setOpen] = useState(wideScreen);
   return (
-    <details className="plan-tile" aria-label={label}>
+    <details
+      className="plan-tile"
+      aria-label={label}
+      open={open}
+      onToggle={(event) => setOpen(event.currentTarget.open)}
+    >
       <summary>
         <span className="plan-tile-title">{title}</span>
         <strong className="plan-tile-value">{value}</strong>
@@ -45,10 +55,50 @@ function Tile({
   );
 }
 
+/** Détail d'une tuile : une ligne par information, le libellé à gauche, la valeur à droite. */
+function Rows({ rows }: { rows: [string, ReactNode][] }) {
+  return (
+    <dl className="plan-tile-rows">
+      {rows.map(([label, value]) => (
+        <div key={label}>
+          <dt>{label}</dt>
+          <dd>{value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+/** « +5 % », « −3 % » : le signe toujours écrit. */
+function signed(value: number, unit: string): string {
+  return `${value > 0 ? "+" : value < 0 ? "−" : ""}${Math.abs(value)} ${unit}`;
+}
+
 function DepartureBanner({ departure }: { departure: Departure }) {
   const { language, t } = useI18n();
   const charge = departure.full_charge;
   const tone = { ok: "ok", reliable: "ok", medium: "medium", large: "bad", approximate: "bad" } as const;
+  const level = (energy: number | null, share: number | null) => `${kwh(energy)} kWh · ${percent(share)} %`;
+  const rows: [string, ReactNode][] = [
+    [t(`plan.banner.rows.src_${departure.source}`), level(departure.soc_kwh, departure.soc_percent)],
+  ];
+  if (departure.expected_kwh !== null) {
+    rows.push([
+      t("plan.banner.rows.expected", { time: departure.expected_at ? time(departure.expected_at, language) : "" }),
+      level(departure.expected_kwh, departure.expected_percent),
+    ]);
+  }
+  if (departure.gap_points !== null) rows.push([t("plan.banner.rows.gap"), signed(departure.gap_points, "pts")]);
+  if (charge) {
+    // « aujourd'hui », « hier », « il y a 3 jours » : dans la langue, sans texte à traduire.
+    const ago = new Intl.RelativeTimeFormat(language, { numeric: "auto" });
+    rows.push([
+      t("plan.banner.rows.full_charge"),
+      charge.days === null
+        ? t("plan.banner.rows.none_since", { days: charge.history_days ?? "" })
+        : ago.format(-charge.days, "day"),
+    ]);
+  }
   return (
     <Tile
       label={t("plan.banner.departure_title")}
@@ -56,29 +106,8 @@ function DepartureBanner({ departure }: { departure: Departure }) {
       value={`${percent(departure.soc_percent)} %`}
       badge={departure.badge && <Badge tone={tone[departure.badge]}>{t(`plan.banner.departure_badge.${departure.badge}`)}</Badge>}
     >
-      <span>
-        {t(`plan.banner.departure.${departure.source}`, { kwh: kwh(departure.soc_kwh), pct: percent(departure.soc_percent) })}
-        {departure.expected_kwh !== null &&
-          ` — ${t("plan.banner.departure.expected", {
-            time: departure.expected_at ? time(departure.expected_at, language) : "",
-            kwh: kwh(departure.expected_kwh),
-            pct: percent(departure.expected_percent),
-          })}`}
-        {departure.gap_points !== null && ` (${departure.gap_points > 0 ? "+" : ""}${departure.gap_points} pts)`}
-        {charge && (
-          <>
-            <br />
-            {charge.days === null
-              ? t("plan.banner.charge.none", { days: charge.history_days ?? "" })
-              : charge.days === 0
-                ? t("plan.banner.charge.today")
-                : charge.days === 1
-                  ? t("plan.banner.charge.yesterday")
-                  : t("plan.banner.charge.days", { days: charge.days })}
-            {charge.priority && <strong> — {t("plan.banner.charge.priority")}</strong>}
-          </>
-        )}
-      </span>
+      <Rows rows={rows} />
+      {charge?.priority && <p className="plan-tile-note">{t("plan.banner.charge.priority")}</p>}
     </Tile>
   );
 }
@@ -93,33 +122,38 @@ function WeatherPill({
   sun: [number, number] | null; // heures où le soleil produit le plus
 }) {
   const { language, t } = useI18n();
-  const parts = [
-    t(weather.measured ? "plan.banner.weather.measured" : "plan.banner.weather.forecast", { kwh: kwh(weather.production_kwh, 1) }),
+  const energy = (value: number | null) => `${kwh(value, 1)} kWh`;
+  const rows: [string, ReactNode][] = [
+    [t("plan.banner.weather_title"), t(`plan.banner.weather.quality.${weather.quality ?? "unknown"}`)],
   ];
   if (weather.quality && weather.share_percent !== null) {
-    parts.push(t("plan.banner.weather.share", { pct: weather.share_percent, days: weather.best_days ?? "", kwh: kwh(weather.best_kwh, 1) }));
+    rows.push([
+      t("plan.banner.rows.best_day", { days: weather.best_days ?? "" }),
+      `${energy(weather.best_kwh)} · ${weather.share_percent} %`,
+    ]);
   }
   if (weather.today_gap_percent !== null) {
-    parts.push(
-      t("plan.banner.weather.vs_today", {
-        gap: `${weather.today_gap_percent >= 0 ? "+" : ""}${weather.today_gap_percent}`,
-        kwh: kwh(weather.today_estimate_kwh, 1),
-      }),
-    );
+    rows.push([
+      t("plan.banner.rows.vs_today"),
+      `${signed(weather.today_gap_percent, "%")} · ${energy(weather.today_estimate_kwh)}`,
+    ]);
   }
-  if (reading && reading.mode === "no_reading") parts.push(t("plan.banner.weather.no_reading"));
+  if (reading && reading.mode === "no_reading") {
+    rows.push([t("plan.banner.rows.reading"), t("plan.banner.weather.no_reading")]);
+  }
   if (reading && reading.mode !== "no_reading" && reading.measured_kwh !== null) {
-    const gap = reading.gap_percent === null ? "" : `${reading.gap_percent >= 0 ? "+" : ""}${reading.gap_percent} % `;
-    parts.push(
-      reading.mode === "reading"
-        ? t("plan.banner.weather.reading", { mes: kwh(reading.measured_kwh, 1), gap, est: kwh(reading.estimated_kwh, 1) })
-        : t("plan.banner.weather.day", {
-            gap,
-            est: kwh(reading.estimated_kwh, 1),
-            time: reading.initial_at ? time(reading.initial_at, language) : "",
-          }),
-    );
+    const gap = reading.gap_percent === null ? "" : ` · ${signed(reading.gap_percent, "%")}`;
+    if (reading.mode === "reading") {
+      rows.push([t("plan.banner.rows.at_reading"), energy(reading.measured_kwh)]);
+      rows.push([t("plan.banner.rows.last_forecast"), `${energy(reading.estimated_kwh)}${gap}`]);
+    } else {
+      rows.push([
+        t("plan.banner.rows.forecast_at", { time: reading.initial_at ? time(reading.initial_at, language) : "" }),
+        `${energy(reading.estimated_kwh)}${gap}`,
+      ]);
+    }
   }
+  if (sun) rows.push([t("plan.banner.rows.full_sun"), `${hour(sun[0], language)} – ${hour(sun[1], language)}`]);
   const tone = { reliable: "ok", moderate: "medium", important: "bad", too_early: "neutral" } as const;
   // Écart du mesuré à la prévision, à côté de la pastille (« fiable · +5 % »).
   const gapPercent = reading && reading.mode !== "no_reading" ? reading.gap_percent : null;
@@ -128,7 +162,7 @@ function WeatherPill({
     <Tile
       label={t("plan.banner.weather_title")}
       title={t(weather.measured ? "plan.banner.weather_tile_measured" : "plan.banner.weather_tile_forecast")}
-      value={`${kwh(weather.production_kwh, 1)} kWh`}
+      value={energy(weather.production_kwh)}
       badge={
         reading?.badge && (
           <Badge tone={tone[reading.badge]}>
@@ -137,52 +171,57 @@ function WeatherPill({
         )
       }
     >
-      <p>
-        <Icon name={weather.quality ? WEATHER_ICONS[weather.quality] : "today"} size={16} />{" "}
-        <strong>{t(`plan.banner.weather.quality.${weather.quality ?? "unknown"}`)}</strong> — {parts.join(" · ")}
-      </p>
-      {sun && <p>{t("plan.agenda.sun_hours", { start: sun[0], end: sun[1] })}</p>}
+      <Rows rows={rows} />
     </Tile>
   );
 }
 
 type Translate = ReturnType<typeof useI18n>["t"];
 
-function statusText(status: DeviceStatus, t: Translate, lang: Language): string {
-  const energy =
-    status.actual_kwh === null
-      ? ""
-      : `${kwh(status.actual_kwh)} kWh${status.energy_gap_percent !== null ? ` (${status.energy_gap_percent > 0 ? "+" : "−"}${Math.abs(status.energy_gap_percent)} %)` : ""}${status.running ? `, ${t("plan.banner.equip.running")}` : ""}`;
+/** Un appareil de la tuile : son nom, où il en est, son énergie (mesurée, sinon prévue). */
+function deviceLine(status: DeviceStatus, t: Translate, lang: Language): [string, string, string] {
+  const gap = status.energy_gap_percent !== null ? ` (${signed(status.energy_gap_percent, "%")})` : "";
+  const measured = status.actual_kwh === null ? "" : `${kwh(status.actual_kwh)} kWh${gap}`;
+  const running = status.running ? `, ${t("plan.banner.equip.running")}` : "";
   switch (status.status) {
     case "on_time":
-      return t("plan.banner.equip.on_time", { device: status.device, time: clock(status.actual_start_min ?? 0, lang), kwh: energy });
+      return [status.device, t("plan.banner.rows.started", { time: clock(status.actual_start_min ?? 0, lang) }) + running, measured];
     case "shifted":
-      return t("plan.banner.equip.shifted", {
-        device: status.device,
-        shift: `${(status.shift_min ?? 0) > 0 ? "+" : "−"}${duration(status.shift_min ?? 0, lang)}`,
-        actual: clock(status.actual_start_min ?? 0, lang),
-        planned: clock(status.planned_start_min, lang),
-        kwh: energy,
-      });
+      return [
+        status.device,
+        t("plan.banner.rows.started_shifted", {
+          time: clock(status.actual_start_min ?? 0, lang),
+          shift: `${(status.shift_min ?? 0) > 0 ? "+" : "−"}${duration(status.shift_min ?? 0, lang)}`,
+        }) + running,
+        measured,
+      ];
     case "no_cycle":
-      return t("plan.banner.equip.no_cycle", {
-        device: status.device,
-        start: clock(status.planned_start_min, lang),
-        end: clock(status.planned_end_min, lang),
-        kwh: kwh(status.planned_kwh),
-      });
+      return [
+        status.device,
+        t("plan.banner.rows.not_started", {
+          start: clock(status.planned_start_min, lang),
+          end: clock(status.planned_end_min, lang),
+        }),
+        `${kwh(status.planned_kwh)} kWh`,
+      ];
     default:
-      return t("plan.banner.equip.planned", { device: status.device, start: clock(status.planned_start_min, lang) });
+      return [
+        status.device,
+        t("plan.banner.rows.planned", { time: clock(status.planned_start_min, lang) }),
+        `${kwh(status.planned_kwh)} kWh`,
+      ];
   }
 }
 
 function EquipmentPill({ timeline }: { timeline: Timeline }) {
   const { language, t } = useI18n();
-  const lines = [
-    ...timeline.statuses.map((status) => statusText(status, t, language)),
-    ...timeline.unplanned.map((u) =>
-      t("plan.banner.equip.unplanned", { device: u.device, time: clock(u.start_min, language), kwh: kwh(u.energy_kwh) }),
-    ),
+  const lines: [string, string, string][] = [
+    ...timeline.statuses.map((status) => deviceLine(status, t, language)),
+    ...timeline.unplanned.map((u): [string, string, string] => [
+      u.device,
+      t("plan.banner.rows.unplanned", { time: clock(u.start_min, language) }),
+      `${kwh(u.energy_kwh)} kWh`,
+    ]),
   ];
   // Lancés : vus dans les mesures, à l'heure, décalés ou hors plan.
   const started =
@@ -203,9 +242,19 @@ function EquipmentPill({ timeline }: { timeline: Timeline }) {
         )
       }
     >
-      <ul className="equip">
-        {lines.length ? lines.map((line) => <li key={line}>{line}</li>) : <li>{t("plan.banner.equip.none")}</li>}
-      </ul>
+      {lines.length === 0 ? (
+        <p className="plan-tile-note">{t("plan.banner.equip.none")}</p>
+      ) : (
+        <ul className="plan-tile-devices">
+          {lines.map(([device, state, energy], index) => (
+            <li key={`${device}-${index}`}>
+              <span>{device}</span>
+              <span className="plan-tile-state">{state}</span>
+              <span>{energy}</span>
+            </li>
+          ))}
+        </ul>
+      )}
     </Tile>
   );
 }

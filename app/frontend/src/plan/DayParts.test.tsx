@@ -34,23 +34,29 @@ describe("vue d'un jour", () => {
     expect(screen.getByText(/Sèche-linge reporté au dimanche 18 octobre/)).toBeInTheDocument();
 
     const departure = screen.getByLabelText("Départ de la batterie");
-    // Tuile : le chiffre et la pastille d'abord, la phrase complète repliée dessous.
+    // Tuile : le chiffre et la pastille d'abord ; dessous, une ligne par information.
     expect(departure).not.toHaveAttribute("open");
     expect(within(departure).getByText("Batterie à minuit")).toHaveClass("plan-tile-title");
     expect(within(departure).getByText("50 %")).toHaveClass("plan-tile-value");
-    expect(departure).toHaveTextContent("Départ à 0h : 2,56 kWh (50 %) mesuré");
-    expect(departure).toHaveTextContent("(+1 pts)");
-    expect(departure).toHaveTextContent("Dernière charge à 100 % : il y a 2 jours");
+    const line = (tile: HTMLElement, label: string) => within(tile).getByText(label).closest("div");
+    expect(line(departure, "Mesuré à 0 h")).toHaveTextContent("Mesuré à 0 h2,56 kWh · 50 %");
+    expect(line(departure, "Écart")).toHaveTextContent("Écart+1 pts");
+    expect(line(departure, "Dernière charge à 100 %")).toHaveTextContent("Dernière charge à 100 %avant-hier");
     expect(within(departure).getByText("conforme")).toHaveClass("badge-ok");
 
     const weather = screen.getByLabelText("Météo");
-    expect(weather).toHaveTextContent("Journée ensoleillée");
-    expect(weather).toHaveTextContent("au relevé : 6,5 kWh mesurés, +8 % par rapport à la dernière prévision (6,0 kWh)");
+    expect(line(weather, "Météo")).toHaveTextContent("MétéoJournée ensoleillée");
+    expect(line(weather, "Mesuré au relevé")).toHaveTextContent("Mesuré au relevé6,5 kWh");
+    expect(line(weather, "Dernière prévision")).toHaveTextContent("Dernière prévision6,0 kWh · +8 %");
+    expect(line(weather, "Plein soleil")).toHaveTextContent("Plein soleil8h – 18h");
     expect(within(weather).getByText("prévision fiable · +8 %")).toHaveClass("badge-ok");
 
     const equipment = screen.getByLabelText("Équipements");
-    expect(equipment).toHaveTextContent("Lave-linge à l'heure (10h05), 1,30 kWh (+30 %)");
-    expect(equipment).toHaveTextContent("Chauffe-eau prévu à 15h00");
+    // Une ligne par appareil : son nom, où il en est, son énergie.
+    expect(within(equipment).getByText("Lave-linge").closest("li")).toHaveTextContent(
+      "Lave-lingelancé à 10h051,30 kWh (+30 %)",
+    );
+    expect(within(equipment).getByText("Chauffe-eau").closest("li")).toHaveTextContent("Chauffe-eauprévu à 15h00");
 
     const soc = screen.getByRole("article", { name: "SoC / capacité" });
     expect(soc).toHaveTextContent("Au relevé");
@@ -75,7 +81,9 @@ describe("vue d'un jour", () => {
 
     expect(screen.queryByLabelText("Équipements")).not.toBeInTheDocument();
     expect(screen.getByRole("article", { name: "SoC max" })).toHaveTextContent("5,00 kWh 98 % · 16h");
-    expect(screen.getByLabelText("Météo")).toHaveTextContent("-12 % par rapport à aujourd'hui (9,5 kWh prévus)");
+    expect(within(screen.getByLabelText("Météo")).getByText("Par rapport à aujourd'hui").closest("div")).toHaveTextContent(
+      "Par rapport à aujourd'hui−12 % · 9,5 kWh",
+    );
     expect(within(screen.getByLabelText("Départ de la batterie")).getByText("fiable")).toBeInTheDocument();
   });
 

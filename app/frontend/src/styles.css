@@ -523,7 +523,8 @@ pre {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
   gap: 0.75rem;
-  align-items: start;
+  /* Même hauteur pour les trois, dépliées ou non. */
+  align-items: stretch;
 }
 
 .plan-tile {
@@ -538,6 +539,8 @@ pre {
   grid-template-areas:
     "title badge"
     "value more";
+  /* Première ligne à la hauteur d'une pastille, même sans pastille : les chiffres s'alignent. */
+  grid-template-rows: minmax(1.7rem, auto) auto;
   align-items: center;
   gap: 0.3rem 0.6rem;
   margin: 0;
@@ -586,8 +589,63 @@ pre {
   font-size: 0.9rem;
 }
 
-.plan-tile-detail > p {
-  margin: 0 0 0.35rem;
+/* Détail d'une tuile : une ligne par information, le libellé à gauche, la valeur à droite. */
+.plan-tile-rows {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0;
+}
+
+.plan-tile-rows > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.plan-tile-rows dt {
+  color: var(--text-dim);
+}
+
+.plan-tile-rows dd {
+  margin: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Une ligne par appareil : son nom, où il en est, son énergie. */
+.plan-tile-devices {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plan-tile-devices > li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+.plan-tile-devices > li > :last-child {
+  min-width: 4.5rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.plan-tile-state {
+  color: var(--text-dim);
+}
+
+.plan-tile-note {
+  margin: 0.35rem 0 0;
+  color: var(--text-dim);
+}
+
+.plan-tile-note:first-child {
+  margin-top: 0;
 }
 
 .pill {
@@ -2358,15 +2416,33 @@ a.ui-setting-row {
 }
 
 .plan-side {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 1rem;
-  align-content: start;
 }
 
+/* Côte à côte : « La journée » et la colonne de droite finissent à la même hauteur ; à droite,
+   le dernier panneau prend la place qui reste. */
 @media (min-width: 52rem) {
   .plan-columns {
     grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
-    align-items: start;
+    align-items: stretch;
+  }
+
+  .plan-agenda {
+    display: flex;
+  }
+
+  .plan-agenda > .agenda-card {
+    flex: 1;
+  }
+
+  .plan-side > :last-child {
+    flex: 1;
+  }
+
+  .plan-side > .plan-insights:last-child > * {
+    height: 100%;
   }
 }
 
@@ -2549,8 +2625,8 @@ a.ui-setting-row {
 }
 
 /* « Mes demandes » sous le plan, dans Planning. */
-/* « Mes demandes » : une ligne par demande (l'appareil, et à droite son échéance) ; ses
-   boutons se déplient au toucher. */
+/* « Mes demandes » : pour chaque demande, l'appareil et à droite son échéance ; dessous, ses
+   boutons, petits et toujours visibles. */
 .requests-list {
   margin: 0;
   padding: 0;
@@ -2558,35 +2634,20 @@ a.ui-setting-row {
 }
 
 .requests-list > li {
-  padding: 0.35rem 0;
-}
-
-.requests-list summary {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: baseline;
-  justify-content: space-between;
-  gap: 0.75rem;
-  margin: 0;
-  color: inherit;
-  list-style: none;
+  gap: 0.3rem 0.75rem;
+  padding: 0.45rem 0;
 }
 
-.requests-list summary::-webkit-details-marker {
-  display: none;
+.requests-list > li + li {
+  border-top: 1px solid var(--border);
 }
 
 .requests-name {
   font-weight: 600;
-}
-
-.requests-name > .icon {
-  vertical-align: -0.15em;
-  color: var(--text-dim);
-  transition: transform 0.15s;
-}
-
-.requests-list details[open] .requests-name > .icon {
-  transform: rotate(90deg);
+  white-space: nowrap;
 }
 
 .requests-state {
@@ -2595,10 +2656,17 @@ a.ui-setting-row {
 }
 
 .requests-actions {
+  grid-column: 1 / -1;
   display: flex;
   flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 0.4rem;
-  margin: 0.5rem 0 0.25rem;
+}
+
+.requests-actions > button {
+  min-height: 2rem;
+  padding: 0.15rem 0.75rem;
+  font-size: 0.85rem;
 }
 
 .requests-recent > summary {
@@ -4127,26 +4195,9 @@ p[role="status"]:not(.state-message) {
   margin: 0;
 }
 
-/* « Afficher les autres » dans un panneau : discret, sous les lignes. */
-.ui-panel > .show-more {
-  margin-top: 0.35rem;
-}
-
-.ui-panel > .show-more > .ui-button {
-  min-height: 2rem;
-  padding: 0;
-  font-size: 0.85rem;
-}
-
-/* Petit écran : les quatre tuiles du moment sur deux rangs ; le nom d'une demande ne se coupe
-   pas de son chevron. */
+/* Petit écran : les quatre tuiles du moment sur deux rangs. */
 @media (max-width: 30rem) {
   .now-tiles {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-}
-
-.requests-name {
-  flex: none;
-  white-space: nowrap;
 }

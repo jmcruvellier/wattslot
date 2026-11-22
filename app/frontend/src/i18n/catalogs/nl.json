@@ -220,14 +220,6 @@
     "notices": "Waarschuwingen bij het plan",
     "banner": {
       "departure_title": "Batterij bij het begin van de dag",
-      "departure": {
-        "measured": "Stand om middernacht: {kwh} kWh ({pct} %) gemeten",
-        "plan": "Stand om middernacht: {kwh} kWh ({pct} %) volgens het plan",
-        "tonight": "Stand om middernacht: {kwh} kWh ({pct} %), laadniveau verwacht vannacht om middernacht",
-        "now": "Stand om middernacht: {kwh} kWh ({pct} %), huidig laadniveau bij gebrek aan dagplan",
-        "eve": "Stand om middernacht: {kwh} kWh ({pct} %), laadniveau verwacht aan het einde van de vorige dag",
-        "expected": "het plan van de vorige avond ({time}) verwachtte {kwh} kWh ({pct} %)"
-      },
       "departure_badge": {
         "ok": "zoals verwacht",
         "medium": "afwijking",
@@ -236,10 +228,6 @@
         "approximate": "bij benadering"
       },
       "charge": {
-        "today": "Laatste volledige lading: vandaag",
-        "yesterday": "Laatste volledige lading: gisteren",
-        "days": "Laatste volledige lading: {days} dagen geleden",
-        "none": "Geen volledige lading sinds {days} dagen",
         "priority": "voorrangsdag voor het laden"
       },
       "weather_title": "Weer",
@@ -250,13 +238,7 @@
           "cloudy": "Bewolkte dag",
           "unknown": "Productie"
         },
-        "forecast": "{kwh} kWh voorspeld",
-        "measured": "{kwh} kWh gemeten",
-        "share": "{pct} % van de beste dag van de laatste {days} dagen ({kwh} kWh)",
-        "vs_today": "{gap} % ten opzichte van vandaag ({kwh} kWh voorspeld)",
         "no_reading": "nog geen meting",
-        "reading": "bij de meting: {mes} kWh gemeten, {gap}ten opzichte van de laatste prognose ({est} kWh)",
-        "day": "{gap}ten opzichte van de prognose van {time} ({est} kWh)",
         "badge": {
           "reliable": "betrouwbare prognose",
           "moderate": "matige afwijking",
@@ -266,11 +248,6 @@
       },
       "equip_title": "Apparaten",
       "equip": {
-        "on_time": "{device} op tijd ({time}), {kwh}",
-        "shifted": "{device} {shift} ({actual} in plaats van {planned}), {kwh}",
-        "no_cycle": "{device}: geen cyclus ({start}–{end}, {kwh} kWh gepland)",
-        "planned": "{device} gepland om {start}",
-        "unplanned": "{device} niet gepland ({time}), {kwh} kWh",
         "running": "bezig",
         "none": "Geen apparaat gepland of gestart",
         "badge": {
@@ -283,7 +260,30 @@
       "departure_tile": "Batterij om middernacht",
       "weather_tile_forecast": "Zon verwacht",
       "weather_tile_measured": "Zon gemeten",
-      "equip_tile": "Apparaten"
+      "equip_tile": "Apparaten",
+      "rows": {
+        "src_measured": "Gemeten om 0 uur",
+        "src_plan": "Volgens het plan",
+        "src_tonight": "Verwacht vanavond om 24 uur",
+        "src_now": "Huidig niveau",
+        "src_eve": "Verwacht aan het eind van de vorige dag",
+        "expected": "Gepland de dag ervoor ({time})",
+        "gap": "Verschil",
+        "full_charge": "Laatste lading tot 100%",
+        "none_since": "geen sinds {days} dagen",
+        "best_day": "Beste dag ({days} d)",
+        "vs_today": "Ten opzichte van vandaag",
+        "at_reading": "Gemeten bij de aflezing",
+        "last_forecast": "Laatste prognose",
+        "forecast_at": "Prognose van {time}",
+        "reading": "Aflezing",
+        "full_sun": "Volle zon",
+        "started": "gestart om {time}",
+        "started_shifted": "gestart om {time} ({shift})",
+        "not_started": "niet gestart ({start}–{end})",
+        "planned": "gepland om {time}",
+        "unplanned": "buiten de planning, {time}"
+      }
     },
     "summary": {
       "cards": {
