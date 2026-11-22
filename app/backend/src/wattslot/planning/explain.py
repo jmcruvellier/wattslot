@@ -194,9 +194,13 @@ def explain(
                 if s.mode != "off"
                 for h in range(s.start_hour, s.end_hour)
             }
-            reasons = [Reason(code="objective", params={"objective": objective})]
+            # À l'arrêt toute la journée : rien n'est placé, on ne dit donc pas « placé pour le
+            # coût le plus bas » (filtration d'une piscine en hiver, constaté le 23/11/2026).
+            reasons = [Reason(code="objective", params={"objective": objective})] if running else []
             if model is not None and model.skipped:
                 reasons.append(Reason(code="skipped_full_charge"))
+            elif not running:
+                reasons.append(Reason(code="runtime_off"))
             elif model is not None and model.min_hours > 0:
                 reasons.append(Reason(code="minimum_hours", params={"hours": model.min_hours}))
             surplus = sum(1 for h in running if problem.net_kwh.get(h, 0.0) > 0)
