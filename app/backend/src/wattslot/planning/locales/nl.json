@@ -11,6 +11,7 @@
   "reason.constraints": "Tijdsbeperkingen nageleefd: {constraints}.",
   "reason.launched": "Gestart om {time}: tijdvak afgestemd op de werkelijke start.",
   "reason.deadline": "{energy_kwh} kWh te leveren vóór {hour} uur.",
+  "reason.finish_before": "Klaar vóór {hour} uur, zoals gevraagd.",
   "reason.minimum_hours": "Vandaag nog te maken minimale looptijd: {hours} u.",
   "reason.skipped_full_charge": "Vandaag geen werking: de batterij moet volledig laden (tot 100 %), het zonne-overschot is voor haar gereserveerd.",
   "reason.solar_hours": "{hours} u op het zonne-overschot.",

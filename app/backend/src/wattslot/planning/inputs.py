@@ -35,6 +35,9 @@ class TaskRequest:
     # None : pas encore numérotée.
     rank: int | None = None
     asked_at: datetime | None = None  # demande de l'application : moment où elle a été faite
+    # Demande de l'application : cycle à terminer avant cette heure (1 à 24) le jour où il
+    # tourne ; souple (``problem.Task.finish_min``).
+    finish_hour: int | None = None
 
     @property
     def ident(self) -> str:

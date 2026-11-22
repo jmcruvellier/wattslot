@@ -246,6 +246,8 @@ class RequestableDevice(BaseModel):
 class NewRequest(BaseModel):
     device: str  # clé de l'équipement
     latest: date | None = None  # au plus tard ; aucun : dès que possible
+    # Terminé avant cette heure, le jour où le cycle tourne ; aucune : pas de limite d'heure.
+    finish_hour: int | None = Field(default=None, ge=1, le=24)
     # Un cycle de plus : une demande s'ajoute à celle déjà ouverte, au lieu d'en changer la date.
     another: bool = False
 
@@ -1484,7 +1486,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.post("/api/requests")
     def post_request(request: Request, asked: NewRequest) -> user_requests.UserRequest:
         """Demande pour un équipement ; une demande déjà ouverte pour lui, pas encore lancée,
-        change de date, sauf ``another`` (un cycle de plus le même jour). 422 pour un équipement
+        change de date et d'heure limite, sauf ``another`` (un cycle de plus le même jour).
+        422 pour un équipement
         qu'on ne peut pas demander, ou dont le cycle n'est pas connu."""
         devices = {d.key: d for d in requestable(request)}
         if asked.device not in devices:
@@ -1497,6 +1500,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             asked.latest,
             datetime.now(UTC),
             asked.another,
+            asked.finish_hour,
         )
 
     def close_request(

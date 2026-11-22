@@ -84,6 +84,13 @@ class Task:
     within_min: int | None = None
     after_label: str | None = None
     after_end_min: int | None = None
+    # Heure limite de la demande (minute du jour) : le cycle doit finir avant. Souple : un
+    # créneau qui la dépasse coûte comme une contrainte souple violée, et le plan le signale.
+    finish_min: int | None = None
+
+    def late(self, start_min: int) -> bool:
+        """Un départ à ``start_min`` fait finir le cycle après l'heure limite de sa demande."""
+        return self.finish_min is not None and start_min + self.slot_min > self.finish_min
 
     @property
     def label(self) -> str:
@@ -867,6 +874,9 @@ def from_input(data: PlanningInput, reference: Reference = REFERENCE) -> Problem
                     uid=request.uid,
                     within_min=data.after_max_min.get(request.name) if parent is not None else None,
                     after_label=parent[0] if parent is not None else None,
+                    finish_min=request.finish_hour * 60
+                    if request.finish_hour is not None
+                    else None,
                 )
             )
     # Un équipement ne fait qu'un cycle à la fois : pas avant la fin de ses cycles déjà fixés.

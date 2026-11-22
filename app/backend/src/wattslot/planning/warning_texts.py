@@ -98,7 +98,7 @@ def _param(name: str, value: Any, lang: str) -> str:
         # « status=insuffisant » ne disait pas quoi faire (constaté le 20/11/2026). Les textes
         # citent les seuils de ``appliances.MIN_CYCLES`` et ``journal.PROFILE_DAYS``.
         return _text(lang, "statut_profil", str(value)) or str(value)
-    if name == "debut_min":
+    if name in ("debut_min", "fin_min"):
         return hour_minutes(int(value), lang)
     if name in ("duree_min", "attente_min", "delai_min"):
         return duration(int(value), lang)

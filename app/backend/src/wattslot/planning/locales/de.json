@@ -11,6 +11,7 @@
   "reason.constraints": "Zeitvorgaben eingehalten: {constraints}.",
   "reason.launched": "Um {time} gestartet: Zeitfenster am tatsächlichen Start ausgerichtet.",
   "reason.deadline": "{energy_kwh} kWh bis {hour} Uhr zu liefern.",
+  "reason.finish_before": "Bis {hour} Uhr fertig, wie gewünscht.",
   "reason.minimum_hours": "Heute noch zu leistende Mindestlaufzeit: {hours} h.",
   "reason.skipped_full_charge": "Heute kein Betrieb: Die Batterie muss ihre Vollladung machen (bis 100 %), der Solarüberschuss ist ihr vorbehalten.",
   "reason.solar_hours": "{hours} h mit dem Solarüberschuss.",

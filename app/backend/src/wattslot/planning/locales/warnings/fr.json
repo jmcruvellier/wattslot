@@ -11,6 +11,7 @@
     "heures_insuffisantes_attente": "{equipement} est en attente mais il ne reste pas assez de temps pour un cycle complet ({duree_min} à partir de {debut_min}) : non placé.",
     "contrainte_impossible": "{equipement} : aucun créneau ne respecte ses contraintes horaires ({contraintes}) : non placé ou durée minimale non tenue.",
     "contrainte_non_respectee": "{equipement} : contrainte souple non respectée ({contraintes}) pour tenir le reste du plan.",
+    "heure_limite_depassee": "{equipement} : ne sera pas terminé avant {heure_limite} comme demandé (fin prévue à {fin_min}) : aucun créneau ne le permettait.",
     "duree_minimale_non_tenue": "{equipement} : seules {heures} h de la durée minimale de {minimum} h tiennent encore aujourd'hui.",
     "prevision_open_meteo": "Prévision solaire calculée par Open-Meteo d'après vos panneaux : moins précise qu'une intégration de prévision dans le tableau Énergie de Home Assistant.",
     "prevision_horaire_indisponible": "Prévision solaire horaire indisponible ou incomplète : repli sur la forme moyenne des {jours} derniers jours, moins fidèle à la météo du jour.",
