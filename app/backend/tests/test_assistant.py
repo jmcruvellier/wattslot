@@ -226,7 +226,7 @@ def test_the_plan_text_leaves_the_figures_to_the_summary() -> None:
         [
             "Objectif : le coût le plus bas.",
             "",
-            "Équipements à lancer aujourd'hui :",
+            "Équipements à lancer :",
             "- Lave-linge : 11h-12h10 (0,90 kWh).",
             "",
             "Batterie : 0,63 kWh au départ, maximum prévu 2,19 kWh vers 11 h, 0,61 kWh en fin de "
