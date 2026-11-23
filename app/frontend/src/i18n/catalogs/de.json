@@ -861,6 +861,7 @@
     "close": "Schließen",
     "fullscreen": "Vollbild",
     "fullscreen_exit": "Vollbild beenden",
+    "fit": "Graph zentrieren",
     "search": "Element suchen…",
     "search_clear": "Suche löschen",
     "search_none": "Keine Ergebnisse."

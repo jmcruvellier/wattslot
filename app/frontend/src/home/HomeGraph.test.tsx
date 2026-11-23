@@ -105,6 +105,8 @@ describe("HomeGraph", () => {
     await screen.findAllByText("Lave-linge");
     expect(screen.getAllByText("Lave-linge").length).toBe(2); // le type et l'équipement
     expect(screen.getByText("sensor.washer_power")).toBeInTheDocument();
+    // Le bouton « centrer » des commandes est le nôtre (cadrage dans la zone libre), traduit.
+    expect(screen.getByRole("button", { name: "Centrer le graphe" })).toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "Lave-linge" })).toBeNull();
     // Le bouton « centrer » des commandes est bien là, sous les boutons de zoom : il recadre
     // avec la bande de recherche réservée (options passées aux commandes).

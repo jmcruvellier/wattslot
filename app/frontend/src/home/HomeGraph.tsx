@@ -11,18 +11,21 @@ import "@xyflow/react/dist/style.css";
 
 import {
   Background,
+  ControlButton,
   Controls,
+  getViewportForBounds,
   Handle,
   MarkerType,
   Panel,
   Position,
   ReactFlow,
+  useNodesInitialized,
   useReactFlow,
   type Edge,
   type Node,
   type NodeProps,
 } from "@xyflow/react";
-import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
 
 import { getJson, postJson } from "../api";
@@ -88,28 +91,63 @@ function handleToward(from: { x: number; y: number }, to: { x: number; y: number
   return sideFor(Math.atan2(to.y - from.y, to.x - from.x));
 }
 
-// Hauteur réservée en haut du canevas pour la boîte de recherche (et son message « Aucun
-// résultat ») : le dessin recadré ne passe jamais dessous. Le déplacement manuel, lui, peut
-// y passer — seule l'ouverture et les recadrages évitent la bande.
-const SEARCH_BAND = "76px" as const;
-
-// Recadrage avec la bande de recherche réservée en haut : à l'ouverture de la vue, par le bouton
-// « centrer » des commandes (sous les boutons de zoom), et à chaque changement de vue ou sur les
-// résultats de la recherche.
-// Marges avec leur unité : @xyflow/react 13 lit un nombre seul en pixels (0,2 px collait le bas
-// du dessin au bord), là où la v12 en faisait une fraction (0,2 ≈ 8 % de chaque côté).
+// Cadrage du dessin : centré dans la zone libre du canevas, entre le bas de la boîte de recherche
+// et le bas du canevas, avec la même marge au-dessus et au-dessous. Le calcul est fait ici plutôt
+// que par fitView : celui-ci centre sur toute la hauteur puis pousse le dessin juste sous la
+// bande réservée — le dessin collait alors à la recherche (21 px) et laissait 46 px en bas.
+// Le déplacement manuel, lui, peut passer sous la recherche ; seuls les recadrages l'évitent.
+// Marges avec leur unité, rapportées à la zone libre : 8 % de chaque côté pour la vue entière,
+// 12 % sur les résultats de la recherche (un peu plus d'air autour de quelques éléments).
 const FIT_MARGIN = "8%" as const;
-// Recadrage sur les résultats de la recherche : un peu plus d'air (l'ancien 0,3 ≈ 12 %).
 const SEARCH_MARGIN = "12%" as const;
-// Plancher de zoom assez bas pour que même une grande maison tienne entière dans le canevas
-// avec sa bande : sinon le cadrage est écrêté, la bande n'est plus respectée et le bas du
-// dessin disparaît.
+// Bas de la recherche quand elle n'est pas encore affichée : 0,75 rem de marge et 2,75 rem de
+// hauteur, comme dans styles.css.
+const SEARCH_BOTTOM_PX = 56;
+// Plancher de zoom assez bas pour que même une grande maison tienne entière dans la zone libre ;
+// au-dessus de l'échelle 1, quelques éléments seraient grossis sans rien apporter.
 const MIN_ZOOM = 0.02;
-const FIT_OPTIONS = {
-  padding: { top: SEARCH_BAND, right: FIT_MARGIN, bottom: FIT_MARGIN, left: FIT_MARGIN },
-  minZoom: MIN_ZOOM,
-  maxZoom: 1,
-};
+const MAX_ZOOM = 1;
+
+type FlowInstance = ReturnType<typeof useReactFlow>;
+type Margin = typeof FIT_MARGIN | typeof SEARCH_MARGIN;
+// Élément à cadrer : son identifiant et sa position dans la vue.
+type Placed = { id: string; position: { x: number; y: number } };
+
+// Cadre les éléments donnés dans la zone libre du canevas. Les positions sont celles de la vue
+// (après un double-clic, React Flow garde encore un instant les anciennes) ; les tailles, celles
+// mesurées par React Flow, portées par ses éléments internes. Rien n'est fait — et `null` est
+// rendu — tant que le canevas n'a pas de taille ou que ces éléments ne sont pas tous mesurés :
+// l'appelant réessaie quand ils le sont.
+function fitArea(
+  instance: FlowInstance,
+  canvas: HTMLElement | null,
+  placed: readonly Placed[],
+  { margin = FIT_MARGIN, duration = 0 }: { margin?: Margin; duration?: number } = {},
+): Promise<boolean> | null {
+  const flow = canvas?.querySelector<HTMLElement>(".react-flow");
+  if (!flow || flow.clientWidth === 0 || flow.clientHeight === 0 || placed.length === 0) return null;
+  const boxes: { x: number; y: number; width: number; height: number }[] = [];
+  for (const { id, position } of placed) {
+    const size = instance.getInternalNode(id)?.measured;
+    if (!size?.width || !size?.height) return null;
+    boxes.push({ ...position, width: size.width, height: size.height });
+  }
+  const left = Math.min(...boxes.map((box) => box.x));
+  const top = Math.min(...boxes.map((box) => box.y));
+  const bounds = {
+    x: left,
+    y: top,
+    width: Math.max(...boxes.map((box) => box.x + box.width)) - left,
+    height: Math.max(...boxes.map((box) => box.y + box.height)) - top,
+  };
+  const search = canvas?.querySelector(".graph-search");
+  const band = search
+    ? Math.max(0, search.getBoundingClientRect().bottom - flow.getBoundingClientRect().top)
+    : SEARCH_BOTTOM_PX;
+  const height = Math.max(1, flow.clientHeight - band);
+  const viewport = getViewportForBounds(bounds, flow.clientWidth, height, MIN_ZOOM, MAX_ZOOM, margin);
+  return instance.setViewport({ ...viewport, y: viewport.y + band }, { duration });
+}
 
 // Vue jamais cadrée : celle de départ de React Flow, coin haut gauche à l'échelle 1. Aucun
 // cadrage réel n'y aboutit (le dessin entier ne tient jamais à l'échelle 1 calé dans le coin).
@@ -117,43 +155,70 @@ function untouched({ x, y, zoom }: { x: number; y: number; zoom: number }): bool
   return x === 0 && y === 0 && zoom === 1;
 }
 
+// Lance un cadrage dès que possible : tant que les éléments ne sont pas mesurés (ceux d'une
+// nouvelle vue, ou mis à jour par une frappe dans la recherche, le sont à nouveau), nouvel essai
+// à l'image suivante, pendant deux secondes au plus. Rend de quoi annuler les essais en attente.
+function whenMeasured(run: () => Promise<boolean> | null, done?: (fit: Promise<boolean>) => void): () => void {
+  let frame = 0;
+  const attempt = (left: number) => {
+    const fit = run();
+    if (fit !== null) done?.(fit);
+    else if (left > 0) frame = requestAnimationFrame(() => attempt(left - 1));
+  };
+  attempt(120);
+  return () => cancelAnimationFrame(frame);
+}
+
 // Recadre le dessin à l'ouverture et à chaque changement de vue (double-clic, retour, plein
-// écran) : la vue entière, centrée, avec la bande de la recherche réservée — exactement comme
-// le bouton « centrer » des commandes, quel que soit l'élément.
-// Le cadrage de l'ouverture n'est pas animé, et un filet le refait tant que la vue est restée
-// celle de départ : sinon, une page ouverte sans être affichée (onglet ou panneau masqué, en
-// cours de redimensionnement) laissait parfois le dessin non cadré — un coin seulement, à
-// l'échelle 1. Le filet passe après chaque cadrage et à chaque changement de taille du canevas ;
-// une vue déjà déplacée ou zoomée par l'utilisateur n'est jamais touchée.
+// écran) : la vue entière, dans la zone libre — exactement comme le bouton « centrer » des
+// commandes, quel que soit l'élément. Le cadrage attend que les éléments de la vue soient
+// mesurés ; celui de l'ouverture n'est pas animé, les suivants le sont.
+// Filet : tant que la vue est restée celle de départ, le cadrage est refait, après chaque cadrage
+// et à chaque changement de taille du canevas — une page ouverte sans être affichée (onglet ou
+// panneau masqué, en cours de redimensionnement) laissait parfois le dessin non cadré, un coin
+// seulement à l'échelle 1. Une vue déjà déplacée ou zoomée par l'utilisateur n'est jamais touchée.
 // Les résultats de la recherche ne recadrent que quand le TEXTE de la recherche change :
 // naviguer dans le graphe avec une recherche en cours ne décale plus rien — c'est ce qui
 // décalait la sous-vue de certains éléments (ceux dont la vue contenait des correspondances).
 export function Fitter({
-  zoomed,
+  nodes,
   fullscreen,
   search,
   canvas,
 }: {
-  zoomed: string | null;
+  nodes: readonly Placed[];
   fullscreen: boolean;
   search: string;
   canvas: RefObject<HTMLElement | null>;
 }) {
   const instance = useReactFlow();
-  const opened = useRef(false);
+  const initialized = useNodesInitialized();
+  // Dernière vue reçue : la liste est refaite à chaque sélection ou frappe, sans que la vue change.
+  // Tenue à jour avant les effets qui la lisent (ils passent après, dans l'ordre de déclaration).
+  const latest = useRef(nodes);
+  useLayoutEffect(() => {
+    latest.current = nodes;
+  }, [nodes]);
+  const fitted = useRef<string | null>(null);
+  const key = `${nodes.map((node) => node.id).join(" ")} ${String(fullscreen)}`;
   useEffect(() => {
-    const rescue = () => {
-      if (untouched(instance.getViewport())) void instance.fitView(FIT_OPTIONS);
-    };
-    const duration = opened.current ? 300 : 0;
-    opened.current = true;
-    void instance.fitView({ ...FIT_OPTIONS, duration }).then(rescue);
-  }, [zoomed, fullscreen, instance]);
+    if (fitted.current === key) return;
+    const first = fitted.current === null;
+    return whenMeasured(
+      () => fitArea(instance, canvas.current, latest.current, { duration: first ? 0 : 300 }),
+      (fit) => {
+        fitted.current = key;
+        void fit.then(() => {
+          if (untouched(instance.getViewport())) void fitArea(instance, canvas.current, latest.current);
+        });
+      },
+    );
+  }, [initialized, key, instance, canvas]);
   useEffect(() => {
     const element = canvas.current;
     if (!element) return;
     const observer = new ResizeObserver(() => {
-      if (untouched(instance.getViewport())) void instance.fitView(FIT_OPTIONS);
+      if (untouched(instance.getViewport())) void fitArea(instance, element, latest.current);
     });
     observer.observe(element);
     return () => observer.disconnect();
@@ -168,20 +233,37 @@ export function Fitter({
       return;
     }
     const query = search.trim().toLowerCase();
-    const found = query
-      ? instance
-          .getNodes()
-          .filter((node) => String(node.data.label).toLowerCase().includes(query))
-          .map((node) => ({ id: node.id }))
-      : [];
-    instance.fitView({
-      ...FIT_OPTIONS,
-      nodes: found.length > 0 ? found : undefined,
-      padding: found.length > 0 ? { top: SEARCH_BAND, right: SEARCH_MARGIN, bottom: SEARCH_MARGIN, left: SEARCH_MARGIN } : FIT_OPTIONS.padding,
-      duration: 300,
-    });
-  }, [search, instance]);
+    const labels = new Map(instance.getNodes().map((node) => [node.id, String(node.data.label).toLowerCase()]));
+    const found = query ? latest.current.filter((node) => labels.get(node.id)?.includes(query)) : [];
+    return whenMeasured(() =>
+      fitArea(
+        instance,
+        canvas.current,
+        found.length > 0 ? found : latest.current,
+        found.length > 0 ? { margin: SEARCH_MARGIN, duration: 300 } : { duration: 300 },
+      ),
+    );
+  }, [search, instance, canvas]);
   return null;
+}
+
+// Bouton « centrer » des commandes : même cadrage que l'ouverture (celui de React Flow centrerait
+// sur toute la hauteur du canevas). Icône reprise du bouton d'origine.
+function FitButton({ canvas }: { canvas: RefObject<HTMLElement | null> }) {
+  const { t } = useI18n();
+  const instance = useReactFlow();
+  return (
+    <ControlButton
+      className="react-flow__controls-fitview"
+      onClick={() => void fitArea(instance, canvas.current, instance.getNodes(), { duration: 300 })}
+      title={t("graph.fit")}
+      aria-label={t("graph.fit")}
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 30" aria-hidden="true">
+        <path d="M3.692 4.63c0-.53.4-.938.939-.938h5.215V0H4.708C2.13 0 0 2.054 0 4.63v5.216h3.692V4.631zM27.354 0h-5.2v3.692h5.17c.53 0 .984.4.984.939v5.215H32V4.631A4.624 4.624 0 0027.354 0zm.954 24.83c0 .532-.4.94-.939.94h-5.215v3.768h5.215c2.577 0 4.631-2.13 4.631-4.707v-5.139h-3.692v5.139zm-23.677.94c-.531 0-.939-.4-.939-.94v-5.138H0v5.139c0 2.577 2.13 4.707 4.708 4.707h5.138V25.77H4.631z" />
+      </svg>
+    </ControlButton>
+  );
 }
 
 export default function HomeGraph() {
@@ -312,8 +394,8 @@ export default function HomeGraph() {
           nodeTypes={NODE_TYPES}
           nodesDraggable={false}
           nodesConnectable={false}
-          fitView
-          fitViewOptions={FIT_OPTIONS}
+          // Pas de fitView de React Flow : le cadrage, centré dans la zone libre, est fait par
+          // Fitter (ouverture, changements de vue, recherche) et par le bouton « centrer ».
           minZoom={MIN_ZOOM}
           onNodeClick={(_, node) => setSelected(graph.nodes.find((n) => n.id === node.id) ?? null)}
           // Double-clic : entre dans l'élément (lui au centre, ses voisins autour) et ouvre sa
@@ -326,11 +408,13 @@ export default function HomeGraph() {
           }}
           onPaneClick={() => setSelected(null)}
         >
-          <Fitter zoomed={zoomed} fullscreen={fullscreen} search={search} canvas={canvasRef} />
+          <Fitter nodes={view.nodes} fullscreen={fullscreen} search={search} canvas={canvasRef} />
           <Background gap={28} />
-          {/* Le bouton « centrer » des commandes recadre avec la bande de recherche réservée,
-           * comme tous les recadrages du dessin. */}
-          <Controls showInteractive={false} fitViewOptions={FIT_OPTIONS} />
+          {/* Le bouton « centrer » des commandes recadre dans la zone libre, comme tous les
+           * recadrages du dessin. */}
+          <Controls showInteractive={false} showFitView={false}>
+            <FitButton canvas={canvasRef} />
+          </Controls>
           <Panel position="top-left" className="graph-panel graph-panel-tools">
             <div className="graph-tools">
               {zoomed && (
