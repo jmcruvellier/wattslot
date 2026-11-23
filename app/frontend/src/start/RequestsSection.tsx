@@ -51,12 +51,17 @@ export default function RequestsSection({
   day: shownDay,
   today = false,
   computedAt = null,
+  started = [],
 }: {
   future?: boolean; // jour à venir ou semaine : ni « Fait » ni « C'est lancé »
   day?: string; // jour affiché (AAAA-MM-JJ) : ses demandes seulement ; aucun : toutes
   today?: boolean; // le jour affiché est aujourd'hui : les demandes pas encore placées aussi
   // Heure du calcul du plan affiché : une demande déposée après lui n'y est pas encore.
   computedAt?: string | null;
+  // Cycles du jour déjà vus dans les mesures : leur demande est « lancée », même si le calcul
+  // qui le note sur la demande n'a pas encore tourné (la tuile disait « lancé, en cours », la
+  // demande « marqué comme lancé »).
+  started?: string[];
 }) {
   const { language, t } = useI18n();
   const [load, setLoad] = useState<Load>({ status: "loading" });
@@ -128,6 +133,7 @@ export default function RequestsSection({
     if (request.launched_on) {
       return week ? `${t("plan.agenda.launched")} · ${day(request.launched_on)}` : t("plan.agenda.launched");
     }
+    if (request.cycle && started.includes(request.cycle)) return t("plan.agenda.launched");
     if (request.declared) return t("requests.state_declared");
     // Déposée après le calcul du plan affiché : il ne la connaît pas encore (« La journée » ne
     // la montre pas) ; le prochain calcul, ou « Calculer », la placera.
@@ -156,7 +162,7 @@ export default function RequestsSection({
               <span className="requests-name">{name(request)}</span>
               <span className="requests-state">{state(request)}</span>
               <span className="requests-actions">
-                  {!future && request.cycle && !request.launched_on && !request.declared && (
+                  {!future && request.cycle && !request.launched_on && !request.declared && !started.includes(request.cycle) && (
                     <button type="button" onClick={() => void act(() => declareLaunched(request.cycle ?? ""))}>
                       {t("requests.mark_launched")}
                     </button>

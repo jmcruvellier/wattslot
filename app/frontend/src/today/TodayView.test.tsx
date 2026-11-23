@@ -107,11 +107,23 @@ describe("TodayView", () => {
   it("sans mesures du moment, pas de carte « En ce moment » ni de texte du plan", async () => {
     // Le texte entier du plan redisait la prochaine action, la frise et le bilan : il reste dans
     // Planning (« Pourquoi ce plan »).
-    mockApi({ ...TODAY, now: { ...NOW, sentence: null }, next_action: ACTION, recommendation: "Lancez le lave-linge à 13 h." });
+    mockApi({ ...TODAY, now: null, next_action: ACTION, recommendation: "Lancez le lave-linge à 13 h." });
     renderView();
     expect(await screen.findByRole("heading", { name: "Lancez Lave-linge" })).toBeInTheDocument();
     expect(screen.queryByText("En ce moment")).not.toBeInTheDocument();
     expect(screen.queryByText("Lancez le lave-linge à 13 h.")).not.toBeInTheDocument();
+  });
+
+  it("sans phrase du serveur, « En ce moment » garde les tuiles mesurées", async () => {
+    // 23/11/2026, 0 h 30 : le réseau pas encore mesuré sur le quart d'heure, donc ni phrase ni
+    // puissance de la maison ; le panneau disparaissait, alors que la batterie est connue.
+    const now = { ...NOW, sentence: null, production_w: 0, consumption_w: 0, grid_w: null, battery_w: null };
+    mockApi({ ...TODAY, now, next_action: ACTION });
+    renderView();
+    const card = (await screen.findByRole("heading", { name: "En ce moment" })).closest("section") as HTMLElement;
+    expect(within(card).getByText("Panneaux")).toBeInTheDocument();
+    expect(within(card).getByText("Batterie").nextElementSibling).toHaveTextContent("64 %");
+    expect(within(card).queryByText("Maison")).toBeNull(); // « 0 W » serait faux sans le réseau
   });
 
   it("dit l'heure de départ et la raison en quelques mots ; le reste sous « Autre heure »", async () => {

@@ -119,7 +119,7 @@ export default function TodayView({ onNavigate }: { onNavigate?: (target: string
   const unplaced = unplacedNotices(view.notices);
   const hasBattery = view.battery_capacity_kwh !== null;
   const hasSun = view.solar !== false;
-  const hasNow = view.now != null && view.now.sentence !== null;
+  const hasNow = hasNowTiles(view.now ?? null);
 
   return (
     <div className="today">
@@ -197,14 +197,29 @@ export default function TodayView({ onNavigate }: { onNavigate?: (target: string
   );
 }
 
-/** Le moment en quatre tuiles (moyenne du dernier quart d'heure ; la plage est en infobulle, la
- * phrase du serveur pour les lecteurs d'écran). Sans mesures du moment, pas de panneau. */
+/** La maison n'a une puissance à montrer que si elle a pu être calculée : sans mesure du
+ * réseau, « 0 W » serait faux. */
+function homeMeasured(now: Now): boolean {
+  return now.consumption_w !== null && (now.consumption_w > 0 || now.grid_w !== null);
+}
+
+/** Y a-t-il au moins une tuile du moment à montrer ? Le serveur ne rédige pas toujours de phrase
+ * (un capteur du réseau en retard d'un quart d'heure, par exemple) : le panneau ne doit pas
+ * disparaître pour autant, il reste au moins le niveau de la batterie (constaté le 23/11/2026). */
+function hasNowTiles(now: Now | null): boolean {
+  if (now === null) return false;
+  return now.production_w !== null || homeMeasured(now) || now.battery_w !== null || now.soc_percent !== null || now.grid_w !== null;
+}
+
+/** Le moment en tuiles (moyenne du dernier quart d'heure ; la plage est en infobulle, la phrase
+ * du serveur, quand il en rédige une, pour les lecteurs d'écran). Sans aucune mesure du moment,
+ * pas de panneau. */
 function NowCard({ now }: { now: Now | null }) {
   const { language, t } = useI18n();
-  if (now === null || now.sentence === null) return null;
+  if (now === null || !hasNowTiles(now)) return null;
   const tiles: { key: string; label: string; value: string }[] = [];
   if (now.production_w !== null) tiles.push({ key: "sun", label: t("today.now.panels"), value: kw(now.production_w) });
-  if (now.consumption_w !== null) tiles.push({ key: "home", label: t("today.now.home"), value: kw(now.consumption_w) });
+  if (homeMeasured(now)) tiles.push({ key: "home", label: t("today.now.home"), value: kw(now.consumption_w ?? 0) });
   if (now.battery_w !== null || now.soc_percent !== null) {
     const parts = [now.soc_percent !== null ? `${percent(now.soc_percent)} %` : null];
     if (now.battery_w) parts.push(t(now.battery_w > 0 ? "today.now.charging" : "today.now.discharging", { kw: kw(now.battery_w) }));
@@ -224,7 +239,7 @@ function NowCard({ now }: { now: Now | null }) {
       : undefined;
   return (
     <Panel icon="plug" title={t("today.now.eyebrow")}>
-      <p className="visually-hidden">{now.sentence}</p>
+      {now.sentence && <p className="visually-hidden">{now.sentence}</p>}
       {tiles.length > 0 && (
         <dl className="now-tiles" title={measured}>
           {tiles.map((tile) => (

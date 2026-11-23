@@ -43,6 +43,14 @@ def test_text_from_the_explanations_in_both_languages(path: Path) -> None:
     assert "Jamais sous" in texts["fr"]  # raisons de la batterie
 
 
+@pytest.mark.parametrize("path", STATES, ids=[p.stem for p in STATES])
+def test_a_runtime_off_all_day_is_said_once(path: Path) -> None:
+    """« Piscine : à l'arrêt toute la journée. » : la raison ne le répète pas derrière."""
+    text = recommendation(output(path))
+
+    assert "à l'arrêt toute la journée. À l'arrêt toute la journée." not in text
+
+
 def test_the_appliances_come_in_the_order_of_the_day() -> None:
     text = recommendation(output(STATES[11]))
 

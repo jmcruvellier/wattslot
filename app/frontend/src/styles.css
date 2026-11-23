@@ -2421,8 +2421,9 @@ a.ui-setting-row {
   gap: 1rem;
 }
 
-/* Côte à côte : « La journée » et la colonne de droite finissent à la même hauteur ; à droite,
-   le dernier panneau prend la place qui reste. */
+/* Côte à côte : « La journée » s'étire jusqu'au bas de la colonne de droite quand elle est plus
+   courte ; les panneaux de droite gardent leur hauteur (pas de panneau étiré et vide quand
+   « Pourquoi ce plan », déplié, allonge la colonne de gauche). */
 @media (min-width: 52rem) {
   .plan-columns {
     grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
@@ -2435,14 +2436,6 @@ a.ui-setting-row {
 
   .plan-agenda > .agenda-card {
     flex: 1;
-  }
-
-  .plan-side > :last-child {
-    flex: 1;
-  }
-
-  .plan-side > .plan-insights:last-child > * {
-    height: 100%;
   }
 }
 

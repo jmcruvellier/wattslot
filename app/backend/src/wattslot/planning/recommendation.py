@@ -41,11 +41,12 @@ def _bounds(item: Mapping[str, Any]) -> tuple[int, int]:
     return int(start), int(end)
 
 
-def _why(explanation: Explanation | None, lang: str) -> str:
-    """Raisons d'un élément, l'objectif mis à part (dit une fois en tête)."""
+def _why(explanation: Explanation | None, lang: str, without: tuple[str, ...] = ()) -> str:
+    """Raisons d'un élément, l'objectif mis à part (dit une fois en tête), et celles de codes
+    ``without`` que la ligne dit déjà."""
     if explanation is None:
         return ""
-    text = render(explanation, lang, without=("objective",))
+    text = render(explanation, lang, without=("objective", *without))
     return f" {text}" if text else ""
 
 
@@ -98,7 +99,10 @@ def _battery(day: DayPlan, lang: str) -> str:
 def _runtime(item: RuntimePlan, lang: str) -> str:
     active = [s for s in item.segments if s.mode != "off"]
     if not active:
-        return _text(lang, "runtime_off", device=item.device) + _why(item.explanation, lang)
+        # La ligne dit déjà « à l'arrêt toute la journée » : la raison ne le répète pas.
+        return _text(lang, "runtime_off", device=item.device) + _why(
+            item.explanation, lang, without=("runtime_off",)
+        )
     spans: list[list[Any]] = []  # [début, fin, modes] : segments contigus réunis
     for segment in active:
         if spans and spans[-1][1] == segment.start_hour:

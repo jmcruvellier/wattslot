@@ -137,7 +137,8 @@ function WeatherPill({
   if (reading && reading.mode === "no_reading") {
     rows.push([t("plan.banner.rows.reading"), t("plan.banner.weather.no_reading")]);
   }
-  if (reading && reading.mode !== "no_reading" && reading.measured_kwh !== null) {
+  // Trop tôt pour juger (la nuit) : « mesuré 0,0 kWh » contre « prévu 0,0 kWh » n'apprend rien.
+  if (reading && reading.mode !== "no_reading" && reading.measured_kwh !== null && reading.badge !== "too_early") {
     const gap = reading.gap_percent === null ? "" : ` · ${signed(reading.gap_percent, "%")}`;
     if (reading.mode === "reading") {
       rows.push([t("plan.banner.rows.at_reading"), energy(reading.measured_kwh)]);
@@ -209,7 +210,7 @@ function deviceLine(status: DeviceStatus, t: Translate, lang: Language): [string
   }
 }
 
-function EquipmentPill({ timeline }: { timeline: Timeline }) {
+function EquipmentPill({ timeline, future }: { timeline: Timeline; future: boolean }) {
   const { language, t } = useI18n();
   const judged: [string, string, string][] = [
     ...timeline.statuses.map((status) => deviceLine(status, t, language)),
@@ -259,7 +260,8 @@ function EquipmentPill({ timeline }: { timeline: Timeline }) {
       }
     >
       {lines.length === 0 ? (
-        <p className="plan-tile-note">{t("plan.banner.equip.none")}</p>
+        // Un jour à venir : rien n'a pu être lancé, on ne le dit pas.
+        <p className="plan-tile-note">{t(future ? "plan.week.no_device" : "plan.banner.equip.none")}</p>
       ) : (
         <ul className="plan-tile-devices">
           {lines.map(([device, state, energy], index) => (
@@ -282,7 +284,7 @@ export default function Banners({ view }: { view: DayView }) {
       {view.solar !== false && (
         <WeatherPill weather={view.weather} reading={view.cards?.weather ?? null} sun={sunWindow(view)} />
       )}
-      <EquipmentPill timeline={view.timeline} />
+      <EquipmentPill timeline={view.timeline} future={view.kind !== "yesterday" && view.kind !== "today"} />
     </div>
   );
 }

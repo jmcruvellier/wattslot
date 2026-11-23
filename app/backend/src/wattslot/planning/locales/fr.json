@@ -15,6 +15,7 @@
   "reason.finish_late": "Placé au plus tôt : il ne peut pas être terminé avant {hour} h, comme demandé.",
   "reason.minimum_hours": "Durée minimale restant à faire aujourd'hui : {hours} h.",
   "reason.skipped_full_charge": "Pas de fonctionnement aujourd'hui : la batterie doit faire sa charge complète (jusqu'à 100 %), le surplus solaire lui est réservé.",
+  "reason.runtime_off": "À l'arrêt toute la journée.",
   "reason.solar_hours": "{hours} h sur le surplus solaire.",
   "reason.self_consumption_mode": "Autoconsommation de {start} h à {end} h : charge sur le surplus, décharge sur le déficit.",
   "reason.floor": "Jamais sous {percent} %.",

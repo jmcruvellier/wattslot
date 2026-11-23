@@ -194,9 +194,13 @@ def explain(
                 if s.mode != "off"
                 for h in range(s.start_hour, s.end_hour)
             }
+            # L'objectif reste la première raison : le texte du plan y lit l'objectif du jour.
+            # À l'arrêt toute la journée, ``render`` ne le rédige pas (rien n'est « placé »).
             reasons = [Reason(code="objective", params={"objective": objective})]
             if model is not None and model.skipped:
                 reasons.append(Reason(code="skipped_full_charge"))
+            elif not running:
+                reasons.append(Reason(code="runtime_off"))
             elif model is not None and model.min_hours > 0:
                 reasons.append(Reason(code="minimum_hours", params={"hours": model.min_hours}))
             surplus = sum(1 for h in running if problem.net_kwh.get(h, 0.0) > 0)
@@ -293,14 +297,23 @@ def _param(name: str, value: Any, lang: str) -> str:
     return str(value)
 
 
+# Raisons d'un élément qui ne tourne pas de la journée : il n'est pas « placé pour » un objectif.
+NOT_PLACED = ("runtime_off", "skipped_full_charge")
+
+
 def render(explanation: Explanation, lang: str = "fr", without: tuple[str, ...] = ()) -> str:
     """Texte de l'explication, sans les raisons de codes ``without`` ; ``KeyError`` pour un
-    code sans texte dans la langue."""
+    code sans texte dans la langue. Un élément à l'arrêt toute la journée ne dit pas l'objectif :
+    « Filtration : placé pour le coût le plus bas » alors qu'elle ne tournait pas (constaté le
+    23/11/2026)."""
     texts = catalog(lang)
+    skipped = set(without)
+    if any(r.code in NOT_PLACED for r in explanation.reasons):
+        skipped.add("objective")
     sentences = [
         texts[f"reason.{r.code}"].format(**{k: _param(k, v, lang) for k, v in r.params.items()})
         for r in explanation.reasons
-        if r.code not in without
+        if r.code not in skipped
     ]
     alternative = explanation.alternative
     if alternative is not None:
