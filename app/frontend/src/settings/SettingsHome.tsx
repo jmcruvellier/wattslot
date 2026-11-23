@@ -75,8 +75,8 @@ export default function SettingsHome() {
     const service = settings.service;
     const device = found.choices?.notify_services.find((choice) => choice.id === service)?.name ?? service;
     return device
-      ? t("settings_home.notifications_on", { count: active, device })
-      : t("settings_home.notifications_count", { count: active });
+      ? t(active === 1 ? "settings_home.notifications_on_one" : "settings_home.notifications_on_other", { count: active, device })
+      : t(active === 1 ? "settings_home.notifications_count_one" : "settings_home.notifications_count_other", { count: active });
   };
 
   const plannerText = () => {

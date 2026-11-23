@@ -63,7 +63,7 @@ describe("SettingsHome", () => {
       </I18nProvider>,
     );
     const link = async (name: RegExp) => screen.findByRole("link", { name });
-    expect(await link(/Notifications\s*2 active\(s\), sur Téléphone/)).toHaveAttribute("href", "#/settings/notifications");
+    expect(await link(/Notifications\s*2 actives, sur Téléphone/)).toHaveAttribute("href", "#/settings/notifications");
     // Serveur MCP absent du faux serveur : la ligne de l'assistant dit qu'il ne répond pas.
     expect(await link(/Assistant vocal\s*Le serveur de l'assistant ne répond pas/)).toHaveAttribute(
       "href",

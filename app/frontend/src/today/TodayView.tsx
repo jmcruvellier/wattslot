@@ -69,6 +69,13 @@ function TrendBadge({ view, line }: { view: DayView; line: LineKey }) {
   return <TrendMark trend={trend} label={t("today.trend")} className="trend-pill" />;
 }
 
+/** Valeur estimée au relevé d'une ligne, quand un écart avec la mesure est affiché. */
+function comparedEstimate(view: DayView, line: LineKey): number | null {
+  const card = view.cards?.at_reading.find((found) => found.key === line);
+  if (!card || card.trend.direction === "none") return null;
+  return card.estimated_kwh;
+}
+
 export default function TodayView({ onNavigate }: { onNavigate?: (target: string) => void }) {
   const { language, t } = useI18n();
   const [load, setLoad] = useState<Load>({ status: "loading" });
@@ -115,6 +122,12 @@ export default function TodayView({ onNavigate }: { onNavigate?: (target: string
   // prévisions seules pouvait être inférieure à ce qui est déjà produit (« 1,2 kWh prévus »
   // à côté de « 1,5 kWh déjà produits »).
   const expected = view.weather?.production_kwh ?? view.summary.production_kwh;
+  // Ce que le badge compare à la mesure : sans cette ligne, « −11 % » restait sans explication
+  // entre « Prévu 7,3 kWh » et « Déjà produit 7,3 kWh » (constaté le 23/11/2026).
+  const expectedSun = comparedEstimate(view, "production");
+  const expectedSocKwh = comparedEstimate(view, "soc");
+  const capacity = view.battery_capacity_kwh ?? null;
+  const expectedSoc = expectedSocKwh !== null && capacity ? (expectedSocKwh / capacity) * 100 : null;
 
   const unplaced = unplacedNotices(view.notices);
   const hasBattery = view.battery_capacity_kwh !== null;
@@ -171,6 +184,12 @@ export default function TodayView({ onNavigate }: { onNavigate?: (target: string
                     <dt>{t("today.battery.end_label")}</dt>
                     <dd>{t("today.battery.end_value", { pct: percent(view.summary.soc_end_percent) })}</dd>
                   </div>
+                  {expectedSoc !== null && (
+                    <div className="indicator">
+                      <dt>{t("today.expected_label")}</dt>
+                      <dd>{t("today.battery.end_value", { pct: percent(expectedSoc) })}</dd>
+                    </div>
+                  )}
                 </dl>
                 {/* Plusieurs batteries : l'état de charge de chacune, sous celui de la maison. */}
                 {(view.now?.batteries?.length ?? 0) > 1 && <BatteryList batteries={view.now?.batteries ?? []} />}
@@ -187,6 +206,12 @@ export default function TodayView({ onNavigate }: { onNavigate?: (target: string
                     <dt>{t("today.sun.done_label")}</dt>
                     <dd>{measuredHours ? `${kwh(produced, 1)} kWh` : "—"}</dd>
                   </div>
+                  {expectedSun !== null && (
+                    <div className="indicator">
+                      <dt>{t("today.expected_label")}</dt>
+                      <dd>{kwh(expectedSun, 1)} kWh</dd>
+                    </div>
+                  )}
                 </dl>
               </Panel>
             )}
@@ -217,13 +242,17 @@ function hasNowTiles(now: Now | null): boolean {
 function NowCard({ now }: { now: Now | null }) {
   const { language, t } = useI18n();
   if (now === null || !hasNowTiles(now)) return null;
-  const tiles: { key: string; label: string; value: string }[] = [];
+  const tiles: { key: string; label: string; value: string; sub?: string }[] = [];
   if (now.production_w !== null) tiles.push({ key: "sun", label: t("today.now.panels"), value: kw(now.production_w) });
   if (homeMeasured(now)) tiles.push({ key: "home", label: t("today.now.home"), value: kw(now.consumption_w ?? 0) });
   if (now.battery_w !== null || now.soc_percent !== null) {
-    const parts = [now.soc_percent !== null ? `${percent(now.soc_percent)} %` : null];
-    if (now.battery_w) parts.push(t(now.battery_w > 0 ? "today.now.charging" : "today.now.discharging", { kw: kw(now.battery_w) }));
-    tiles.push({ key: "battery", label: t("today.now.battery"), value: parts.filter(Boolean).join(" · ") });
+    // Le niveau en grand, le mouvement dessous : sur une ligne, « 13 % · fournit 360 W » se
+    // coupait en trois dans une tuile étroite.
+    const level = now.soc_percent !== null ? `${percent(now.soc_percent)} %` : null;
+    const flow = now.battery_w
+      ? t(now.battery_w > 0 ? "today.now.charging" : "today.now.discharging", { kw: kw(now.battery_w) })
+      : undefined;
+    tiles.push({ key: "battery", label: t("today.now.battery"), value: level ?? flow ?? "", sub: level ? flow : undefined });
   }
   if (now.grid_w !== null) {
     // Le libellé dit le sens (« Achat », « Surplus »), la valeur la puissance.
@@ -245,7 +274,10 @@ function NowCard({ now }: { now: Now | null }) {
           {tiles.map((tile) => (
             <div key={tile.key} className="now-tile">
               <dt>{tile.label}</dt>
-              <dd>{tile.value}</dd>
+              <dd>
+                {tile.value}
+                {tile.sub && <small className="now-tile-sub">{tile.sub}</small>}
+              </dd>
             </div>
           ))}
         </dl>

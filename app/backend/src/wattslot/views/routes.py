@@ -173,7 +173,19 @@ def later_day(state: Any, kind: LaterKind) -> tuple[date, dict[str, Any]] | None
         day = day if isinstance(day, date) else date.fromisoformat(str(day))
         if day == wanted:
             execution = horizon.content.get("derniere_execution")
-            return day, {**found, "derniere_execution": execution} if execution else dict(found)
+            content = {**found, "derniere_execution": execution} if execution else dict(found)
+            if not content.get("production_max_recente"):
+                # Référence de la météo (« journée couverte ») : celle des plans de demain ou
+                # d'aujourd'hui, comme dans la vue Semaine. Sans elle, la tuile du soleil
+                # n'avait pas de météo de J+2 à J+6 (constaté le 23/11/2026).
+                store = PlanStore(state.database)
+                for kind_kept in ("tomorrow", "today"):
+                    kept = store.load(kind_kept)
+                    best = kept.content.get("production_max_recente") if kept else None
+                    if best:
+                        content["production_max_recente"] = best
+                        break
+            return day, content
     return None
 
 

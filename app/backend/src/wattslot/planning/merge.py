@@ -103,7 +103,25 @@ def _merge_pool(
     }
     base = new or old
     assert base is not None
-    return {**base, "segments": pool_segments(modes)}
+    merged = {**base, "segments": pool_segments(modes)}
+    if any(mode != "off" for mode in modes.values()) and _says_off(merged):
+        # Le dernier calcul ne voit plus d'heure à faire tourner (« à l'arrêt toute la
+        # journée »), mais la journée garde une heure passée : l'explication du calcul qui
+        # l'a placée, sinon celle du dernier calcul sans la raison « à l'arrêt » (« 9h-10h.
+        # À l'arrêt toute la journée. », constaté le 23/11/2026).
+        if old is not None and old.get("explication") and not _says_off(old):
+            merged["explication"] = old["explication"]
+        else:
+            explanation = merged["explication"]
+            kept = [r for r in explanation["raisons"] if r.get("code") != "runtime_off"]
+            merged["explication"] = {**explanation, "raisons": kept}
+    return merged
+
+
+def _says_off(item: Mapping[str, Any]) -> bool:
+    """L'explication de l'élément dit-elle « à l'arrêt toute la journée » ?"""
+    reasons = (item.get("explication") or {}).get("raisons") or []
+    return any(isinstance(r, Mapping) and r.get("code") == "runtime_off" for r in reasons)
 
 
 def _merge_battery(

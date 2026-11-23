@@ -87,7 +87,9 @@ describe("TodayView", () => {
     const now = within(card as HTMLElement);
     expect(now.getByText("1,8 kW")).toBeInTheDocument();
     expect(now.getByText("2,2 kW")).toBeInTheDocument();
-    expect(now.getByText("64 % · fournit 200 W")).toBeInTheDocument();
+    // Le niveau en grand, le mouvement dessous (une ligne se coupait dans une tuile étroite).
+    expect(now.getByText("64 %")).toBeInTheDocument();
+    expect(now.getByText("fournit 200 W")).toBeInTheDocument();
     // Le libellé dit le sens de l'échange avec le réseau, la valeur la puissance.
     expect(now.getByText("Achat").nextElementSibling).toHaveTextContent("200 W");
     expect(now.getByText("Le soleil couvre 82 % de la maison")).toHaveClass("visually-hidden");
@@ -100,7 +102,8 @@ describe("TodayView", () => {
     const now = within(card as HTMLElement);
     expect(now.getByText("48 W")).toBeInTheDocument();
     expect(now.getByText("0 W")).toBeInTheDocument();
-    expect(now.getByText("64 % · charge 288 W")).toBeInTheDocument();
+    expect(now.getByText("64 %")).toBeInTheDocument();
+    expect(now.getByText("charge 288 W")).toBeInTheDocument();
     expect(now.getByText(/1,0 kW/)).toBeInTheDocument();
   });
 
@@ -347,6 +350,9 @@ describe("TodayView", () => {
     expect(screen.getAllByTitle("Écart avec la prévision au relevé")).toHaveLength(2);
     expect(screen.getByText("▲ +25%")).toHaveClass("trend-pill");
     expect(screen.getByText("▲ +8%")).toBeInTheDocument();
+    // Ce que chaque tendance compare à la mesure (23/11/2026 : « −11 % » entre deux 7,3 kWh).
+    expect(battery.getByText("Attendu à cette heure")).toBeInTheDocument();
+    expect(sun.getByText("Attendu à cette heure").closest("div")).toHaveTextContent(/kWh$/);
     expect(screen.getByRole("heading", { name: "Rien à lancer d'ici ce soir" })).toBeInTheDocument();
   });
 
@@ -356,6 +362,7 @@ describe("TodayView", () => {
     expect(await screen.findByRole("heading", { name: "Batterie" })).toBeInTheDocument();
     expect(screen.getByText("Prévu aujourd'hui").closest("div")).toHaveTextContent("9,5 kWh");
     expect(screen.queryByText(/[▲▼]/)).not.toBeInTheDocument();
+    expect(screen.queryByText("Attendu à cette heure")).not.toBeInTheDocument();
     // Juste après minuit, avant le premier relevé : la pastille ne disparaît pas.
     expect(screen.getAllByText("trop tôt")).toHaveLength(2);
     expect(screen.getAllByText("trop tôt")[0]).toHaveClass("trend-pill");

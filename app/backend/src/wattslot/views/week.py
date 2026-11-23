@@ -7,6 +7,7 @@ horaires bout à bout (``series_horaires``), aujourd'hui recalé sur le réel co
 (``_indice_releve``).
 """
 
+import math
 from collections.abc import Mapping, Sequence
 from datetime import date, datetime, timedelta
 from typing import Any, Literal
@@ -199,9 +200,27 @@ def realign_today(
         point["pct"] = percent
         point["kwh"] = round(percent / 100 * capacity, 2) if capacity else point["kwh"]
     summary["soc_fin_pct"] = curve.soc_percent[-1]
-    summary["soc_max_pct"] = max(curve.soc_percent)
+    summary["soc_max_pct"] = _today_max(state, actual, curve.soc_percent, context)
     recalculated = recalculated_production(curve.production, actual)
     summary["production_kwh"] = recalculated if recalculated is not None else sum(curve.production)
+
+
+def _today_max(
+    state: Mapping[str, Any],
+    actual: Mapping[str, Any] | None,
+    soc_percent: Sequence[float],
+    context: Context,
+) -> float:
+    """Niveau le plus haut d'aujourd'hui : le maximum mesuré jusqu'au relevé, dépassé seulement
+    par ce qui reste prévu ; sans mesure, le maximum de la courbe. La semaine annonçait 65 %
+    (estimation) quand la journée disait « au plus haut, 61 % » (mesure), le 23/11/2026."""
+    measured = ((actual or {}).get("soc_max_reel") or {}).get("pct")
+    reading = reading_index(state, context)
+    if measured is None or reading is None:
+        return max(soc_percent)
+    # ``reading`` est sur l'axe des points (une heure de moins que l'heure du relevé).
+    rest = list(soc_percent[math.floor(reading) + 1 if reading > 0 else 0 :])
+    return max([float(measured), *rest])
 
 
 def with_tomorrow_up_to_date(

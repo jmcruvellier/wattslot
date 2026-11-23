@@ -115,6 +115,15 @@ describe("vue d'un jour", () => {
     expect(within(tile).queryByText("Dernière prévision")).toBeNull();
   });
 
+  it("sans météo connue : pas de ligne « Météo » (elle disait « Production »)", () => {
+    const weather = { ...TOMORROW.weather!, quality: null, share_percent: null, best_kwh: null, best_days: null };
+    renderDay({ ...TOMORROW, weather });
+
+    const tile = screen.getByLabelText("Météo");
+    expect(within(tile).queryByText("Production")).toBeNull();
+    expect(within(tile).queryByText("Journée ensoleillée")).toBeNull();
+  });
+
   it("un jour à venir sans appareil : « prévu » seul, pas « ni lancé »", () => {
     const timeline = { ...TOMORROW.timeline, rows: [], statuses: [], unplanned: [], badge: null };
     renderDay({ ...TOMORROW, timeline });

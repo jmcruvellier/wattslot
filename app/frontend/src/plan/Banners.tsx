@@ -119,9 +119,10 @@ function WeatherPill({
 }) {
   const { language, t } = useI18n();
   const energy = (value: number | null) => `${kwh(value, 1)} kWh`;
-  const rows: [string, ReactNode][] = [
-    [t("plan.banner.weather_title"), t(`plan.banner.weather.quality.${weather.quality ?? "unknown"}`)],
-  ];
+  // Sans référence pour qualifier la journée, pas de ligne « Météo » : elle disait « Production ».
+  const rows: [string, ReactNode][] = weather.quality
+    ? [[t("plan.banner.weather_title"), t(`plan.banner.weather.quality.${weather.quality}`)]]
+    : [];
   if (weather.quality && weather.share_percent !== null) {
     rows.push([
       t("plan.banner.rows.best_day", { days: weather.best_days ?? "" }),

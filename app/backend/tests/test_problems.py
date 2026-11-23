@@ -718,3 +718,25 @@ def test_a_home_that_produces_without_an_export_sensor_is_told_so() -> None:
     assert found(solar, grid(Role.ENERGY_IMPORTED, Role.ENERGY_EXPORTED)) == []
     assert found(grid(Role.ENERGY_IMPORTED)) == []
     assert found(solar) == [] and found(solar, grid()) == []
+
+
+def test_an_inverter_off_at_night_is_not_a_problem() -> None:
+    """Soleil couché : les capteurs de production indisponibles ne sont pas à surveiller
+    (« 2 problèmes à regarder » chaque soir, constaté le 23/11/2026) ; de jour, si."""
+    from types import SimpleNamespace
+
+    from wattslot.problems import _sensor_problems
+
+    home = HomeModel(devices=[SOLAR.model_copy(update={"sensors": SOLAR.sensors[:1]})])
+    diagnostic = Diagnostic(generated_at=NOW)
+
+    def found(sun: str | None) -> list[str]:
+        states: dict[str, dict[str, str]] = {"sensor.solar_energy": {"state": "unavailable"}}
+        if sun:
+            states["sun.sun"] = {"state": sun}
+        client = SimpleNamespace(snapshot=SimpleNamespace(states=states))
+        return codes(_sensor_problems(home, client, diagnostic))  # type: ignore[arg-type]
+
+    assert found("below_horizon") == []
+    assert found("above_horizon") == ["sensor_unavailable"]
+    assert found(None) == ["sensor_unavailable"]

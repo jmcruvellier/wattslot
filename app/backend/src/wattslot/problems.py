@@ -38,6 +38,9 @@ RESOURCE_ALERTS = frozenset(
 )
 SAMPLE_ALERT = {"free": "1.5", "percent": "4"}  # exemple de « disk_low » pour un envoi d'essai
 UNAVAILABLE = {"unavailable", "unknown"}
+# Capteurs d'un onduleur, souvent éteint (donc indisponible) quand le soleil est couché.
+PRODUCTION_ROLES = {Role.ENERGY_PRODUCED, Role.POWER_PRODUCED}
+SUN = "sun.sun"
 
 DOCS = {
     "token": "https://www.home-assistant.io/docs/authentication/#your-account-profile",
@@ -115,6 +118,8 @@ def _sensor_problems(
     states = client.snapshot.states if client is not None else None
     silent = set(silent_entities(diagnostic.ingestion, diagnostic.today, diagnostic.generated_at))
     followed = diagnostic.aggregation.statistics_until if diagnostic.aggregation else {}
+    # Soleil couché d'après Home Assistant (``sun.sun``) ; sans cette entité, pas d'exception.
+    night = ((states or {}).get(SUN) or {}).get("state") == "below_horizon"
     for device in home.devices:
         for sensor in device.sensors:
             params = {"device": device.name, "role": sensor.role.value, "entity": sensor.entity_id}
@@ -152,6 +157,8 @@ def _sensor_problems(
                 continue
             state = (states or {}).get(sensor.entity_id) or {}
             if str(state.get("state")) in UNAVAILABLE:
+                if night and sensor.role in PRODUCTION_ROLES:
+                    continue  # onduleur éteint la nuit : rien à vérifier
                 found.append(
                     Problem(code="sensor_unavailable", severity=Severity.WATCH, params=params)
                 )

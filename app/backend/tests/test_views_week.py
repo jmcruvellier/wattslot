@@ -203,3 +203,18 @@ def test_versions(tmp_path: Path) -> None:
     assert found["today"] is not None and found["week"] >= found["today"]
     assert found["d2"] == found["d6"] is not None  # jours suivants : l'heure de l'horizon
     assert found["yesterday"] is None
+
+
+def test_the_highest_level_of_today_follows_the_measure() -> None:
+    """Maximum déjà passé : la mesure l'emporte sur l'estimation (65 % annoncés sous Semaine
+    quand la journée disait « au plus haut, 61 % », le 23/11/2026) ; ce qui reste prévu peut
+    encore le dépasser."""
+    today = state_of(STATES[0])
+    actual = actual_of(today, hour=17)
+    today["donnees_reelles_cache"] = actual
+    curve = [12.0] * 14 + [65.0, 60.0, 40.0] + [20.0] * 7
+
+    assert week._today_max(today, {**actual, "soc_max_reel": {"pct": 61.0}}, curve, CONTEXT) == 61.0
+    later = [12.0] * 20 + [70.0] + [20.0] * 3
+    assert week._today_max(today, {**actual, "soc_max_reel": {"pct": 61.0}}, later, CONTEXT) == 70.0
+    assert week._today_max(today, {**actual, "soc_max_reel": None}, curve, CONTEXT) == 65.0

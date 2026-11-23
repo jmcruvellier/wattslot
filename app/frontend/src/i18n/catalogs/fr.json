@@ -1453,7 +1453,8 @@
     },
     "hour": "{hour} h",
     "checking": "Vérification…",
-    "count": "{count} problème(s) à regarder",
+    "count_one": "{count} problème à regarder",
+    "count_other": "{count} problèmes à regarder",
     "severity_count": "{severity} : {count}"
   },
   "report": {
@@ -1720,6 +1721,7 @@
       "forecast_label": "Prévu aujourd'hui"
     },
     "trend": "Écart avec la prévision au relevé",
+    "expected_label": "Attendu à cette heure",
     "trend_early": "trop tôt"
   },
   "home_summary": {
@@ -1744,7 +1746,8 @@
     },
     "panels": {
       "title": "Panneaux",
-      "fields": "{count} champ(s), {directions} · {kwp} kWc",
+      "fields_one": "{count} champ, {directions} · {kwp} kWc",
+      "fields_other": "{count} champs, {directions} · {kwp} kWc",
       "undescribed": "Panneaux pas encore décrits"
     },
     "direction": {
@@ -1808,8 +1811,10 @@
   },
   "settings_home": {
     "notifications_none": "Aucune active",
-    "notifications_on": "{count} active(s), sur {device}",
-    "notifications_count": "{count} active(s)",
+    "notifications_on_one": "{count} active, sur {device}",
+    "notifications_on_other": "{count} actives, sur {device}",
+    "notifications_count_one": "{count} active",
+    "notifications_count_other": "{count} actives",
     "scheduler_on": "Toutes les heures, à la minute {minute}",
     "scheduler_off": "Désactivé : calcul à la main",
     "beta": {
@@ -1883,7 +1888,8 @@
     "loading": "Lecture des données…",
     "summary": {
       "clean": "Vos données sont saines",
-      "corrected": "{count} valeur(s) corrigée(s)",
+      "corrected_one": "{count} valeur corrigée",
+      "corrected_other": "{count} valeurs corrigées",
       "checked": "Dernier contrôle à {time}",
       "not_checked": "Pas encore de contrôle depuis le démarrage"
     },

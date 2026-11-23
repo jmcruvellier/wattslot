@@ -256,3 +256,34 @@ def test_rollover_same_as_v1(seed: int) -> None:
 
     assert actual == expected
     assert seconds_until(actual, now) == v1("bascule_jour.secondes_avant", expected, now)
+
+
+def test_a_runtime_that_ran_this_morning_is_not_said_off_all_day() -> None:
+    """Le calcul du soir ne voit plus d'heure à faire tourner (« à l'arrêt toute la journée »),
+    mais la journée garde l'heure du matin : l'explication ne le dit plus (23/11/2026)."""
+    from wattslot.planning.merge import _merge_pool
+
+    objective = {"code": "objective", "params": {"objective": "cost"}}
+    off = {"raisons": [objective, {"code": "runtime_off", "params": {}}]}
+    placed = {"raisons": [objective, {"code": "minimum_hours", "params": {"hours": 1}}]}
+    morning = [
+        {"heure_debut": 0, "heure_fin": 9, "mode": "off"},
+        {"heure_debut": 9, "heure_fin": 10, "mode": "boost"},
+        {"heure_debut": 10, "heure_fin": 24, "mode": "off"},
+    ]
+    evening = [{"heure_debut": 0, "heure_fin": 24, "mode": "off"}]
+    new = {"equipement": "Piscine", "segments": evening, "explication": off}
+
+    kept = _merge_pool(
+        {"equipement": "Piscine", "segments": morning, "explication": placed}, new, 19
+    )
+    without = _merge_pool(
+        {"equipement": "Piscine", "segments": morning, "explication": off}, new, 19
+    )
+    still_off = _merge_pool(
+        {"equipement": "Piscine", "segments": evening, "explication": off}, new, 19
+    )
+
+    assert kept is not None and kept["explication"] == placed
+    assert without is not None and without["explication"]["raisons"] == [objective]
+    assert still_off is not None and still_off["explication"] == off

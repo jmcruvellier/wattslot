@@ -41,7 +41,8 @@ export function Essentials({ data, onOpen }: { data: HomeData; onOpen: (sheet: E
     if (arrays.length === 0) return t("home_summary.panels.undescribed");
     const kwp = formatNumber(language, Math.round(arrays.reduce((sum, array) => sum + array.kwp, 0) * 10) / 10);
     const facing = [...new Set(arrays.map((array) => t(`home_summary.direction.${direction(array.azimuth)}`)))];
-    return t("home_summary.panels.fields", { count: arrays.length, directions: list(facing, t), kwp });
+    const fields = arrays.length === 1 ? "home_summary.panels.fields_one" : "home_summary.panels.fields_other";
+    return t(fields, { count: arrays.length, directions: list(facing, t), kwp });
   };
 
   return (

@@ -622,11 +622,18 @@ pre {
   list-style: none;
 }
 
+/* Le nom ne rétrécit pas : dans une tuile étroite, l'état et l'énergie passent à la ligne
+   (à droite) au lieu de recouvrir le nom. */
 .plan-tile-devices > li {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
-  gap: 0.75rem;
+  justify-content: flex-end;
+  gap: 0 0.75rem;
+}
+
+.plan-tile-devices > li > :first-child {
+  flex: 1 0 auto;
 }
 
 .plan-tile-devices > li > :last-child {
@@ -2325,6 +2332,13 @@ a.ui-setting-row {
   margin: 0.1rem 0 0;
   font-size: 1.15rem;
   font-weight: 800;
+}
+
+.now-tile-sub {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-dim);
 }
 
 /* Prochaine action : le seul panneau cerclé de la couleur d'action. */
