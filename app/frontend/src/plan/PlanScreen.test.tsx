@@ -166,6 +166,39 @@ describe("PlanScreen", () => {
     expect(await screen.findByText(/Pas encore de plan pour cette vue/)).toBeInTheDocument();
   });
 
+  it("sous Semaine, une demande dit « lancé » quand les mesures d'aujourd'hui voient son cycle", async () => {
+    // 23/11/2026 : « lancé » sous Aujourd'hui, « marqué comme lancé » sous Semaine.
+    const user = userEvent.setup();
+    const status = { ...TODAY.timeline.statuses[0], device: "Lave-vaisselle", actual_start_min: 2 };
+    const today = { ...TODAY, timeline: { ...TODAY.timeline, statuses: [status] } };
+    const plan = mockApi(() => ({ yesterday: null, today: 1, tomorrow: null, week: 2 }), today);
+    const views = plan.getMockImplementation()!;
+    const asked = {
+      id: 1,
+      device: "dishwasher",
+      created_at: "2026-10-17T08:00:00Z",
+      latest: "2026-10-18",
+      status: "open",
+      launched_on: null,
+      closed_at: null,
+      planned_day: TODAY.day,
+      cycle: "Lave-vaisselle",
+      declared: true,
+    };
+    plan.mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url === "api/requests/devices") return Response.json([{ key: "dishwasher", name: "Lave-vaisselle" }]);
+      if (url === "api/requests") return Response.json([asked]);
+      return views(input, init);
+    });
+    renderScreen();
+    await user.click(await screen.findByRole("tab", { name: "Semaine" }));
+
+    const panel = (await screen.findByRole("heading", { name: "Mes demandes" })).closest("section") as HTMLElement;
+    await waitFor(() => expect(panel.querySelector(".requests-state")).toHaveTextContent(/^lancé$/));
+    expect(panel).not.toHaveTextContent("marqué comme lancé");
+  });
+
   it("rouvre la dernière vue ouverte dans ce navigateur", async () => {
     const user = userEvent.setup();
     mockApi(() => ({ yesterday: null, today: 1, tomorrow: null, week: 2 }));

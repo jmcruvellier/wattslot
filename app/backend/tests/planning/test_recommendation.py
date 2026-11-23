@@ -51,6 +51,38 @@ def test_a_runtime_off_all_day_is_said_once(path: Path) -> None:
     assert "à l'arrêt toute la journée. À l'arrêt toute la journée." not in text
 
 
+def test_a_battery_that_does_not_move_has_no_maximum() -> None:
+    """Jour couvert, batterie au plancher : pas de « maximum prévu 0,61 kWh vers 0 h » entre
+    un départ et une fin à 0,61 kWh (constaté le 23/11/2026)."""
+    state = copy.deepcopy(output(STATES[0]))
+    battery = next(item for item in state["planning"] if "soc_horaire_kwh" in item)
+    battery["soc_horaire_kwh"] = {hour: 0.61 for hour in battery["soc_horaire_kwh"]}
+    battery["soc_initial_kwh"] = battery["soc_final_kwh"] = 0.61
+
+    text = recommendation(state)
+
+    assert "Batterie : pas de mouvement prévu." in text
+    assert "maximum prévu" not in text
+
+
+@pytest.mark.parametrize("lang", ["fr", "en", "de", "es", "it", "nl"])
+def test_the_text_does_not_say_today(lang: str) -> None:
+    """Le même texte se lit sous Demain et les jours suivants : « Équipements à lancer
+    aujourd'hui » y était faux."""
+    text = recommendation(output(STATES[0]), lang)
+    today = {
+        "fr": "aujourd'hui",
+        "en": "today",
+        "de": "heute",
+        "es": "hoy",
+        "it": "oggi",
+        "nl": "vandaag",
+    }
+
+    head = next(line for line in text.splitlines() if line.endswith(":") and "bjecti" not in line)
+    assert today[lang] not in head.lower()
+
+
 def test_the_appliances_come_in_the_order_of_the_day() -> None:
     text = recommendation(output(STATES[11]))
 
@@ -66,7 +98,7 @@ def test_a_plan_without_explanations_still_gives_its_text() -> None:
 
     text = recommendation(dict(plan))
 
-    assert not text.startswith("Objectif") and "Équipements à lancer aujourd'hui :" in text
+    assert not text.startswith("Objectif") and "Équipements à lancer :" in text
     assert "surplus solaire" not in text
 
 
