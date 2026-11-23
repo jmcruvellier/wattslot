@@ -861,6 +861,7 @@
     "close": "Close",
     "fullscreen": "Full screen",
     "fullscreen_exit": "Exit full screen",
+    "fit": "Center the graph",
     "search": "Search for an element…",
     "search_clear": "Clear the search",
     "search_none": "No results."

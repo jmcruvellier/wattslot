@@ -861,6 +861,7 @@
     "close": "Chiudi",
     "fullscreen": "Schermo intero",
     "fullscreen_exit": "Esci da schermo intero",
+    "fit": "Centra il grafo",
     "search": "Cerca un elemento…",
     "search_clear": "Cancella la ricerca",
     "search_none": "Nessun risultato."
