@@ -78,12 +78,20 @@ def _appliances(day: DayPlan, raw: Sequence[Mapping[str, Any]], lang: str) -> li
     return [line for _, line in sorted(found, key=lambda f: f[0])]  # dans l'ordre de la journée
 
 
+# Écart de niveau sous lequel la batterie est dite sans mouvement sur la journée.
+STILL_KWH = 0.05
+
+
 def _battery(day: DayPlan, lang: str) -> str:
     battery = day.battery
     if battery is None:
         return _text(lang, "battery_unknown")
     soc = battery.soc_kwh
-    if not soc:
+    # Niveau qui ne bouge pas de la journée (jour couvert, batterie au plancher) : pas de
+    # « maximum prévu 0,61 kWh vers 0 h » entre un départ et une fin à 0,61 kWh.
+    ends = [v for v in (battery.start_kwh, battery.end_kwh) if v is not None]
+    levels = [*soc.values(), *ends]
+    if not soc or max(levels) - min(levels) < STILL_KWH:
         return _text(lang, "battery_still") + _why(battery.explanation, lang)
     hour = max(soc, key=lambda h: soc[h])
     return _text(

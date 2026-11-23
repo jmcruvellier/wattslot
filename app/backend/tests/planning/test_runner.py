@@ -154,7 +154,7 @@ def test_a_full_run_then_an_hourly_run_then_the_next_day(tmp_path: Path) -> None
     assert report.errors == [] and report.horizon_days == 5
     today = store.load("today")
     assert today is not None and today.day == TODAY and today.manual
-    assert "Équipements à lancer aujourd'hui :" in today.content["texte_recommandation"]
+    assert "Équipements à lancer :" in today.content["texte_recommandation"]
     planning = {item["equipement"]: item for item in today.content["planning"]}
     washer_start = planning["Lave-linge"]["debut_min"]
     assert planning["Batterie"]["soc_initial_kwh"] == 2.0  # SoC de 8 h (40 %), pas l'instant

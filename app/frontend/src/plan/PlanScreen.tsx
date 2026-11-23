@@ -6,6 +6,9 @@
 // section Courbes (`CurvesScreen`). « Mes demandes » en bas, sous chaque onglet : ce que le plan
 // doit placer, à côté de ce qu'il prévoit (déplacé depuis la page Assistant).
 
+import { useEffect, useState } from "react";
+
+import { getJson } from "../api";
 import { useI18n } from "../i18n/I18nProvider";
 import RequestsSection from "../start/RequestsSection";
 import Agenda from "./Agenda";
@@ -18,16 +21,40 @@ import DiscardedNote from "./DiscardedNote";
 import ProvisionalNote from "./ProvisionalNote";
 import { LoadMessage, PlanTabs } from "./PlanTabs";
 import { useDashboardLayout, usePlanView } from "./planView";
+import type { DayView } from "./types";
 import ViewHeader from "./ViewHeader";
 import WeekScreen from "./WeekScreen";
 
 export { POLL_MS } from "./planView";
+
+/** Appareils dont les mesures voient le cycle lancé ce jour-là. */
+function startedDevices(view: DayView): string[] {
+  return view.timeline.statuses.filter((status) => status.actual_start_min !== null).map((status) => status.device);
+}
+
+/** Appareils lancés aujourd'hui d'après les mesures, lus quand ``enabled`` (vue Semaine) et à
+ * chaque nouveau calcul (``version``) ; rien tant que la vue d'aujourd'hui n'a pas répondu. */
+function useStartedToday(enabled: boolean, version: string | null): string[] {
+  const [started, setStarted] = useState<string[]>([]);
+  useEffect(() => {
+    if (!enabled) return;
+    const controller = new AbortController();
+    getJson<DayView>("api/views/today", controller.signal)
+      .then((view) => setStarted(startedDevices(view)))
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, [enabled, version]);
+  return enabled ? started : [];
+}
 
 export default function PlanScreen() {
   const { t } = useI18n();
   const { tab, load, open, reload, retry } = usePlanView();
   // Indicateur mis en avant et indicateurs masqués, choisis dans « Personnaliser » (Courbes).
   const { layout } = useDashboardLayout();
+  // Sous Semaine, les cycles que les mesures voient lancés se lisent dans la vue d'aujourd'hui :
+  // la demande y dit « lancé » comme sous Aujourd'hui, pas « marqué comme lancé » (23/11/2026).
+  const startedToday = useStartedToday(tab === "week", load.status === "week" ? load.view.computed_at : null);
 
   // « Mes demandes » : celles du jour affiché ; toutes sous Semaine (ou tant que le jour n'est
   // pas lu). « Fait » et « C'est lancé » sous Hier et Aujourd'hui seulement : sous un jour à
@@ -38,11 +65,7 @@ export default function PlanScreen() {
       day={load.status === "day" ? load.view.day : undefined}
       today={tab === "today"}
       computedAt={load.status === "day" || load.status === "week" ? load.view.computed_at : null}
-      started={
-        load.status === "day" && tab === "today"
-          ? load.view.timeline.statuses.filter((status) => status.actual_start_min !== null).map((status) => status.device)
-          : []
-      }
+      started={load.status === "day" && tab === "today" ? startedDevices(load.view) : startedToday}
     />
   );
 
