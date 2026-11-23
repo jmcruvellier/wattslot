@@ -96,7 +96,11 @@ const SEARCH_BAND = "76px" as const;
 // Recadrage avec la bande de recherche réservée en haut : à l'ouverture de la vue, par le bouton
 // « centrer » des commandes (sous les boutons de zoom), et à chaque changement de vue ou sur les
 // résultats de la recherche.
-const FIT_MARGIN = 0.2;
+// Marges avec leur unité : @xyflow/react 13 lit un nombre seul en pixels (0,2 px collait le bas
+// du dessin au bord), là où la v12 en faisait une fraction (0,2 ≈ 8 % de chaque côté).
+const FIT_MARGIN = "8%" as const;
+// Recadrage sur les résultats de la recherche : un peu plus d'air (l'ancien 0,3 ≈ 12 %).
+const SEARCH_MARGIN = "12%" as const;
 // Plancher de zoom assez bas pour que même une grande maison tienne entière dans le canevas
 // avec sa bande : sinon le cadrage est écrêté, la bande n'est plus respectée et le bas du
 // dessin disparaît.
@@ -137,7 +141,7 @@ function Fitter({ zoomed, fullscreen, search }: { zoomed: string | null; fullscr
     instance.fitView({
       ...FIT_OPTIONS,
       nodes: found.length > 0 ? found : undefined,
-      padding: found.length > 0 ? { top: SEARCH_BAND, right: 0.3, bottom: 0.3, left: 0.3 } : FIT_OPTIONS.padding,
+      padding: found.length > 0 ? { top: SEARCH_BAND, right: SEARCH_MARGIN, bottom: SEARCH_MARGIN, left: SEARCH_MARGIN } : FIT_OPTIONS.padding,
       duration: 300,
     });
   }, [search, instance]);
