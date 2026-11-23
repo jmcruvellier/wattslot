@@ -22,8 +22,9 @@ const CHARTS_KB = 150;
 // Écran « Maison » (éditeurs de la configuration) : 10,9 Ko quand il est sorti du fichier
 // principal, environ 50 % de marge.
 const HOME_KB = 16;
-// Graphe de la maison (@xyflow/react) : 52,2 Ko, environ 20 % de marge.
-const HOME_GRAPH_KB = 64;
+// Graphe de la maison (@xyflow/react) : 52,2 Ko en v12, 79,5 Ko en v13 (compilée par le React
+// Compiler, zustand 5) ; environ 20 % de marge. Chargé seulement à l'ouverture du graphe.
+const HOME_GRAPH_KB = 96;
 // Police Manrope, caractères latins (lot 6b.1) : chargée à part, en parallèle du fichier
 // principal ; les autres alphabets ne sont téléchargés que s'ils servent (unicode-range).
 const FONT_KB = 32;
