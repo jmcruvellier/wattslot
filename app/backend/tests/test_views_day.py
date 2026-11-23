@@ -321,3 +321,24 @@ def test_indicators_cover_the_whole_day() -> None:
     # Sans tarif ou sans mesure : le plan seul.
     assert whole_day(planned, state, actual, V1_CONTEXT) == planned
     assert whole_day(planned, state, None, replace(V1_CONTEXT, tariff=tariff)) == planned
+
+
+def test_the_following_days_take_the_weather_reference_of_tomorrow(tmp_path: Path) -> None:
+    """Un jour de l'horizon n'a pas la meilleure production récente : celle du plan de demain
+    qualifie sa météo, comme dans la vue Semaine. La tuile disait « Météo : Production » de
+    J+2 à J+6 (23/11/2026)."""
+    tomorrow = date(2026, 10, 13)
+    day = {**state_of(STATES[1]), "date_cible": tomorrow + timedelta(days=1)}
+    day.pop("production_max_recente", None)
+    reference = {"max_kwh": 20.0, "nb_jours": 30}
+    kept = {**state_of(STATES[0]), "date_cible": tomorrow, "production_max_recente": reference}
+    with TestClient(create_app(_settings(tmp_path))) as api:
+        store = PlanStore(open_database(tmp_path / "data"))
+        store.save("horizon", tomorrow, {"jours": [day], "avertissements": []}, 1.0, False)
+        without = api.get("/api/views/d2").json()
+        store.save("tomorrow", tomorrow, kept, 1.0, False)
+        found = api.get("/api/views/d2").json()
+
+    assert without["weather"]["quality"] is None
+    assert found["weather"]["quality"] in ("sunny", "mixed", "cloudy")
+    assert found["weather"]["best_kwh"] == 20.0

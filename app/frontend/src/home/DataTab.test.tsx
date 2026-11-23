@@ -106,7 +106,7 @@ describe("onglet Données", () => {
     mockApi(hours.map((start, index) => correction({ id: index + 1, start })));
     renderTab();
 
-    expect(await screen.findByText("5 valeur(s) corrigée(s)")).toBeInTheDocument();
+    expect(await screen.findByText("5 valeurs corrigées")).toBeInTheDocument();
     const rows = () => screen.getAllByRole("button", { name: /^Réseau · sensor.grid_off_peak/ });
     expect(rows()).toHaveLength(3);
     await userEvent.click(screen.getByRole("button", { name: "Afficher les 2 autres" }));
@@ -119,7 +119,7 @@ describe("onglet Données", () => {
     mockApi([correction({}), correction({ id: 2, undone_at: "2026-10-20T09:00:00Z" })]);
     renderTab();
 
-    expect(await screen.findByText("1 valeur(s) corrigée(s)")).toBeInTheDocument();
+    expect(await screen.findByText("1 valeur corrigée")).toBeInTheDocument();
     const [row] = screen.getAllByRole("button", { name: /^Réseau · sensor.grid_off_peak/ }); // l'autre : annulée
     // Période dans l'heure du navigateur : la CI tourne en UTC, la maison à Paris.
     const from = new Date(START);
@@ -139,7 +139,7 @@ describe("onglet Données", () => {
     );
     renderTab();
 
-    expect(await screen.findByText("1 valeur(s) corrigée(s)")).toBeInTheDocument();
+    expect(await screen.findByText("1 valeur corrigée")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: /^Réseau/ }));
     const sheet = screen.getByRole("dialog");
     expect(sheet).toHaveTextContent(/Avec le quart d'heure .* : 23148 kWh → 0,10 kWh/);

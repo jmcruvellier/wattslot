@@ -169,7 +169,7 @@ describe("Ma maison en onglets", () => {
     expect(screen.getByRole("tab", { name: "L'essentiel" })).toHaveAttribute("aria-selected", "true");
     expect(await screen.findByRole("button", { name: /Ma priorité\s*Payer le moins cher/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Mon contrat\s*Heures creuses 22 h – 6 h/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Panneaux\s*2 champ\(s\), sud et est · 6 kWc/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Panneaux\s*2 champs, sud et est · 6 kWc/ })).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /Batterie\s*5,1 kWh, jamais sous 12 % · pleine au moins tous les 6 jours/ }),
     ).toBeInTheDocument();

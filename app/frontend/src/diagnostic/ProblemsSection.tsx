@@ -113,7 +113,7 @@ export default function ProblemsSection({ version, onNavigate, checking, onCheck
         ? t("problems.error")
         : problems.length === 0
           ? t("problems.none")
-          : t("problems.count", { count: problems.length });
+          : t(problems.length === 1 ? "problems.count_one" : "problems.count_other", { count: problems.length });
   // « Bloque le plan : 1 · À surveiller : 2 »
   const counts = SEVERITIES.map((severity) => [severity, problems.filter((p) => p.severity === severity).length] as const)
     .filter(([, count]) => count > 0)

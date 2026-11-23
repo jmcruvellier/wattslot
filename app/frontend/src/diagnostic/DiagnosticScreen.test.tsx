@@ -351,7 +351,7 @@ describe("DiagnosticScreen", () => {
     ]);
     renderScreen();
 
-    expect(await screen.findByText("5 problem(s) to look at")).toBeInTheDocument();
+    expect(await screen.findByText("5 problems to look at")).toBeInTheDocument();
     expect(screen.getByText("Blocks the plan: 1 · To watch: 4")).toBeInTheDocument();
     // Les trois premiers seulement, les plus graves d'abord ; les autres se déplient.
     expect(screen.getAllByRole("listitem").filter((item) => item.classList.contains("problem"))).toHaveLength(3);

@@ -186,7 +186,7 @@ export default function DataTab({ data }: { data: HomeData }) {
         <span className="settings-state-text">
           <span className="ui-row-label">
             {corrections.length > 0
-              ? t("quality.summary.corrected", { count: corrections.length })
+              ? t(corrections.length === 1 ? "quality.summary.corrected_one" : "quality.summary.corrected_other", { count: corrections.length })
               : t("quality.summary.clean")}
           </span>
           <span className="ui-row-help">
