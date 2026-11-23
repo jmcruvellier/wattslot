@@ -22,7 +22,7 @@ import {
   type Node,
   type NodeProps,
 } from "@xyflow/react";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
 
 import { getJson, postJson } from "../api";
@@ -111,17 +111,53 @@ const FIT_OPTIONS = {
   maxZoom: 1,
 };
 
+// Vue jamais cadrée : celle de départ de React Flow, coin haut gauche à l'échelle 1. Aucun
+// cadrage réel n'y aboutit (le dessin entier ne tient jamais à l'échelle 1 calé dans le coin).
+function untouched({ x, y, zoom }: { x: number; y: number; zoom: number }): boolean {
+  return x === 0 && y === 0 && zoom === 1;
+}
+
 // Recadre le dessin à l'ouverture et à chaque changement de vue (double-clic, retour, plein
 // écran) : la vue entière, centrée, avec la bande de la recherche réservée — exactement comme
 // le bouton « centrer » des commandes, quel que soit l'élément.
+// Le cadrage de l'ouverture n'est pas animé, et un filet le refait tant que la vue est restée
+// celle de départ : sinon, une page ouverte sans être affichée (onglet ou panneau masqué, en
+// cours de redimensionnement) laissait parfois le dessin non cadré — un coin seulement, à
+// l'échelle 1. Le filet passe après chaque cadrage et à chaque changement de taille du canevas ;
+// une vue déjà déplacée ou zoomée par l'utilisateur n'est jamais touchée.
 // Les résultats de la recherche ne recadrent que quand le TEXTE de la recherche change :
 // naviguer dans le graphe avec une recherche en cours ne décale plus rien — c'est ce qui
 // décalait la sous-vue de certains éléments (ceux dont la vue contenait des correspondances).
-function Fitter({ zoomed, fullscreen, search }: { zoomed: string | null; fullscreen: boolean; search: string }) {
+export function Fitter({
+  zoomed,
+  fullscreen,
+  search,
+  canvas,
+}: {
+  zoomed: string | null;
+  fullscreen: boolean;
+  search: string;
+  canvas: RefObject<HTMLElement | null>;
+}) {
   const instance = useReactFlow();
+  const opened = useRef(false);
   useEffect(() => {
-    instance.fitView({ ...FIT_OPTIONS, duration: 300 });
+    const rescue = () => {
+      if (untouched(instance.getViewport())) void instance.fitView(FIT_OPTIONS);
+    };
+    const duration = opened.current ? 300 : 0;
+    opened.current = true;
+    void instance.fitView({ ...FIT_OPTIONS, duration }).then(rescue);
   }, [zoomed, fullscreen, instance]);
+  useEffect(() => {
+    const element = canvas.current;
+    if (!element) return;
+    const observer = new ResizeObserver(() => {
+      if (untouched(instance.getViewport())) void instance.fitView(FIT_OPTIONS);
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [canvas, instance]);
   // Le premier rendu n'a rien à recadrer de plus (l'effet au-dessus s'en charge) ; ensuite, seules
   // les frappes dans la recherche recadrent : sur les correspondances, ou la vue entière si la
   // recherche est vidée ou sans résultat — sans liste de nœuds vide, qui cadrerait sur rien.
@@ -158,6 +194,7 @@ export default function HomeGraph() {
   const [fullscreen, setFullscreen] = useState(false);
   const [search, setSearch] = useState("");
   const [narrow] = useState(narrowScreen);
+  const canvasRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -263,6 +300,7 @@ export default function HomeGraph() {
   // entière (portail vers le corps du document, pour échapper aux mises en page de l'onglet).
   const canvas = (
     <div
+      ref={canvasRef}
       className={fullscreen ? "graph-canvas graph-fullscreen" : "graph-canvas"}
       role="figure"
       aria-label={t("graph.title")}
@@ -288,7 +326,7 @@ export default function HomeGraph() {
           }}
           onPaneClick={() => setSelected(null)}
         >
-          <Fitter zoomed={zoomed} fullscreen={fullscreen} search={search} />
+          <Fitter zoomed={zoomed} fullscreen={fullscreen} search={search} canvas={canvasRef} />
           <Background gap={28} />
           {/* Le bouton « centrer » des commandes recadre avec la bande de recherche réservée,
            * comme tous les recadrages du dessin. */}
