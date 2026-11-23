@@ -1718,7 +1718,9 @@
     "sun": {
       "eyebrow": "Soleil",
       "done_label": "Déjà produit",
-      "forecast_label": "Prévu aujourd'hui"
+      "forecast_label": "Prévu aujourd'hui",
+      "first_label": "Prévu ce matin",
+      "trend": "Écart avec la première prévision du jour"
     },
     "trend": "Écart avec la prévision au relevé",
     "expected_label": "Attendu à cette heure",

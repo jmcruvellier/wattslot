@@ -27,7 +27,7 @@ import DiscardedNote from "../plan/DiscardedNote";
 import ProvisionalNote from "../plan/ProvisionalNote";
 import { shortReason } from "../plan/shortReason";
 import { useHomeFeatures } from "../home/features";
-import type { DayView, LineKey, Now } from "../plan/types";
+import type { DayView, LineKey, Now, Trend } from "../plan/types";
 import Button from "../ui/Button";
 import Icon from "../ui/Icon";
 import Panel from "../ui/Panel";
@@ -59,14 +59,19 @@ function kw(watts: number): string {
 function TrendBadge({ view, line }: { view: DayView; line: LineKey }) {
   const { t } = useI18n();
   const trend = view.cards?.at_reading.find((card) => card.key === line)?.trend;
+  return <TrendPill trend={trend} label={t("today.trend")} />;
+}
+
+function TrendPill({ trend, label }: { trend: Trend | undefined; label: string }) {
+  const { t } = useI18n();
   if (!trend || trend.direction === "none") {
     return (
-      <span className="trend-pill trend-neutral" title={t("today.trend")}>
+      <span className="trend-pill trend-neutral" title={label}>
         {t("today.trend_early")}
       </span>
     );
   }
-  return <TrendMark trend={trend} label={t("today.trend")} className="trend-pill" />;
+  return <TrendMark trend={trend} label={label} className="trend-pill" />;
 }
 
 /** Valeur estimée au relevé d'une ligne, quand un écart avec la mesure est affiché. */
@@ -124,7 +129,11 @@ export default function TodayView({ onNavigate }: { onNavigate?: (target: string
   const expected = view.weather?.production_kwh ?? view.summary.production_kwh;
   // Ce que le badge compare à la mesure : sans cette ligne, « −11 % » restait sans explication
   // entre « Prévu 7,3 kWh » et « Déjà produit 7,3 kWh » (constaté le 23/11/2026).
-  const expectedSun = comparedEstimate(view, "production");
+  // Soleil : la première prévision du jour contre la journée telle qu'elle se présente (le
+  // mesuré, puis ce qui reste prévu). L'estimation « au relevé » additionne la dernière prévision
+  // faite avant chaque heure : 8,3 kWh annoncés pour 7,3 produits, jugés aberrants le 23/11/2026.
+  const sunDay = measuredHours ? view.cards?.day?.find((card) => card.key === "production") : undefined;
+  const firstSun = sunDay?.estimated_kwh ?? null;
   const expectedSocKwh = comparedEstimate(view, "soc");
   const capacity = view.battery_capacity_kwh ?? null;
   const expectedSoc = expectedSocKwh !== null && capacity ? (expectedSocKwh / capacity) * 100 : null;
@@ -196,8 +205,14 @@ export default function TodayView({ onNavigate }: { onNavigate?: (target: string
               </Panel>
             )}
             {hasSun && (
-              <Panel icon="today" title={t("today.sun.eyebrow")} meta={<TrendBadge view={view} line="production" />}>
+              <Panel icon="today" title={t("today.sun.eyebrow")} meta={<TrendPill trend={sunDay?.trend} label={t("today.sun.trend")} />}>
                 <dl className="indicators">
+                  {firstSun !== null && (
+                    <div className="indicator">
+                      <dt>{t("today.sun.first_label")}</dt>
+                      <dd>{kwh(firstSun, 1)} kWh</dd>
+                    </div>
+                  )}
                   <div className="indicator">
                     <dt>{t("today.sun.forecast_label")}</dt>
                     <dd>{kwh(expected, 1)} kWh</dd>
@@ -206,12 +221,6 @@ export default function TodayView({ onNavigate }: { onNavigate?: (target: string
                     <dt>{t("today.sun.done_label")}</dt>
                     <dd>{measuredHours ? `${kwh(produced, 1)} kWh` : "—"}</dd>
                   </div>
-                  {expectedSun !== null && (
-                    <div className="indicator">
-                      <dt>{t("today.expected_label")}</dt>
-                      <dd>{kwh(expectedSun, 1)} kWh</dd>
-                    </div>
-                  )}
                 </dl>
               </Panel>
             )}

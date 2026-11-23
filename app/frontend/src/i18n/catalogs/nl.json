@@ -1718,7 +1718,9 @@
     "sun": {
       "eyebrow": "Zon",
       "done_label": "Al opgewekt",
-      "forecast_label": "Verwacht vandaag"
+      "forecast_label": "Verwacht vandaag",
+      "first_label": "Vanochtend verwacht",
+      "trend": "Verschil met de eerste voorspelling van de dag"
     },
     "trend": "Verschil met de voorspelling bij de meting",
     "expected_label": "Verwacht op dit uur",
