@@ -1718,7 +1718,9 @@
     "sun": {
       "eyebrow": "Sonne",
       "done_label": "Bereits erzeugt",
-      "forecast_label": "Heute erwartet"
+      "forecast_label": "Heute erwartet",
+      "first_label": "Heute Morgen erwartet",
+      "trend": "Abweichung von der ersten Prognose des Tages"
     },
     "trend": "Abweichung von der Prognose bei der Messung",
     "expected_label": "Bis jetzt erwartet",

@@ -1718,7 +1718,9 @@
     "sun": {
       "eyebrow": "Sun",
       "done_label": "Already produced",
-      "forecast_label": "Forecast today"
+      "forecast_label": "Forecast today",
+      "first_label": "Forecast this morning",
+      "trend": "Difference from the first forecast of the day"
     },
     "trend": "Difference from the forecast at the reading",
     "expected_label": "Expected by now",

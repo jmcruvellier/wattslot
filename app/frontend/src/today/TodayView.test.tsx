@@ -346,13 +346,18 @@ describe("TodayView", () => {
     const sun = within(screen.getByRole("heading", { name: "Soleil" }).closest("section") as HTMLElement);
     expect(sun.getByText("Prévu aujourd'hui").closest("div")).toHaveTextContent("Prévu aujourd'hui16,5 kWh");
     expect(sun.getByText("Déjà produit").closest("div")).toHaveTextContent("Déjà produit14,0 kWh");
-    // Tendances de TODAY : SoC +25 %, production +8 %, en pilule en tête de chaque carte.
-    expect(screen.getAllByTitle("Écart avec la prévision au relevé")).toHaveLength(2);
-    expect(screen.getByText("▲ +25%")).toHaveClass("trend-pill");
-    expect(screen.getByText("▲ +8%")).toBeInTheDocument();
+    // Tendances de TODAY, en pilule en tête de chaque carte : SoC au relevé, soleil sur la journée.
+    expect(screen.getAllByTitle("Écart avec la prévision au relevé")).toHaveLength(1);
+    expect(battery.getByText("▲ +25%")).toHaveClass("trend-pill");
+    // Soleil : la tendance de la journée (9,0 → 9,5 kWh dans TODAY), pas celle au relevé (+8 %).
+    expect(sun.getByText("▲ +25%")).toHaveClass("trend-pill");
+    expect(screen.queryByText("▲ +8%")).toBeNull();
     // Ce que chaque tendance compare à la mesure (23/11/2026 : « −11 % » entre deux 7,3 kWh).
     expect(battery.getByText("Attendu à cette heure")).toBeInTheDocument();
-    expect(sun.getByText("Attendu à cette heure").closest("div")).toHaveTextContent(/kWh$/);
+    // Soleil : la première prévision du jour (9,0 kWh dans TODAY), pas l'estimation au relevé.
+    expect(sun.getByText("Prévu ce matin").closest("div")).toHaveTextContent("Prévu ce matin9,0 kWh");
+    expect(sun.queryByText("Attendu à cette heure")).toBeNull();
+    expect(screen.getByTitle("Écart avec la première prévision du jour")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Rien à lancer d'ici ce soir" })).toBeInTheDocument();
   });
 
