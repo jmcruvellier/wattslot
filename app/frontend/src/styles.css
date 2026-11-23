@@ -3293,6 +3293,14 @@ p[role="status"]:not(.state-message) {
   background: var(--bg);
 }
 
+/* @xyflow/react 13 prend ses couleurs par défaut du mode clair ou sombre du système, pas du
+ * thème de WattSlot (light-dark(), traduit à la compilation en @media prefers-color-scheme) :
+ * chaque couleur visible est donc fixée ici. Son fond opaque en sombre (#141414) cachait le
+ * cadre arrondi : celui de la carte reste visible. */
+.graph-canvas .react-flow {
+  --xy-background-color: transparent;
+}
+
 /* Fond pointillé et commandes de zoom aux couleurs du thème. */
 .graph-canvas .react-flow__background circle {
   fill: var(--border);
@@ -3305,10 +3313,30 @@ p[role="status"]:not(.state-message) {
   box-shadow: none;
 }
 
+/* @xyflow/react 13 range son CSS dans « @layer xyflow » : nos règles globales (boutons, liens)
+ * passent devant. Largeur, marge intérieure et bordure des boutons rétablies comme en v12 (la
+ * marge horizontale écrasait l'icône à 0 px) ; la hauteur tactile de 2,75 rem reste. */
 .graph-canvas .react-flow__controls button {
-  background: var(--surface);
+  width: 26px;
+  padding: 4px;
+  border: 0;
   border-bottom: 1px solid var(--border);
+  background: var(--surface);
   color: var(--text);
+}
+
+.graph-canvas .react-flow__attribution {
+  background: transparent;
+}
+
+.graph-canvas .react-flow__attribution a {
+  color: var(--text-dim);
+}
+
+.graph-canvas .react-flow__controls button svg {
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
 }
 
 .graph-canvas .react-flow__controls button:hover {
