@@ -9,17 +9,20 @@ from zoneinfo import ZoneInfo
 
 from tests.planning.test_assemble import MODEL, Reader
 from tests.planning.test_configured_run import plans
-from tests.v1_oracle import STATES, load
+from tests.v1_oracle import STATES, load, state_named
 from wattslot import configuration
 from wattslot.aggregation import QUARTER
 from wattslot.configuration import Behavior, Configuration, DeviceSettings
 from wattslot.detection import DeviceKind, Role
 from wattslot.home_assistant import HomeAssistantClient
 from wattslot.home_model import HomeDevice, HomeModel, HomeSensor
+from wattslot.languages import LANGUAGES
 from wattslot.planning.actual import runtime_segments, speed_thresholds
 from wattslot.planning.assemble import configured, measured_speeds, southern
-from wattslot.planning.engine import plan_day
-from wattslot.planning.inputs import V1_POOL, Runtime, from_v1
+from wattslot.planning.engine import Result, plan_day
+from wattslot.planning.explain import render
+from wattslot.planning.horizon import DayForecast, next_day_input
+from wattslot.planning.inputs import V1_POOL, PlanningInput, Runtime, from_v1
 from wattslot.planning.plan import POOL
 from wattslot.planning.problem import from_input
 from wattslot.runtime_settings import RuntimeSettings, Speed, problems, season
@@ -98,6 +101,63 @@ def test_forced_minimum_uses_the_lowest_speed_only() -> None:
     modes = set(result_plan.runtimes[POOL].values())
     assert modes <= {"off", "silence"}
     assert list(result_plan.runtimes[POOL].values()).count("silence") == 2
+
+
+def _sunny(hours: int) -> PlanningInput:
+    """Journée ensoleillée de la mi-saison (calcul à minuit), filtration réglée sur ``hours``."""
+    state, _ = load(state_named("synthetic_sunny"))
+    data = from_v1(state)
+    assert season(data.day, data.southern) == "mid_season"
+    pool = replace(V1_POOL, minimum_hours={**V1_POOL.minimum_hours, "mid_season": hours})
+    return replace(data, runtimes=(pool,))
+
+
+def _running(result: Result, name: str = POOL) -> list[int]:
+    return [hour for hour, mode in result.plan.runtimes[name].items() if mode != "off"]
+
+
+def test_a_season_set_to_zero_places_no_hour_even_with_surplus() -> None:
+    """Saison réglée sur 0 h : aucune heure, même quand le surplus solaire serait injecté
+    (constaté le 23/11/2026 : 1 h placée en hiver, « rien l'hiver » à l'écran)."""
+    problem = from_input(_sunny(0))
+    assert problem.runtimes[0].off_season and problem.runtimes[0].min_hours == 0
+
+    result = plan_day(problem)
+
+    assert _running(result) == []
+    (pool,) = result.day.runtimes
+    assert [s.mode for s in pool.segments] == ["off"]
+    assert pool.explanation is not None
+    assert [r.code for r in pool.explanation.reasons][1:] == ["runtime_off", "season_off"]
+    for lang in LANGUAGES:
+        assert "0" in render(pool.explanation, lang)
+    # Sans cette règle, le même jour absorbe le surplus : c'est elle qui retient la pompe.
+    free = replace(problem, runtimes=[replace(problem.runtimes[0], off_season=False)])
+    assert len(_running(plan_day(free))) > 1
+
+
+def test_a_season_with_a_minimum_still_runs_longer_on_surplus() -> None:
+    for minimum in (1, 2):  # mi-saison et été de la filtration de référence
+        problem = from_input(_sunny(minimum))
+        assert not problem.runtimes[0].off_season and problem.runtimes[0].min_hours == minimum
+
+        assert len(_running(plan_day(problem))) > minimum  # minimum tenu, surplus absorbé
+
+
+def test_a_minimum_already_done_is_not_a_season_set_to_zero() -> None:
+    state, _ = load(state_named("synthetic_realignment"))
+    problem = from_input(from_v1(state))  # 13 h : l'heure de la mi-saison est déjà faite
+    assert problem.runtimes[0].min_hours == 0 and not problem.runtimes[0].off_season
+
+    assert _running(plan_day(problem))  # le surplus de l'après-midi reste absorbé
+
+
+def test_a_season_set_to_zero_holds_for_the_next_days_too() -> None:
+    data = _sunny(0)
+    forecast = DayForecast(net_kwh=dict(data.net_kwh), production_kwh=dict(data.production_kwh))
+    following = next_day_input(data, data.day + timedelta(days=1), forecast, 1.0)
+
+    assert _running(plan_day(from_input(following))) == []
 
 
 def test_configured_runtimes_with_a_measured_speed() -> None:

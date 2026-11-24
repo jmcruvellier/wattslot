@@ -206,6 +206,9 @@ class RuntimeModel:
     minimum_forced: bool  # vitesse la plus basse seulement, pas au-delà du minimum
     max_starts: int = 2
     skipped: bool = False  # journée sautée pour la charge complète de la batterie
+    # Saison réglée sur 0 h : aucune heure ce jour-là, même sur un surplus solaire. À ne pas
+    # confondre avec ``min_hours == 0`` d'un minimum déjà fait, où le surplus reste permis.
+    off_season: bool = False
 
     def kw(self, mode: str) -> float:
         return dict(self.speeds).get(mode, 0.0)
@@ -917,6 +920,7 @@ def from_input(data: PlanningInput, reference: Reference = REFERENCE) -> Problem
                 minimum_forced=drifting or priority_day,
                 max_starts=runtime.max_starts,
                 skipped=skipped,
+                off_season=needed <= 0,
             )
         )
     active_from, active_to = _active_range(data, reference)

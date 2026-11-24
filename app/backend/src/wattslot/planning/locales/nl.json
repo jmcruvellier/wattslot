@@ -16,6 +16,7 @@
   "reason.minimum_hours": "Vandaag nog te maken minimale looptijd: {hours} u.",
   "reason.skipped_full_charge": "Vandaag geen werking: de batterij moet volledig laden (tot 100 %), het zonne-overschot is voor haar gereserveerd.",
   "reason.runtime_off": "De hele dag uit.",
+  "reason.season_off": "De looptijd van dit seizoen is ingesteld op 0 u.",
   "reason.solar_hours": "{hours} u op het zonne-overschot.",
   "reason.self_consumption_mode": "Eigen verbruik van {start} tot {end} uur: laadt met het overschot, ontlaadt bij een tekort.",
   "reason.floor": "Nooit onder {percent} %.",

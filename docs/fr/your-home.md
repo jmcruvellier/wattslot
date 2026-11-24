@@ -49,7 +49,7 @@ Une contrainte est stricte par défaut. Cochez **Souple** pour qu'elle soit resp
 ## Besoins d'énergie et durées de fonctionnement
 
 - **Besoin d'énergie avant une échéance** : l'énergie à fournir, la puissance maximale, les heures **Au plus tôt à** et **Avant**, **Par paliers** (tout ou rien à pleine puissance, pour une simple prise marche/arrêt), et **Chaque jour** ou seulement quand une tâche le demande.
-- **Durée de fonctionnement à placer** : une ou plusieurs **vitesses** avec leur puissance (éco, silence… pour une pompe à vitesse variable), les **heures minimales par jour** en été, à la mi-saison et en hiver, les jours qu'on peut sauter quand la batterie doit faire sa charge complète, et le nombre de démarrages par jour au plus. Sans vitesse réglée, une seule est utilisée, à la puissance mesurée sur les 30 derniers jours.
+- **Durée de fonctionnement à placer** : une ou plusieurs **vitesses** avec leur puissance (éco, silence… pour une pompe à vitesse variable), les **heures minimales par jour** en été, à la mi-saison et en hiver, les jours qu'on peut sauter quand la batterie doit faire sa charge complète, et le nombre de démarrages par jour au plus. Sans vitesse réglée, une seule est utilisée, à la puissance mesurée sur les 30 derniers jours. Une saison réglée sur 0 h ne place aucune heure ces jours-là, même avec un surplus solaire ; au-dessus de 0, le minimum est garanti et des heures peuvent s'ajouter pour absorber un surplus.
 
 ## Panneaux
 

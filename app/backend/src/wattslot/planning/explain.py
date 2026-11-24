@@ -201,6 +201,8 @@ def explain(
                 reasons.append(Reason(code="skipped_full_charge"))
             elif not running:
                 reasons.append(Reason(code="runtime_off"))
+                if model is not None and model.off_season:
+                    reasons.append(Reason(code="season_off"))  # le pourquoi de l'arrêt
             elif model is not None and model.min_hours > 0:
                 reasons.append(Reason(code="minimum_hours", params={"hours": model.min_hours}))
             surplus = sum(1 for h in running if problem.net_kwh.get(h, 0.0) > 0)

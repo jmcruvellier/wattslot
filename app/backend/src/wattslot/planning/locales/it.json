@@ -16,6 +16,7 @@
   "reason.minimum_hours": "Funzionamento minimo ancora da fare oggi: {hours} h.",
   "reason.skipped_full_charge": "Oggi non funziona: la batteria deve fare la carica completa (fino al 100 %), il surplus solare è riservato a lei.",
   "reason.runtime_off": "Spento tutto il giorno.",
+  "reason.season_off": "La durata di questa stagione è impostata su 0 h.",
   "reason.solar_hours": "{hours} h sul surplus solare.",
   "reason.self_consumption_mode": "Autoconsumo dalle {start} alle {end}: carica con il surplus, scarica quando manca.",
   "reason.floor": "Mai sotto il {percent} %.",
