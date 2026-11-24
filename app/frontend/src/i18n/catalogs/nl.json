@@ -530,7 +530,9 @@
     "state_done": "klaar",
     "state_cancelled": "geannuleerd",
     "state_finish": "klaar vóór {hour}",
-    "not_computed": "nog niet berekend"
+    "not_computed": "nog niet berekend",
+    "edit": "Wijzigen",
+    "edit_title": "Aanvraag wijzigen"
   },
   "settings": {
     "loading": "Instellingen worden gelezen…",

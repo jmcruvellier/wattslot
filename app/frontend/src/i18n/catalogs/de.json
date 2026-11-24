@@ -530,7 +530,9 @@
     "state_done": "erledigt",
     "state_cancelled": "abgebrochen",
     "state_finish": "fertig vor {hour}",
-    "not_computed": "noch nicht berechnet"
+    "not_computed": "noch nicht berechnet",
+    "edit": "Ändern",
+    "edit_title": "Anfrage ändern"
   },
   "settings": {
     "loading": "Einstellungen werden gelesen…",

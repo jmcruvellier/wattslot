@@ -530,7 +530,9 @@
     "state_done": "fatto",
     "state_cancelled": "annullato",
     "state_finish": "finito entro le {hour}",
-    "not_computed": "non ancora calcolato"
+    "not_computed": "non ancora calcolato",
+    "edit": "Modifica",
+    "edit_title": "Modifica la richiesta"
   },
   "settings": {
     "loading": "Lettura delle impostazioni…",
