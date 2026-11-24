@@ -252,6 +252,41 @@ describe("RequestsSection", () => {
     expect(within(row).queryByRole("button", { name: "C'est lancé" })).toBeNull();
   });
 
+  it("« Modifier » ouvre la feuille de la demande, déjà remplie, et change sa date et son heure", async () => {
+    // 24/11/2026 : sous un jour à venir il ne restait qu'« Annuler » ; le formulaire, sorti du
+    // panneau, se retrouve derrière « Modifier ».
+    const user = userEvent.setup();
+    const calls = mockApi(DEVICES, [{ ...OPEN, finish_hour: 6 }]);
+    render(
+      <I18nProvider>
+        <RequestsSection future day="2026-10-18" />
+      </I18nProvider>,
+    );
+
+    await user.click(await screen.findByRole("button", { name: "Modifier" }));
+    const sheet = await screen.findByRole("dialog", { name: "Modifier la demande" });
+    expect(await within(sheet).findByLabelText("Appareil")).toHaveValue("dishwasher");
+    expect(within(sheet).getByLabelText(/Au plus tard/)).toHaveValue("2026-10-18");
+    expect(within(sheet).getByLabelText(/Terminé avant/)).toHaveValue("6");
+
+    await user.selectOptions(within(sheet).getByLabelText(/Terminé avant/), "12");
+    await user.click(within(sheet).getByRole("button", { name: "Changer la date" }));
+    const sent = calls.find((call) => call.url === "api/requests" && call.method === "POST");
+    expect(sent?.body).toEqual({ device: "dishwasher", latest: "2026-10-18", finish_hour: 12 });
+  });
+
+  it("pas de « Modifier » pour une demande dont le cycle est lancé", async () => {
+    mockApi(DEVICES, [{ ...OPEN, launched_on: "2026-10-18" }]);
+    render(
+      <I18nProvider>
+        <RequestsSection day="2026-10-18" today />
+      </I18nProvider>,
+    );
+
+    expect(await screen.findByText("Lave-vaisselle")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Modifier" })).toBeNull();
+  });
+
   it("ne montre rien sans appareil à lancer", async () => {
     const calls = mockApi([], []);
     renderSection();

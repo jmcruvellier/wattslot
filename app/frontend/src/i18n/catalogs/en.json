@@ -530,7 +530,9 @@
     "state_done": "done",
     "state_cancelled": "cancelled",
     "state_finish": "finished before {hour}",
-    "not_computed": "not computed yet"
+    "not_computed": "not computed yet",
+    "edit": "Edit",
+    "edit_title": "Edit the request"
   },
   "settings": {
     "loading": "Reading the settings…",

@@ -9,7 +9,7 @@ import { getJson } from "../api";
 import { useI18n } from "../i18n/I18nProvider";
 import Button from "../ui/Button";
 import Sheet from "../ui/Sheet";
-import RequestForm, { type RequestDevice } from "./RequestForm";
+import RequestForm, { type RequestDevice, type RequestDraft } from "./RequestForm";
 import { pendingFinish, pendingLatest } from "./pendingLatest";
 
 type Load =
@@ -24,7 +24,9 @@ type Load =
     }
   | { status: "asked" };
 
-export default function RequestSheet({ onClose }: { onClose: () => void }) {
+/** ``editing`` : la demande à modifier (bouton « Modifier » de « Mes demandes »), déjà dans les
+ * champs ; sans elle, une nouvelle demande. */
+export default function RequestSheet({ onClose, editing }: { onClose: () => void; editing?: RequestDraft }) {
   const { t } = useI18n();
   const [load, setLoad] = useState<Load>({ status: "loading" });
 
@@ -60,7 +62,7 @@ export default function RequestSheet({ onClose }: { onClose: () => void }) {
   }, []);
 
   return (
-    <Sheet open title={t("nav.request")} onClose={onClose}>
+    <Sheet open title={t(editing ? "requests.edit_title" : "nav.request")} onClose={onClose}>
       {load.status === "loading" && <p>{t("requests.loading")}</p>}
       {load.status === "error" && <p role="alert">{t("requests.error")}</p>}
       {load.status === "ready" &&
@@ -68,8 +70,9 @@ export default function RequestSheet({ onClose }: { onClose: () => void }) {
           <p>{t("requests.no_device")}</p>
         ) : (
           <>
-            <p>{t("requests.intro")}</p>
+            {!editing && <p>{t("requests.intro")}</p>}
             <RequestForm
+              initial={editing}
               devices={load.devices}
               waiting={load.waiting}
               waitingLatest={load.latest}

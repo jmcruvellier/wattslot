@@ -12,7 +12,7 @@
 // « Demander un appareil » (menu, ou `+` de la barre du haut) : la liste est relue quand une
 // demande est déposée (`REQUESTS_EVENT`).
 
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 
 import { getJson, postJson } from "../api";
 import { useI18n } from "../i18n/I18nProvider";
@@ -21,6 +21,9 @@ import { hour } from "../plan/format";
 import Panel from "../ui/Panel";
 import type { RequestDevice } from "./RequestForm";
 import { REQUESTS_EVENT } from "./pendingLatest";
+
+// La feuille « Demander un appareil », chargée au premier « Modifier ».
+const RequestSheet = lazy(() => import("./RequestSheet"));
 
 export interface UserRequest {
   id: number;
@@ -67,6 +70,7 @@ export default function RequestsSection({
   const [load, setLoad] = useState<Load>({ status: "loading" });
   const [version, setVersion] = useState(0);
   const [failed, setFailed] = useState(false);
+  const [editing, setEditing] = useState<UserRequest | null>(null); // demande ouverte par « Modifier »
 
   useEffect(() => {
     const controller = new AbortController();
@@ -153,6 +157,14 @@ export default function RequestsSection({
   return (
     <Panel title={t("requests.title")} className="plan-requests">
       {failed && <p role="alert">{t("requests.failed")}</p>}
+      {editing && (
+        <Suspense fallback={null}>
+          <RequestSheet
+            editing={{ device: editing.device, latest: editing.latest, finish_hour: editing.finish_hour }}
+            onClose={() => setEditing(null)}
+          />
+        </Suspense>
+      )}
       {opened.length + closedThatDay.length === 0 ? (
         <p className="dim">{t(shownDay === undefined ? "requests.none" : "requests.none_day")}</p>
       ) : (
@@ -170,6 +182,14 @@ export default function RequestsSection({
                   {!future && (
                     <button type="button" onClick={() => void act(() => postJson(`api/requests/${request.id}/done`, {}))}>
                       {t("requests.mark_done")}
+                    </button>
+                  )}
+                  {/* Tant que le cycle n'est pas lancé : changer la date ou l'heure de fin, dans
+                      la feuille de la demande déjà remplie (le formulaire n'est plus dans ce
+                      panneau, et « Annuler » restait seul sous un jour à venir, 24/11/2026). */}
+                  {!request.launched_on && !request.declared && !(request.cycle && started.includes(request.cycle)) && (
+                    <button type="button" onClick={() => setEditing(request)}>
+                      {t("requests.edit")}
                     </button>
                   )}
                   <button

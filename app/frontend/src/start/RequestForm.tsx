@@ -30,7 +30,16 @@ interface RequestFormProps {
   // Heure limite de la demande en attente de chaque appareil (clé → heure, ou null : aucune) :
   // « Changer la date » la remplace par celle du formulaire, l'aide le dit.
   waitingFinish?: Record<string, number | null>;
+  // Demande ouverte depuis « Modifier » (Mes demandes) : son appareil, sa date et son heure
+  // limite sont déjà dans les champs.
+  initial?: RequestDraft;
   onAsked: () => void;
+}
+
+export interface RequestDraft {
+  device: string;
+  latest: string | null;
+  finish_hour?: number | null;
 }
 
 // Heures limites proposées : « avant 24 h » ne limiterait rien.
@@ -41,12 +50,14 @@ export default function RequestForm({
   waiting = [],
   waitingLatest = {},
   waitingFinish = {},
+  initial,
   onAsked,
 }: RequestFormProps) {
   const { language, t } = useI18n();
-  const [device, setDevice] = useState("");
-  const [latest, setLatest] = useState("");
-  const [finish, setFinish] = useState(""); // heure limite choisie ; vide : aucune
+  const [device, setDevice] = useState(devices.some((d) => d.key === initial?.device) ? (initial?.device ?? "") : "");
+  const [latest, setLatest] = useState(initial?.latest?.slice(0, 10) ?? "");
+  // Heure limite choisie ; vide : aucune.
+  const [finish, setFinish] = useState(initial?.finish_hour != null ? String(initial.finish_hour) : "");
   const [failed, setFailed] = useState(false);
   const selected = device || devices[0].key;
   const pending = waiting.includes(selected);
