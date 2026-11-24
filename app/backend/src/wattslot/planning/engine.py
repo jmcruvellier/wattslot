@@ -351,7 +351,8 @@ def solve(problem: Problem, objective: Goal = Objective.COST, time_limit_s: floa
                 hour: var(
                     0,
                     0
-                    if (runtime.minimum_forced and mode != slowest)
+                    if runtime.off_season  # saison réglée sur 0 h : rien, même sur un surplus
+                    or (runtime.minimum_forced and mode != slowest)
                     or problem.hard_blocks(runtime.name, hour * 60, hour * 60 + 60)
                     else 1,
                     True,
@@ -1081,6 +1082,8 @@ def day_plan(problem: Problem, plan: Plan, run: BatteryRun) -> DayPlan:
             "Pas de filtration aujourd'hui : la charge complète hebdomadaire de la batterie "
             "est due."
             if runtime.skipped
+            else "Aucune heure aujourd'hui : la durée de cette saison est réglée sur 0 h."
+            if runtime.off_season
             else "Modes choisis par l'optimiseur : filtration minimale de la saison garantie, "
             "surplus absorbé plutôt qu'injecté."
         )

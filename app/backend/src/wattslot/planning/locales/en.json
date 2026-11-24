@@ -16,6 +16,7 @@
   "reason.minimum_hours": "Minimum runtime still to do today: {hours} h.",
   "reason.skipped_full_charge": "Not running today: the battery must do its full charge (up to 100%), the solar surplus is kept for it.",
   "reason.runtime_off": "Off all day.",
+  "reason.season_off": "This season's runtime is set to 0 h.",
   "reason.solar_hours": "{hours} h on the solar surplus.",
   "reason.self_consumption_mode": "Self-consumption from {start}h to {end}h: charges on the surplus, discharges on the deficit.",
   "reason.floor": "Never below {percent} %.",

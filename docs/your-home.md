@@ -49,7 +49,7 @@ A constraint is strict by default. Tick **Soft** to have it met if possible: oth
 ## Energy needs and runtimes
 
 - **Energy needed by a deadline**: the energy to deliver, the maximum power, **Not before** and **Before** hours, **In steps** (all or nothing at full power, for a simple on/off plug), and **Every day** or only when a task asks for it.
-- **Runtime to schedule**: one or more **speeds** with their power (eco, silent… for a variable-speed pump), the **minimum hours per day** in summer, mid-season and winter, the days that can be skipped when the battery needs its full charge, and the maximum number of starts per day. With no speed set, a single one is used, at the power measured over the last 30 days.
+- **Runtime to schedule**: one or more **speeds** with their power (eco, silent… for a variable-speed pump), the **minimum hours per day** in summer, mid-season and winter, the days that can be skipped when the battery needs its full charge, and the maximum number of starts per day. With no speed set, a single one is used, at the power measured over the last 30 days. A season set to 0 h schedules no hour on those days, even when there is solar surplus; above 0, the minimum is guaranteed and extra hours may be added to absorb a surplus.
 
 ## Panels
 
