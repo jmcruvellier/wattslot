@@ -328,8 +328,10 @@
       "legend_link": "Dopo un altro apparecchio (tratteggiata: non ancora avviato)",
       "follows": "parte dopo {device}",
       "detail": {
-        "planned": "previsto",
-        "actual": "reale",
+        "device": "Apparecchio",
+        "gap": "Scarto",
+        "planned": "Previsto",
+        "actual": "Reale",
         "carried": "seguito del giorno prima",
         "off_peak": "ore a tariffa ridotta",
         "peak": "ore di punta",

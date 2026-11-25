@@ -328,8 +328,10 @@
       "legend_link": "Runs after another appliance (dashed: not started yet)",
       "follows": "starts after {device}",
       "detail": {
-        "planned": "planned",
-        "actual": "actual",
+        "device": "Appliance",
+        "gap": "Gap",
+        "planned": "Planned",
+        "actual": "Actual",
         "carried": "from the day before",
         "off_peak": "off-peak hours",
         "peak": "peak hours",

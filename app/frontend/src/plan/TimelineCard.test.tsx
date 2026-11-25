@@ -164,7 +164,7 @@ describe("frise des équipements", () => {
     renderTimeline(TODAY.timeline, null);
 
     await user.click(screen.getByRole("button", { name: /^Réel 9h15/ }));
-    expect(screen.getByRole("status")).toHaveTextContent("réel 9h15 → 13h30, 2,10 kWh");
+    expect(screen.getByRole("status")).toHaveTextContent("9h15 → 13h30 2,10");
     expect(document.querySelector(".tl-now")).toBeNull();
   });
 
@@ -174,7 +174,22 @@ describe("frise des équipements", () => {
 
     await user.click(screen.getByRole("button", { name: /^Réel 9h15/ }));
     const status = screen.getByRole("status");
-    expect(status).toHaveTextContent("Batterie charge prévu 9h → 13h, 2,00 kWh réel 9h15 → 13h30, 2,10 kWh");
+    expect(status).toHaveTextContent("Équipement Prévu kWh Réel kWh Écart Batterie charge 9h → 13h 2,00 9h15 → 13h30 2,10");
+  });
+
+  it("dit l'écart de démarrage et l'écart d'énergie d'un cycle dans la colonne Écart", async () => {
+    const user = userEvent.setup();
+    const statuses = (TODAY.timeline.statuses ?? []).map((status) =>
+      status.device === "Lave-linge" ? { ...status, energy_gap_percent: 30 } : status,
+    );
+    renderTimeline({ ...TODAY.timeline, statuses }, null);
+
+    await user.click(screen.getByRole("button", { name: /^Réel 10h05/ }));
+    const row = within(screen.getByRole("status"))
+      .getAllByRole("row")
+      .find((one) => one.textContent?.includes("Lave-linge")) as HTMLElement;
+    expect(within(row).getAllByRole("cell")).toHaveLength(6);
+    expect(row).toHaveTextContent(/\+5 min \+30 %$/);
   });
 
   it("au clic sur une heure sans bloc, le dit et marque l'heure sur la ligne", () => {
@@ -190,7 +205,7 @@ describe("frise des équipements", () => {
 
     // Un clic dans l'heure d'un bloc, à côté de lui, le trouve quand même.
     fireEvent.click(track, { clientX: 13.75 * 40, detail: 1 });
-    expect(screen.getByRole("status")).toHaveTextContent("réel 9h15 → 13h30, 2,10 kWh");
+    expect(screen.getByRole("status")).toHaveTextContent("9h15 → 13h30 2,10");
     // Un second clic sur la même heure retire le détail.
     fireEvent.click(track, { clientX: 13.75 * 40, detail: 1 });
     expect(screen.queryByRole("status")).toBeNull();
@@ -259,7 +274,7 @@ describe("frise des équipements", () => {
     renderTimeline(TODAY.timeline, 14.5);
 
     await user.click(screen.getByRole("button", { name: "Prévu 10h → 11h30 : Lave-linge, 1,00 kWh" }));
-    expect(screen.getByRole("status")).toHaveTextContent("Lave-linge prévu 10h → 11h30, 1,00 kWh");
+    expect(screen.getByRole("status")).toHaveTextContent("Lave-linge 10h → 11h30 1,00 10h05 → 11h30 1,30");
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
@@ -272,7 +287,7 @@ describe("frise des équipements", () => {
     });
 
     await user.click(screen.getByRole("button", { name: "Prévu 10h → 11h30 : Lave-linge, 1,00 kWh" }));
-    expect(screen.getByRole("status")).toHaveTextContent("Lave-linge prévu 10h → 11h30, 1,00 kWh");
+    expect(screen.getByRole("status")).toHaveTextContent("Lave-linge 10h → 11h30 1,00 10h05 → 11h30 1,30");
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 

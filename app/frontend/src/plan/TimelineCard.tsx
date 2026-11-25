@@ -232,7 +232,15 @@ export default function TimelineCard({
   // Détail de l'heure choisie : une ligne par équipement qui y a du prévu ou du réel, toutes
   // lignes de la frise confondues. Le prévu et le réel d'un même cycle, d'un même sens de la
   // batterie ou d'une même vitesse sont réunis.
-  type Detail = { key: string; name: string; what: string | null; planned?: Bar; actual?: Bar; cycle: boolean };
+  type Detail = {
+    key: string;
+    name: string;
+    device: string; // équipement de la ligne de la frise
+    what: string | null;
+    planned?: Bar;
+    actual?: Bar;
+    cycle: boolean;
+  };
   const details = (at: number): Detail[] => {
     const found = new Map<string, Detail>();
     const lanes: Lane[] = timeline.rows.flatMap((row) => [
@@ -252,7 +260,7 @@ export default function TimelineCard({
         const what = bar.action ? t(`plan.timeline.${bar.action}`) : bar.mode ? t("plan.timeline.mode", { mode: bar.mode }) : null;
         const name = names.get(bar) ?? lane.label;
         const key = `${lane.key}|${name}|${what ?? ""}`;
-        const line = found.get(key) ?? { key, name, what, cycle: lane.row.kind === "cycle" };
+        const line = found.get(key) ?? { key, name, device: lane.row.device, what, cycle: lane.row.kind === "cycle" };
         if (actual) line.actual ??= bar;
         else line.planned ??= bar;
         found.set(key, line);
@@ -263,8 +271,13 @@ export default function TimelineCard({
     return [...found.values()];
   };
 
-  const span = (bar: Bar) =>
-    `${hour(Math.round(bar.start_hour * 60) / 60, lang)} → ${hour(Math.round(bar.end_hour * 60) / 60, lang)}`;
+  // Horaire d'un bloc, en trois morceaux : dans le tableau, les flèches d'une même colonne
+  // s'alignent, le début calé à droite et la fin à gauche (styles.css).
+  const span = (bar: Bar) => (
+    <span className="tl-span">
+      <span>{hour(Math.round(bar.start_hour * 60) / 60, lang)}</span> → <span>{hour(Math.round(bar.end_hour * 60) / 60, lang)}</span>
+    </span>
+  );
 
   const detail = (at: number) => {
     const lines = details(at);
@@ -284,38 +297,81 @@ export default function TimelineCard({
           )}
         </p>
         {lines.length === 0 && <p className="dim">{t("plan.timeline.detail.none")}</p>}
-        {lines.map((line) => {
-          const { planned, actual } = line;
-          // Une seule énergie quand le prévu et le réel disent la même ; sinon chacun la sienne.
-          const same = planned !== undefined && actual !== undefined && kwh(planned.energy_kwh) === kwh(actual.energy_kwh);
-          // Écart de démarrage d'un cycle, réel moins prévu.
-          const gap =
-            line.cycle && planned && actual && !planned.carried
-              ? Math.round((actual.start_hour - planned.start_hour) * 60)
-              : 0;
-          const side = (bar: Bar, label: string) => (
-            <span>
-              <span className="dim">{label}</span> {span(bar)}
-              {!same && `, ${kwh(bar.energy_kwh)} kWh`}
-            </span>
-          );
-          return (
-            <p key={line.key} className="tl-tip-line">
-              {/* Espaces écrites : les morceaux sont des boîtes séparées à l'écran, mais leur
-               * texte doit se lire d'une traite (lecteur d'écran, copie). */}
-              <strong>{line.name}</strong> {line.what && <span className="dim">{line.what}</span>}{" "}
-              {planned && side(planned, t(planned.carried ? "plan.timeline.detail.carried" : "plan.timeline.detail.planned"))}{" "}
-              {actual && side(actual, t("plan.timeline.detail.actual"))}{" "}
-              {same && planned && <span>{kwh(planned.energy_kwh)} kWh</span>}{" "}
-              {gap !== 0 && (
-                <span className={Math.abs(gap) > SHIFT_MIN ? "tl-chip tl-chip-shift" : "tl-chip"}>
-                  {gap > 0 ? "+" : "−"}
-                  {gapText(gap, lang)}
-                </span>
-              )}
-            </p>
-          );
-        })}
+        {lines.length > 0 && (
+          // Un tableau à la largeur de son contenu, calé à gauche : les colonnes restent serrées
+          // sur une fenêtre large. Le prévu et le réel sont deux blocs, l'horaire accolé à son
+          // énergie. Sur un téléphone, chaque équipement passe sur deux lignes (styles.css).
+          <div role="table" className="tl-table">
+            <div role="row" className="tl-table-head">
+              <span role="columnheader">{t("plan.timeline.detail.device")}</span>{" "}
+              <span role="columnheader" className="tl-block tl-block-span">
+                {t("plan.timeline.detail.planned")}
+              </span>{" "}
+              <span role="columnheader" className="tl-block tl-block-kwh">
+                kWh
+              </span>{" "}
+              <span role="columnheader" className="tl-block tl-block-span">
+                {t("plan.timeline.detail.actual")}
+              </span>{" "}
+              <span role="columnheader" className="tl-block tl-block-kwh">
+                kWh
+              </span>{" "}
+              <span role="columnheader">{t("plan.timeline.detail.gap")}</span>{" "}
+            </div>
+            {lines.map((line) => {
+              const { planned, actual } = line;
+              // Écart de démarrage d'un cycle, réel moins prévu.
+              const gap =
+                line.cycle && planned && actual && !planned.carried
+                  ? Math.round((actual.start_hour - planned.start_hour) * 60)
+                  : 0;
+              // Écart d'énergie du cycle, d'après le bilan du serveur (nul sous son seuil).
+              const status =
+                line.cycle && planned && actual
+                  ? (timeline.statuses ?? []).find((one) => one.device === (planned.cycle ?? line.device))
+                  : undefined;
+              const percent = status?.energy_gap_percent ?? null;
+              const side = (bar: Bar | undefined, label: string) => (
+                <>
+                  <span role="cell" className="tl-block tl-block-span" data-label={label}>
+                    {bar ? span(bar) : <span className="dim">—</span>}
+                  </span>{" "}
+                  <span role="cell" className={bar ? "tl-block tl-block-kwh" : "tl-block tl-block-kwh tl-none"}>
+                    {bar ? kwh(bar.energy_kwh) : <span className="dim">—</span>}
+                  </span>{" "}
+                </>
+              );
+              return (
+                <div role="row" key={line.key}>
+                  {/* Espaces écrites : les cellules sont des boîtes séparées à l'écran, mais leur
+                   * texte doit se lire d'une traite (lecteur d'écran, copie). */}
+                  <span role="cell" className="tl-table-name">
+                    <strong>{line.name}</strong>{" "}
+                    {(line.what || planned?.carried) && (
+                      <span className="dim">{line.what ?? t("plan.timeline.detail.carried")}</span>
+                    )}
+                  </span>{" "}
+                  {side(planned, t("plan.timeline.detail.planned"))}
+                  {side(actual, t("plan.timeline.detail.actual"))}
+                  <span role="cell" className={gap === 0 && percent === null ? "tl-table-gap tl-none" : "tl-table-gap"}>
+                    {gap !== 0 && (
+                      <span className={Math.abs(gap) > SHIFT_MIN ? "tl-chip tl-chip-shift" : "tl-chip"}>
+                        {gap > 0 ? "+" : "−"}
+                        {gapText(gap, lang)}
+                      </span>
+                    )}{" "}
+                    {percent !== null && (
+                      <span className="tl-chip tl-chip-shift">
+                        {percent > 0 ? "+" : "−"}
+                        {Math.abs(percent)} %
+                      </span>
+                    )}
+                  </span>{" "}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     );
   };
