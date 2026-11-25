@@ -939,6 +939,108 @@ pre {
   font-variant-numeric: tabular-nums;
 }
 
+/* Détail de l'heure : le tableau des équipements à gauche, les tuiles de l'heure calées à
+   droite ; les tuiles passent dessous quand la largeur manque. */
+.tl-detail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem 2rem;
+}
+
+.tl-detail-main {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.tl-detail-main > p {
+  margin: 0;
+  padding: 0.2rem 0;
+}
+
+/* Tuiles de l'heure (HourTiles.tsx) : deux par ligne, la valeur puis la courbe de la journée
+   à fond perdu, de la couleur de la grandeur. */
+.tl-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  flex: 0 1 24rem;
+  min-width: min(100%, 17rem);
+}
+
+.tl-tile {
+  overflow: hidden;
+  border-radius: 0.6rem;
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+  padding: 0.35rem 0.6rem 0;
+}
+
+.tl-tile > small {
+  display: block;
+  color: var(--text-dim);
+  font-size: 0.72rem;
+}
+
+.tl-tile > p {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 0.5rem;
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.tl-tile > p > strong {
+  font-size: 1rem;
+}
+
+.tl-tile > p > span {
+  font-size: 0.75rem;
+}
+
+.tl-tile-good {
+  color: var(--ok);
+}
+
+.tl-tile-bad {
+  color: var(--danger);
+}
+
+.tl-tile > svg {
+  display: block;
+  width: calc(100% + 1.2rem);
+  height: 1.75rem;
+  margin: 0.15rem -0.6rem 0;
+}
+
+.tl-tile-zone {
+  fill: color-mix(in srgb, var(--text) 16%, transparent);
+}
+
+.tl-tile-area {
+  fill: color-mix(in srgb, currentColor 18%, transparent);
+}
+
+.tl-tile-line {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.2;
+  vector-effect: non-scaling-stroke;
+}
+
+.tl-tile-planned {
+  stroke-dasharray: 3 3;
+}
+
+/* Téléphone : le tableau puis les tuiles, chacun sur toute la largeur. */
+@media (max-width: 40rem) {
+  .tl-detail-main,
+  .tl-tiles {
+    flex: 1 1 100%;
+  }
+}
+
 /* Tableau du détail : à la largeur de son contenu, calé à gauche (les colonnes ne s'écartent pas
    sur une fenêtre large). Six colonnes : équipement, prévu et son énergie, réel et la sienne,
    écart. Les lignes sont transparentes à la grille (display: contents). */
