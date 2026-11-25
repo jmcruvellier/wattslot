@@ -80,6 +80,7 @@ function color(row: TimelineRow, bar: Bar): string {
  * cycle prévu : le suivant n'est lancé que par une activité commencée après la fin du
  * précédent. */
 function launched(row: TimelineRow, bar: Bar, nowMin: number): boolean {
+  if (bar.launched) return true; // dit par le serveur : son créneau annoncé peut être à venir
   const planned = row.planned.filter((other) => !other.carried);
   const before = planned[planned.indexOf(bar) - 1];
   const after = before ? before.end_hour : 0;
@@ -262,6 +263,7 @@ export default function TimelineCard({
       // change encore). Lui seul porte une pilule, donc son énergie ; les autres, un crochet.
       const upcoming =
         !actual &&
+        !bar.launched &&
         !row.actual.some((done) => done.start_hour < bar.end_hour && done.end_hour > bar.start_hour) &&
         (opens || readingHour === null || bar.end_hour > readingHour);
       const kind = actual ? "tl-actual" : upcoming ? "tl-planned tl-upcoming" : "tl-planned";

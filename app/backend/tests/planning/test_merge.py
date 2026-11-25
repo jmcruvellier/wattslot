@@ -10,7 +10,7 @@ import pytest
 
 from tests.v1_oracle import v1
 from wattslot.planning.cycles import Segment
-from wattslot.planning.merge import merge_plans
+from wattslot.planning.merge import keep_announced, merge_plans
 from wattslot.planning.rollover import next_rollover, seconds_until
 
 DAY = date(2026, 10, 13)
@@ -287,3 +287,42 @@ def test_a_runtime_that_ran_this_morning_is_not_said_off_all_day() -> None:
     assert kept is not None and kept["explication"] == placed
     assert without is not None and without["explication"]["raisons"] == [objective]
     assert still_off is not None and still_off["explication"] == off
+
+
+def test_a_launched_cycle_keeps_the_slot_announced_before_its_launch() -> None:
+    """25/11/2026 : le bloc d'un cycle lancé est recalé sur le réel, et le « prévu » de la frise
+    le suivait. Il garde le créneau annoncé par le plan d'avant, de calcul en calcul."""
+    launched = {"explication": {"raisons": [{"code": "launched", "params": {"time": "02h11"}}]}}
+    before = [
+        {"equipement": "Lave-vaisselle", "heure_debut": 2, "heure_fin": 5, "duree_cycle_min": 124},
+        {"equipement": "Chauffe-eau", "heure_debut": 0, "heure_fin": 4, "fin_min": 237},
+        {"equipement": "Lave-linge", "heure_debut": 10, "heure_fin": 12},
+        {"equipement": "Sèche-linge", "heure_debut": 9, "heure_fin": 11, **launched},
+    ]
+    planning = [
+        {"equipement": "Lave-vaisselle", "heure_debut": 2, "debut_min": 131, "fin_min": 255}
+        | launched,
+        {"equipement": "Chauffe-eau", "heure_debut": 0, "debut_min": 0, "fin_min": 297} | launched,
+        {"equipement": "Lave-linge", "heure_debut": 11, "heure_fin": 13},  # pas lancé : déplacé
+        {"equipement": "Sèche-linge", "heure_debut": 9, "heure_fin": 11, **launched},
+        {"equipement": "Piscine", "heure_debut": 8, "heure_fin": 9, **launched},  # sans plan avant
+    ]
+
+    first = keep_announced(planning, before)
+
+    assert [item.get("annonce") for item in first] == [
+        {"debut_min": 120, "fin_min": 244},
+        {"debut_min": 0, "fin_min": 237},
+        None,
+        None,  # déjà lancé dans le plan d'avant, sans annonce (plan d'une version précédente)
+        None,
+    ]
+    assert "annonce" not in planning[0]  # les blocs reçus ne sont pas modifiés
+    # Calcul suivant : la fin du bloc a encore suivi le cycle, l'annonce ne bouge pas.
+    later = [{**planning[1], "fin_min": 310}, {**planning[0]}]
+    again = keep_announced(later, first)
+    assert [item["annonce"] for item in again] == [
+        {"debut_min": 0, "fin_min": 237},
+        {"debut_min": 120, "fin_min": 244},
+    ]
+    assert keep_announced(planning, None) == planning

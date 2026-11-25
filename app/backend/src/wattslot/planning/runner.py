@@ -70,7 +70,14 @@ from wattslot.planning.inputs import (
     with_battery,
 )
 from wattslot.planning.journal import CycleJournal
-from wattslot.planning.merge import BATTERY, POOL, merge_plans, pool_modes, soc_at_hour_start
+from wattslot.planning.merge import (
+    BATTERY,
+    POOL,
+    keep_announced,
+    merge_plans,
+    pool_modes,
+    soc_at_hour_start,
+)
 from wattslot.planning.occurrences import numbered
 from wattslot.planning.past import AggregateReader
 from wattslot.planning.plan import Plan, Reason
@@ -673,6 +680,16 @@ async def run(ctx: Context, now: datetime, manual: bool = False) -> RunReport:
         chosen=set(data.chosen_starts) | problem.released,
         unfollowed=problem.unfollowed,
     )
+    # Créneau annoncé des cycles lancés, lu dans le plan d'avant (celui du jour, sinon celui
+    # de demain calculé hier) : le « prévu » de la frise ne suit pas le réel.
+    before = (
+        old
+        if old is not None
+        else previous_tomorrow.content
+        if previous_tomorrow is not None and previous_tomorrow.day == today
+        else None
+    )
+    merged["planning"] = keep_announced(merged.get("planning", []), (before or {}).get("planning"))
     merged["donnees_reelles_cache"] = _actual(ctx, today, now)
     execution = {"heure_iso": now.astimezone(zone).isoformat(), "manuel": manual}
     best = _best_production(ctx, today)

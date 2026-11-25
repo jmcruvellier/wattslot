@@ -15,6 +15,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel
 
+from wattslot.planning.merge import ANNOUNCED, is_launched
 from wattslot.planning.reference import ident, task_key
 from wattslot.runtime_settings import MEASURED_SPEED
 from wattslot.views.display import BATTERY, Context, find_item, is_runtime
@@ -41,6 +42,9 @@ class Bar(BaseModel):
     # à partir de son deuxième cycle de la journée, ce nom et son rang (« Lave-linge #2 »).
     # C'est elle que prennent le départ choisi, « Annuler » et « C'est lancé ».
     cycle: str | None = None
+    # Barre prévue d'un cycle déjà lancé : elle montre le créneau annoncé avant le lancement,
+    # qui peut être loin du réel ; ni à venir, ni à déplacer.
+    launched: bool = False
 
 
 class BatteryTrack(BaseModel):
@@ -172,6 +176,16 @@ def cycle_bounds(item: Mapping[str, Any]) -> tuple[int, int]:
     return start, item.get("fin_min", min(24 * 60, start + round(cycle_min)))
 
 
+def announced_bounds(item: Mapping[str, Any]) -> tuple[int, int]:
+    """(début, fin) du créneau annoncé d'un cycle, en minutes : celui d'avant son lancement
+    pour un cycle lancé (``merge.keep_announced``), dont le bloc est recalé sur le réel ; sinon
+    celui du bloc. C'est le « prévu » de la frise et du bilan."""
+    announced = item.get(ANNOUNCED)
+    if isinstance(announced, Mapping) and "debut_min" in announced and "fin_min" in announced:
+        return int(announced["debut_min"]), int(announced["fin_min"])
+    return cycle_bounds(item)
+
+
 def asked_times(state: Mapping[str, Any]) -> dict[str, str]:
     """Moment où chaque demande de l'application a été faite (uid → ISO), d'après les tâches
     gardées avec le plan."""
@@ -206,7 +220,7 @@ def planned_devices(
             start = min(s["heure_debut"] for s in segments) * 60
             end = max(s["heure_fin"] for s in segments) * 60
         else:
-            start, end = cycle_bounds(item)
+            start, end = announced_bounds(item)
             energy = item.get("energie_kwh", 0.0)
         # Identité du cycle : l'équipement et, à partir de son deuxième cycle de la journée,
         # son rang ; le nom de l'équipement est alors donné à part.
@@ -417,7 +431,7 @@ def day_cycles(row: TimelineRow, found: Sequence[DeviceStatus]) -> list[DayCycle
         if bar.carried:
             if not measured_at_midnight:
                 cycles.append(DayCycle(0.0, bar.end_hour, True))
-        elif (bar.cycle or row.device) not in launched:
+        elif not bar.launched and (bar.cycle or row.device) not in launched:
             cycles.append(DayCycle(bar.start_hour, bar.end_hour, False))
     return sorted(cycles, key=lambda cycle: cycle.start)
 
@@ -588,12 +602,13 @@ def build_timeline(
     for item in planning:
         if item["equipement"] == BATTERY or is_runtime(item):
             continue
-        start, end = cycle_bounds(item)
+        start, end = announced_bounds(item)
         bar = Bar(
             start_hour=start / 60,
             end_hour=end / 60,
             energy_kwh=round(item.get("energie_kwh", 0.0), 3),
             cycle=ident(item["equipement"], item.get("rang")),
+            launched=is_launched(item),
         )
         # Plusieurs cycles du même équipement dans la journée : une seule ligne, une barre
         # par cycle, dans l'ordre de la journée.

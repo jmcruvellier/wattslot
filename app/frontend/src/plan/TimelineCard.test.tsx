@@ -273,6 +273,25 @@ describe("frise des équipements", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
+  it("garde en crochet le créneau annoncé d'un cycle lancé plus tôt, sans l'offrir au choix", () => {
+    vi.setSystemTime(new Date("2026-10-17T12:00:00"));
+    // Annoncé de 16 h à 17 h, lancé à 9 h : le créneau annoncé est encore à venir, rien de
+    // réel ne le recouvre, mais le cycle est fait.
+    const row = {
+      ...MISSED,
+      planned: [{ ...MISSED.planned[0], start_hour: 16, end_hour: 17, launched: true }],
+      actual: [{ ...MISSED.planned[0], start_hour: 9, end_hour: 10 }],
+    };
+    renderTimeline({ ...TODAY.timeline, rows: [row] }, 12, {
+      choices: { "Sèche-linge": { alternatives: [], chosen: false } },
+      onChanged: () => undefined,
+    });
+
+    const planned = screen.getByRole("button", { name: "Prévu 16h → 17h : Sèche-linge, 1,00 kWh" });
+    expect(planned).not.toHaveClass("tl-pickable");
+    expect(planned).not.toHaveClass("tl-upcoming");
+  });
+
   it("ouvre la feuille sur un créneau passé jamais lancé, avec le bouton Annuler", async () => {
     vi.setSystemTime(new Date("2026-10-17T12:00:00"));
     const user = userEvent.setup();

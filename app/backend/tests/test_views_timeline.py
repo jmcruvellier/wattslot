@@ -485,3 +485,55 @@ def test_a_launched_planned_cycle_is_linked_from_its_measured_start() -> None:
     assert [(link.from_hour, link.to_hour, link.started) for link in timeline.links] == [
         (12.25, 13.1667, True)
     ]
+
+
+def test_the_planned_bar_of_a_launched_cycle_is_the_announced_slot() -> None:
+    """25/11/2026 : chauffe-eau annoncé de 0 h à 3 h 57, qui a tourné jusqu'à 4 h 56 ;
+    lave-vaisselle annoncé à 2 h, lancé à 2 h 41. Le « prévu » reste l'annonce, pas le bloc
+    recalé sur le réel, et le bilan dit le décalage."""
+    launched = {"explication": {"raisons": [{"code": "launched"}]}}
+    state = {
+        "planning": [
+            {
+                **cycle("Chauffe-eau", 0, 5),
+                "debut_min": 0,
+                "fin_min": 297,
+                "annonce": {"debut_min": 0, "fin_min": 237},
+                **launched,
+            },
+            {
+                **cycle("Lave-vaisselle", 2, 5),
+                "debut_min": 161,
+                "fin_min": 285,
+                "annonce": {"debut_min": 120, "fin_min": 244},
+                **launched,
+            },
+            cycle("Lave-linge", 10, 12),
+        ]
+    }
+    actual = {
+        "heure_maj_iso": iso(9),
+        "equipements_reels_horaire": {
+            "Chauffe-eau": [segment(iso(0), iso(4, 56), 1.5)],
+            "Lave-vaisselle": [segment(iso(2, 41), iso(4, 45), 1.0)],
+        },
+    }
+
+    timeline = build_timeline(state, actual, 9.0, 10.0, 8.0, LAUNDRY)
+
+    bars = {row.device: row.planned[0] for row in timeline.rows if row.kind == "cycle"}
+    assert (bars["Chauffe-eau"].start_hour, bars["Chauffe-eau"].end_hour) == (0.0, 3.95)
+    assert (bars["Lave-vaisselle"].start_hour, round(bars["Lave-vaisselle"].end_hour, 2)) == (
+        2.0,
+        4.07,
+    )
+    assert bars["Chauffe-eau"].launched and bars["Lave-vaisselle"].launched
+    assert not bars["Lave-linge"].launched
+    found = {status.device: status for status in timeline.statuses}
+    assert (found["Chauffe-eau"].planned_end_min, found["Chauffe-eau"].status) == (237, "on_time")
+    dishwasher = found["Lave-vaisselle"]
+    assert (dishwasher.planned_start_min, dishwasher.status, dishwasher.shift_min) == (
+        120,
+        "shifted",
+        41,
+    )

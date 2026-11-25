@@ -187,6 +187,8 @@ def test_a_full_run_then_an_hourly_run_then_the_next_day(tmp_path: Path) -> None
     assert again is not None and not again.manual
     item = next(i for i in again.content["planning"] if i["equipement"] == "Lave-linge")
     assert item["debut_min"] == washer_start
+    # Lancé : son bloc garde le créneau annoncé au calcul d'avant (le « prévu » de la frise).
+    assert item["annonce"]["debut_min"] == washer_start
     # Journal des calculs : annoncé au premier, reconnu lancé au second.
     runs = run_log.recent(ctx.database)
     assert [(r["manual"], r["devices"]["Lave-linge"]["state"]) for r in runs] == [
