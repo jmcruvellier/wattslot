@@ -323,14 +323,19 @@
       "tip_planned": "Planned {start} → {end}: {what}, {kwh} kWh",
       "tip_carried": "Continued from the day before {start} → {end}: {what}, {kwh} kWh",
       "tip_actual": "Actual {start} → {end}: {what}, {kwh} kWh",
-      "tip_none": "{start} → {end}: {what}, nothing planned or measured",
       "legend_sun": "Solar production",
       "legend_off_peak": "Off-peak hours",
       "legend_link": "Runs after another appliance (dashed: not started yet)",
       "follows": "starts after {device}",
-      "tip_off_peak": "{start} → {end}: off-peak hours",
-      "tip_peak": "{start} → {end}: peak hours",
-      "tip_sun": "{start} → {end}: solar production, {kwh} kWh",
+      "detail": {
+        "planned": "planned",
+        "actual": "actual",
+        "carried": "from the day before",
+        "off_peak": "off-peak hours",
+        "peak": "peak hours",
+        "sun": "solar {kwh} kWh",
+        "none": "Nothing planned or measured in this hour."
+      },
       "state": {
         "running": "running",
         "started": "started at {time}",

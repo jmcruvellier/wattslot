@@ -33,7 +33,7 @@ import { Fragment, useCallback, useEffect, useState, type MouseEvent } from "rea
 
 import { useI18n } from "../i18n/I18nProvider";
 import { minuteOfDay } from "../i18n/homeTime";
-import { hour, kwh } from "./format";
+import { duration as gapText, hour, kwh } from "./format";
 import { freeSpan } from "./timelineSpan";
 import { rowLabel } from "./batteryLabel";
 import { cycleNames } from "./cycleNames";
@@ -102,6 +102,10 @@ function rowIcon(row: TimelineRow): IconName {
 }
 
 // Couleur de la pastille : celle des blocs de la ligne.
+// Écart de démarrage toléré, comme le bilan du serveur (« à l'heure ») : au-delà, la pastille
+// de l'écart est mise en avant.
+const SHIFT_MIN = 15;
+
 const TONES = { battery: "var(--battery)", cycle: "var(--cycle)", runtime: "var(--pool-eco)" };
 
 /** Fond de la bande de soleil : une teinte par heure, en proportion de la plus forte
@@ -153,8 +157,9 @@ export default function TimelineCard({
   declared?: string[];
 }) {
   const { language, t } = useI18n();
-  // Heure choisie sur une piste : sa ligne, l'heure d'horloge marquée, les phrases affichées.
-  const [tip, setTip] = useState<{ key: string; zone: number; lines: string[] } | null>(null);
+  // Heure d'horloge choisie d'un clic sur une piste : marquée sur toutes les lignes, son
+  // détail affiché sous la frise.
+  const [zone, setZone] = useState<number | null>(null);
   const [trackWidth, measureTrack] = useTrackWidth();
   const lang = language === "fr" ? "fr" : "en";
   // Cycle (son identité) et bloc prévu dont la feuille des autres départs est ouverte.
@@ -217,28 +222,102 @@ export default function TimelineCard({
   const sun = hours ? sunBand(hours, readingHour) : "none";
   const links = linkShapes(timeline);
 
-  // Prévu et réel de la piste à l'heure `at` ; `own` est le bloc touché, s'il y en a un.
-  const pick = (lane: Lane, at: number, own?: { bar: Bar; actual: boolean }) => {
+  // Choisit l'heure d'horloge de `at` ; la même une seconde fois : plus d'heure choisie.
+  const pick = (at: number) => {
     if (Number.isNaN(at)) return;
-    const zone = Math.floor(at);
-    const found = (items: Bar[], actual: boolean) => {
-      const under = items.filter((bar) => bar.start_hour <= at && at < bar.end_hour);
-      if (under.length > 0) return under;
-      if (own?.actual === actual) return [own.bar];
-      return items.filter((bar) => bar.start_hour < zone + 1 && bar.end_hour > zone);
-    };
-    const lines = [
-      ...found(lane.planned, false).map((bar) => describe(lane.row, bar, false)),
-      ...found(lane.actual, true).map((bar) => describe(lane.row, bar, true)),
-    ];
-    const span = { start: hour(zone, lang), end: hour(zone + 1, lang) };
-    if (lines.length === 0) lines.push(t("plan.timeline.tip_none", { ...span, what: lane.label }));
+    const chosen = Math.floor(at);
+    setZone((current) => (current === chosen ? null : chosen));
+  };
+
+  // Détail de l'heure choisie : une ligne par équipement qui y a du prévu ou du réel, toutes
+  // lignes de la frise confondues. Le prévu et le réel d'un même cycle, d'un même sens de la
+  // batterie ou d'une même vitesse sont réunis.
+  type Detail = { key: string; name: string; what: string | null; planned?: Bar; actual?: Bar; cycle: boolean };
+  const details = (at: number): Detail[] => {
+    const found = new Map<string, Detail>();
+    const lanes: Lane[] = timeline.rows.flatMap((row) => [
+      { key: row.device, label: rowLabel(row, t), row, planned: row.planned, actual: row.actual },
+      ...(row.batteries ?? []).map((battery) => ({
+        key: `${row.device}/${battery.key}`,
+        label: battery.name,
+        row,
+        planned: [],
+        actual: battery.actual,
+      })),
+    ]);
+    for (const lane of lanes) {
+      const names = cycleNames(lane.row, timeline.statuses ?? []);
+      const add = (bar: Bar, actual: boolean) => {
+        if (!(bar.start_hour < at + 1 && bar.end_hour > at)) return;
+        const what = bar.action ? t(`plan.timeline.${bar.action}`) : bar.mode ? t("plan.timeline.mode", { mode: bar.mode }) : null;
+        const name = names.get(bar) ?? lane.label;
+        const key = `${lane.key}|${name}|${what ?? ""}`;
+        const line = found.get(key) ?? { key, name, what, cycle: lane.row.kind === "cycle" };
+        if (actual) line.actual ??= bar;
+        else line.planned ??= bar;
+        found.set(key, line);
+      };
+      lane.planned.forEach((bar) => add(bar, false));
+      lane.actual.forEach((bar) => add(bar, true));
+    }
+    return [...found.values()];
+  };
+
+  const span = (bar: Bar) =>
+    `${hour(Math.round(bar.start_hour * 60) / 60, lang)} → ${hour(Math.round(bar.end_hour * 60) / 60, lang)}`;
+
+  const detail = (at: number) => {
+    const lines = details(at);
     // Tarif de l'heure (si la journée a des heures creuses) et production solaire (si elle en a).
-    const point = hours?.find((one) => one.hour === zone);
-    if (point && offPeak.length > 0)
-      lines.push(t(point.off_peak ? "plan.timeline.tip_off_peak" : "plan.timeline.tip_peak", span));
-    if (point && sun !== "none") lines.push(t("plan.timeline.tip_sun", { ...span, kwh: kwh(hourSun(point, readingHour)) }));
-    setTip({ key: lane.key, zone, lines });
+    const point = hours?.find((one) => one.hour === at);
+    return (
+      <div role="status" className="tl-tip">
+        <p className="tl-tip-head">
+          <strong>
+            {hour(at, lang)} → {hour(at + 1, lang)}
+          </strong>{" "}
+          {point && offPeak.length > 0 && (
+            <span className="tl-chip">{t(point.off_peak ? "plan.timeline.detail.off_peak" : "plan.timeline.detail.peak")}</span>
+          )}{" "}
+          {point && sun !== "none" && (
+            <span className="tl-chip">{t("plan.timeline.detail.sun", { kwh: kwh(hourSun(point, readingHour)) })}</span>
+          )}
+        </p>
+        {lines.length === 0 && <p className="dim">{t("plan.timeline.detail.none")}</p>}
+        {lines.map((line) => {
+          const { planned, actual } = line;
+          // Une seule énergie quand le prévu et le réel disent la même ; sinon chacun la sienne.
+          const same = planned !== undefined && actual !== undefined && kwh(planned.energy_kwh) === kwh(actual.energy_kwh);
+          // Écart de démarrage d'un cycle, réel moins prévu.
+          const gap =
+            line.cycle && planned && actual && !planned.carried
+              ? Math.round((actual.start_hour - planned.start_hour) * 60)
+              : 0;
+          const side = (bar: Bar, label: string) => (
+            <span>
+              <span className="dim">{label}</span> {span(bar)}
+              {!same && `, ${kwh(bar.energy_kwh)} kWh`}
+            </span>
+          );
+          return (
+            <p key={line.key} className="tl-tip-line">
+              {/* Espaces écrites : les morceaux sont des boîtes séparées à l'écran, mais leur
+               * texte doit se lire d'une traite (lecteur d'écran, copie). */}
+              <strong>{line.name}</strong> {line.what && <span className="dim">{line.what}</span>}{" "}
+              {planned && side(planned, t(planned.carried ? "plan.timeline.detail.carried" : "plan.timeline.detail.planned"))}{" "}
+              {actual && side(actual, t("plan.timeline.detail.actual"))}{" "}
+              {same && planned && <span>{kwh(planned.energy_kwh)} kWh</span>}{" "}
+              {gap !== 0 && (
+                <span className={Math.abs(gap) > SHIFT_MIN ? "tl-chip tl-chip-shift" : "tl-chip"}>
+                  {gap > 0 ? "+" : "−"}
+                  {gapText(gap, lang)}
+                </span>
+              )}
+            </p>
+          );
+        })}
+      </div>
+    );
   };
 
   const bars = (lane: Lane, items: Bar[], actual: boolean) =>
@@ -282,7 +361,7 @@ export default function TimelineCard({
           onClick={(event) => {
             event.stopPropagation();
             if (opens) setPicked({ device: bar.cycle ?? row.device, bar });
-            else pick(lane, hourAt(event, (bar.start_hour + shownEnd) / 2), { bar, actual });
+            else pick(hourAt(event, (bar.start_hour + shownEnd) / 2));
           }}
         >
           {wide && (actual || upcoming) && (
@@ -304,7 +383,7 @@ export default function TimelineCard({
     <div
       className={single ? "tl-track tl-track-single" : "tl-track"}
       ref={measured ? measureTrack : undefined}
-      onClick={(event) => pick(lane, hourAt(event, Number.NaN))}
+      onClick={(event) => pick(hourAt(event, Number.NaN))}
     >
       {offPeak.map(([start, end]) => (
         <span
@@ -313,7 +392,7 @@ export default function TimelineCard({
           style={{ left: `${(start / 24) * 100}%`, width: `${((end - start) / 24) * 100}%` }}
         />
       ))}
-      {tip?.key === lane.key && <span className="tl-zone" style={{ left: `${(tip.zone / 24) * 100}%` }} />}
+      {zone !== null && <span className="tl-zone" style={{ left: `${(zone / 24) * 100}%` }} />}
       {bars(lane, lane.planned, false)}
       {bars(lane, lane.actual, true)}
       {!single &&
@@ -482,13 +561,7 @@ export default function TimelineCard({
           {restoreFailed && <span role="alert">{t("plan.timeline.restore_failed")}</span>}
         </p>
       )}
-      {tip && (
-        <p role="status" className="tl-tip">
-          {tip.lines.map((line) => (
-            <span key={line}>{line}</span>
-          ))}
-        </p>
-      )}
+      {zone !== null && !timeline.empty && detail(zone)}
       {picked && (
         <Sheet
           open
