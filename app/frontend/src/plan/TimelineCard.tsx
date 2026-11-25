@@ -271,8 +271,13 @@ export default function TimelineCard({
     return [...found.values()];
   };
 
-  const span = (bar: Bar) =>
-    `${hour(Math.round(bar.start_hour * 60) / 60, lang)} → ${hour(Math.round(bar.end_hour * 60) / 60, lang)}`;
+  // Horaire d'un bloc, en trois morceaux : dans le tableau, les flèches d'une même colonne
+  // s'alignent, le début calé à droite et la fin à gauche (styles.css).
+  const span = (bar: Bar) => (
+    <span className="tl-span">
+      <span>{hour(Math.round(bar.start_hour * 60) / 60, lang)}</span> → <span>{hour(Math.round(bar.end_hour * 60) / 60, lang)}</span>
+    </span>
+  );
 
   const detail = (at: number) => {
     const lines = details(at);

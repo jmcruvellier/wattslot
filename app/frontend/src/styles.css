@@ -989,6 +989,23 @@ pre {
   padding-right: 0.4rem;
 }
 
+/* Horaires d'une colonne alignés sur leur flèche : le début calé à droite, la fin à gauche,
+   dans deux cases de même largeur (« 10h05 », « 10:05 »). Sans horaire, le tiret est centré. */
+.tl-table .tl-span {
+  display: inline-grid;
+  grid-template-columns: 3.1em auto 3.1em;
+  column-gap: 0.35em;
+}
+
+.tl-table .tl-span > :first-child {
+  text-align: right;
+}
+
+.tl-table .tl-block-span > .dim {
+  display: block;
+  text-align: center;
+}
+
 .tl-table .tl-block-kwh {
   padding-left: 0.4rem;
   padding-right: 0.7rem;
@@ -1033,6 +1050,11 @@ pre {
     margin-right: 0;
     padding-left: 0;
     padding-right: 0;
+  }
+
+  .tl-table .tl-span,
+  .tl-table .tl-block-span > .dim {
+    display: inline;
   }
 
   .tl-table .tl-block-span::before {
