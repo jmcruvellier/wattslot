@@ -42,7 +42,8 @@ export function cycleNames(row: TimelineRow, statuses: DeviceStatus[]): Map<Bar,
   // Identité du cycle d'un bloc prévu ; sans elle (premier cycle), le nom de l'équipement.
   const identity = (bar: Bar) => bar.cycle ?? row.device;
   const pending = row.planned
-    .filter((bar) => !bar.carried && !started.has(identity(bar)))
+    // Un bloc dit lancé par le serveur montre son créneau annoncé : pas un cycle de plus.
+    .filter((bar) => !bar.carried && !bar.launched && !started.has(identity(bar)))
     .sort((a, b) => a.start_hour - b.start_hour);
   if (offset + measured.length + pending.length < 2) return names;
   const name = (rank: number) => `${row.device} #${rank}`;

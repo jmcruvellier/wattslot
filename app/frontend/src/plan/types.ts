@@ -142,6 +142,9 @@ export interface Bar {
   // cycle de la journée, ce nom et son rang (« Lave-linge #2 ») ; c'est elle que prennent le
   // départ choisi et « Annuler ».
   cycle?: string | null;
+  // Barre prévue d'un cycle déjà lancé : le créneau annoncé avant son lancement, qui peut
+  // être loin du réel ; ni à venir, ni à déplacer.
+  launched?: boolean;
 }
 
 // Une batterie sous la ligne qui en réunit plusieurs : son mesuré seulement, le plan n'ayant de

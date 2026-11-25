@@ -11,6 +11,8 @@ du plan précédent, ensuite du nouveau. Un plan d'une autre journée n'est pas 
 - **Équipements** : un bloc commencé avant l'heure d'exécution est gelé, sauf si sa tâche a
   été retirée de HA sans que l'équipement ait tourné (annulation), ou si son cycle réel a
   démarré : le nouveau calcul le recale alors sur ce démarrage (écart à la v1).
+  Ce bloc recalé garde le créneau annoncé avant le lancement (``annonce``,
+  ``keep_announced``) : c'est lui que la frise montre comme « prévu ».
 - **Avertissements** : réunion sans doublon.
 
 Le plan suit le format de la v1 (sortie du moteur, ``engine.output``), lu par le dashboard.
@@ -280,6 +282,45 @@ def _ident(item: Mapping[str, Any]) -> str:
     return ident(item["equipement"], item.get("rang"))
 
 
+ANNOUNCED = "annonce"  # créneau annoncé d'un cycle lancé : ``debut_min`` et ``fin_min``
+
+
+def _bounds(item: Mapping[str, Any]) -> tuple[int, int]:
+    """(début, fin) du bloc en minutes, comme ``views.timeline.cycle_bounds``."""
+    cycle_min = item.get("duree_cycle_min") or (item["heure_fin"] - item["heure_debut"]) * 60
+    start = item.get("debut_min", item["heure_debut"] * 60)
+    return start, item.get("fin_min", min(24 * 60, start + round(cycle_min)))
+
+
+def keep_announced(
+    planning: list[dict[str, Any]], before: list[dict[str, Any]] | None
+) -> list[dict[str, Any]]:
+    """Blocs de ``planning``, ceux d'un cycle lancé portant le créneau annoncé avant son
+    lancement (``annonce``), lu dans le plan précédent ``before``.
+
+    Le bloc d'un cycle lancé est recalé sur son démarrage réel, et sa fin suit le cycle. La
+    frise en tirait son crochet « prévu », qui collait donc toujours au réel : un lave-vaisselle
+    annoncé à 2 h et lancé à 2 h 11 se lisait « prévu 2 h 11 », un chauffe-eau plus long que
+    d'habitude « prévu » jusqu'à sa fin réelle (constaté le 25/11/2026). L'annonce est prise
+    une fois, au premier calcul qui voit le cycle lancé, puis recopiée de plan en plan. Sans
+    plan précédent pour ce cycle, ou lancé avant cette version : pas d'annonce.
+    """
+    by_ident = {_ident(item): item for item in before or [] if "equipement" in item}
+    found: list[dict[str, Any]] = []
+    for item in planning:
+        old = by_ident.get(_ident(item)) if "equipement" in item else None
+        if not _launched(item) or ANNOUNCED in item or old is None:
+            found.append(item)
+        elif ANNOUNCED in old:
+            found.append({**item, ANNOUNCED: dict(old[ANNOUNCED])})
+        elif not _launched(old) and "heure_debut" in old:
+            start, end = _bounds(old)
+            found.append({**item, ANNOUNCED: {"debut_min": start, "fin_min": end}})
+        else:
+            found.append(item)
+    return found
+
+
 def _ran(
     old_item: Mapping[str, Any],
     name: str,
@@ -308,6 +349,11 @@ def _launched(item: Mapping[str, Any] | None) -> bool:
     le bloc gelé, dont la fin ne suivait plus le cycle (pas dans la v1)."""
     reasons = ((item or {}).get("explication") or {}).get("raisons") or []
     return any(r.get("code") == "launched" for r in reasons if isinstance(r, Mapping))
+
+
+def is_launched(item: Mapping[str, Any]) -> bool:
+    """Bloc d'un cycle lancé (recalé sur son démarrage réel)."""
+    return _launched(item)
 
 
 def merge_plans(
