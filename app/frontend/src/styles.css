@@ -927,6 +927,8 @@ pre {
   /* Un détail, pas un message de réussite : la couleur du texte courant, pas le vert des états. */
   color: var(--text);
   font-size: 0.85rem;
+  /* La mise en page du détail suit la largeur de l'encadré, pas celle de la fenêtre. */
+  container: tl-tip / inline-size;
 }
 
 .tl-tip > p {
@@ -943,7 +945,6 @@ pre {
    droite ; les tuiles passent dessous quand la largeur manque. */
 .tl-detail {
   display: flex;
-  flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
   gap: 0.75rem 2rem;
@@ -965,8 +966,11 @@ pre {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.5rem;
-  flex: 0 1 24rem;
-  min-width: min(100%, 17rem);
+  /* À côté du tableau, elles se resserrent avant de passer dessous (règle de l'encadré étroit,
+     plus bas). */
+  flex: 1 1 15rem;
+  max-width: 24rem;
+  min-width: 0;
 }
 
 .tl-tile {
@@ -1031,14 +1035,6 @@ pre {
 
 .tl-tile-planned {
   stroke-dasharray: 3 3;
-}
-
-/* Téléphone : le tableau puis les tuiles, chacun sur toute la largeur. */
-@media (max-width: 40rem) {
-  .tl-detail-main,
-  .tl-tiles {
-    flex: 1 1 100%;
-  }
 }
 
 /* Tableau du détail : à la largeur de son contenu, calé à gauche (les colonnes ne s'écartent pas
@@ -1121,6 +1117,30 @@ pre {
   margin-right: 0;
 }
 
+/* Encadré étroit (fenêtre moyenne, volet latéral) : le tableau et les tuiles ne tiennent plus
+   côte à côte. Le tableau prend toute la largeur, ses colonnes s'étirent ; les tuiles passent
+   dessous, les quatre sur une ligne. Rien ne reste vide à droite (constaté le 25/11/2026 : les
+   tuiles, deux par deux sous le tableau, laissaient la moitié de l'encadré vide). */
+@container tl-tip (max-width: 52rem) {
+  .tl-detail {
+    flex-wrap: wrap;
+  }
+
+  .tl-detail-main,
+  .tl-tiles {
+    flex: 1 1 100%;
+    max-width: none;
+  }
+
+  .tl-tiles {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .tl-table {
+    width: 100%;
+  }
+}
+
 /* Téléphone : pas de ligne de titres ; l'équipement, puis le prévu et le réel l'un sous l'autre,
    chacun avec son libellé, puis l'écart. */
 @media (max-width: 40rem) {
@@ -1132,6 +1152,10 @@ pre {
   .tl-table > .tl-table-head,
   .tl-table .tl-none {
     display: none;
+  }
+
+  .tl-tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .tl-table .tl-table-name,
