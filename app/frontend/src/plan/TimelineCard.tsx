@@ -46,6 +46,7 @@ import type { IconName } from "../ui/iconPaths";
 import Button from "../ui/Button";
 import Sheet from "../ui/Sheet";
 import OtherStarts from "./OtherStarts";
+import HourTiles from "./HourTiles";
 import { cancelTask, restoreTask } from "./cancelled";
 import { withdrawLaunched } from "./declared";
 import type { StartChoice } from "./startChoices";
@@ -296,6 +297,10 @@ export default function TimelineCard({
             <span className="tl-chip">{t("plan.timeline.detail.sun", { kwh: kwh(hourSun(point, readingHour)) })}</span>
           )}
         </p>
+        {/* Le tableau des équipements à gauche, les tuiles de l'heure à droite ; l'un sous
+         * l'autre quand la largeur manque (styles.css). */}
+        <div className="tl-detail">
+          <div className="tl-detail-main">
         {lines.length === 0 && <p className="dim">{t("plan.timeline.detail.none")}</p>}
         {lines.length > 0 && (
           // Un tableau à la largeur de son contenu, calé à gauche : les colonnes restent serrées
@@ -372,6 +377,9 @@ export default function TimelineCard({
             })}
           </div>
         )}
+          </div>
+          {hours && <HourTiles hours={hours} zone={at} readingHour={readingHour} />}
+        </div>
       </div>
     );
   };
