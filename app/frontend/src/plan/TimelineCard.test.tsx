@@ -164,7 +164,7 @@ describe("frise des équipements", () => {
     renderTimeline(TODAY.timeline, null);
 
     await user.click(screen.getByRole("button", { name: /^Réel 9h15/ }));
-    expect(screen.getByRole("status")).toHaveTextContent("Réel 9h15 → 13h30 : charge, 2,10 kWh");
+    expect(screen.getByRole("status")).toHaveTextContent("réel 9h15 → 13h30, 2,10 kWh");
     expect(document.querySelector(".tl-now")).toBeNull();
   });
 
@@ -174,8 +174,7 @@ describe("frise des équipements", () => {
 
     await user.click(screen.getByRole("button", { name: /^Réel 9h15/ }));
     const status = screen.getByRole("status");
-    expect(status).toHaveTextContent("Prévu 9h → 13h : charge, 2,00 kWh");
-    expect(status).toHaveTextContent("Réel 9h15 → 13h30 : charge, 2,10 kWh");
+    expect(status).toHaveTextContent("Batterie charge prévu 9h → 13h, 2,00 kWh réel 9h15 → 13h30, 2,10 kWh");
   });
 
   it("au clic sur une heure sans bloc, le dit et marque l'heure sur la ligne", () => {
@@ -184,12 +183,17 @@ describe("frise des équipements", () => {
 
     const track = screen.getByLabelText("Batterie").querySelector(".tl-track") as HTMLElement;
     fireEvent.click(track, { clientX: 20.5 * 40, detail: 1 });
-    expect(screen.getByRole("status")).toHaveTextContent("20h → 21h : Batterie, rien de prévu ni de mesuré");
+    expect(screen.getByRole("status")).toHaveTextContent("20h → 21h Rien de prévu ni de mesuré sur cette heure.");
     expect(track.querySelector(".tl-zone")).toHaveStyle({ left: `${(20 / 24) * 100}%` });
+    // La même heure est marquée sur toutes les lignes de la frise.
+    expect(document.querySelectorAll(".tl-zone")).toHaveLength(document.querySelectorAll(".tl-track").length);
 
     // Un clic dans l'heure d'un bloc, à côté de lui, le trouve quand même.
     fireEvent.click(track, { clientX: 13.75 * 40, detail: 1 });
-    expect(screen.getByRole("status")).toHaveTextContent("Réel 9h15 → 13h30 : charge, 2,10 kWh");
+    expect(screen.getByRole("status")).toHaveTextContent("réel 9h15 → 13h30, 2,10 kWh");
+    // Un second clic sur la même heure retire le détail.
+    fireEvent.click(track, { clientX: 13.75 * 40, detail: 1 });
+    expect(screen.queryByRole("status")).toBeNull();
   });
 
   it("donne à chaque ligne l'icône de son équipement et une ligne d'état", () => {
@@ -218,10 +222,9 @@ describe("frise des équipements", () => {
     expect(screen.getByText("Heures creuses")).toBeInTheDocument();
 
     fireEvent.click(track, { clientX: 22.5 * 40, detail: 1 });
-    expect(screen.getByRole("status")).toHaveTextContent("22h → 23h : heures creuses");
+    expect(screen.getByRole("status")).toHaveTextContent("22h → 23h heures creuses");
     fireEvent.click(track, { clientX: 10.5 * 40, detail: 1 });
-    expect(screen.getByRole("status")).toHaveTextContent("10h → 11h : heures pleines");
-    expect(screen.getByRole("status")).toHaveTextContent("10h → 11h : production solaire, 1,00 kWh");
+    expect(screen.getByRole("status")).toHaveTextContent("10h → 11h heures pleines solaire 1,00 kWh");
   });
 
   it("explique une journée sans équipement planifié", () => {
@@ -256,7 +259,7 @@ describe("frise des équipements", () => {
     renderTimeline(TODAY.timeline, 14.5);
 
     await user.click(screen.getByRole("button", { name: "Prévu 10h → 11h30 : Lave-linge, 1,00 kWh" }));
-    expect(screen.getByRole("status")).toHaveTextContent("Prévu 10h → 11h30 : Lave-linge, 1,00 kWh");
+    expect(screen.getByRole("status")).toHaveTextContent("Lave-linge prévu 10h → 11h30, 1,00 kWh");
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
@@ -269,7 +272,7 @@ describe("frise des équipements", () => {
     });
 
     await user.click(screen.getByRole("button", { name: "Prévu 10h → 11h30 : Lave-linge, 1,00 kWh" }));
-    expect(screen.getByRole("status")).toHaveTextContent("Prévu 10h → 11h30 : Lave-linge, 1,00 kWh");
+    expect(screen.getByRole("status")).toHaveTextContent("Lave-linge prévu 10h → 11h30, 1,00 kWh");
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 

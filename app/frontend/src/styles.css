@@ -918,8 +918,42 @@ pre {
   pointer-events: none;
 }
 
-.tl-tip > span {
-  display: block;
+.tl-tip {
+  margin: 0.6rem 0 0;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: var(--surface-alt);
+  /* Un détail, pas un message de réussite : la couleur du texte courant, pas le vert des états. */
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+.tl-tip > p {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.15rem 0.9rem;
+  margin: 0;
+  padding: 0.2rem 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.tl-tip > .tl-tip-line {
+  border-top: 1px solid var(--border);
+}
+
+.tl-chip {
+  padding: 0.05rem 0.5rem;
+  border-radius: 0.6rem;
+  background: color-mix(in srgb, var(--text) 9%, transparent);
+  color: var(--text-dim);
+  font-size: 0.75rem;
+}
+
+.tl-chip-shift {
+  background: color-mix(in srgb, var(--warning) 18%, transparent);
+  color: var(--warning);
 }
 
 /* Barres ajustées à la piste : on neutralise la hauteur et le remplissage des boutons globaux. */

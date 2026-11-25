@@ -323,14 +323,19 @@
       "tip_planned": "Previsto {start} → {end}: {what}, {kwh} kWh",
       "tip_carried": "Seguito del giorno prima {start} → {end}: {what}, {kwh} kWh",
       "tip_actual": "Reale {start} → {end}: {what}, {kwh} kWh",
-      "tip_none": "{start} → {end}: {what}, niente previsto né misurato",
       "legend_sun": "Produzione solare",
       "legend_off_peak": "Ore a tariffa ridotta",
       "legend_link": "Dopo un altro apparecchio (tratteggiata: non ancora avviato)",
       "follows": "parte dopo {device}",
-      "tip_off_peak": "{start} → {end}: ore a tariffa ridotta",
-      "tip_peak": "{start} → {end}: ore di punta",
-      "tip_sun": "{start} → {end}: produzione solare, {kwh} kWh",
+      "detail": {
+        "planned": "previsto",
+        "actual": "reale",
+        "carried": "seguito del giorno prima",
+        "off_peak": "ore a tariffa ridotta",
+        "peak": "ore di punta",
+        "sun": "solare {kwh} kWh",
+        "none": "Niente previsto né misurato in quest'ora."
+      },
       "state": {
         "running": "in corso",
         "started": "avviato alle {time}",

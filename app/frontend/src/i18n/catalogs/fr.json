@@ -323,14 +323,19 @@
       "tip_planned": "Prévu {start} → {end} : {what}, {kwh} kWh",
       "tip_carried": "Suite de la veille {start} → {end} : {what}, {kwh} kWh",
       "tip_actual": "Réel {start} → {end} : {what}, {kwh} kWh",
-      "tip_none": "{start} → {end} : {what}, rien de prévu ni de mesuré",
       "legend_sun": "Production solaire",
       "legend_off_peak": "Heures creuses",
       "legend_link": "À la suite d'un autre équipement (pointillé : pas encore lancé)",
       "follows": "démarre après {device}",
-      "tip_off_peak": "{start} → {end} : heures creuses",
-      "tip_peak": "{start} → {end} : heures pleines",
-      "tip_sun": "{start} → {end} : production solaire, {kwh} kWh",
+      "detail": {
+        "planned": "prévu",
+        "actual": "réel",
+        "carried": "suite de la veille",
+        "off_peak": "heures creuses",
+        "peak": "heures pleines",
+        "sun": "solaire {kwh} kWh",
+        "none": "Rien de prévu ni de mesuré sur cette heure."
+      },
       "state": {
         "running": "en cours",
         "started": "lancé à {time}",
