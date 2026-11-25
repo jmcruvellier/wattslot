@@ -939,8 +939,118 @@ pre {
   font-variant-numeric: tabular-nums;
 }
 
-.tl-tip > .tl-tip-line {
+/* Tableau du détail : à la largeur de son contenu, calé à gauche (les colonnes ne s'écartent pas
+   sur une fenêtre large). Six colonnes : équipement, prévu et son énergie, réel et la sienne,
+   écart. Les lignes sont transparentes à la grille (display: contents). */
+.tl-table {
+  display: grid;
+  grid-template-columns: repeat(6, auto);
+  width: max-content;
+  max-width: 100%;
+  font-variant-numeric: tabular-nums;
+}
+
+.tl-table > [role="row"] {
+  display: contents;
+}
+
+.tl-table [role="cell"],
+.tl-table [role="columnheader"] {
+  padding: 0.35rem 0;
   border-top: 1px solid var(--border);
+}
+
+.tl-table [role="columnheader"] {
+  padding: 0.25rem 0;
+  color: var(--text-dim);
+  font-size: 0.75rem;
+}
+
+.tl-table .tl-table-name {
+  padding-right: 1.25rem;
+}
+
+.tl-table .tl-table-gap {
+  padding-left: 1.25rem;
+}
+
+.tl-table-head > :last-child {
+  padding-left: 1.25rem;
+}
+
+/* Blocs « prévu » et « réel » : l'horaire accolé à son énergie, sur un fond léger, un espace
+   net entre les deux blocs. */
+.tl-table .tl-block {
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+}
+
+.tl-table .tl-block-span {
+  padding-left: 0.7rem;
+  padding-right: 0.4rem;
+}
+
+.tl-table .tl-block-kwh {
+  padding-left: 0.4rem;
+  padding-right: 0.7rem;
+  margin-right: 0.75rem;
+  text-align: right;
+}
+
+.tl-table .tl-block-kwh + .tl-table-gap,
+.tl-table-head > .tl-block-kwh:nth-child(5),
+.tl-table [role="row"] > .tl-block-kwh:nth-of-type(5) {
+  margin-right: 0;
+}
+
+/* Téléphone : pas de ligne de titres ; l'équipement, puis le prévu et le réel l'un sous l'autre,
+   chacun avec son libellé, puis l'écart. */
+@media (max-width: 40rem) {
+  .tl-table {
+    grid-template-columns: 1fr auto;
+    width: 100%;
+  }
+
+  .tl-table > .tl-table-head,
+  .tl-table .tl-none {
+    display: none;
+  }
+
+  .tl-table .tl-table-name,
+  .tl-table .tl-table-gap {
+    grid-column: 1 / -1;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .tl-table .tl-table-gap,
+  .tl-table .tl-block {
+    border-top: 0;
+    padding-top: 0.1rem;
+  }
+
+  .tl-table .tl-block {
+    background: none;
+    margin-right: 0;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .tl-table .tl-block-span::before {
+    content: attr(data-label);
+    display: inline-block;
+    min-width: 3.5rem;
+    margin-right: 0.5rem;
+    color: var(--text-dim);
+  }
+
+  .tl-table .tl-block-kwh::after {
+    content: " kWh";
+  }
+
+  /* Un côté sans bloc (rien de prévu, ou rien de mesuré) : son tiret prend la ligne. */
+  .tl-table .tl-block-span:has(+ .tl-none) {
+    grid-column: 1 / -1;
+  }
 }
 
 .tl-chip {

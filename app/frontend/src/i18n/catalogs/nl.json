@@ -328,8 +328,10 @@
       "legend_link": "Na een ander apparaat (stippellijn: nog niet gestart)",
       "follows": "start na {device}",
       "detail": {
-        "planned": "gepland",
-        "actual": "werkelijk",
+        "device": "Apparaat",
+        "gap": "Verschil",
+        "planned": "Gepland",
+        "actual": "Werkelijk",
         "carried": "vervolg van de vorige dag",
         "off_peak": "daluren",
         "peak": "piekuren",

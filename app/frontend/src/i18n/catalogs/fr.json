@@ -328,8 +328,10 @@
       "legend_link": "À la suite d'un autre équipement (pointillé : pas encore lancé)",
       "follows": "démarre après {device}",
       "detail": {
-        "planned": "prévu",
-        "actual": "réel",
+        "device": "Équipement",
+        "gap": "Écart",
+        "planned": "Prévu",
+        "actual": "Réel",
         "carried": "suite de la veille",
         "off_peak": "heures creuses",
         "peak": "heures pleines",

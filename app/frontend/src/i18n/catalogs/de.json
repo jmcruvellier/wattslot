@@ -328,8 +328,10 @@
       "legend_link": "Läuft nach einem anderen Gerät (gestrichelt: noch nicht gestartet)",
       "follows": "startet nach {device}",
       "detail": {
-        "planned": "geplant",
-        "actual": "tatsächlich",
+        "device": "Gerät",
+        "gap": "Abweichung",
+        "planned": "Geplant",
+        "actual": "Tatsächlich",
         "carried": "Fortsetzung vom Vortag",
         "off_peak": "Niedertarif",
         "peak": "Hochtarif",

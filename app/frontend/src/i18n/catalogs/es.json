@@ -328,8 +328,10 @@
       "legend_link": "Después de otro equipo (discontinua: aún no iniciado)",
       "follows": "empieza después de {device}",
       "detail": {
-        "planned": "previsto",
-        "actual": "real",
+        "device": "Equipo",
+        "gap": "Diferencia",
+        "planned": "Previsto",
+        "actual": "Real",
         "carried": "continuación del día anterior",
         "off_peak": "horas valle",
         "peak": "horas punta",
