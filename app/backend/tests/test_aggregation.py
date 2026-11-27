@@ -23,7 +23,7 @@ from wattslot.aggregation import (
 from wattslot.detection import Role
 from wattslot.history import SINCE
 from wattslot.ingestion import Ingestor, Target
-from wattslot.retention import HOUR_DAYS, cutoff
+from wattslot.retention import HOUR_DAYS, Retention, cutoff, save_retention
 from wattslot.storage.database import open_database
 from wattslot.storage.graph import GraphStore
 from wattslot.storage.raw import RawStores, Reading
@@ -339,6 +339,109 @@ def test_imports_home_assistant_statistics_before_the_raw_readings(tmp_path: Pat
     assert (history.imported, history.pending) == (3, [])
     assert history.without_statistics == [SOC.entity_id]
     assert history.since == {QUARTER: at(-30), HOUR: at(-120)}
+
+
+def test_a_longer_hour_retention_brings_the_missing_hours_back(tmp_path: Path) -> None:
+    """Conservation des heures allongée : les heures entre le nouveau début et l'ancien sont
+    reprises de HA, une entité par tour, sans doublon après un arrêt en cours de route ; rien
+    n'est demandé quand elle raccourcit."""
+    zone = ZoneInfo("Europe/Paris")
+    today = datetime.now(UTC).astimezone(zone).date()
+
+    def kept(days: int) -> datetime:
+        moment = cutoff(days, today, zone)
+        assert moment is not None
+        return moment
+
+    old = kept(HOUR_DAYS) - timedelta(days=100)  # au-delà de 15 mois, en deçà de 2 ans
+    graph = GraphStore(tmp_path)
+    raw = RawStores(tmp_path, "Europe/Paris")
+    raw.write(
+        [
+            Reading(POWER.entity_id, POWER.sensor_iri, 1000.0, at(0)),
+            Reading(ENERGY.entity_id, ENERGY.sensor_iri, 1.0, at(0)),
+        ]
+    )
+    hours = {
+        POWER.entity_id: [
+            {"start": old.timestamp() * 1000, "mean": 300, "max": 400},
+            _stat(-60, mean=700, max=800),
+        ],
+        ENERGY.entity_id: [{"start": old.timestamp() * 1000, "change": 0.7}],
+    }
+    requests: list[tuple[str, str, str]] = []
+
+    def statistics(message: dict[str, object]) -> dict[str, object]:
+        (entity_id,) = cast(list[str], message["statistic_ids"])
+        if message["period"] != "hour":
+            return {entity_id: []}
+        start, end = cast(str, message["start_time"]), cast(str, message["end_time"])
+        requests.append((entity_id, start, end))
+        since, before = datetime.fromisoformat(start), datetime.fromisoformat(end)
+        rows = [
+            row
+            for row in hours.get(entity_id, [])
+            if since.timestamp() * 1000 <= row["start"] < before.timestamp() * 1000
+        ]
+        return {entity_id: rows}
+
+    responses = default_responses()
+    responses["recorder/statistics_during_period"] = statistics
+    database = open_database(tmp_path)
+
+    def held(aggregator: Aggregator, entity_id: str) -> list[datetime]:
+        return [a.start for a in aggregator.read(entity_id, HOUR, old - timedelta(days=1), at(0))]
+
+    async def scenario() -> None:
+        async with running_client(fake_home_assistant(responses)) as client:
+
+            def new() -> Aggregator:
+                return Aggregator(
+                    cast(Ingestor, StubIngestorWithSoc()),
+                    raw,
+                    graph,
+                    open_database(tmp_path),
+                    client,
+                )
+
+            aggregator = new()
+            await aggregator.step(at(31.5))
+            assert await aggregator.import_history() == 3
+            assert await aggregator.extend_history() == 0  # repère posé, rien à reprendre
+            assert held(aggregator, POWER.entity_id) == [at(-60)]
+            requests.clear()
+
+            save_retention(database, Retention(hour_days=730))
+            assert await aggregator.extend_history(limit=1) == 1  # une entité par tour
+            assert requests == [
+                (POWER.entity_id, kept(730).isoformat(), kept(HOUR_DAYS).isoformat())
+            ]
+            # Arrêt en cours de route : rien n'était noté, tout recommence.
+            aggregator = new()
+            assert await aggregator.extend_history() == 3
+            assert await aggregator.extend_history() == 0
+            assert held(aggregator, POWER.entity_id) == [old, at(-60)]
+            assert held(aggregator, ENERGY.entity_id) == [old]
+            assert aggregator.status().history.since[HOUR] == old
+
+            requests.clear()
+            save_retention(database, Retention(hour_days=183))
+            assert await aggregator.extend_history() == 0  # raccourcie : rien à demander
+            assert requests == []
+            # Rallongée avant la purge de la nuit : relue, sans doublon.
+            save_retention(database, Retention(hour_days=HOUR_DAYS))
+            assert await aggregator.extend_history() == 3
+            assert {(start, end) for _, start, end in requests} == {
+                (kept(HOUR_DAYS).isoformat(), kept(183).isoformat())
+            }
+            assert held(aggregator, POWER.entity_id) == [old, at(-60)]
+
+            save_retention(database, Retention(hour_days=None))  # sans limite : depuis toujours
+            requests.clear()
+            assert await aggregator.extend_history() == 3
+            assert {start for _, start, _ in requests} == {SINCE.isoformat()}
+
+    asyncio.run(scenario())
 
 
 def _import_one_then_all(

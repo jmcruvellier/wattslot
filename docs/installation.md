@@ -35,7 +35,7 @@ In **Settings › Apps › WattSlot › Configuration**:
 | Log level | info | `debug` when asked for a bug report |
 | Raw readings kept | 3 days | Every individual measurement (1 to 30 days) |
 | Quarter-hour data kept | 35 days | Averages per quarter hour (31 to 3,660 days) |
-| Hourly history kept | 456 days (15 months) | Averages per hour (92 to 3,660 days, 0 for no limit); most of the disk space. A shorter duration removes the older history the next night, for good |
+| Hourly history kept | 456 days (15 months) | Averages per hour (92 to 3,660 days, 0 for no limit); most of the disk space. A shorter duration removes the older history the next night; a longer one brings back what Home Assistant still has |
 
 ### Updates and backups
 
