@@ -2611,11 +2611,24 @@ a.ui-setting-row {
   }
 }
 
-/* Batterie et soleil, l'un sous l'autre à côté des indicateurs. */
+/* Indicateurs et consommation à gauche, batterie et soleil à droite, l'un sous l'autre. */
 .today-stack {
   display: grid;
   gap: 1rem;
   align-content: start;
+}
+
+/* Côte à côte : les deux colonnes finissent à la même hauteur ; dans la plus courte, l'écart
+   est partagé entre ses blocs, chacun grandissant d'autant depuis sa hauteur (27/11/2026). */
+@media (min-width: 52rem) {
+  .today-row-split > .today-stack {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .today-row-split > .today-stack > * {
+    flex: 1 1 auto;
+  }
 }
 
 .setup-card {

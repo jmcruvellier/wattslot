@@ -365,19 +365,37 @@ describe("TodayView", () => {
       sun.getByText("Déjà produit"),
     );
     expect(sun.queryByText("Prévu par le plan à cette heure")).toBeNull();
-    expect(screen.getByTitle("Écart avec la première prévision du jour")).toBeInTheDocument();
+    expect(sun.getByTitle("Écart avec la première prévision du jour")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Rien à lancer d'ici ce soir" })).toBeInTheDocument();
+  });
+
+  it("donne la consommation de la maison sous les indicateurs, comparée à la première prévision", async () => {
+    mockApi({ ...TODAY, now: NOW, next_action: null });
+    renderView();
+    const consumption = within(
+      (await screen.findByRole("heading", { name: "Consommation" })).closest("section") as HTMLElement,
+    );
+    // TODAY : 0,5 kWh mesurés par heure jusqu'à 14 h ; journée 9,6 kWh, première prévision 9,0.
+    expect(consumption.getByText("Déjà consommé").closest("div")).toHaveTextContent("Déjà consommé7,0 kWh");
+    expect(consumption.getByText("Journée estimée maintenant").closest("div")).toHaveTextContent("▲ +25%9,6 kWh");
+    const reference = consumption.getByText("Première prévision du jour").closest(".indicator-compared");
+    expect(reference).toHaveTextContent("Première prévision du jour9,0 kWh");
+    expect(reference).not.toContainElement(consumption.getByText("Déjà consommé"));
+    // Dans la colonne des indicateurs, sous eux.
+    const column = screen.getByRole("heading", { name: "Indicateurs du plan" }).closest(".today-stack");
+    expect(column).toContainElement(consumption.getByText("Déjà consommé"));
   });
 
   it("sans mesure au relevé : « trop tôt » à la place de la tendance", async () => {
     mockApi({ ...TODAY, now: NOW, next_action: null, cards: null });
     renderView();
     expect(await screen.findByRole("heading", { name: "Batterie" })).toBeInTheDocument();
-    expect(screen.getByText("Journée estimée maintenant").closest("div")).toHaveTextContent("9,5 kWh");
+    const sun = within(screen.getByRole("heading", { name: "Soleil" }).closest("section") as HTMLElement);
+    expect(sun.getByText("Journée estimée maintenant").closest("div")).toHaveTextContent("9,5 kWh");
     expect(screen.queryByText(/[▲▼]/)).not.toBeInTheDocument();
     expect(screen.queryByText("Prévu par le plan à cette heure")).not.toBeInTheDocument();
     // Juste après minuit, avant le premier relevé : la pastille ne disparaît pas.
-    expect(screen.getAllByText("trop tôt")).toHaveLength(2);
+    expect(screen.getAllByText("trop tôt")).toHaveLength(3); // batterie, soleil, consommation
     expect(screen.getAllByText("trop tôt")[0]).toHaveClass("trend-pill");
   });
 
@@ -386,7 +404,9 @@ describe("TodayView", () => {
     renderView();
     expect(await screen.findByRole("heading", { name: "Batterie" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Soleil" })).not.toBeInTheDocument();
-    expect(screen.queryByText("Journée estimée maintenant")).not.toBeInTheDocument();
+    // Seule la consommation garde sa « journée estimée maintenant ».
+    expect(screen.getAllByText("Journée estimée maintenant")).toHaveLength(1);
+    expect(screen.getByRole("heading", { name: "Consommation" })).toBeInTheDocument();
   });
 
   it("sans appareil à placer : invite à en ajouter un", async () => {

@@ -1759,6 +1759,13 @@
       "end_value": "{pct}%",
       "now_label": "Nu"
     },
+    "consumption": {
+      "eyebrow": "Verbruik",
+      "done_label": "Al verbruikt",
+      "forecast_label": "Dag nu geschat",
+      "first_label": "Eerste voorspelling van de dag",
+      "trend": "Verschil met de eerste voorspelling van de dag"
+    },
     "sun": {
       "eyebrow": "Zon",
       "done_label": "Al opgewekt",

@@ -1759,6 +1759,13 @@
       "end_value": "{pct} %",
       "now_label": "Jetzt"
     },
+    "consumption": {
+      "eyebrow": "Verbrauch",
+      "done_label": "Bereits verbraucht",
+      "forecast_label": "Tag jetzt geschätzt",
+      "first_label": "Erste Prognose des Tages",
+      "trend": "Abweichung von der ersten Prognose des Tages"
+    },
     "sun": {
       "eyebrow": "Sonne",
       "done_label": "Bereits erzeugt",
