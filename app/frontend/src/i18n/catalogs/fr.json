@@ -297,7 +297,8 @@
         "soc_max": "SoC max",
         "battery": "Batterie",
         "grid": "Réseau",
-        "production": "Production"
+        "production": "Production",
+        "consumption": "Consommation"
       },
       "lines": {
         "soc": "SoC",
@@ -306,7 +307,8 @@
         "discharge": "Décharge",
         "grid_import": "Acheté",
         "grid_export": "Surplus",
-        "production": "Production"
+        "production": "Production",
+        "consumption": "Consommation"
       },
       "estimated": "Estimé",
       "measured": "Mesuré",

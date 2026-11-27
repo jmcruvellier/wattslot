@@ -42,7 +42,15 @@ export interface Trend {
   favorable: boolean | null;
 }
 
-export type LineKey = "soc" | "soc_max" | "charge" | "discharge" | "grid_import" | "grid_export" | "production";
+export type LineKey =
+  | "soc"
+  | "soc_max"
+  | "charge"
+  | "discharge"
+  | "grid_import"
+  | "grid_export"
+  | "production"
+  | "consumption";
 
 export interface CardLine {
   key: LineKey;

@@ -297,7 +297,8 @@
         "soc_max": "Max. laadniveau",
         "battery": "Batterij",
         "grid": "Net",
-        "production": "Productie"
+        "production": "Productie",
+        "consumption": "Verbruik"
       },
       "lines": {
         "soc": "Laadniveau",
@@ -306,7 +307,8 @@
         "discharge": "Ontladen",
         "grid_import": "Afgenomen",
         "grid_export": "Overschot",
-        "production": "Productie"
+        "production": "Productie",
+        "consumption": "Verbruik"
       },
       "estimated": "Geschat",
       "measured": "Gemeten",

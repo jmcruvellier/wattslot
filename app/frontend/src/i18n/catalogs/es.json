@@ -297,7 +297,8 @@
         "soc_max": "Nivel máx.",
         "battery": "Batería",
         "grid": "Red",
-        "production": "Producción"
+        "production": "Producción",
+        "consumption": "Consumo"
       },
       "lines": {
         "soc": "Nivel de carga",
@@ -306,7 +307,8 @@
         "discharge": "Descarga",
         "grid_import": "Comprado",
         "grid_export": "Excedente",
-        "production": "Producción"
+        "production": "Producción",
+        "consumption": "Consumo"
       },
       "estimated": "Estimado",
       "measured": "Medido",

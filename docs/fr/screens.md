@@ -45,7 +45,7 @@ Les chiffres et les graphiques du plan, avec les mêmes onglets que Planning.
 
 ![Courbes](../images/fr/curves-desktop-light.png)
 
-- **Un jour** : cartes de synthèse (batterie, réseau, production, estimé et mesuré), le Planning des équipements, la charge de la batterie, les échanges avec le réseau et les courbes de production et de consommation, prévues (en pointillés) et mesurées.
+- **Un jour** : cartes de synthèse (batterie, réseau, consommation de la maison, production, estimé et mesuré), le Planning des équipements, la charge de la batterie, les échanges avec le réseau et les courbes de production et de consommation, prévues (en pointillés) et mesurées.
   - Touchez un appareil prévu dans le Planning des équipements pour changer son départ : un des autres départs que le plan propose, ou l'heure de votre choix, aujourd'hui, demain ou un jour suivant. L'annulation du lancement ne vaut que pour aujourd'hui.
 - **Personnaliser** choisit les cartes affichées et leur ordre (les jours suivants reprennent ceux de Demain).
 - Une mesure impossible pour la maison (un compteur qui compte des milliers de kWh en une heure) est écartée : un trou dans les courbes, rien dans les totaux, et une ligne au-dessus des cartes avec **Voir les données** (**Ma maison › Données**). La ligne apparaît dans **Aujourd'hui**, **Planning** et **Courbes**, tant que la plage affichée la couvre : sur **Hier** pour une mesure de la veille, sur **Semaine** seulement tant que c'est celle du jour. Les autres mesures restent affichées. Corriger la mesure dans **Ma maison › Données** (**Estimer** ou **Recalculer**) comble le trou.

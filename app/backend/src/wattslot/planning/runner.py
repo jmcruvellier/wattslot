@@ -59,6 +59,7 @@ from wattslot.planning.engine import (
     NoPlanError,
     Objective,
     Result,
+    load_kwh,
     plan_day,
 )
 from wattslot.planning.horizon import HORIZON_DAYS, DayForecast, compute_horizon, end_soc_kwh
@@ -86,6 +87,7 @@ from wattslot.planning.recommendation import recommendation
 from wattslot.planning.sources import Forecasts, PlanningSettings, has_production
 from wattslot.planning.store import PlanStore, StoredPlan
 from wattslot.storage.raw import RawStores
+from wattslot.views.cards import CONSUMPTION_TOTAL
 from wattslot.views.day import stored_initial_forecast
 
 logger = logging.getLogger(__name__)
@@ -703,6 +705,13 @@ async def run(ctx: Context, now: datetime, manual: bool = False) -> RunReport:
     if old is None:
         merged["prevision_initiale"] = {
             **stored_initial_forecast(merged),
+            # Consommation de la maison prévue par ce premier calcul : la consommation de base
+            # et ce que le calcul a placé ou tient pour fixé (bloc « Consommation » des Courbes).
+            CONSUMPTION_TOTAL: round(
+                sum(float(v) for v in (merged.get("consommation_baseline_horaire") or {}).values())
+                + sum(kwh for hour, kwh in load_kwh(problem, result.plan).items() if hour < 24),
+                3,
+            ),
             "heure_iso": now.astimezone(zone).isoformat(),
         }
     elif old.get("prevision_initiale"):

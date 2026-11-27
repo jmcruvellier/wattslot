@@ -157,6 +157,11 @@ def test_a_full_run_then_an_hourly_run_then_the_next_day(tmp_path: Path) -> None
     assert "Équipements à lancer :" in today.content["texte_recommandation"]
     planning = {item["equipement"]: item for item in today.content["planning"]}
     washer_start = planning["Lave-linge"]["debut_min"]
+    # Premier calcul du jour : la consommation prévue de la maison est gardée avec le reste
+    # de la première prévision — au moins la consommation de base et le lave-linge placé.
+    base = sum(today.content["consommation_baseline_horaire"].values())
+    first_consumption = today.content["prevision_initiale"]["consommation_totale"]
+    assert first_consumption >= base + planning["Lave-linge"]["energie_kwh"] - 1e-3
     assert planning["Batterie"]["soc_initial_kwh"] == 2.0  # SoC de 8 h (40 %), pas l'instant
     tomorrow = store.load("tomorrow")
     assert tomorrow is not None

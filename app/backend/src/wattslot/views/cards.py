@@ -22,7 +22,14 @@ WEATHER_MODERATE = 25
 WEATHER_MIN_KWH = 1  # moins d'1 kWh estimé : trop tôt pour juger
 
 LineKey = Literal[
-    "soc", "soc_max", "charge", "discharge", "grid_import", "grid_export", "production"
+    "soc",
+    "soc_max",
+    "charge",
+    "discharge",
+    "grid_import",
+    "grid_export",
+    "production",
+    "consumption",
 ]
 # (couleur inversée : moins est favorable ; prévu nul : « +∞ % » dès qu'il y a du mesuré)
 RULES: dict[str, tuple[bool, bool]] = {
@@ -33,7 +40,11 @@ RULES: dict[str, tuple[bool, bool]] = {
     "grid_import": (True, False),
     "grid_export": (True, True),
     "production": (False, False),
+    "consumption": (True, False),
 }
+# Consommation de la maison (pas dans la v1) : sa prévision du premier calcul du jour, gardée
+# avec les autres dans ``prevision_initiale`` depuis le 27/11/2026 ; absente des plans d'avant.
+CONSUMPTION_TOTAL = "consommation_totale"
 # Clés du résumé de fin de journée de la v1, par ligne de carte.
 V1_TOTALS = {
     "charge": "charge_total",
@@ -141,7 +152,8 @@ def build_cards(
     """Cartes des vues Aujourd'hui et Hier.
 
     ``soc_percent`` : courbe du SoC affichée (fin de chaque heure) ; ``forecasts`` : séries
-    prévues ``charge``, ``discharge``, ``grid_import``, ``grid_export``, ``production`` ;
+    prévues ``charge``, ``discharge``, ``grid_import``, ``grid_export``, ``production``, et
+    ``consumption`` (consommation de la maison ; sans elle, pas de ligne de consommation) ;
     ``summary`` : résumé de fin de journée de la courbe affichée (clés de la v1) ;
     ``initial`` : prévision du premier calcul du jour (``prevision_initiale``)."""
     capacity = state.get("capacite_batterie_kwh", 1.0) or 1.0
@@ -279,9 +291,42 @@ def build_cards(
         if key == "production":
             weather = reading_weather(kind, estimated, measured, yesterday_initial)
 
+    # Consommation de la maison : comme les totaux ci-dessus, hors du résumé de la v1.
+    consumption = forecasts.get("consumption")
+    if consumption is not None:
+        hourly = data.get("consommation_reelle_horaire") if has_actual else None
+        measured = dict_total("consommation_reelle_horaire") if hourly else None
+        if measured is not None and kind != "yesterday":
+            anchored[CONSUMPTION_TOTAL] = (
+                measured + cumulated(consumption, 24) - cumulated(consumption, reference_hour)
+            )
+        first = (yesterday_initial or {}).get(CONSUMPTION_TOTAL)
+        # Hier : la prévision du premier calcul, si elle a été gardée ; sinon celle du plan.
+        estimated = float(first) if first is not None else cumulated(consumption, reference_hour)
+        lines.append(
+            CardLine(
+                key="consumption",
+                estimated_kwh=round(estimated, 3),
+                measured_kwh=None if measured is None else round(measured, 3),
+                trend=trend(estimated, measured, *RULES["consumption"]),
+            )
+        )
+
     day = None
     if kind == "today":
         day = day_lines(initial, {**summary, **anchored})
+        if consumption is not None:
+            first = (initial or {}).get(CONSUMPTION_TOTAL)
+            first = None if first is None else float(first)
+            final = anchored.get(CONSUMPTION_TOTAL, cumulated(consumption, 24))
+            day.append(
+                CardLine(
+                    key="consumption",
+                    estimated_kwh=first,
+                    measured_kwh=round(final, 3),
+                    trend=trend(first, final, *RULES["consumption"]),
+                )
+            )
     return Cards(
         reference_hour=round(reference_hour, 4), at_reading=lines, day=day, weather=weather
     )

@@ -1,8 +1,10 @@
-// Cartes de résumé d'une vue de jour (lot 5.3) : SoC, SoC max, batterie, réseau, production.
+// Cartes de résumé d'une vue de jour (lot 5.3) : SoC, SoC max, batterie, réseau, consommation
+// de la maison, production.
 // Aujourd'hui et Hier : estimé et mesuré au relevé avec leur tendance, et pour Aujourd'hui la
 // ligne « Journée » (premier calcul contre fin de journée recalculée). Demain : une valeur
 // prévue par carte. Sans batterie, ni SoC ni carte Batterie. Sur grand écran, grille de six
-// colonnes : les trois cartes de la batterie en occupent deux chacune, Réseau et Production trois.
+// colonnes : les trois cartes de la batterie en occupent deux chacune, comme Réseau, Consommation
+// et Production ; sans carte de production (maison sans solaire), Réseau et Consommation trois.
 
 import { useI18n } from "../i18n/I18nProvider";
 import { hour, kwh, percent } from "./format";
@@ -16,10 +18,13 @@ const CARDS: { key: string; icon: IconName; lines: LineKey[]; battery: boolean }
   { key: "soc_max", icon: "arrow-up", lines: ["soc_max"], battery: true },
   { key: "battery", icon: "refresh", lines: ["charge", "discharge"], battery: true },
   { key: "grid", icon: "plug", lines: ["grid_import", "grid_export"], battery: false },
+  { key: "consumption", icon: "home", lines: ["consumption"], battery: false },
   { key: "production", icon: "today", lines: ["production"], battery: false },
 ];
 
-const cardClass = (battery: boolean) => (battery ? "card" : "card summary-half");
+// Deux cartes hors batterie sur la rangée : la moitié chacune ; trois : le tiers, comme les
+// cartes de la batterie.
+const cardClass = (battery: boolean, others: number) => (battery || others !== 2 ? "card" : "card summary-half");
 
 export function TrendMark({ trend, label, className }: { trend: Trend; label?: string; className?: string }) {
   const tone = trend.favorable === null ? "trend-neutral" : trend.favorable ? "trend-good" : "trend-bad";
@@ -62,7 +67,8 @@ function Rows({ lines, capacity, labels }: { lines: CardLine[]; capacity: number
           <span className="stat-label">{labels ? t(`plan.summary.lines.${line.key}`) : ""}</span>
           <span className="stat-value dim">
             {kwh(line.estimated_kwh)}
-            <small> kWh</small>
+            {/* Sans estimé (première prévision pas gardée ce jour-là) : un tiret, sans unité. */}
+            {line.estimated_kwh !== null && <small> kWh</small>}
             <small className="stat-detail">{detail(line, "estimated", capacity, lang)}</small>
           </span>
           <span className="stat-value">
@@ -82,6 +88,7 @@ export default function SummaryCards({ view }: { view: DayView }) {
   const hasBattery = view.battery_capacity_kwh !== null;
   // Maison sans installation solaire (lot 7.4) : pas de carte de production.
   const shown = CARDS.filter((card) => (hasBattery || !card.battery) && (view.solar !== false || card.key !== "production"));
+  const others = shown.filter((card) => !card.battery).length;
 
   if (view.kind === "tomorrow" || !view.cards) {
     const s = view.summary;
@@ -93,11 +100,12 @@ export default function SummaryCards({ view }: { view: DayView }) {
       grid_import: [s.grid_import_kwh, ""],
       grid_export: [s.grid_export_kwh, ""],
       production: [s.production_kwh, ""],
+      consumption: [view.hours.reduce((total, point) => total + point.consumption_kwh, 0), ""],
     };
     return (
       <div className="cards summary-cards">
         {shown.map((card) => (
-          <article key={card.key} className={cardClass(card.battery)} aria-label={t(`plan.summary.cards.${card.key}`)}>
+          <article key={card.key} className={cardClass(card.battery, others)} aria-label={t(`plan.summary.cards.${card.key}`)}>
             <h3>
               <Icon name={card.icon} size={18} /> {t(`plan.summary.cards.${card.key}`)}
             </h3>
@@ -121,7 +129,7 @@ export default function SummaryCards({ view }: { view: DayView }) {
   return (
     <div className="cards summary-cards">
       {shown.map((card) => (
-        <article key={card.key} className={cardClass(card.battery)} aria-label={t(`plan.summary.cards.${card.key}`)}>
+        <article key={card.key} className={cardClass(card.battery, others)} aria-label={t(`plan.summary.cards.${card.key}`)}>
           <h3>
             <Icon name={card.icon} size={18} /> {t(`plan.summary.cards.${card.key}`)}
           </h3>

@@ -8,7 +8,7 @@ import pytest
 from tests.test_views_day import V1_CONTEXT, actual_of, state_of
 from tests.v1_oracle import STATES
 from wattslot.views.cards import build_cards, cumulated, reading_weather, trend
-from wattslot.views.day import build_day
+from wattslot.views.day import build_day, stored_initial_forecast
 
 
 @pytest.mark.parametrize(
@@ -121,6 +121,64 @@ def test_yesterday_compares_the_measures_with_the_first_forecast() -> None:
     assert (lines["soc_max"].estimated_kwh, lines["soc_max"].estimated_hour) == (5.0, 15.0)
     assert lines["production"].trend.direction == "stable" and cards.day is None
     assert cards.weather is not None and cards.weather.mode == "day"
+
+
+def test_the_house_consumption_has_its_line_at_the_reading_and_for_the_day() -> None:
+    """27/11/2026 : bloc « Consommation » des Courbes. Au relevé, le prévu cumulé contre le
+    mesuré ; sur la journée, la prévision du premier calcul contre le mesuré puis le prévu."""
+    state = state_of(STATES[0])
+    actual = {**actual_of(state, hour=14), "consommation_reelle_horaire": {8: 0.6, 9: 0.9}}
+    # Première prévision gardée par un plan d'avant : sans la consommation.
+    before = stored_initial_forecast(state)
+    first = {**state, "donnees_reelles_cache": actual, "prevision_initiale": before}
+    view = build_day(first, "today", V1_CONTEXT)
+    assert view.cards is not None
+    planned = [p.consumption_kwh for p in view.hours]
+    at_reading = cumulated(planned, 14 + 1 / 3)
+
+    line = {one.key: one for one in view.cards.at_reading}["consumption"]
+    assert line.estimated_kwh == pytest.approx(at_reading, abs=1e-3)
+    assert line.measured_kwh == 1.5
+    # Moins que prévu : favorable, comme l'achat au réseau.
+    assert (line.trend.direction, line.trend.favorable) == ("down", True)
+
+    # Plan d'avant : pas de première prévision de la consommation, l'estimé reste vide.
+    day = {one.key: one for one in view.cards.day or []}["consumption"]
+    rest = cumulated(planned, 24) - at_reading
+    assert day.estimated_kwh is None and day.trend.direction == "none"
+    assert day.measured_kwh == pytest.approx(1.5 + rest, abs=1e-3)
+
+    kept = {**first, "prevision_initiale": {**before, "consommation_totale": 12.0}}
+    cards = build_day(kept, "today", V1_CONTEXT).cards
+    assert cards is not None
+    assert {one.key: one for one in cards.day or []}["consumption"].estimated_kwh == 12.0
+
+    # Hier : la première prévision si elle a été gardée, sinon celle du plan.
+    yesterday = build_day(kept, "yesterday", V1_CONTEXT).cards
+    assert yesterday is not None
+    assert {one.key: one for one in yesterday.at_reading}["consumption"].estimated_kwh == 12.0
+    without = build_day(first, "yesterday", V1_CONTEXT).cards
+    assert without is not None
+    found = {one.key: one for one in without.at_reading}["consumption"]
+    assert found.estimated_kwh == pytest.approx(sum(planned), abs=1e-3)
+
+
+def test_without_a_consumption_series_there_is_no_consumption_line() -> None:
+    cards = build_cards(
+        state_of(STATES[0]),
+        None,
+        "today",
+        10.0,
+        [50.0] * 24,
+        {
+            k: [0.0] * 24
+            for k in ("charge", "discharge", "grid_import", "grid_export", "production")
+        },
+        {},
+        None,
+        None,
+    )
+    assert "consumption" not in {line.key for line in cards.at_reading}
 
 
 def test_tomorrow_has_no_cards() -> None:
