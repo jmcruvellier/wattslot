@@ -768,8 +768,9 @@ pre {
 }
 
 /* Cartes de résumé : aucune ligne avec un vide. Une carte par ligne au téléphone ; deux entre
-   768 et 1 100 px, la dernière seule prenant toute la ligne ; au-delà, six colonnes où les cartes
-   de la batterie en prennent deux et Réseau et Production (summary-half) trois. */
+   768 et 1 100 px, la dernière seule prenant toute la ligne ; au-delà, six colonnes où chaque
+   carte en prend deux, sauf sur une rangée de deux cartes hors batterie (summary-half : maison
+   sans solaire), qui en prennent trois. */
 .cards.summary-cards {
   grid-template-columns: minmax(0, 1fr);
 }

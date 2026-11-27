@@ -152,8 +152,9 @@ export const TODAY: DayView = {
       line("grid_import", 1.0, 1.25, { direction: "up", percent: 25, favorable: false }),
       line("grid_export", 0, 0.1, { direction: "infinite", percent: null, favorable: false }),
       line("production", 6.0, 6.5, { direction: "up", percent: 8, favorable: true }),
+      line("consumption", 4.0, 4.4, { direction: "up", percent: 10, favorable: false }),
     ],
-    day: [line("soc", 2.0, 2.2, UP), line("production", 9.0, 9.5, UP)],
+    day: [line("soc", 2.0, 2.2, UP), line("production", 9.0, 9.5, UP), line("consumption", 9.0, 9.6, UP)],
     weather: {
       mode: "reading",
       estimated_kwh: 6,

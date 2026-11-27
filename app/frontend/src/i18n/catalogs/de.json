@@ -297,7 +297,8 @@
         "soc_max": "Max. Ladestand",
         "battery": "Batterie",
         "grid": "Netz",
-        "production": "Erzeugung"
+        "production": "Erzeugung",
+        "consumption": "Verbrauch"
       },
       "lines": {
         "soc": "Ladestand",
@@ -306,7 +307,8 @@
         "discharge": "Entladen",
         "grid_import": "Bezogen",
         "grid_export": "Überschuss",
-        "production": "Erzeugung"
+        "production": "Erzeugung",
+        "consumption": "Verbrauch"
       },
       "estimated": "Geschätzt",
       "measured": "Gemessen",

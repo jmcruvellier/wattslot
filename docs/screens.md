@@ -45,7 +45,7 @@ The figures and charts of the plan, with the same tabs as Planning.
 
 ![Charts](images/en/curves-desktop-light.png)
 
-- **A day**: summary cards (battery, grid, production, estimated against measured), the appliance schedule, the battery charge, the grid exchanges and the production and consumption curves, planned (dotted) and measured.
+- **A day**: summary cards (battery, grid, house consumption, production, estimated against measured), the appliance schedule, the battery charge, the grid exchanges and the production and consumption curves, planned (dotted) and measured.
   - Tap a planned appliance in the schedule to change its start: one of the other starts the plan offers, or a time of your choice, today, tomorrow or a following day. Cancelling the launch is for today only.
 - **Customize** chooses which cards appear and their order (the following days share Tomorrow's).
 - A measurement the home cannot reach (a meter counting thousands of kWh in one hour) is set aside: a gap in the curves, nothing in the totals, and a line above the cards with **See the data** (**My home › Data**). The line appears on **Today**, **Planning** and **Charts**, only while the viewed range covers it: on **Yesterday** for a measurement of the day before, on **Week** only while it is today's. The other measurements stay displayed. Correcting the measurement in **My home › Data** (**Estimate** or **Recompute**) fills the gap.

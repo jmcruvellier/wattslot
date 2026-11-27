@@ -441,6 +441,7 @@ def build_day(
                 "grid_import": [p.grid_import_kwh for p in hours],
                 "grid_export": [p.grid_export_kwh for p in hours],
                 "production": [p.production_kwh for p in hours],
+                "consumption": [p.consumption_kwh for p in hours],
             },
             {old: summary[new] for old, new in _V1_SUMMARY.items()},
             state.get("prevision_initiale"),

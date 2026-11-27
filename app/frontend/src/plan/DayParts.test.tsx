@@ -142,6 +142,24 @@ describe("vue d'un jour", () => {
     expect(screen.getByRole("article", { name: "Réseau" })).toBeInTheDocument();
   });
 
+  it("montre la consommation de la maison entre Réseau et Production, estimée et mesurée", () => {
+    renderDay(TODAY);
+
+    const cards = screen.getAllByRole("article").map((card) => card.getAttribute("aria-label"));
+    expect(cards.slice(cards.indexOf("Réseau"), cards.indexOf("Réseau") + 3)).toEqual([
+      "Réseau",
+      "Consommation",
+      "Production",
+    ]);
+    const card = screen.getByRole("article", { name: "Consommation" });
+    // Au relevé : 4,00 estimés, 4,40 mesurés, plus que prévu (défavorable) ; puis la journée.
+    expect(card).toHaveTextContent("4,00 kWh4,40 kWh▲ +10%");
+    expect(card.querySelector(".trend-bad")).not.toBeNull();
+    expect(card).toHaveTextContent("9,00 kWh9,60 kWh");
+    // Trois cartes hors batterie : un tiers chacune, pas la moitié.
+    expect(card).not.toHaveClass("summary-half");
+  });
+
   it("sans solaire : ni bandeau météo ni carte de production", () => {
     renderDay(WITHOUT_SOLAR);
 
