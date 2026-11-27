@@ -39,6 +39,9 @@ const CHOICES: SettingsChoices = {
 
 type Calls = { url: string; method: string; body: unknown }[];
 
+// Conservation lue par la sous-page du calcul ; sans elle (404), la section ne s'affiche pas.
+let retention: { hour_days: number | null; mode: "addon" | "standalone" } | null = null;
+
 function mockApi(notify: Response | null = null, nextRunAt: string | null = null): Calls {
   const calls: Calls = [];
   vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
@@ -49,6 +52,13 @@ function mockApi(notify: Response | null = null, nextRunAt: string | null = null
     if (url === "api/settings/planning") return Response.json(SETTINGS);
     if (url === "api/settings/choices") return Response.json(CHOICES);
     if (url === "api/planning/status") return Response.json({ enabled: true, next_run_at: nextRunAt });
+    if (retention && url === "api/settings/retention" && method === "PUT") return Response.json(JSON.parse(String(init?.body)));
+    if (retention && url === "api/settings/retention") {
+      return Response.json({ raw_days: 3, quarter_days: 35, hour_days: retention.hour_days });
+    }
+    if (retention && url === "api/health") {
+      return Response.json({ version: "1.0.0", mode: retention.mode, connections: { home_assistant: { state: "connected" } } });
+    }
     if (url === "api/settings/notifications" && method === "PUT") return Response.json(JSON.parse(String(init?.body)));
     if (url === "api/settings/notifications") return Response.json(NOTIFICATIONS);
     if (url.startsWith("api/notifications/")) return notify ?? Response.json({ detail: "no_plan" }, { status: 409 });
@@ -68,6 +78,7 @@ function renderScreen(page: SettingsPage = "notifications") {
 
 describe("SettingsScreen", () => {
   beforeEach(() => {
+    retention = null;
     window.localStorage.clear();
     vi.spyOn(navigator, "languages", "get").mockReturnValue(["fr-FR"]);
   });
@@ -108,6 +119,64 @@ describe("SettingsScreen", () => {
       scheduler_enabled: false,
     });
     expect(calls.some((call) => call.method === "PUT" && call.url === "api/settings/notifications")).toBe(false);
+  });
+
+  it("historique par heure : l'allonger s'enregistre sans confirmation", async () => {
+    retention = { hour_days: 456, mode: "standalone" };
+    const user = userEvent.setup();
+    const calls = mockApi();
+    renderScreen("calculation");
+
+    const select = await screen.findByLabelText("Historique par heure");
+    expect(select).toHaveValue("456");
+    await user.selectOptions(select, "2 ans");
+    await user.click(screen.getByRole("button", { name: "Enregistrer" }));
+
+    expect(await screen.findByText("Réglages enregistrés.")).toBeTruthy();
+    expect(screen.queryByRole("dialog")).toBeNull();
+    const put = calls.find((call) => call.method === "PUT" && call.url === "api/settings/retention");
+    expect(put?.body).toEqual({ raw_days: 3, quarter_days: 35, hour_days: 730 });
+  });
+
+  it("historique par heure : le raccourcir demande une confirmation", async () => {
+    retention = { hour_days: null, mode: "standalone" };
+    const user = userEvent.setup();
+    const calls = mockApi();
+    renderScreen("calculation");
+    const puts = () => calls.filter((call) => call.method === "PUT");
+
+    await user.selectOptions(await screen.findByLabelText("Historique par heure"), "6 mois");
+    await user.click(screen.getByRole("button", { name: "Enregistrer" }));
+    const dialog = screen.getByRole("dialog", { name: "Garder 6 mois d'historique ?" });
+    expect(within(dialog).getByText(/supprimé de WattSlot cette nuit/)).toBeTruthy();
+    await user.click(within(dialog).getByRole("button", { name: "Annuler" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(puts()).toEqual([]);
+
+    await user.click(screen.getByRole("button", { name: "Enregistrer" }));
+    await user.click(screen.getByRole("button", { name: "Garder 6 mois" }));
+    expect(await screen.findByText("Réglages enregistrés.")).toBeTruthy();
+    expect(puts().map((call) => call.url)).toEqual(["api/settings/planning", "api/settings/retention"]);
+    expect(puts()[1].body).toEqual({ raw_days: 3, quarter_days: 35, hour_days: 183 });
+
+    // La durée enregistrée fait référence : enregistrer de nouveau ne redemande rien.
+    await user.click(screen.getByRole("button", { name: "Enregistrer" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("historique par heure : en extension, se lit sans se régler", async () => {
+    retention = { hour_days: 200, mode: "addon" };
+    const user = userEvent.setup();
+    const calls = mockApi();
+    renderScreen("calculation");
+
+    expect(await screen.findByText("Se règle dans les options de l'extension, dans Home Assistant.")).toBeTruthy();
+    expect(screen.getByText("200 jours")).toBeTruthy(); // durée hors liste : en jours
+    expect(screen.queryByLabelText("Historique par heure")).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Enregistrer" }));
+
+    expect(await screen.findByText("Réglages enregistrés.")).toBeTruthy();
+    expect(calls.some((call) => call.method === "PUT" && call.url === "api/settings/retention")).toBe(false);
   });
 
   it("notifications : n'enregistre que leurs réglages", async () => {

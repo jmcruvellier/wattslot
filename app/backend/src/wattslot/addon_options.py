@@ -3,8 +3,11 @@
 Le Supervisor les valide selon le ``schema`` de ``ha-addon/wattslot/config.yaml`` et les
 écrit dans ``/data/options.json`` avant chaque démarrage (traductions dans ``translations/``).
 En mode extension, elles l'emportent à chaque démarrage : niveau des journaux de l'application,
-et conservation du brut et des quarts d'heure (écrite en base, ``maintenance.Retention`` ; celle
-des heures reste réglable par l'API).
+et conservation du brut, des quarts d'heure et des heures (écrite en base, ``retention.py``).
+
+Le schéma du Supervisor ne sait pas dire « un nombre ou rien » : pour les heures, 0 veut dire
+sans limite. Une durée plus courte que le minimum (de 1 à 91 jours) est ramenée au minimum
+plutôt que refusée : une option refusée ferait ignorer toutes les autres.
 """
 
 import json
@@ -15,7 +18,12 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, ValidationError
 
-from wattslot.maintenance import Retention, load_retention, save_retention
+from wattslot.retention import (
+    HOUR_DAYS,
+    HOUR_DAYS_MIN,
+    Retention,
+    save_retention,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +34,13 @@ class AddonOptions(BaseModel):
     log_level: Literal["debug", "info", "warning", "error"] = "info"
     raw_days: int = Field(default=Retention().raw_days, ge=1, le=30)
     quarter_days: int = Field(default=Retention().quarter_days, ge=31, le=3660)
+    hour_days: int = Field(default=HOUR_DAYS, ge=0, le=3660)  # 0 : sans limite
+
+
+def hour_days(options: AddonOptions) -> int | None:
+    """Conservation des heures demandée par les options : ``None`` sans limite (0), le minimum
+    pour une durée plus courte."""
+    return None if options.hour_days == 0 else max(HOUR_DAYS_MIN, options.hour_days)
 
 
 def load(data_dir: Path) -> AddonOptions:
@@ -42,9 +57,11 @@ def load(data_dir: Path) -> AddonOptions:
 
 
 def apply_retention(database: sqlite3.Connection, options: AddonOptions) -> Retention:
-    """Conservation du brut et des quarts d'heure prise dans les options."""
-    retention = load_retention(database).model_copy(
-        update={"raw_days": options.raw_days, "quarter_days": options.quarter_days}
+    """Conservation du brut, des quarts d'heure et des heures prise dans les options."""
+    retention = Retention(
+        raw_days=options.raw_days,
+        quarter_days=options.quarter_days,
+        hour_days=hour_days(options),
     )
     save_retention(database, retention)
     return retention

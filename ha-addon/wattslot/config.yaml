@@ -38,7 +38,9 @@ options:
   log_level: info
   raw_days: 3
   quarter_days: 35
+  hour_days: 456
 schema:
   log_level: list(debug|info|warning|error)
   raw_days: int(1,30)
   quarter_days: int(31,3660)
+  hour_days: int(0,3660)

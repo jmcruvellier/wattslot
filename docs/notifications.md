@@ -26,7 +26,7 @@ WattSlot sends its messages through Home Assistant, to a device that has the **H
 
 **Quiet hours**, on each notification: nothing is sent between two hours (the night, for instance).
 
-Notifications sent "from a given hour" leave with the first automatic run after that hour (runs take place every hour, at the minute set in **Settings › Automatic calculation**). This week's plan is a forecast: beyond two or three days it follows a still uncertain weather forecast, and the plan is recalculated every hour. "Start X now" and reminders follow the plan of the moment.
+Notifications sent "from a given hour" leave with the first automatic run after that hour (runs take place every hour, at the minute set in **Settings › Calculation and data**). This week's plan is a forecast: beyond two or three days it follows a still uncertain weather forecast, and the plan is recalculated every hour. "Start X now" and reminders follow the plan of the moment.
 
 ## Reminders
 
@@ -34,4 +34,4 @@ On **Today**, under the next appliance to start, **Remind me** sends a notificat
 
 ## Requests from Home Assistant
 
-The other way round, a task in a Home Assistant **to-do list** ("run the washing machine", with a due date) becomes a request: choose the list in **Settings › Automatic calculation**. The [voice assistant](assistant.md) can file requests too.
+The other way round, a task in a Home Assistant **to-do list** ("run the washing machine", with a due date) becomes a request: choose the list in **Settings › Calculation and data**. The [voice assistant](assistant.md) can file requests too.

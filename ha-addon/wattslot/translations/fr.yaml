@@ -12,3 +12,9 @@ configuration:
     description: >-
       Durée de conservation de l'historique par quart d'heure, de 31 à 3660 jours. Les cycles des
       appareils s'apprennent sur les 30 derniers jours.
+  hour_days:
+    name: Historique par heure (jours)
+    description: >-
+      Durée de conservation de l'historique par heure, de 92 à 3660 jours (456 jours font
+      15 mois) ; 0 le garde sans limite. C'est lui qui occupe l'essentiel du disque. Une durée
+      plus courte retire l'historique plus ancien la nuit suivante, définitivement.

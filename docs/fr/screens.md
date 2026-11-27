@@ -78,7 +78,7 @@ Votre maison en phrases, en quatre onglets. Touchez une ligne : son réglage s'o
 ![Réglages](../images/fr/settings-desktop-light.png)
 
 - **Notifications** : quels messages, sur quel appareil, heures de silence ([Notifications](notifications.md)).
-- **Calcul automatique** : chaque heure à une minute donnée (59 par défaut), ou à la main ; la liste de tâches de Home Assistant dont les tâches deviennent des demandes.
+- **Calcul et données** : le calcul automatique, chaque heure à une minute donnée (59 par défaut), ou à la main ; la liste de tâches de Home Assistant dont les tâches deviennent des demandes ; la durée de conservation de l'historique par heure (15 mois par défaut). Une durée plus courte retire l'historique plus ancien de WattSlot la nuit suivante, après confirmation ; il reste dans Home Assistant. Avec l'application de Home Assistant, cette durée se règle dans ses options.
 - **Langue et affichage** : six langues, cinq thèmes (Ivoire, Graphite, Océan, Prairie, Crépuscule) ou **Automatique**, qui suit le mode clair ou sombre de votre appareil, et la **devise** de vos prix et de vos coûts. Par défaut, celle de Home Assistant (Paramètres › Système › Général) ; en changer ne convertit pas les prix déjà saisis.
 - **État de l'application** : ce qui ne va pas, s'il y a lieu, et comment le corriger ; la version, et s'il en existe une nouvelle ; les liens pour soutenir le projet ; les ressources utilisées (processeur en moyenne sur 15 minutes, mémoire, données sur disque, espace libre de ce disque et écritures sur ce disque) ; un rapport à joindre à un signalement ([Dépannage](troubleshooting.md)).
 - **Connexion à Home Assistant** (mode autonome).
