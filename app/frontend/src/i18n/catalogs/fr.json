@@ -1755,19 +1755,19 @@
     },
     "battery": {
       "eyebrow": "Batterie",
-      "end_label": "À minuit",
+      "end_label": "À minuit (prévu)",
       "end_value": "{pct} %",
       "now_label": "Maintenant"
     },
     "sun": {
       "eyebrow": "Soleil",
       "done_label": "Déjà produit",
-      "forecast_label": "Prévu aujourd'hui",
-      "first_label": "Prévu ce matin",
+      "forecast_label": "Production de la journée, estimée maintenant",
+      "first_label": "Première prévision du jour",
       "trend": "Écart avec la première prévision du jour"
     },
     "trend": "Écart avec la prévision au relevé",
-    "expected_label": "Attendu à cette heure",
+    "expected_label": "Prévu par le plan à cette heure",
     "trend_early": "trop tôt"
   },
   "home_summary": {

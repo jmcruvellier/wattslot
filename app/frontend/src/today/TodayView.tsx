@@ -183,45 +183,61 @@ export default function TodayView({ onNavigate }: { onNavigate?: (target: string
         {(hasBattery || hasSun) && (
           <div className="today-stack">
             {hasBattery && (
-              <Panel icon="battery" title={t("today.battery.eyebrow")} meta={<TrendBadge view={view} line="soc" />}>
-                <dl className="indicators">
-                  <div className="indicator">
-                    <dt>{t("today.battery.now_label")}</dt>
-                    <dd>{t("today.battery.end_value", { pct: percent(view.now?.soc_percent ?? null) })}</dd>
-                  </div>
-                  <div className="indicator">
-                    <dt>{t("today.battery.end_label")}</dt>
-                    <dd>{t("today.battery.end_value", { pct: percent(view.summary.soc_end_percent) })}</dd>
-                  </div>
-                  {expectedSoc !== null && (
+              <Panel icon="battery" title={t("today.battery.eyebrow")}>
+                {/* L'écart sur la ligne mesurée, sa référence juste dessous, dans leur propre liste :
+                    on lit ce que la pastille compare sans explication (constaté le 27/11/2026). */}
+                <div className="indicators">
+                  <dl className="indicators indicator-compared">
                     <div className="indicator">
-                      <dt>{t("today.expected_label")}</dt>
-                      <dd>{t("today.battery.end_value", { pct: percent(expectedSoc) })}</dd>
+                      <dt>{t("today.battery.now_label")}</dt>
+                      <dd>
+                        <TrendBadge view={view} line="soc" />
+                        <strong>{t("today.battery.end_value", { pct: percent(view.now?.soc_percent ?? null) })}</strong>
+                      </dd>
                     </div>
-                  )}
-                </dl>
+                    {expectedSoc !== null && (
+                      <div className="indicator indicator-reference">
+                        <dt>{t("today.expected_label")}</dt>
+                        <dd>{t("today.battery.end_value", { pct: percent(expectedSoc) })}</dd>
+                      </div>
+                    )}
+                  </dl>
+                  <dl className="indicators">
+                    <div className="indicator">
+                      <dt>{t("today.battery.end_label")}</dt>
+                      <dd>{t("today.battery.end_value", { pct: percent(view.summary.soc_end_percent) })}</dd>
+                    </div>
+                  </dl>
+                </div>
                 {/* Plusieurs batteries : l'état de charge de chacune, sous celui de la maison. */}
                 {(view.now?.batteries?.length ?? 0) > 1 && <BatteryList batteries={view.now?.batteries ?? []} />}
               </Panel>
             )}
             {hasSun && (
-              <Panel icon="today" title={t("today.sun.eyebrow")} meta={<TrendPill trend={sunDay?.trend} label={t("today.sun.trend")} />}>
-                <dl className="indicators">
-                  {firstSun !== null && (
+              <Panel icon="today" title={t("today.sun.eyebrow")}>
+                <div className="indicators">
+                  <dl className="indicators">
                     <div className="indicator">
-                      <dt>{t("today.sun.first_label")}</dt>
-                      <dd>{kwh(firstSun, 1)} kWh</dd>
+                      <dt>{t("today.sun.done_label")}</dt>
+                      <dd>{measuredHours ? `${kwh(produced, 1)} kWh` : "—"}</dd>
                     </div>
-                  )}
-                  <div className="indicator">
-                    <dt>{t("today.sun.forecast_label")}</dt>
-                    <dd>{kwh(expected, 1)} kWh</dd>
-                  </div>
-                  <div className="indicator">
-                    <dt>{t("today.sun.done_label")}</dt>
-                    <dd>{measuredHours ? `${kwh(produced, 1)} kWh` : "—"}</dd>
-                  </div>
-                </dl>
+                  </dl>
+                  <dl className="indicators indicator-compared">
+                    <div className="indicator">
+                      <dt>{t("today.sun.forecast_label")}</dt>
+                      <dd>
+                        <TrendPill trend={sunDay?.trend} label={t("today.sun.trend")} />
+                        <strong>{kwh(expected, 1)} kWh</strong>
+                      </dd>
+                    </div>
+                    {firstSun !== null && (
+                      <div className="indicator indicator-reference">
+                        <dt>{t("today.sun.first_label")}</dt>
+                        <dd>{kwh(firstSun, 1)} kWh</dd>
+                      </div>
+                    )}
+                  </dl>
+                </div>
               </Panel>
             )}
           </div>

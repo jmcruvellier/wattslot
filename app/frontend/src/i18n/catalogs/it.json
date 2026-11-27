@@ -1755,19 +1755,19 @@
     },
     "battery": {
       "eyebrow": "Batteria",
-      "end_label": "A mezzanotte",
+      "end_label": "A mezzanotte (previsto)",
       "end_value": "{pct}%",
       "now_label": "Adesso"
     },
     "sun": {
       "eyebrow": "Sole",
       "done_label": "Già prodotti",
-      "forecast_label": "Previsto oggi",
-      "first_label": "Previsto stamattina",
+      "forecast_label": "Produzione della giornata, stimata ora",
+      "first_label": "Prima previsione del giorno",
       "trend": "Scarto rispetto alla prima previsione del giorno"
     },
     "trend": "Differenza con la previsione alla lettura",
-    "expected_label": "Atteso a quest'ora",
+    "expected_label": "Previsto dal piano a quest'ora",
     "trend_early": "troppo presto"
   },
   "home_summary": {

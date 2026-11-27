@@ -1548,6 +1548,32 @@ pre {
   font-variant-numeric: tabular-nums;
 }
 
+/* Aujourd'hui, blocs Batterie et Soleil : la ligne mesurée porte la pastille d'écart, sa
+   référence suit en plus discret, les deux dans un encadré ; les autres lignes restent dehors. */
+.indicator-compared {
+  display: grid;
+  gap: 0.2rem;
+  margin: 0 -0.6rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: 0.6rem;
+  background: var(--surface-alt);
+}
+
+.indicator-compared dd {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.indicator-compared .trend-pill {
+  font-size: 0.75rem;
+}
+
+.indicator-reference {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}
+
 .indicator-main {
   font-weight: 600;
   font-size: 1.1rem;

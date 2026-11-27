@@ -1755,19 +1755,19 @@
     },
     "battery": {
       "eyebrow": "Battery",
-      "end_label": "At midnight",
+      "end_label": "At midnight (planned)",
       "end_value": "{pct}%",
       "now_label": "Now"
     },
     "sun": {
       "eyebrow": "Sun",
       "done_label": "Already produced",
-      "forecast_label": "Forecast today",
-      "first_label": "Forecast this morning",
+      "forecast_label": "Day's production, estimated now",
+      "first_label": "First forecast of the day",
       "trend": "Difference from the first forecast of the day"
     },
     "trend": "Difference from the forecast at the reading",
-    "expected_label": "Expected by now",
+    "expected_label": "Planned for this hour",
     "trend_early": "too early"
   },
   "home_summary": {
