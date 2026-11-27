@@ -74,9 +74,9 @@ def test_diagnostic_and_retention_without_home_assistant(tmp_path: Path) -> None
 
     assert diagnostic["ingestion"] is None and diagnostic["issues"] is None
     assert diagnostic["today"] == {}
-    assert default == {"raw_days": 3, "quarter_days": 35, "hour_days": None}
+    assert default == {"raw_days": 3, "quarter_days": 35, "hour_days": 456}
     assert too_short.status_code == 422  # profils de cycle : au moins 31 jours
-    assert saved == {"raw_days": 4, "quarter_days": 35, "hour_days": None}
+    assert saved == {"raw_days": 4, "quarter_days": 35, "hour_days": 456}
     assert maintenance.status_code == 503
 
 

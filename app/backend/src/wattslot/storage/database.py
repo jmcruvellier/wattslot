@@ -261,6 +261,14 @@ MIGRATIONS: tuple[str, ...] = (
     # 29 : heure limite d'une demande (« terminé avant … h », de 1 à 24), le jour où son cycle
     # tourne ; aucune : pas de limite d'heure.
     "ALTER TABLE requests ADD COLUMN finish_hour INTEGER",
+    # 30 : heures gardées 15 mois (``retention.HOUR_DAYS``) là où elles l'étaient sans limite,
+    # faute de réglage jusque-là : toutes les installations. « Sans limite » choisi ensuite
+    # s'écrit de la même façon (``null``) et n'est plus touché, la migration ne passant qu'une
+    # fois.
+    """
+    UPDATE app_settings SET value = json_set(value, '$.hour_days', 456)
+    WHERE key = 'retention' AND json_extract(value, '$.hour_days') IS NULL
+    """,
 )
 
 
