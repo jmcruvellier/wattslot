@@ -1762,7 +1762,7 @@
     "sun": {
       "eyebrow": "Sol",
       "done_label": "Ya producidos",
-      "forecast_label": "Producción del día, estimada ahora",
+      "forecast_label": "Jornada estimada ahora",
       "first_label": "Primera previsión del día",
       "trend": "Diferencia con la primera previsión del día"
     },

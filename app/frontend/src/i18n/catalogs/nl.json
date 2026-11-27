@@ -1762,7 +1762,7 @@
     "sun": {
       "eyebrow": "Zon",
       "done_label": "Al opgewekt",
-      "forecast_label": "Dagproductie, nu geschat",
+      "forecast_label": "Dag nu geschat",
       "first_label": "Eerste voorspelling van de dag",
       "trend": "Verschil met de eerste voorspelling van de dag"
     },
