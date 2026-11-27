@@ -1743,19 +1743,19 @@
     },
     "battery": {
       "eyebrow": "Batería",
-      "end_label": "A medianoche",
+      "end_label": "A medianoche (previsto)",
       "end_value": "{pct} %",
       "now_label": "Ahora"
     },
     "sun": {
       "eyebrow": "Sol",
       "done_label": "Ya producidos",
-      "forecast_label": "Previsto hoy",
-      "first_label": "Previsto esta mañana",
+      "forecast_label": "Producción del día, estimada ahora",
+      "first_label": "Primera previsión del día",
       "trend": "Diferencia con la primera previsión del día"
     },
     "trend": "Diferencia con la previsión en la lectura",
-    "expected_label": "Esperado a esta hora",
+    "expected_label": "Previsto por el plan a esta hora",
     "trend_early": "muy pronto"
   },
   "home_summary": {

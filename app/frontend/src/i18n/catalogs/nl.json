@@ -1743,19 +1743,19 @@
     },
     "battery": {
       "eyebrow": "Batterij",
-      "end_label": "Om middernacht",
+      "end_label": "Om middernacht (gepland)",
       "end_value": "{pct}%",
       "now_label": "Nu"
     },
     "sun": {
       "eyebrow": "Zon",
       "done_label": "Al opgewekt",
-      "forecast_label": "Verwacht vandaag",
-      "first_label": "Vanochtend verwacht",
+      "forecast_label": "Dagproductie, nu geschat",
+      "first_label": "Eerste voorspelling van de dag",
       "trend": "Verschil met de eerste voorspelling van de dag"
     },
     "trend": "Verschil met de voorspelling bij de meting",
-    "expected_label": "Verwacht op dit uur",
+    "expected_label": "Door het plan voorzien op dit uur",
     "trend_early": "te vroeg"
   },
   "home_summary": {

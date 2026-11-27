@@ -341,22 +341,30 @@ describe("TodayView", () => {
     mockApi({ ...TODAY, weather: { ...TODAY.weather, production_kwh: 16.5 }, now: NOW, next_action: null });
     renderView();
     const battery = within((await screen.findByRole("heading", { name: "Batterie" })).closest("section") as HTMLElement);
-    expect(battery.getByText("Maintenant").closest("div")).toHaveTextContent("Maintenant64 %");
-    expect(battery.getByText("À minuit").closest("div")).toHaveTextContent("À minuit");
+    expect(battery.getByText("Maintenant").closest("div")).toHaveTextContent("Maintenant▲ +25%64 %");
+    expect(battery.getByText("À minuit (prévu)").closest("div")).toHaveTextContent("À minuit (prévu)");
     const sun = within(screen.getByRole("heading", { name: "Soleil" }).closest("section") as HTMLElement);
-    expect(sun.getByText("Prévu aujourd'hui").closest("div")).toHaveTextContent("Prévu aujourd'hui16,5 kWh");
+    expect(sun.getByText("Production de la journée, estimée maintenant").closest("div")).toHaveTextContent(
+      "Production de la journée, estimée maintenant▲ +25%16,5 kWh",
+    );
     expect(sun.getByText("Déjà produit").closest("div")).toHaveTextContent("Déjà produit14,0 kWh");
-    // Tendances de TODAY, en pilule en tête de chaque carte : SoC au relevé, soleil sur la journée.
+    // Tendances de TODAY, en pilule sur la ligne mesurée : SoC au relevé, soleil sur la journée.
     expect(screen.getAllByTitle("Écart avec la prévision au relevé")).toHaveLength(1);
     expect(battery.getByText("▲ +25%")).toHaveClass("trend-pill");
     // Soleil : la tendance de la journée (9,0 → 9,5 kWh dans TODAY), pas celle au relevé (+8 %).
     expect(sun.getByText("▲ +25%")).toHaveClass("trend-pill");
     expect(screen.queryByText("▲ +8%")).toBeNull();
-    // Ce que chaque tendance compare à la mesure (23/11/2026 : « −11 % » entre deux 7,3 kWh).
-    expect(battery.getByText("Attendu à cette heure")).toBeInTheDocument();
+    // Ce que chaque tendance compare à la mesure (23/11/2026 : « −11 % » entre deux 7,3 kWh) : sa
+    // référence juste sous la ligne mesurée, dans le même encadré (27/11/2026).
+    const reference = battery.getByText("Prévu par le plan à cette heure").closest(".indicator-compared");
+    expect(reference).toContainElement(battery.getByText("Maintenant"));
+    expect(reference).not.toContainElement(battery.getByText("À minuit (prévu)"));
     // Soleil : la première prévision du jour (9,0 kWh dans TODAY), pas l'estimation au relevé.
-    expect(sun.getByText("Prévu ce matin").closest("div")).toHaveTextContent("Prévu ce matin9,0 kWh");
-    expect(sun.queryByText("Attendu à cette heure")).toBeNull();
+    expect(sun.getByText("Première prévision du jour").closest("div")).toHaveTextContent("Première prévision du jour9,0 kWh");
+    expect(sun.getByText("Première prévision du jour").closest(".indicator-compared")).not.toContainElement(
+      sun.getByText("Déjà produit"),
+    );
+    expect(sun.queryByText("Prévu par le plan à cette heure")).toBeNull();
     expect(screen.getByTitle("Écart avec la première prévision du jour")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Rien à lancer d'ici ce soir" })).toBeInTheDocument();
   });
@@ -365,9 +373,9 @@ describe("TodayView", () => {
     mockApi({ ...TODAY, now: NOW, next_action: null, cards: null });
     renderView();
     expect(await screen.findByRole("heading", { name: "Batterie" })).toBeInTheDocument();
-    expect(screen.getByText("Prévu aujourd'hui").closest("div")).toHaveTextContent("9,5 kWh");
+    expect(screen.getByText("Production de la journée, estimée maintenant").closest("div")).toHaveTextContent("9,5 kWh");
     expect(screen.queryByText(/[▲▼]/)).not.toBeInTheDocument();
-    expect(screen.queryByText("Attendu à cette heure")).not.toBeInTheDocument();
+    expect(screen.queryByText("Prévu par le plan à cette heure")).not.toBeInTheDocument();
     // Juste après minuit, avant le premier relevé : la pastille ne disparaît pas.
     expect(screen.getAllByText("trop tôt")).toHaveLength(2);
     expect(screen.getAllByText("trop tôt")[0]).toHaveClass("trend-pill");
@@ -378,7 +386,7 @@ describe("TodayView", () => {
     renderView();
     expect(await screen.findByRole("heading", { name: "Batterie" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Soleil" })).not.toBeInTheDocument();
-    expect(screen.queryByText("Prévu aujourd'hui")).not.toBeInTheDocument();
+    expect(screen.queryByText("Production de la journée, estimée maintenant")).not.toBeInTheDocument();
   });
 
   it("sans appareil à placer : invite à en ajouter un", async () => {
