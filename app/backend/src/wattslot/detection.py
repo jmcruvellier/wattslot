@@ -24,6 +24,7 @@ from typing import Any
 from pydantic import BaseModel
 
 from wattslot.home_assistant import HomeSnapshot, is_entity_id
+from wattslot.published_sensors import is_published
 
 ENERGY_UNITS = {"Wh", "kWh", "MWh"}
 POWER_UNITS = {"W", "kW"}
@@ -402,7 +403,8 @@ def sensor_choices(snapshot: HomeSnapshot) -> list[EntityChoice]:
     (compteurs), puissance, pourcentage (état de charge)."""
     found = []
     for entity_id, state in sorted(snapshot.states.items()):
-        if not entity_id.startswith("sensor."):
+        # Capteurs que WattSlot publie lui-même dans HA : il ne relit pas ses propres prévisions.
+        if not entity_id.startswith("sensor.") or is_published(entity_id):
             continue
         attributes = state.get("attributes") or {}
         unit = attributes.get("unit_of_measurement")

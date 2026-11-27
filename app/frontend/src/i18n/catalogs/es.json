@@ -641,6 +641,18 @@
       "minute": "en el minuto",
       "next": "Próximo cálculo: {time}"
     },
+    "sensors": {
+      "title": "Sensores en Home Assistant",
+      "experimental": "experimental",
+      "help": "WattSlot puede escribir sus previsiones en sensores de Home Assistant, para sus paneles, sus automatizaciones u otra integración.",
+      "consumption_forecast": "Publicar la previsión de consumo de la casa",
+      "consumption_forecast_help": "Tres sensores en kWh: resto del día, día completo y mañana. Actualizados tras cada cálculo y cada cuarto de hora.",
+      "not_connected": "Home Assistant no está conectado: los sensores se escribirán al conectarse.",
+      "error_refused": "Home Assistant rechaza la escritura: la cuenta usada para la conexión debe ser administradora.",
+      "error_unreachable": "Home Assistant no responde: nuevo intento en el próximo cuarto de hora.",
+      "error_unknown": "Home Assistant no ha aceptado la escritura: nuevo intento en el próximo cuarto de hora.",
+      "published": "Sensores escritos a las {time}."
+    },
     "save": "Guardar",
     "saved": "Ajustes guardados.",
     "invalid": "Ajuste rechazado: compruebe el servicio de notificación (su nombre empieza por «notify.») y el minuto (de 0 a 59).",

@@ -27,5 +27,6 @@ WattSlot finds the right slot to run your household appliances: when your own so
 6. [Battery](battery.md): floor, power, full charge, how the plan uses it.
 7. [Notifications and reminders](notifications.md).
 8. [Voice assistant](assistant.md): Home Assistant's Assist answering about your energy.
-9. [Troubleshooting and FAQ](troubleshooting.md).
-10. [Privacy](privacy.md): what stays at home, the only outgoing calls.
+9. [Sensors in Home Assistant](sensors.md) (experimental): the home consumption forecast, for your dashboards, automations or another integration.
+10. [Troubleshooting and FAQ](troubleshooting.md).
+11. [Privacy](privacy.md): what stays at home, the only outgoing calls.

@@ -641,6 +641,18 @@
       "minute": "op minuut",
       "next": "Volgende berekening: {time}"
     },
+    "sensors": {
+      "title": "Sensoren in Home Assistant",
+      "experimental": "experimenteel",
+      "help": "WattSlot kan zijn voorspellingen naar sensoren van Home Assistant schrijven, voor uw dashboards, uw automatiseringen of een andere integratie.",
+      "consumption_forecast": "Verbruiksvoorspelling van het huis publiceren",
+      "consumption_forecast_help": "Drie sensoren in kWh: rest van vandaag, hele dag en morgen. Bijgewerkt na elke berekening en elk kwartier.",
+      "not_connected": "Home Assistant is niet verbonden: de sensoren worden bij de verbinding geschreven.",
+      "error_refused": "Home Assistant weigert het schrijven: het account van de verbinding moet beheerder zijn.",
+      "error_unreachable": "Home Assistant reageert niet: nieuwe poging bij het volgende kwartier.",
+      "error_unknown": "Home Assistant heeft het schrijven niet aanvaard: nieuwe poging bij het volgende kwartier.",
+      "published": "Sensoren geschreven om {time}."
+    },
     "save": "Opslaan",
     "saved": "Instellingen opgeslagen.",
     "invalid": "Instelling geweigerd: controleer de meldingsdienst (de naam begint met „notify.”) en de minuut (0 tot 59).",

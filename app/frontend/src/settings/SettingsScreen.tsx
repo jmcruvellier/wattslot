@@ -16,6 +16,7 @@ import { useI18n } from "../i18n/I18nProvider";
 import AppearanceSection from "./AppearanceSection";
 import SettingsHome from "./SettingsHome";
 import NotificationSettingsSection, { type NotificationSettings } from "./NotificationSettings";
+import PublishedSensors from "./PublishedSensors";
 import { SettingList } from "../ui/SettingRow";
 import StateMessage from "../ui/StateMessage";
 import Switch from "../ui/Switch";
@@ -315,6 +316,9 @@ function SettingsForm({ page }: { page: "notifications" | "calculation" }) {
           {t("settings.save")}
         </button>
       </div>
+
+      {/* Sous « Enregistrer » : cette section enregistre elle-même, tout de suite. */}
+      {page === "calculation" && <PublishedSensors />}
     </section>
   );
 }
