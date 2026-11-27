@@ -16,4 +16,4 @@ configuration:
     description: >-
       How long the hourly history is kept, from 92 to 3660 days (456 days are 15 months); 0 keeps
       it without limit. It takes most of the disk space. A shorter duration removes the older
-      history the next night, for good.
+      history the next night; a longer one brings back what Home Assistant still has.

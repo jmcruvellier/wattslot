@@ -8,7 +8,7 @@
 // liste, la saisie libre reste possible.
 // La sous-page du calcul règle aussi la durée de l'historique par heure
 // (/api/settings/retention) : en extension, elle vient des options de Home Assistant et se lit
-// seulement ; la raccourcir demande une confirmation, la purge de la nuit étant définitive.
+// seulement ; la raccourcir demande une confirmation (purge de la nuit ; l'allonger ensuite relit HA).
 
 import { useEffect, useState } from "react";
 

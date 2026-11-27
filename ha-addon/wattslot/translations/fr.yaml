@@ -17,4 +17,5 @@ configuration:
     description: >-
       Durée de conservation de l'historique par heure, de 92 à 3660 jours (456 jours font
       15 mois) ; 0 le garde sans limite. C'est lui qui occupe l'essentiel du disque. Une durée
-      plus courte retire l'historique plus ancien la nuit suivante, définitivement.
+      plus courte retire l'historique plus ancien la nuit suivante ; une durée plus longue
+      reprend ce que Home Assistant a encore.

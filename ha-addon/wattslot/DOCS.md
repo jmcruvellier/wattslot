@@ -49,8 +49,9 @@ On the add-on's **Configuration** tab:
 | Quarter-hours (days) | 35 | How long the quarter-hour history is kept, from 31 to 3660 days (appliance cycles are learnt from the last 30 days). |
 | Hourly history (days) | 456 | How long the hourly history is kept, from 92 to 3660 days (456 days are 15 months); 0 keeps it without limit. It takes most of the disk space. |
 
-Changes apply when the add-on restarts. A shorter hourly history removes the older data the next
-night, for good: Home Assistant still has it, WattSlot no longer does.
+Changes apply when the add-on restarts. A shorter hourly history removes the older data from
+WattSlot the next night. A longer one brings the missing hours back from Home Assistant, which
+keeps its hourly statistics; this can take a while.
 
 ## Data and backups
 
