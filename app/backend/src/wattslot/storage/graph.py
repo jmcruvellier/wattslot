@@ -123,10 +123,13 @@ class GraphStore:
     def named_graphs(self, prefix: str = "") -> list[str]:
         return sorted(g.value for g in self._store.named_graphs() if g.value.startswith(prefix))
 
-    def remove_graph(self, graph: str) -> None:
-        """Retire un graphe nommé, à vider d'abord par petits lots (règles de mémoire)."""
+    def remove_graph(self, graph: str, flush: bool = True) -> None:
+        """Retire un graphe nommé et son contenu, en une transaction : un graphe de plusieurs
+        millions de triplets est à vider d'abord par petits lots (règles de mémoire).
+        ``flush=False`` : série de retraits, à l'appelant d'appeler ``flush`` à la fin."""
         self._store.remove_graph(pyoxigraph.NamedNode(graph))
-        self._store.flush()
+        if flush:
+            self._store.flush()
 
     def optimize(self) -> None:
         """Compactage (RocksDB) : rend la place laissée par les suppressions."""

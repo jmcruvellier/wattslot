@@ -68,7 +68,7 @@ def test_runs_every_night_at_half_past_three_local_time(tmp_path: Path) -> None:
 
 def test_retention_defaults_and_settings(tmp_path: Path) -> None:
     database = open_database(tmp_path)
-    assert load_retention(database) == Retention(raw_days=3, quarter_days=35, hour_days=None)
+    assert load_retention(database) == Retention(raw_days=3, quarter_days=35, hour_days=456)
 
     save_retention(database, Retention(raw_days=5, quarter_days=40, hour_days=400))
 
@@ -132,14 +132,14 @@ def test_compacts_only_when_a_monthly_graph_is_removed(
 
     run = asyncio.run(maintenance.run(NOW))
 
-    assert run.removed_aggregates == {QUARTER: 1}
+    assert run.removed_aggregates == {QUARTER: 1, HOUR: 0}
     assert not run.compacted and compactions == []
 
     _aggregate(graph, QUARTER, datetime(2026, 8, 20, 10, tzinfo=UTC))  # mois entièrement échu
 
     run = asyncio.run(maintenance.run(NOW))
 
-    assert run.removed_aggregates == {QUARTER: 1}
+    assert run.removed_aggregates == {QUARTER: 1, HOUR: 0}
     assert run.compacted and compactions == [True]
     assert f"{BASE}/graph/aggregates/{QUARTER}/2026-08" not in graph.named_graphs()
 
@@ -231,3 +231,56 @@ def test_directory_size_ignores_files_removed_while_measuring(
 
     assert directory_size(tmp_path) == 5
     assert directory_size(tmp_path / "absent") == 0
+
+
+def test_whole_expired_months_are_removed_in_one_go(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Première maintenance après le passage des heures à 15 mois : des années à retirer. Les
+    mois entièrement échus partent d'un bloc avec un seul ``flush`` pour tous (deux fois moins
+    d'écritures au banc que capteur par capteur) ; seul le mois entamé est vidé capteur par
+    capteur."""
+    maintenance, _, graph = _maintenance(tmp_path, NOW)
+    for month in (3, 4, 5):  # 2025, entièrement échus (limite : le 16/07/2025 à minuit)
+        _aggregate(graph, HOUR, datetime(2025, month, 10, 10, tzinfo=UTC))
+        _aggregate(graph, HOUR, datetime(2025, month, 20, 10, tzinfo=UTC))
+    _aggregate(graph, HOUR, datetime(2025, 7, 10, 10, tzinfo=UTC))  # mois entamé, échu
+    _aggregate(graph, HOUR, datetime(2025, 7, 20, 10, tzinfo=UTC))  # mois entamé, gardé
+    _aggregate(graph, HOUR, datetime(2026, 10, 1, 10, tzinfo=UTC))
+    flushes: list[bool] = []
+    updates: list[str] = []
+    real_flush, real_update = graph.flush, graph.update
+
+    def update(sparql: str, flush: bool = True) -> None:
+        updates.append(sparql)
+        real_update(sparql, flush)
+
+    def flush() -> None:
+        flushes.append(True)
+        real_flush()
+
+    monkeypatch.setattr(graph, "flush", flush)
+    monkeypatch.setattr(graph, "update", update)
+
+    run = asyncio.run(maintenance.run(NOW))
+
+    assert run.removed_aggregates == {QUARTER: 0, HOUR: 7}
+    assert run.compacted
+    assert _starts(graph, HOUR) == ["2025-07-20T10:00:00Z", "2026-10-01T10:00:00Z"]
+    kept = [g.rsplit("/", 1)[1] for g in graph.named_graphs(f"{BASE}/graph/aggregates/{HOUR}/")]
+    assert kept == ["2025-07", "2026-10"]
+    # Un flush pour les trois mois entiers, un pour le mois entamé ; une suppression par requête
+    # pour le seul capteur du mois entamé.
+    assert len(flushes) == 2
+    assert len(updates) == 1 and "2025-07" in updates[0]
+
+
+def test_hours_without_limit_are_never_removed(tmp_path: Path) -> None:
+    maintenance, _, graph = _maintenance(tmp_path, NOW)
+    _aggregate(graph, HOUR, datetime(2020, 1, 1, 10, tzinfo=UTC))
+    save_retention(open_database(tmp_path), Retention(hour_days=None))
+
+    run = asyncio.run(maintenance.run(NOW))
+
+    assert run.removed_aggregates == {QUARTER: 0}
+    assert _starts(graph, HOUR) == ["2020-01-01T10:00:00Z"]

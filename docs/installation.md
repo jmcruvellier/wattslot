@@ -34,7 +34,7 @@ In **Settings › Apps › WattSlot › Configuration**:
 |---|---|---|
 | Log level | info | `debug` when asked for a bug report |
 | Raw readings kept | 3 days | Every individual measurement (1 to 30 days) |
-| Quarter-hour data kept | 35 days | Averages per quarter hour (31 to 3,660 days); hourly averages are kept forever |
+| Quarter-hour data kept | 35 days | Averages per quarter hour (31 to 3,660 days); hourly averages are kept 15 months |
 
 ### Updates and backups
 

@@ -4,11 +4,15 @@ Chaque nuit (``MAINTENANCE_AT``, heure locale de la maison), ou à la demande :
 
 1. **Brut** : suppression des journées échues, dossier par dossier (exigence
    mesurée sur un N150, lot 0.5). Une journée n'est supprimée qu'une fois entièrement agrégée.
-2. **Agrégats** : suppression des périodes échues, capteur par capteur et graphe par graphe (règles
-   de mémoire : jamais de transaction de plusieurs millions de triplets), avec un seul ``flush``
-   par graphe : un ``flush`` par capteur crée autant de petits fichiers que RocksDB recompacte
-   (2,8 Go écrits chaque nuit pour une journée supprimée, rapport du 11/11/2026 ; 14 fois moins
-   avec un seul ``flush`` sur un magasin de 2 Go). Un graphe mensuel vidé est retiré.
+2. **Agrégats** : suppression des périodes échues. Un mois entièrement échu est retiré d'un
+   bloc, graphe par graphe, avec un seul ``flush`` pour tous : c'est le cas de la première
+   maintenance après le passage des heures à 15 mois, qui retire des années d'un coup (banc
+   d'un magasin de 1,4 Go, dix mois retirés : 3,2 Go écrits, contre 6,6 Go capteur par
+   capteur ; même durée). Le mois entamé est vidé capteur par capteur (règles de mémoire :
+   jamais de transaction de plusieurs millions de triplets), avec un seul ``flush`` par graphe :
+   un ``flush`` par capteur crée autant de petits fichiers que RocksDB recompacte (2,8 Go écrits
+   chaque nuit pour une journée supprimée, rapport du 11/11/2026 ; 14 fois moins avec un seul
+   ``flush`` sur un magasin de 2 Go). Un graphe mensuel vidé est retiré.
 3. **Compactage** du magasin principal (``optimize``), seulement si un graphe mensuel a été
    retiré (une fois par mois avec les réglages par défaut). Le compactage réécrit tout le magasin
    (3,5 Go écrits chaque nuit pour un magasin de 3,4 Go, rapport du 09/11/2026) ; les petites
@@ -16,41 +20,32 @@ Chaque nuit (``MAINTENANCE_AT``, heure locale de la maison), ou à la demande :
    et rendues par les compactages ordinaires de RocksDB, alors qu'un mois retiré occupe une plage
    de clés que plus rien n'écrit (index par graphe) et n'est rendu que par ``optimize``.
 
-Durées de conservation réglables (``Retention``), gardées en base (``app_settings``) : brut
-3 jours, quarts d'heure 35 jours (profils de cycle sur 30 jours), heures sans limite.
+Durées de conservation réglables (``retention.py``) : brut 3 jours, quarts d'heure 35 jours,
+heures 15 mois.
 """
 
 import asyncio
-import json
 import logging
 import sqlite3
 import time as time_module
 from datetime import UTC, date, datetime, time, timedelta
 from pathlib import Path
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from wattslot import memory
 from wattslot.aggregation import HOUR, PERIODS, QUARTER, Aggregator, next_midnight
 from wattslot.ontology import BASE, VOCAB
+from wattslot.retention import Retention, cutoff, load_retention, save_retention
 from wattslot.storage.database import DATABASE_FILENAME
 from wattslot.storage.graph import GRAPH_DIRNAME, GraphStore
 from wattslot.storage.raw import SOSA, XSD, RawStores
 
+__all__ = ["Retention", "load_retention", "save_retention"]  # repris par les appelants
+
 logger = logging.getLogger(__name__)
 
 MAINTENANCE_AT = time(3, 30)  # heure locale, en dehors des heures de production
-RETENTION_KEY = "retention"
-
-
-class Retention(BaseModel):
-    """Durées de conservation, en jours."""
-
-    raw_days: int = Field(default=3, ge=1, le=30)
-    quarter_days: int = Field(
-        default=35, ge=31, le=3660
-    )  # au moins les 30 jours des profils de cycle
-    hour_days: int | None = Field(default=None, ge=366)  # None : sans limite
 
 
 class DiskUsage(BaseModel):
@@ -82,22 +77,6 @@ class MaintenanceStatus(BaseModel):
     last_error: str | None = None
     retention: Retention
     disk: DiskUsage
-
-
-def load_retention(database: sqlite3.Connection) -> Retention:
-    row = database.execute(
-        "SELECT value FROM app_settings WHERE key = ?", (RETENTION_KEY,)
-    ).fetchone()
-    return Retention.model_validate(json.loads(row[0])) if row else Retention()
-
-
-def save_retention(database: sqlite3.Connection, retention: Retention) -> None:
-    with database:
-        database.execute(
-            "INSERT INTO app_settings VALUES (?, ?) "
-            "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
-            (RETENTION_KEY, retention.model_dump_json()),
-        )
 
 
 def _size(path: Path) -> int:
@@ -251,9 +230,9 @@ class Maintenance:
         step("raw")
         removed_graphs = 0
         for period, days in ((QUARTER, retention.quarter_days), (HOUR, retention.hour_days)):
-            if days is not None:
-                cutoff = datetime.combine(today - timedelta(days=days), time(), zone)
-                removed, graphs = self._prune(period, cutoff.astimezone(UTC))
+            limit = cutoff(days, today, zone)
+            if limit is not None:
+                removed, graphs = self._prune(period, limit)
                 run.removed_aggregates[period] = removed
                 removed_graphs += graphs
                 step(period)
@@ -265,14 +244,29 @@ class Maintenance:
         return run
 
     def _prune(self, period: str, cutoff: datetime) -> tuple[int, int]:
-        """Supprime les agrégats d'une période antérieurs à ``cutoff``, capteur par capteur ;
-        rend le nombre d'agrégats supprimés et celui des graphes mensuels retirés."""
+        """Supprime les agrégats d'une période antérieurs à ``cutoff`` : les mois entièrement
+        échus d'un bloc, le mois entamé capteur par capteur ; rend le nombre d'agrégats supprimés
+        et celui des graphes mensuels retirés."""
         zone = self._raw.zone
         removed = graphs_removed = 0
+        partial = []
         for graph in self._graph.named_graphs(f"{BASE}/graph/aggregates/{period}/"):
             month = date.fromisoformat(graph.rsplit("/", 1)[1] + "-01")
             if datetime.combine(month, time(), zone) >= cutoff:
                 continue  # mois entièrement conservé
+            following = (month.replace(day=28) + timedelta(days=4)).replace(day=1)
+            if datetime.combine(following, time(), zone) > cutoff:
+                partial.append(graph)
+                continue
+            for row in self._graph.select(
+                f"SELECT (COUNT(?a) AS ?n) WHERE {{ GRAPH <{graph}> {{ ?a <{VOCAB}start> ?t }} }}"
+            ):
+                removed += int(row["n"])
+            self._graph.remove_graph(graph, flush=False)
+            graphs_removed += 1
+        if graphs_removed:
+            self._graph.flush()
+        for graph in partial:
             sensors = [
                 row["s"]
                 for row in self._graph.select(

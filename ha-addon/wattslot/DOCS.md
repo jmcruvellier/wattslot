@@ -48,7 +48,7 @@ On the add-on's **Configuration** tab:
 | Raw readings (days) | 3 | How long detailed readings are kept, from 1 to 30 days. |
 | Quarter-hours (days) | 35 | How long the quarter-hour history is kept, from 31 to 3660 days (appliance cycles are learnt from the last 30 days). |
 
-Changes apply when the add-on restarts. The hourly history is kept without limit.
+Changes apply when the add-on restarts. The hourly history is kept 15 months.
 
 ## Data and backups
 

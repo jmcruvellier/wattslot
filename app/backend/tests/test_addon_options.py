@@ -65,7 +65,7 @@ def test_addon_applies_options_at_startup(tmp_path: Path) -> None:
     with TestClient(create_app(_settings(data_dir, RunMode.ADDON)), client=LOCAL) as api:
         retention = api.get("/api/settings/retention").json()
 
-    assert retention == {"raw_days": 7, "quarter_days": 90, "hour_days": None}
+    assert retention == {"raw_days": 7, "quarter_days": 90, "hour_days": 456}
     assert logging.getLogger("wattslot").level == logging.WARNING
     create_app(_settings(data_dir, RunMode.STANDALONE))  # niveau par défaut rétabli
 

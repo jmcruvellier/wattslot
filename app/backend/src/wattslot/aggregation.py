@@ -51,6 +51,7 @@ from wattslot.detection import ENERGY_ROLES, Role, slug
 from wattslot.home_assistant import ConnectionState, HomeAssistantClient, is_entity_id
 from wattslot.ingestion import Ingestor, Target
 from wattslot.ontology import BASE, HOME, VOCAB
+from wattslot.retention import cutoff, load_retention
 from wattslot.storage.graph import GraphStore
 from wattslot.storage.raw import SOSA, XSD, RawStores
 
@@ -636,7 +637,9 @@ class Aggregator:
             summary: dict[str, tuple[int, datetime | None]] = {}
             for period, length in PERIODS.items():
                 cursor = cursors.get(entity_id, {}).get(period)
-                start = cursor - FOLLOW_LOOKBACK if cursor is not None else history.SINCE
+                start = (
+                    cursor - FOLLOW_LOOKBACK if cursor is not None else await self._since(period)
+                )
                 # Un quart d'heure est fait de trois statistiques à 5 minutes, publiées chacune un
                 # peu après sa fin : il n'est repris qu'un quart d'heure plus tard, complet (il ne
                 # serait plus corrigé). Une statistique horaire est d'un seul tenant.
@@ -732,6 +735,17 @@ class Aggregator:
         ]
         return nquads, (len(nquads), earliest if nquads else None), latest + length
 
+    async def _since(self, period: str) -> datetime:
+        """Début de ce qui se reprend de Home Assistant : la conservation des heures (la
+        maintenance retirerait le reste la nuit suivante), tout ce que HA a pour les quarts
+        d'heure (ses statistiques à 5 minutes ne durent que quelques jours)."""
+        if period != HOUR:
+            return history.SINCE
+        zone = self._raw.zone
+        retention = await asyncio.to_thread(load_retention, self._database)
+        today = datetime.now(UTC).astimezone(zone).date()
+        return cutoff(retention.hour_days, today, zone) or history.SINCE
+
     async def _import_period(
         self,
         client: HomeAssistantClient,
@@ -742,10 +756,12 @@ class Aggregator:
         before: datetime,
     ) -> tuple[list[str], tuple[int, datetime | None]]:
         """Agrégats d'une période à reprendre (N-Quads, un par élément), leur nombre et le plus
-        ancien."""
+        ancien. Les heures ne sont pas reprises au-delà de leur conservation : la maintenance
+        les retirerait la nuit suivante."""
         zone = self._raw.zone
         counter = target.role in ENERGY_ROLES
-        rows = await history.statistics(client, entity_id, period, before, counter)
+        since = await self._since(period)
+        rows = await history.statistics(client, entity_id, period, before, counter, since)
         grouped = history.group(rows, counter, lambda m: period_start(m, length, zone), before)
         if not grouped:
             return [], (0, None)

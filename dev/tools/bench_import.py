@@ -67,7 +67,12 @@ def size(path: Path) -> int:
 
 def statistics_of(since: datetime, quarter_days: int) -> Any:
     async def statistics(
-        _client: object, entity_id: str, period: str, end: datetime, counter: bool
+        _client: object,
+        entity_id: str,
+        period: str,
+        end: datetime,
+        counter: bool,
+        _start: datetime | None = None,
     ) -> list[dict[str, Any]]:
         step = timedelta(minutes=5) if period == QUARTER else timedelta(hours=1)
         moment = end - timedelta(days=quarter_days) if period == QUARTER else since
