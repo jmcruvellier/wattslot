@@ -27,5 +27,6 @@ WattSlot trouve le bon créneau pour lancer vos appareils : quand votre électri
 6. [Batterie](battery.md) : plancher, puissances, charge complète, comment le plan s'en sert.
 7. [Notifications et rappels](notifications.md).
 8. [Assistant vocal](assistant.md) : l'Assist de Home Assistant répond sur votre énergie.
-9. [Dépannage et questions fréquentes](troubleshooting.md).
-10. [Confidentialité](privacy.md) : ce qui reste chez vous, les seules connexions sortantes.
+9. [Capteurs dans Home Assistant](sensors.md) (expérimental) : la prévision de consommation de la maison, pour vos tableaux de bord, vos automatisations ou une autre intégration.
+10. [Dépannage et questions fréquentes](troubleshooting.md).
+11. [Confidentialité](privacy.md) : ce qui reste chez vous, les seules connexions sortantes.

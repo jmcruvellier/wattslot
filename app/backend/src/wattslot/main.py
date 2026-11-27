@@ -17,7 +17,7 @@ from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 from zoneinfo import ZoneInfo
 
 from fastapi import Body, Depends, FastAPI, HTTPException, Query, Request
@@ -38,6 +38,7 @@ from wattslot import (
     memory,
     notifications,
     profiles,
+    published_sensors,
     report,
     templates,
     user_requests,
@@ -304,6 +305,23 @@ async def _notify(
         logger.warning("Notification impossible : %s", error)
 
 
+async def _consumption_forecasts(
+    state: Any,
+) -> tuple[published_sensors.Forecast | None, published_sensors.Forecast | None]:
+    """Consommation prévue d'aujourd'hui et de demain, heure par heure : celle des courbes des
+    vues (consommation habituelle plus équipements placés)."""
+
+    async def of(kind: Literal["today", "tomorrow"]) -> published_sensors.Forecast | None:
+        view = await views_routes.day_view_of(state, kind, "en")
+        if view is None:
+            return None
+        return published_sensors.Forecast(
+            view.day, tuple(hour.consumption_kwh for hour in view.hours), view.computed_at
+        )
+
+    return await of("today"), await of("tomorrow")
+
+
 def _scheduler(
     client: HomeAssistantClient,
     graph: GraphStore,
@@ -314,6 +332,7 @@ def _scheduler(
     data_dir: Path | None = None,
     week_of: notifications.WeekOf | None = None,
     alerts_of: notifications.AlertsOf | None = None,
+    after_run: Callable[[], Awaitable[None]] | None = None,
 ) -> PlanningScheduler:
     """Planificateur des calculs : réglages relus à chaque tour, HA connecté exigé (sauf pour
     relire les données réelles, lues sur le brut)."""
@@ -334,6 +353,8 @@ def _scheduler(
         used_before = memory.heap_used()  # sépare ce que gagne le calcul (``memory.py``)
         report = await run(context, now)
         await _notify(client, database, now, raw.zone, report, week_of, alerts_of)
+        if after_run is not None:
+            await after_run()  # capteurs publiés dans HA : la prévision vient de changer
         # Le calcul lit des semaines d'agrégats puis les libère : cette mémoire, gardée par
         # l'allocateur, est rendue au système (``memory.py``).
         try:
@@ -493,6 +514,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.quality = quality_monitor
         app.state.planning_lock = asyncio.Lock()
         app.state.maintenance = maintenance
+        # Capteurs publiés dans HA (expérimental) : réécrits à chaque connexion, après chaque
+        # calcul et tous les quarts d'heure ; sans effet tant que le réglage est désactivé.
+        publisher = None
+        if client is not None and settings.home_assistant is not None:
+            publisher = published_sensors.SensorPublisher(
+                settings.home_assistant,
+                database,
+                lambda: _consumption_forecasts(app.state),
+                lambda: raw.zone,
+            )
+            client.on_connected(publisher.publish)
+            publisher.start()
+        app.state.published_sensors = publisher
         scheduler = None
         if client is not None and aggregator is not None:
             scheduler = _scheduler(
@@ -505,6 +539,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 settings.data_dir,
                 lambda lang: views_routes.week_view_of(app.state, lang),
                 lambda lang, sample: resource_alerts(app.state, lang, sample),
+                publisher.publish if publisher else None,
             )
             scheduler.start()
         app.state.scheduler = scheduler
@@ -535,6 +570,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             steps: list[tuple[str, Callable[[], Awaitable[object]] | None]] = [
                 ("ressources", resources.stop),
                 ("rappels", reminder_loop.stop if reminder_loop else None),
+                ("capteurs publiés", publisher.stop if publisher else None),
                 ("planification", scheduler.stop if scheduler else None),
                 ("maintenance", maintenance.stop if maintenance else None),
                 ("qualité", quality_monitor.stop if quality_monitor else None),
@@ -558,6 +594,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.mcp = mcp_server
     app.include_router(assistant_prompts.router)
     app.include_router(reminders_routes)
+    app.include_router(published_sensors.router)
     app.include_router(quality_routes)
     app.include_router(choices_routes)
     app.include_router(cancelled_routes)

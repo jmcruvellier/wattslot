@@ -77,9 +77,10 @@ The add-on runs under its own AppArmor profile: it can only read and write its o
 **Home Assistant API.** The add-on asks for access to Home Assistant's API (`homeassistant_api`), which Home Assistant grants as a whole, with administrator rights: there is no narrower option. WattSlot uses it to:
 
 - **read**: the states of your entities and their changes, the Energy dashboard settings and solar forecast, the history and statistics, the entity and device registries (to find your appliances), your to-do lists, and the list of conversation agents;
-- **act**, in two ways only: send the notifications you set up (`notify` services), and pass your questions to the conversation agent you chose for the voice assistant.
+- **act**, in two ways only: send the notifications you set up (`notify` services), and pass your questions to the conversation agent you chose for the voice assistant;
+- **publish**, only if you switch it on (experimental, off by default): its own forecast sensors, named `sensor.wattslot_…` ([Sensors in Home Assistant](https://github.com/jmcruvellier/wattslot/blob/main/docs/sensors.md)).
 
-It never starts an appliance, never controls your battery and never changes an entity, an automation or a setting of Home Assistant.
+It never starts an appliance, never controls your battery and never changes another entity, an automation or a setting of Home Assistant.
 
 ## Help
 

@@ -20,6 +20,7 @@ import type { Health } from "../App";
 import AppearanceSection from "./AppearanceSection";
 import SettingsHome from "./SettingsHome";
 import NotificationSettingsSection, { type NotificationSettings } from "./NotificationSettings";
+import PublishedSensors from "./PublishedSensors";
 import Button from "../ui/Button";
 import { SettingList } from "../ui/SettingRow";
 import Sheet from "../ui/Sheet";
@@ -408,6 +409,9 @@ function SettingsForm({ page }: { page: "notifications" | "calculation" }) {
           {t("settings.save")}
         </button>
       </div>
+
+      {/* Sous « Enregistrer » : cette section enregistre elle-même, tout de suite. */}
+      {page === "calculation" && <PublishedSensors />}
 
       <Sheet
         open={confirming}

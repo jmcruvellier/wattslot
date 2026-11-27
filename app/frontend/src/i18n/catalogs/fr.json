@@ -641,6 +641,18 @@
       "minute": "à la minute",
       "next": "Prochain calcul : {time}"
     },
+    "sensors": {
+      "title": "Capteurs dans Home Assistant",
+      "experimental": "expérimental",
+      "help": "WattSlot peut écrire ses prévisions dans des capteurs de Home Assistant, pour vos tableaux de bord, vos automatisations ou une autre intégration.",
+      "consumption_forecast": "Publier la prévision de consommation de la maison",
+      "consumption_forecast_help": "Trois capteurs en kWh : reste de la journée, journée entière et demain. Mis à jour après chaque calcul et tous les quarts d'heure.",
+      "not_connected": "Home Assistant n'est pas connecté : les capteurs seront écrits à la connexion.",
+      "error_refused": "Home Assistant refuse l'écriture : le compte utilisé pour la connexion doit être administrateur.",
+      "error_unreachable": "Home Assistant ne répond pas : nouvel essai au prochain quart d'heure.",
+      "error_unknown": "Home Assistant n'a pas accepté l'écriture : nouvel essai au prochain quart d'heure.",
+      "published": "Capteurs écrits à {time}."
+    },
     "history": {
       "title": "Historique conservé",
       "hours": "Historique par heure",
