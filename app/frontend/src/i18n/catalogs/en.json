@@ -66,7 +66,7 @@
     "graph": "Home graph",
     "notifications": "Notifications",
     "display": "Language and display",
-    "calculation": "Automatic calculation",
+    "calculation": "Calculation and data",
     "voice": "Voice assistant",
     "status_setup": "Getting started"
   },
@@ -547,7 +547,7 @@
     "loading": "Reading the settings…",
     "error": "Unable to read the settings.",
     "title": "Settings",
-    "intro": "Where requests come from, when to recompute the plan, and which solar forecast to use as a fallback.",
+    "intro": "Where requests come from, when to recompute the plan, which solar forecast to use as a fallback, and how much history to keep.",
     "not_connected": "Home Assistant is not connected: the lists are empty, the saved settings remain valid.",
     "none": "none",
     "unknown": "{id} (not found in Home Assistant)",
@@ -640,6 +640,27 @@
       "enabled": "Recompute the plan every hour",
       "minute": "at minute",
       "next": "Next computation: {time}"
+    },
+    "history": {
+      "title": "History kept",
+      "hours": "Hourly history",
+      "hours_help": "It takes most of the disk space. The calculation only reads the last 9 weeks of it.",
+      "addon_help": "Set in the add-on options, in Home Assistant.",
+      "duration": {
+        "d92": "3 months",
+        "d183": "6 months",
+        "d365": "1 year",
+        "d456": "15 months",
+        "d730": "2 years",
+        "d1825": "5 years",
+        "d3650": "10 years"
+      },
+      "days": "{count} days",
+      "unlimited": "No limit",
+      "confirm_title": "Keep {duration} of history?",
+      "confirm_body": "Older history will be removed from WattSlot tonight. It stays in Home Assistant.",
+      "confirm": "Keep {duration}",
+      "cancel": "Cancel"
     },
     "save": "Save",
     "saved": "Settings saved.",

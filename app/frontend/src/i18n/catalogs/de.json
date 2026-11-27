@@ -66,7 +66,7 @@
     "graph": "Graph des Hauses",
     "notifications": "Benachrichtigungen",
     "display": "Sprache und Darstellung",
-    "calculation": "Automatische Berechnung",
+    "calculation": "Berechnung und Daten",
     "voice": "Sprachassistent",
     "status_setup": "Einrichtung"
   },
@@ -547,7 +547,7 @@
     "loading": "Einstellungen werden gelesen…",
     "error": "Die Einstellungen können nicht gelesen werden.",
     "title": "Einstellungen",
-    "intro": "Woher die Anfragen kommen, wann der Plan neu berechnet wird und welche Solarprognose als Ersatz dient.",
+    "intro": "Woher die Anfragen kommen, wann der Plan neu berechnet wird, welche Solarprognose als Ersatz dient und wie viel Verlauf aufbewahrt wird.",
     "not_connected": "Home Assistant ist nicht verbunden: Die Listen sind leer, die gespeicherten Einstellungen bleiben gültig.",
     "none": "keine",
     "unknown": "{id} (in Home Assistant nicht gefunden)",
@@ -640,6 +640,27 @@
       "enabled": "Plan jede Stunde neu berechnen",
       "minute": "zur Minute",
       "next": "Nächste Berechnung: {time}"
+    },
+    "history": {
+      "title": "Aufbewahrter Verlauf",
+      "hours": "Stündlicher Verlauf",
+      "hours_help": "Er belegt den größten Teil des Speicherplatzes. Die Berechnung liest davon nur die letzten 9 Wochen.",
+      "addon_help": "Wird in den Optionen des Add-ons in Home Assistant eingestellt.",
+      "duration": {
+        "d92": "3 Monate",
+        "d183": "6 Monate",
+        "d365": "1 Jahr",
+        "d456": "15 Monate",
+        "d730": "2 Jahre",
+        "d1825": "5 Jahre",
+        "d3650": "10 Jahre"
+      },
+      "days": "{count} Tage",
+      "unlimited": "Unbegrenzt",
+      "confirm_title": "{duration} Verlauf behalten?",
+      "confirm_body": "Der ältere Verlauf wird heute Nacht aus WattSlot gelöscht. In Home Assistant bleibt er erhalten.",
+      "confirm": "{duration} behalten",
+      "cancel": "Abbrechen"
     },
     "save": "Speichern",
     "saved": "Einstellungen gespeichert.",

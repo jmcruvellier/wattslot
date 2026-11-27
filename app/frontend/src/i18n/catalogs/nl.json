@@ -66,7 +66,7 @@
     "graph": "Grafiek van het huis",
     "notifications": "Meldingen",
     "display": "Taal en weergave",
-    "calculation": "Automatische berekening",
+    "calculation": "Berekening en gegevens",
     "voice": "Spraakassistent",
     "status_setup": "Eerste stappen"
   },
@@ -547,7 +547,7 @@
     "loading": "Instellingen worden gelezen…",
     "error": "De instellingen kunnen niet worden gelezen.",
     "title": "Instellingen",
-    "intro": "Waar verzoeken vandaan komen, wanneer het plan opnieuw wordt berekend en welke zonnevoorspelling als reserve dient.",
+    "intro": "Waar verzoeken vandaan komen, wanneer het plan opnieuw wordt berekend, welke zonnevoorspelling als reserve dient en hoeveel geschiedenis wordt bewaard.",
     "not_connected": "Home Assistant is niet verbonden: de lijsten zijn leeg, de opgeslagen instellingen blijven geldig.",
     "none": "geen",
     "unknown": "{id} (niet gevonden in Home Assistant)",
@@ -640,6 +640,27 @@
       "enabled": "Het plan elk uur opnieuw berekenen",
       "minute": "op minuut",
       "next": "Volgende berekening: {time}"
+    },
+    "history": {
+      "title": "Bewaarde geschiedenis",
+      "hours": "Geschiedenis per uur",
+      "hours_help": "Die neemt het grootste deel van de schijf in. De berekening leest er alleen de laatste 9 weken van.",
+      "addon_help": "In te stellen in de opties van de add-on, in Home Assistant.",
+      "duration": {
+        "d92": "3 maanden",
+        "d183": "6 maanden",
+        "d365": "1 jaar",
+        "d456": "15 maanden",
+        "d730": "2 jaar",
+        "d1825": "5 jaar",
+        "d3650": "10 jaar"
+      },
+      "days": "{count} dagen",
+      "unlimited": "Onbeperkt",
+      "confirm_title": "{duration} geschiedenis bewaren?",
+      "confirm_body": "Oudere geschiedenis wordt vannacht uit WattSlot verwijderd. Ze blijft in Home Assistant staan.",
+      "confirm": "{duration} bewaren",
+      "cancel": "Annuleren"
     },
     "save": "Opslaan",
     "saved": "Instellingen opgeslagen.",

@@ -73,7 +73,7 @@ describe("SettingsHome", () => {
     expect(screen.queryByRole("link", { name: /Mes demandes/ })).not.toBeInTheDocument();
     expect(await link(/Langue et affichage\s*Français · Automatique/)).toHaveAttribute("href", "#/settings/display");
     expect(await link(/État de l'application\s*Tout fonctionne/)).toHaveAttribute("href", "#/settings/status");
-    expect(await link(/Calcul automatique\s*Toutes les heures, à la minute 59/)).toHaveAttribute(
+    expect(await link(/Calcul et données\s*Toutes les heures, à la minute 59/)).toHaveAttribute(
       "href",
       "#/settings/calculation",
     );

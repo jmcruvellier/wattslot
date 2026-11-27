@@ -6,6 +6,9 @@
 // lit et modifie l'assistant dans Home Assistant.
 // Les choix sont lus dans HA (/api/settings/choices) ; sans HA, ou pour une valeur absente de la
 // liste, la saisie libre reste possible.
+// La sous-page du calcul règle aussi la durée de l'historique par heure
+// (/api/settings/retention) : en extension, elle vient des options de Home Assistant et se lit
+// seulement ; la raccourcir demande une confirmation, la purge de la nuit étant définitive.
 
 import { useEffect, useState } from "react";
 
@@ -13,10 +16,13 @@ import { ApiError, getJson, putJson } from "../api";
 import NumberInput from "../common/NumberInput";
 import { zoned } from "../i18n/homeTime";
 import { useI18n } from "../i18n/I18nProvider";
+import type { Health } from "../App";
 import AppearanceSection from "./AppearanceSection";
 import SettingsHome from "./SettingsHome";
 import NotificationSettingsSection, { type NotificationSettings } from "./NotificationSettings";
+import Button from "../ui/Button";
 import { SettingList } from "../ui/SettingRow";
+import Sheet from "../ui/Sheet";
 import StateMessage from "../ui/StateMessage";
 import Switch from "../ui/Switch";
 import VoiceSettings from "./VoiceSettings";
@@ -44,6 +50,16 @@ export interface SettingsChoices {
   forecast_entities: Choice[];
 }
 
+export interface Retention {
+  raw_days: number;
+  quarter_days: number;
+  hour_days: number | null; // null : sans limite
+}
+
+// Durées proposées pour l'historique par heure, en jours ; une autre valeur (API, options de
+// l'extension) s'affiche en jours.
+const HOUR_CHOICES = [92, 183, 365, 456, 730, 1825, 3650];
+
 interface SchedulerStatus {
   enabled: boolean;
   next_run_at: string | null;
@@ -58,6 +74,9 @@ type Load =
       notifications: NotificationSettings;
       choices: SettingsChoices;
       scheduler: SchedulerStatus | null;
+      retention: Retention | null; // null : non lue, la section ne s'affiche pas
+      savedHours: number | null; // durée enregistrée, pour savoir si on la raccourcit
+      addon: boolean;
     };
 
 type Save = "idle" | "saving" | "saved" | "invalid" | "failed";
@@ -119,23 +138,37 @@ function SettingsForm({ page }: { page: "notifications" | "calculation" }) {
   const [load, setLoad] = useState<Load>({ status: "loading" });
   const [save, setSave] = useState<Save>("idle");
   const [attempt, setAttempt] = useState(0); // « Réessayer »
+  const [confirming, setConfirming] = useState(false); // historique raccourci : à confirmer
 
   useEffect(() => {
     const controller = new AbortController();
+    const optional = <T,>(url: string) =>
+      page === "calculation" ? getJson<T>(url, controller.signal).catch(() => null) : Promise.resolve(null);
     Promise.all([
       getJson<PlanningSettings>("api/settings/planning", controller.signal),
       getJson<NotificationSettings>("api/settings/notifications", controller.signal),
       getJson<SettingsChoices>("api/settings/choices", controller.signal),
       getJson<SchedulerStatus>("api/planning/status", controller.signal).catch(() => null),
+      optional<Retention>("api/settings/retention"),
+      optional<Health>("api/health"),
     ])
-      .then(([settings, notifications, choices, scheduler]) =>
-        setLoad({ status: "ready", settings, notifications, choices, scheduler }),
+      .then(([settings, notifications, choices, scheduler, retention, health]) =>
+        setLoad({
+          status: "ready",
+          settings,
+          notifications,
+          choices,
+          scheduler,
+          retention,
+          savedHours: retention?.hour_days ?? null,
+          addon: health?.mode === "addon",
+        }),
       )
       .catch(() => {
         if (!controller.signal.aborted) setLoad({ status: "error" });
       });
     return () => controller.abort();
-  }, [attempt]);
+  }, [attempt, page]);
 
   if (load.status === "loading") return <StateMessage kind="loading" title={t("settings.loading")} />;
   if (load.status === "error") {
@@ -150,7 +183,15 @@ function SettingsForm({ page }: { page: "notifications" | "calculation" }) {
       />
     );
   }
-  const { settings, notifications, choices, scheduler } = load;
+  const { settings, notifications, choices, scheduler, retention, savedHours, addon } = load;
+  const hours = retention?.hour_days ?? null;
+  const hoursText = (days: number | null) => {
+    if (days === null) return t("settings.history.unlimited");
+    return HOUR_CHOICES.includes(days) ? t(`settings.history.duration.d${days}`) : t("settings.history.days", { count: days });
+  };
+  const hoursEdited = retention !== null && !addon && hours !== savedHours;
+  // Seul un historique plus court supprime des données : allonger ne demande rien.
+  const shortened = hoursEdited && hours !== null && (savedHours === null || hours < savedHours);
 
   const change = (patch: Partial<PlanningSettings>) => {
     setSave("idle");
@@ -162,7 +203,12 @@ function SettingsForm({ page }: { page: "notifications" | "calculation" }) {
     setLoad({ ...load, notifications: next });
   };
 
-  const onSave = async () => {
+  const onSave = async (confirmed = false) => {
+    if (page === "calculation" && shortened && !confirmed) {
+      setConfirming(true);
+      return;
+    }
+    setConfirming(false);
     setSave("saving");
     try {
       // Chaque sous-page enregistre ses propres réglages.
@@ -171,7 +217,8 @@ function SettingsForm({ page }: { page: "notifications" | "calculation" }) {
         setLoad({ ...load, notifications: saved });
       } else {
         const saved = await putJson<PlanningSettings>("api/settings/planning", settings);
-        setLoad({ ...load, settings: saved });
+        const kept = hoursEdited ? await putJson<Retention>("api/settings/retention", retention) : retention;
+        setLoad({ ...load, settings: saved, retention: kept, savedHours: kept?.hour_days ?? null });
       }
       setSave("saved");
     } catch (error) {
@@ -299,6 +346,52 @@ function SettingsForm({ page }: { page: "notifications" | "calculation" }) {
               ))}
             </div>
           )}
+
+          {retention && (
+            <>
+              <h3 id="history" className="home-summary-heading">
+                {t("settings.history.title")}
+              </h3>
+              <SettingList>
+                {addon ? (
+                  <div className="ui-setting-row">
+                    <span>
+                      <span className="ui-row-label">{t("settings.history.hours")}</span>
+                      <span className="ui-row-help">{t("settings.history.addon_help")}</span>
+                    </span>
+                    <span className="settings-readonly">{hoursText(hours)}</span>
+                  </div>
+                ) : (
+                  <div className="ui-setting-row">
+                    <span>
+                      <label className="ui-row-label" htmlFor="hour-days">
+                        {t("settings.history.hours")}
+                      </label>
+                      <span className="ui-row-help">{t("settings.history.hours_help")}</span>
+                    </span>
+                    <select
+                      id="hour-days"
+                      value={hours ?? ""}
+                      onChange={(event) => {
+                        setSave("idle");
+                        const hour_days = event.target.value ? Number(event.target.value) : null;
+                        setLoad({ ...load, retention: { ...retention, hour_days } });
+                      }}
+                    >
+                      {[...new Set([...HOUR_CHOICES, ...(hours === null ? [] : [hours])])]
+                        .sort((a, b) => a - b)
+                        .map((days) => (
+                          <option key={days} value={days}>
+                            {hoursText(days)}
+                          </option>
+                        ))}
+                      <option value="">{hoursText(null)}</option>
+                    </select>
+                  </div>
+                )}
+              </SettingList>
+            </>
+          )}
         </>
       )}
 
@@ -315,6 +408,20 @@ function SettingsForm({ page }: { page: "notifications" | "calculation" }) {
           {t("settings.save")}
         </button>
       </div>
+
+      <Sheet
+        open={confirming}
+        title={t("settings.history.confirm_title", { duration: hoursText(hours) })}
+        onClose={() => setConfirming(false)}
+      >
+        <p>{t("settings.history.confirm_body")}</p>
+        <div className="settings-confirm">
+          <Button onClick={() => setConfirming(false)}>{t("settings.history.cancel")}</Button>
+          <Button variant="primary" onClick={() => void onSave(true)}>
+            {t("settings.history.confirm", { duration: hoursText(hours) })}
+          </Button>
+        </div>
+      </Sheet>
     </section>
   );
 }

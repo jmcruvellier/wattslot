@@ -26,7 +26,7 @@ WattSlot envoie ses messages par Home Assistant, vers un appareil qui a l'**appl
 
 **Heures de silence**, sur chaque notification : rien n'est envoyé entre deux heures (la nuit, par exemple).
 
-Une notification envoyée « à partir d'une heure » part avec le premier calcul automatique après cette heure (les calculs ont lieu chaque heure, à la minute choisie dans **Réglages › Calcul automatique**). Le planning de la semaine est une prévision : au-delà de deux ou trois jours, il suit une prévision météo encore incertaine, et le plan est recalculé chaque heure. « Lancez X maintenant » et les rappels suivent le plan du moment.
+Une notification envoyée « à partir d'une heure » part avec le premier calcul automatique après cette heure (les calculs ont lieu chaque heure, à la minute choisie dans **Réglages › Calcul et données**). Le planning de la semaine est une prévision : au-delà de deux ou trois jours, il suit une prévision météo encore incertaine, et le plan est recalculé chaque heure. « Lancez X maintenant » et les rappels suivent le plan du moment.
 
 ## Rappels
 
@@ -34,4 +34,4 @@ Sur **Aujourd'hui**, sous le prochain appareil à lancer, **Me le rappeler** env
 
 ## Des demandes depuis Home Assistant
 
-Dans l'autre sens, une tâche d'une **liste de tâches** de Home Assistant (« lancer le lave-linge », avec une échéance) devient une demande : choisissez la liste dans **Réglages › Calcul automatique**. L'[assistant vocal](assistant.md) peut aussi déposer des demandes.
+Dans l'autre sens, une tâche d'une **liste de tâches** de Home Assistant (« lancer le lave-linge », avec une échéance) devient une demande : choisissez la liste dans **Réglages › Calcul et données**. L'[assistant vocal](assistant.md) peut aussi déposer des demandes.
