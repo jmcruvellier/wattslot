@@ -94,6 +94,11 @@ FOLLOW_LOOKBACK = timedelta(days=3)
 # ``app_settings``). À part de ``aggregation_state`` : le calcul sur le brut y faisait avancer
 # le curseur de ces identifiants sans rien écrire, il aurait fait sauter des heures.
 FOLLOW_KEY = "statistics_follow"
+# Début des heures tenues pour reprises de HA (instant ISO dans ``app_settings``) : la
+# conservation des heures au moment de la reprise, avancée quand elle raccourcit. Une
+# conservation allongée le fait reculer : les heures entre les deux sont reprises de HA
+# (``extend_history``). Absent : installation d'avant ce repère, tenue pour à jour.
+HOURS_FROM_KEY = "history_hours_from"
 RDF_TYPE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
 
 
@@ -377,6 +382,13 @@ class Aggregator:
         self._spool: list[str] = []
         self._spooled: list[tuple[str, int, dict[str, tuple[int, datetime | None]]]] = []
         self._followed_at: datetime | None = None  # dernière relecture des statistiques externes
+        # Reprise complémentaire (conservation des heures allongée) : début visé, entités faites,
+        # agrégats en attente du chargement en masse et résumé par entité. Perdue à l'arrêt : la
+        # reprise recommence au démarrage suivant, sans doublon (agrégats existants sautés).
+        self._extending_to: datetime | None = None
+        self._extended: set[str] = set()
+        self._extension: list[str] = []
+        self._extension_summary: dict[str, tuple[int, datetime]] = {}
 
     def start(self) -> None:
         self._task = asyncio.create_task(self._loop())
@@ -395,6 +407,7 @@ class Aggregator:
                 # Une entité par tour : le calcul sur le brut n'attend jamais la fin de toute
                 # la reprise (1 h 25 pour la maison de référence sur le N150).
                 imported = await self.import_history(limit=1)
+                imported += await self.extend_history(limit=1)
                 await self.follow_statistics()
             except Exception as exc:  # nouvel essai au tour suivant
                 self._status.last_error = f"{type(exc).__name__}: {exc}"
@@ -608,6 +621,110 @@ class Aggregator:
         if self._spooled and not any(ready(entity_id) for entity_id in targets):
             await asyncio.to_thread(self._write_spool, len(self._spool))  # dernières entités
         return count
+
+    async def extend_history(self, limit: int | None = None) -> int:
+        """Reprend de HA les heures qui manquent après un allongement de leur conservation ;
+        renvoie le nombre d'entités traitées par cet appel (``limit`` au plus).
+
+        Les heures sont tenues pour reprises depuis ``HOURS_FROM_KEY``. Conservation raccourcie
+        (ou glissement d'un jour) : ce repère avance, la maintenance retire le reste. Allongée :
+        chaque entité déjà reprise reçoit les heures entre le nouveau début et le repère, qui ne
+        recule qu'une fois toutes écrites. Les entités pas encore reprises le seront depuis le
+        nouveau début par ``import_history``. HA garde ses statistiques horaires sans limite :
+        ce qu'une purge a retiré revient, sauf pour un capteur que HA ne connaît plus.
+        """
+        needed = await self._since(HOUR)
+        covered = await asyncio.to_thread(self._hours_from)
+        if covered is None or needed >= covered:
+            if covered != needed:
+                await asyncio.to_thread(self._save_hours_from, needed)
+            self._reset_extension()
+            return 0
+        client = self._client
+        if client is None or client.status.state is not ConnectionState.CONNECTED:
+            return 0
+        if self._extending_to is None or needed < self._extending_to:
+            self._reset_extension()  # allongée encore, en cours de route : tout reprendre
+            logger.info(
+                "Historique par heure allongé : reprise de HA du %s au %s",
+                needed.isoformat(),
+                covered.isoformat(),
+            )
+        self._extending_to = needed
+        imported = await asyncio.to_thread(self._imported)
+        waiting = [e for e in self._ingestor.targets if e in imported and e not in self._extended]
+        count = 0
+        for entity_id in waiting:
+            if limit is not None and count >= limit:
+                break
+            lines, (hours, earliest), _ = await self._statistics_period(
+                client,
+                entity_id,
+                self._ingestor.targets[entity_id],
+                HOUR,
+                PERIODS[HOUR],
+                needed,
+                covered,
+            )
+            self._extension.extend(lines)
+            if earliest is not None:
+                self._extension_summary[entity_id] = (hours, earliest)
+            self._extended.add(entity_id)
+            count += 1
+            while len(self._extension) >= IMPORT_BATCH:
+                await asyncio.to_thread(self._write_extension, IMPORT_BATCH)
+        if count == len(waiting):  # plus aucune entité n'attend
+            await asyncio.to_thread(self._write_extension, len(self._extension))
+            await asyncio.to_thread(self._record_extension, needed)
+            logger.info(
+                "Historique par heure allongé : %s heures reprises de HA pour %s capteurs",
+                sum(hours for hours, _ in self._extension_summary.values()),
+                len(self._extension_summary),
+            )
+            self._reset_extension()
+        return count
+
+    def _reset_extension(self) -> None:
+        self._extending_to = None
+        self._extended.clear()
+        self._extension.clear()
+        self._extension_summary.clear()
+
+    def _write_extension(self, count: int) -> None:
+        batch = self._extension[:count]
+        del self._extension[:count]
+        if batch:
+            self._graph.bulk_add_nquads(batch)
+            self._status.written += len(batch)
+
+    def _hours_from(self) -> datetime | None:
+        row = self._database.execute(
+            "SELECT value FROM app_settings WHERE key = ?", (HOURS_FROM_KEY,)
+        ).fetchone()
+        return datetime.fromisoformat(json.loads(row[0])) if row else None
+
+    def _save_hours_from(self, moment: datetime) -> None:
+        with self._database:
+            self._database.execute(
+                "INSERT INTO app_settings VALUES (?, ?) "
+                "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+                (HOURS_FROM_KEY, json.dumps(moment.isoformat())),
+            )
+
+    def _record_extension(self, moment: datetime) -> None:
+        """Note le nouveau début des heures et, par entité, les heures reprises en plus."""
+        with self._database:
+            for entity_id, (hours, earliest) in self._extension_summary.items():
+                row = self._database.execute(
+                    "SELECT hour_since FROM history_import WHERE entity_id = ?", (entity_id,)
+                ).fetchone()
+                known = datetime.fromisoformat(row[0]) if row and row[0] else earliest
+                self._database.execute(
+                    "UPDATE history_import SET hours = hours + ?, hour_since = ? "
+                    "WHERE entity_id = ?",
+                    (hours, min(known, earliest).isoformat(), entity_id),
+                )
+        self._save_hours_from(moment)
 
     async def follow_statistics(self, now: datetime | None = None, force: bool = False) -> int:
         """Relit les statistiques de HA des statistiques externes suivies, au plus tous les
