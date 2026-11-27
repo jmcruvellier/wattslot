@@ -134,6 +134,18 @@ export default function TodayView({ onNavigate }: { onNavigate?: (target: string
   // faite avant chaque heure : 8,3 kWh annoncés pour 7,3 produits, jugés aberrants le 23/11/2026.
   const sunDay = measuredHours ? view.cards?.day?.find((card) => card.key === "production") : undefined;
   const firstSun = sunDay?.estimated_kwh ?? null;
+  // Consommation de la maison, comme le soleil : le déjà consommé, la journée estimée maintenant
+  // (le mesuré, puis ce qui reste prévu) et la première prévision du jour, gardée par le serveur
+  // depuis le 27/11/2026 (absente des plans d'avant : la pastille dit « trop tôt »).
+  const consumed = view.hours.reduce((total, h) => total + (h.consumption_actual_kwh ?? 0), 0);
+  const measuredConsumption = view.hours.some((h) => h.consumption_actual_kwh !== null);
+  const consumptionDay = measuredConsumption
+    ? view.cards?.day?.find((card) => card.key === "consumption")
+    : undefined;
+  const consumptionExpected =
+    consumptionDay?.measured_kwh ??
+    view.hours.reduce((total, h) => total + (h.consumption_actual_kwh ?? h.consumption_kwh), 0);
+  const firstConsumption = consumptionDay?.estimated_kwh ?? null;
   const expectedSocKwh = comparedEstimate(view, "soc");
   const capacity = view.battery_capacity_kwh ?? null;
   const expectedSoc = expectedSocKwh !== null && capacity ? (expectedSocKwh / capacity) * 100 : null;
@@ -179,7 +191,36 @@ export default function TodayView({ onNavigate }: { onNavigate?: (target: string
         declared={view.declared_launches ?? []}
       />
       <div className={hasBattery || hasSun ? "today-row today-row-split" : "today-row"}>
-        <IndicatorsCard view={view} layout={DEFAULT_LAYOUT.indicators} compact />
+        {/* Les indicateurs à leur hauteur, la consommation de la maison dessous : deux blocs de
+            chaque côté (27/11/2026). */}
+        <div className="today-stack">
+          <IndicatorsCard view={view} layout={DEFAULT_LAYOUT.indicators} compact />
+          <Panel icon="home" title={t("today.consumption.eyebrow")}>
+            <div className="indicators">
+              <dl className="indicators">
+                <div className="indicator">
+                  <dt>{t("today.consumption.done_label")}</dt>
+                  <dd>{measuredConsumption ? `${kwh(consumed, 1)} kWh` : "—"}</dd>
+                </div>
+              </dl>
+              <dl className="indicators indicator-compared">
+                <div className="indicator">
+                  <dt>{t("today.consumption.forecast_label")}</dt>
+                  <dd>
+                    <TrendPill trend={consumptionDay?.trend} label={t("today.consumption.trend")} />
+                    <strong>{kwh(consumptionExpected, 1)} kWh</strong>
+                  </dd>
+                </div>
+                {firstConsumption !== null && (
+                  <div className="indicator indicator-reference">
+                    <dt>{t("today.consumption.first_label")}</dt>
+                    <dd>{kwh(firstConsumption, 1)} kWh</dd>
+                  </div>
+                )}
+              </dl>
+            </div>
+          </Panel>
+        </div>
         {(hasBattery || hasSun) && (
           <div className="today-stack">
             {hasBattery && (
