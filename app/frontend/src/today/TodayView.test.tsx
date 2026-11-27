@@ -344,8 +344,8 @@ describe("TodayView", () => {
     expect(battery.getByText("Maintenant").closest("div")).toHaveTextContent("Maintenant▲ +25%64 %");
     expect(battery.getByText("À minuit (prévu)").closest("div")).toHaveTextContent("À minuit (prévu)");
     const sun = within(screen.getByRole("heading", { name: "Soleil" }).closest("section") as HTMLElement);
-    expect(sun.getByText("Production de la journée, estimée maintenant").closest("div")).toHaveTextContent(
-      "Production de la journée, estimée maintenant▲ +25%16,5 kWh",
+    expect(sun.getByText("Journée estimée maintenant").closest("div")).toHaveTextContent(
+      "Journée estimée maintenant▲ +25%16,5 kWh",
     );
     expect(sun.getByText("Déjà produit").closest("div")).toHaveTextContent("Déjà produit14,0 kWh");
     // Tendances de TODAY, en pilule sur la ligne mesurée : SoC au relevé, soleil sur la journée.
@@ -373,7 +373,7 @@ describe("TodayView", () => {
     mockApi({ ...TODAY, now: NOW, next_action: null, cards: null });
     renderView();
     expect(await screen.findByRole("heading", { name: "Batterie" })).toBeInTheDocument();
-    expect(screen.getByText("Production de la journée, estimée maintenant").closest("div")).toHaveTextContent("9,5 kWh");
+    expect(screen.getByText("Journée estimée maintenant").closest("div")).toHaveTextContent("9,5 kWh");
     expect(screen.queryByText(/[▲▼]/)).not.toBeInTheDocument();
     expect(screen.queryByText("Prévu par le plan à cette heure")).not.toBeInTheDocument();
     // Juste après minuit, avant le premier relevé : la pastille ne disparaît pas.
@@ -386,7 +386,7 @@ describe("TodayView", () => {
     renderView();
     expect(await screen.findByRole("heading", { name: "Batterie" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Soleil" })).not.toBeInTheDocument();
-    expect(screen.queryByText("Production de la journée, estimée maintenant")).not.toBeInTheDocument();
+    expect(screen.queryByText("Journée estimée maintenant")).not.toBeInTheDocument();
   });
 
   it("sans appareil à placer : invite à en ajouter un", async () => {
