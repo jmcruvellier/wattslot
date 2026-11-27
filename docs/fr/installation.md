@@ -34,7 +34,8 @@ Dans **Paramètres › Applications › WattSlot › Configuration** :
 |---|---|---|
 | Niveau des journaux | info | `debug` quand on vous le demande pour un signalement |
 | Relevés bruts conservés | 3 jours | Chaque mesure (1 à 30 jours) |
-| Quarts d'heure conservés | 35 jours | Moyennes par quart d'heure (31 à 3 660 jours) ; les moyennes horaires sont gardées sans limite |
+| Quarts d'heure conservés | 35 jours | Moyennes par quart d'heure (31 à 3 660 jours) |
+| Historique par heure conservé | 456 jours (15 mois) | Moyennes par heure (92 à 3 660 jours, 0 pour sans limite) ; l'essentiel du disque. Une durée plus courte retire l'historique plus ancien la nuit suivante, définitivement |
 
 ### Mises à jour et sauvegardes
 

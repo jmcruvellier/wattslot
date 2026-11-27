@@ -66,7 +66,7 @@
     "graph": "Grafo de la casa",
     "notifications": "Notificaciones",
     "display": "Idioma y visualización",
-    "calculation": "Cálculo automático",
+    "calculation": "Cálculo y datos",
     "voice": "Asistente de voz",
     "status_setup": "Puesta en marcha"
   },
@@ -547,7 +547,7 @@
     "loading": "Leyendo los ajustes…",
     "error": "No se pueden leer los ajustes.",
     "title": "Ajustes",
-    "intro": "De dónde vienen las solicitudes, cuándo recalcular el plan y qué previsión solar usar como respaldo.",
+    "intro": "De dónde vienen las solicitudes, cuándo recalcular el plan, qué previsión solar usar como respaldo y cuánto historial conservar.",
     "not_connected": "Home Assistant no está conectado: las listas están vacías, los ajustes guardados siguen siendo válidos.",
     "none": "ninguno",
     "unknown": "{id} (no encontrado en Home Assistant)",
@@ -652,6 +652,27 @@
       "error_unreachable": "Home Assistant no responde: nuevo intento en el próximo cuarto de hora.",
       "error_unknown": "Home Assistant no ha aceptado la escritura: nuevo intento en el próximo cuarto de hora.",
       "published": "Sensores escritos a las {time}."
+    },
+    "history": {
+      "title": "Historial conservado",
+      "hours": "Historial por hora",
+      "hours_help": "Es el que ocupa la mayor parte del disco. El cálculo solo relee las últimas 9 semanas.",
+      "addon_help": "Se ajusta en las opciones del complemento, en Home Assistant.",
+      "duration": {
+        "d92": "3 meses",
+        "d183": "6 meses",
+        "d365": "1 año",
+        "d456": "15 meses",
+        "d730": "2 años",
+        "d1825": "5 años",
+        "d3650": "10 años"
+      },
+      "days": "{count} días",
+      "unlimited": "Sin límite",
+      "confirm_title": "¿Conservar {duration} de historial?",
+      "confirm_body": "El historial más antiguo se eliminará de WattSlot esta noche. Sigue en Home Assistant.",
+      "confirm": "Conservar {duration}",
+      "cancel": "Cancelar"
     },
     "save": "Guardar",
     "saved": "Ajustes guardados.",

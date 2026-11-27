@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 from wattslot import addon_options
 from wattslot.addon_options import AddonOptions
 from wattslot.main import create_app
-from wattslot.maintenance import Retention, load_retention, save_retention
+from wattslot.retention import Retention, load_retention, save_retention
 from wattslot.runtime import RunMode, Settings
 from wattslot.storage.database import open_database
 
@@ -29,7 +29,7 @@ def _write_options(data_dir: Path, **values: object) -> None:
 
 def test_defaults_without_options_file(tmp_path: Path) -> None:
     assert addon_options.load(tmp_path) == AddonOptions(
-        log_level="info", raw_days=3, quarter_days=35
+        log_level="info", raw_days=3, quarter_days=35, hour_days=456
     )
 
 
@@ -49,13 +49,25 @@ def test_invalid_options_fall_back_to_defaults(tmp_path: Path) -> None:
     assert addon_options.load(tmp_path) == AddonOptions()
 
 
-def test_options_replace_raw_and_quarter_retention_but_keep_hours(tmp_path: Path) -> None:
+def test_options_replace_the_saved_retention(tmp_path: Path) -> None:
     database = open_database(tmp_path)
     save_retention(database, Retention(raw_days=10, quarter_days=100, hour_days=400))
 
-    addon_options.apply_retention(database, AddonOptions(raw_days=4, quarter_days=40))
+    addon_options.apply_retention(
+        database, AddonOptions(raw_days=4, quarter_days=40, hour_days=200)
+    )
 
-    assert load_retention(database) == Retention(raw_days=4, quarter_days=40, hour_days=400)
+    assert load_retention(database) == Retention(raw_days=4, quarter_days=40, hour_days=200)
+
+
+def test_hours_option_zero_means_without_limit_and_too_short_is_raised(tmp_path: Path) -> None:
+    """Le schéma du Supervisor n'a pas de « rien » : 0 pour sans limite. Une durée sous le
+    minimum est ramenée au minimum, pas refusée (un refus ferait ignorer toutes les options)."""
+    database = open_database(tmp_path)
+
+    assert addon_options.apply_retention(database, AddonOptions(hour_days=0)).hour_days is None
+    assert addon_options.apply_retention(database, AddonOptions(hour_days=30)).hour_days == 92
+    assert addon_options.apply_retention(database, AddonOptions()).hour_days == 456
 
 
 def test_addon_applies_options_at_startup(tmp_path: Path) -> None:
@@ -65,7 +77,7 @@ def test_addon_applies_options_at_startup(tmp_path: Path) -> None:
     with TestClient(create_app(_settings(data_dir, RunMode.ADDON)), client=LOCAL) as api:
         retention = api.get("/api/settings/retention").json()
 
-    assert retention == {"raw_days": 7, "quarter_days": 90, "hour_days": None}
+    assert retention == {"raw_days": 7, "quarter_days": 90, "hour_days": 456}
     assert logging.getLogger("wattslot").level == logging.WARNING
     create_app(_settings(data_dir, RunMode.STANDALONE))  # niveau par défaut rétabli
 
@@ -103,6 +115,9 @@ def test_addon_schema_matches_the_application_and_translations() -> None:
         "raw_days": f"int({_bound(fields['raw_days'], 'ge')},{_bound(fields['raw_days'], 'le')})",
         "quarter_days": (
             f"int({_bound(fields['quarter_days'], 'ge')},{_bound(fields['quarter_days'], 'le')})"
+        ),
+        "hour_days": (
+            f"int({_bound(fields['hour_days'], 'ge')},{_bound(fields['hour_days'], 'le')})"
         ),
     }
     for language in ("en", "fr"):

@@ -6,7 +6,7 @@ WattSlot can write some of its forecasts to Home Assistant sensors, so that your
 
 ## Home consumption forecast
 
-Switch on **Settings › Automatic calculation › Sensors in Home Assistant › Publish the home consumption forecast**. Nothing else to install: WattSlot uses the connection it already has, as a Home Assistant app or with Docker.
+Switch on **Settings › Calculation and data › Sensors in Home Assistant › Publish the home consumption forecast**. Nothing else to install: WattSlot uses the connection it already has, as a Home Assistant app or with Docker.
 
 Three sensors appear in Home Assistant, in kWh:
 

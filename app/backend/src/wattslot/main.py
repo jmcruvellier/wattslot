@@ -470,10 +470,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if options is not None:
             retention = addon_options.apply_retention(database, options)
             logger.info(
-                "Options de l'extension : journaux %s, brut %s jours, quarts d'heure %s jours",
+                "Options de l'extension : journaux %s, brut %s jours, quarts d'heure %s jours, "
+                "heures %s",
                 options.log_level,
                 retention.raw_days,
                 retention.quarter_days,
+                "sans limite" if retention.hour_days is None else f"{retention.hour_days} jours",
             )
         graph = GraphStore(settings.data_dir)
         # Données d'avant le renommage en WattSlot (lot 7.1) : maison et réglages réécrits.

@@ -66,7 +66,7 @@
     "graph": "Graphe de la maison",
     "notifications": "Notifications",
     "display": "Langue et affichage",
-    "calculation": "Calcul automatique",
+    "calculation": "Calcul et données",
     "voice": "Assistant vocal",
     "status_setup": "Mise en route"
   },
@@ -547,7 +547,7 @@
     "loading": "Lecture des réglages…",
     "error": "Impossible de lire les réglages.",
     "title": "Réglages",
-    "intro": "D'où viennent les demandes, quand recalculer le plan, et quelle prévision solaire utiliser en secours.",
+    "intro": "D'où viennent les demandes, quand recalculer le plan, quelle prévision solaire utiliser en secours, et combien d'historique garder.",
     "not_connected": "Home Assistant n'est pas connecté : les listes sont vides, les réglages enregistrés restent valables.",
     "none": "aucun",
     "unknown": "{id} (introuvable dans Home Assistant)",
@@ -652,6 +652,27 @@
       "error_unreachable": "Home Assistant ne répond pas : nouvel essai au prochain quart d'heure.",
       "error_unknown": "Home Assistant n'a pas accepté l'écriture : nouvel essai au prochain quart d'heure.",
       "published": "Capteurs écrits à {time}."
+    },
+    "history": {
+      "title": "Historique conservé",
+      "hours": "Historique par heure",
+      "hours_help": "C'est lui qui occupe l'essentiel du disque. Le calcul n'en relit que les 9 dernières semaines.",
+      "addon_help": "Se règle dans les options de l'extension, dans Home Assistant.",
+      "duration": {
+        "d92": "3 mois",
+        "d183": "6 mois",
+        "d365": "1 an",
+        "d456": "15 mois",
+        "d730": "2 ans",
+        "d1825": "5 ans",
+        "d3650": "10 ans"
+      },
+      "days": "{count} jours",
+      "unlimited": "Sans limite",
+      "confirm_title": "Garder {duration} d'historique ?",
+      "confirm_body": "L'historique plus ancien sera supprimé de WattSlot cette nuit. Il reste dans Home Assistant.",
+      "confirm": "Garder {duration}",
+      "cancel": "Annuler"
     },
     "save": "Enregistrer",
     "saved": "Réglages enregistrés.",

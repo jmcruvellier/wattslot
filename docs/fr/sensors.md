@@ -6,7 +6,7 @@ WattSlot peut écrire certaines de ses prévisions dans des capteurs de Home Ass
 
 ## Prévision de consommation de la maison
 
-Activez **Réglages › Calcul automatique › Capteurs dans Home Assistant › Publier la prévision de consommation de la maison**. Rien d'autre à installer : WattSlot se sert de la connexion qu'il a déjà, comme application de Home Assistant ou avec Docker.
+Activez **Réglages › Calcul et données › Capteurs dans Home Assistant › Publier la prévision de consommation de la maison**. Rien d'autre à installer : WattSlot se sert de la connexion qu'il a déjà, comme application de Home Assistant ou avec Docker.
 
 Trois capteurs apparaissent dans Home Assistant, en kWh :
 

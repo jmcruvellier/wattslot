@@ -25,7 +25,7 @@ Untick **Scheduled by planning** on a device to keep it only monitored.
 A cycle (washing machine…) is placed on a day when something asks for it:
 
 - **A request**: **Request an appliance** (`+`), *as soon as possible* or *at the latest on* a date. The plan picks the best time before that date. With **Finished before**, the cycle also ends before the hour you give, on the day it runs (dishwasher asked for in the evening, done before noon: during the night or the morning); if no time slot allows it, the plan still schedules the cycle and says so. **Planning › My requests** lists them.
-- **A Home Assistant to-do list**: choose the list in **Settings › Automatic calculation**; a task such as "run the washing machine", with a due date, becomes a request.
+- **A Home Assistant to-do list**: choose the list in **Settings › Calculation and data**; a task such as "run the washing machine", with a due date, becomes a request.
 - **A recurrence**, in the device's **Cycle rules**: every N days since the last cycle, on some days of the week, or an advanced rule (iCalendar format). The recurring Home Assistant tasks of that device are then ignored.
 
 Other cycle rules:

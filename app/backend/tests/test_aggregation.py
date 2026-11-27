@@ -21,7 +21,9 @@ from wattslot.aggregation import (
     period_start,
 )
 from wattslot.detection import Role
+from wattslot.history import SINCE
 from wattslot.ingestion import Ingestor, Target
+from wattslot.retention import HOUR_DAYS, cutoff
 from wattslot.storage.database import open_database
 from wattslot.storage.graph import GraphStore
 from wattslot.storage.raw import RawStores, Reading
@@ -325,6 +327,13 @@ def test_imports_home_assistant_statistics_before_the_raw_readings(tmp_path: Pat
     assert [a.energy_kwh for a in aggregator.read(ENERGY.entity_id, HOUR, at(-60), at(0))] == [0.4]
     counter_request = next(r for r in requests if r["statistic_ids"] == [ENERGY.entity_id])
     assert counter_request["types"] == ["change"]
+    # Les heures ne sont pas reprises au-delà de leur conservation (15 mois) ; les quarts
+    # d'heure le sont aussi loin que HA garde ses statistiques à 5 minutes.
+    today = datetime.now(UTC).astimezone(ZoneInfo("Europe/Paris")).date()
+    kept_since = cutoff(HOUR_DAYS, today, ZoneInfo("Europe/Paris"))
+    assert kept_since is not None
+    starts = {(r["period"], r["start_time"]) for r in requests}
+    assert starts == {("hour", kept_since.isoformat()), ("5minute", SINCE.isoformat())}
     assert counter_request["units"] == {"energy": "kWh", "power": "W"}
     history = aggregator.status().history
     assert (history.imported, history.pending) == (3, [])

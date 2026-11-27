@@ -66,7 +66,7 @@
     "graph": "Grafo della casa",
     "notifications": "Notifiche",
     "display": "Lingua e visualizzazione",
-    "calculation": "Calcolo automatico",
+    "calculation": "Calcolo e dati",
     "voice": "Assistente vocale",
     "status_setup": "Configurazione iniziale"
   },
@@ -547,7 +547,7 @@
     "loading": "Lettura delle impostazioni…",
     "error": "Impossibile leggere le impostazioni.",
     "title": "Impostazioni",
-    "intro": "Da dove arrivano le richieste, quando ricalcolare il piano e quale previsione solare usare come riserva.",
+    "intro": "Da dove arrivano le richieste, quando ricalcolare il piano, quale previsione solare usare come riserva e quanto storico conservare.",
     "not_connected": "Home Assistant non è connesso: gli elenchi sono vuoti, le impostazioni salvate restano valide.",
     "none": "nessuno",
     "unknown": "{id} (non trovato in Home Assistant)",
@@ -652,6 +652,27 @@
       "error_unreachable": "Home Assistant non risponde: nuovo tentativo al prossimo quarto d'ora.",
       "error_unknown": "Home Assistant non ha accettato la scrittura: nuovo tentativo al prossimo quarto d'ora.",
       "published": "Sensori scritti alle {time}."
+    },
+    "history": {
+      "title": "Storico conservato",
+      "hours": "Storico orario",
+      "hours_help": "È quello che occupa la maggior parte del disco. Il calcolo ne rilegge solo le ultime 9 settimane.",
+      "addon_help": "Si regola nelle opzioni del componente aggiuntivo, in Home Assistant.",
+      "duration": {
+        "d92": "3 mesi",
+        "d183": "6 mesi",
+        "d365": "1 anno",
+        "d456": "15 mesi",
+        "d730": "2 anni",
+        "d1825": "5 anni",
+        "d3650": "10 anni"
+      },
+      "days": "{count} giorni",
+      "unlimited": "Senza limite",
+      "confirm_title": "Conservare {duration} di storico?",
+      "confirm_body": "Lo storico più vecchio sarà eliminato da WattSlot questa notte. Resta in Home Assistant.",
+      "confirm": "Conserva {duration}",
+      "cancel": "Annulla"
     },
     "save": "Salva",
     "saved": "Impostazioni salvate.",
