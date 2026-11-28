@@ -184,7 +184,9 @@ router = APIRouter()
 
 
 class ReminderRequest(BaseModel):
-    device: str  # nom de l'appareil dans le plan du jour (prochaine action)
+    # Cycle à rappeler, tel que le donne la prochaine action : le nom de l'appareil ou, à
+    # partir de son deuxième cycle de la journée, ce nom et son rang (« Lave-linge #2 »).
+    device: str
 
 
 class Reminder(BaseModel):
@@ -209,10 +211,13 @@ def ask_reminder(request: Request, body: ReminderRequest) -> Reminder:
     zone = request.app.state.raw.zone
     view = build_day(plan.content, "today", Context(zone=zone), "fr")
     cycles = {row.device for row in view.timeline.rows if row.kind == "cycle"}
+    # Le rappel porte sur un cycle (son identité : « Lave-linge #2 » pour le deuxième de la
+    # journée), la ligne de la frise sur l'équipement : comparer les deux refusait le rappel
+    # de tout cycle numéroté (constaté le 28/11/2026).
     upcoming = {
         status.device
         for status in view.timeline.statuses
-        if status.device in cycles and status.status == "planned"
+        if (status.appliance or status.device) in cycles and status.status == "planned"
     }
     if body.device not in upcoming:
         raise HTTPException(status_code=422, detail="not_planned")
