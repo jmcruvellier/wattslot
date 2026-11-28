@@ -304,6 +304,11 @@ def test_closing_a_request_forgets_its_declared_launch(tmp_path: Path) -> None:
             else:
                 assert api.post(f"/api/requests/{asked.id}/done").status_code == 200
             assert declared.load(database, today) == {"Lave-linge"}  # celle de l'autre reste
+            # 28/11/2026 : faite, l'instant déclaré reste (il sépare deux cycles enchaînés dans
+            # les mesures) ; annulée, il est effacé.
+            kept = "Sèche-linge" in declared.moments(database, today)
+            assert kept is (close == "done")
+            declared.forget_request(database, f"app-{asked.id}")
             declared.forget_request(database, f"app-{other.id}")
 
 

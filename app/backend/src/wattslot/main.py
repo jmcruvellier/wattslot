@@ -1554,9 +1554,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             request.app.state.database, request_id, status, datetime.now(UTC)
         )
         # Sa déclaration « C'est lancé » et l'annulation de sa planification ne valent pas pour
-        # la demande suivante de l'appareil.
+        # la demande suivante de l'appareil. Faite, l'instant déclaré reste : il sépare ses
+        # cycles enchaînés dans les mesures.
         uid = f"{user_requests.UID_PREFIX}{request_id}"
-        declared.forget_request(request.app.state.database, uid)
+        declared.forget_request(
+            request.app.state.database, uid, keep_moment=status is user_requests.Status.DONE
+        )
         cancelled.forget_request(request.app.state.database, uid)
         if found is None:
             raise HTTPException(status_code=404, detail="Demande inconnue")
