@@ -66,6 +66,34 @@ def test_runs_every_night_at_half_past_three_local_time(tmp_path: Path) -> None:
     )
 
 
+def test_the_schedule_follows_the_time_zone_learnt_after_the_start(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Le fuseau de la maison n'est connu qu'une fois Home Assistant connecté : l'heure de la
+    prochaine maintenance, calculée en UTC au démarrage, est recalculée ensuite (la première
+    maintenance après un démarrage partait à 3 h 30 UTC)."""
+    monkeypatch.setattr("wattslot.maintenance.SCHEDULE_CHECK_S", 0.01)
+    raw = RawStores(tmp_path)  # UTC tant que Home Assistant n'a rien dit
+    maintenance = Maintenance(raw, GraphStore(tmp_path), open_database(tmp_path), tmp_path)
+
+    async def scenario() -> tuple[datetime | None, datetime | None, datetime]:
+        maintenance.start()
+        await asyncio.sleep(0.05)
+        before = maintenance.status().next_run_at
+        raw.set_time_zone("Asia/Tokyo")
+        await asyncio.sleep(0.05)
+        after = maintenance.status().next_run_at
+        expected = maintenance.next_run(datetime.now(UTC))
+        await maintenance.stop()
+        return before, after, expected
+
+    before, after, expected = asyncio.run(scenario())
+
+    assert before is not None and (before.hour, before.minute) == (3, 30)
+    assert after == expected
+    assert after is not None and (after.hour, after.minute) == (18, 30)  # 3 h 30 à Tokyo
+
+
 def test_retention_defaults_and_settings(tmp_path: Path) -> None:
     database = open_database(tmp_path)
     assert load_retention(database) == Retention(raw_days=3, quarter_days=35, hour_days=456)

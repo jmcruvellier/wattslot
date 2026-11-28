@@ -55,6 +55,10 @@ __all__ = ["Retention", "load_retention", "save_retention"]  # repris par les ap
 logger = logging.getLogger(__name__)
 
 MAINTENANCE_AT = time(3, 30)  # heure locale, en dehors des heures de production
+# L'heure de la prochaine maintenance est recalculée à ce rythme : le fuseau de la maison n'est
+# connu qu'une fois Home Assistant connecté (UTC d'ici là). Calculée une seule fois au
+# démarrage, la première maintenance partait à 3 h 30 UTC, soit 4 h 30 ou 5 h 30 à Paris.
+SCHEDULE_CHECK_S = 60.0
 
 
 class DiskUsage(BaseModel):
@@ -163,7 +167,11 @@ class Maintenance:
     async def _loop(self) -> None:
         while True:
             self._next_run_at = self.next_run(datetime.now(UTC))
-            await asyncio.sleep(max(0.0, (self._next_run_at - datetime.now(UTC)).total_seconds()))
+            wait = (self._next_run_at - datetime.now(UTC)).total_seconds()
+            if wait > SCHEDULE_CHECK_S:
+                await asyncio.sleep(SCHEDULE_CHECK_S)
+                continue
+            await asyncio.sleep(max(0.0, wait))
             try:
                 await self.run()
             except Exception as exc:  # nouvel essai la nuit suivante

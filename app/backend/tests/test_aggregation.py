@@ -424,10 +424,12 @@ def test_a_longer_hour_retention_brings_the_missing_hours_back(tmp_path: Path) -
             assert held(aggregator, ENERGY.entity_id) == [old]
             assert aggregator.status().history.since[HOUR] == old
 
+            # Raccourcie : « depuis » suit la conservation, même avant la purge de la nuit.
             requests.clear()
             save_retention(database, Retention(hour_days=183))
             assert await aggregator.extend_history() == 0  # raccourcie : rien à demander
             assert requests == []
+            assert aggregator.status().history.since[HOUR] == kept(183)
             # Rallongée avant la purge de la nuit : relue, sans doublon.
             save_retention(database, Retention(hour_days=HOUR_DAYS))
             assert await aggregator.extend_history() == 3
