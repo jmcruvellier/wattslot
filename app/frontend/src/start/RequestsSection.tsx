@@ -16,6 +16,7 @@ import { lazy, Suspense, useEffect, useState } from "react";
 
 import { getJson, postJson } from "../api";
 import { useI18n } from "../i18n/I18nProvider";
+import { cycleLabels } from "../plan/cycleLabel";
 import { declareLaunched } from "../plan/declared";
 import { hour } from "../plan/format";
 import Panel from "../ui/Panel";
@@ -127,6 +128,13 @@ export default function RequestsSection({
   };
 
   const name = (request: UserRequest) => names.get(request.device) ?? request.device;
+  // Demandes en cours placées dans le plan du jour : le nom de leur cycle, numéroté dès que
+  // l'équipement en a plusieurs — deux « Sèche-linge » sans numéro ne disaient pas lequel
+  // marquer « Fait » (constaté le 28/11/2026).
+  const labels = cycleLabels(
+    load.requests.flatMap((request) => (request.status === "open" && request.cycle ? [request.cycle] : [])),
+  );
+  const openName = (request: UserRequest) => (request.cycle ? labels.get(request.cycle) : undefined) ?? name(request);
 
   // Où en est une demande en cours : lancée, déclarée lancée, pas encore calculée ou placée ; sinon rien,
   // sauf l'heure de fin souhaitée si elle en a une. Sous un jour, sa date ne se redit pas (« au
@@ -171,7 +179,7 @@ export default function RequestsSection({
         <ul className="requests-list" aria-label={t("requests.open_list")}>
           {opened.map((request) => (
             <li key={request.id}>
-              <span className="requests-name">{name(request)}</span>
+              <span className="requests-name">{openName(request)}</span>
               <span className="requests-state">{state(request)}</span>
               <span className="requests-actions">
                   {!future && request.cycle && !request.launched_on && !request.declared && !started.includes(request.cycle) && (

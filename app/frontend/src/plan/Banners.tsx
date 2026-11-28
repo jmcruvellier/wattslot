@@ -8,6 +8,7 @@
 import { useI18n } from "../i18n/I18nProvider";
 import type { Language } from "../i18n/translate";
 import { sunWindow } from "./agendaEntries";
+import { cycleLabels } from "./cycleLabel";
 import { clock, duration, hour, kwh, percent, time } from "./format";
 import { useState, type ReactNode } from "react";
 
@@ -176,17 +177,18 @@ function WeatherPill({
 
 type Translate = ReturnType<typeof useI18n>["t"];
 
-/** Un appareil de la tuile : son nom, où il en est, son énergie (mesurée, sinon prévue). */
-function deviceLine(status: DeviceStatus, t: Translate, lang: Language): [string, string, string] {
+/** Un appareil de la tuile : son nom (``name`` : numéroté quand l'équipement a plusieurs cycles
+ * ce jour-là), où il en est, son énergie (mesurée, sinon prévue). */
+function deviceLine(status: DeviceStatus, name: string, t: Translate, lang: Language): [string, string, string] {
   const gap = status.energy_gap_percent !== null ? ` (${signed(status.energy_gap_percent, "%")})` : "";
   const measured = status.actual_kwh === null ? "" : `${kwh(status.actual_kwh)} kWh${gap}`;
   const running = status.running ? `, ${t("plan.banner.equip.running")}` : "";
   switch (status.status) {
     case "on_time":
-      return [status.device, t("plan.banner.rows.started", { time: clock(status.actual_start_min ?? 0, lang) }) + running, measured];
+      return [name, t("plan.banner.rows.started", { time: clock(status.actual_start_min ?? 0, lang) }) + running, measured];
     case "shifted":
       return [
-        status.device,
+        name,
         t("plan.banner.rows.started_shifted", {
           time: clock(status.actual_start_min ?? 0, lang),
           shift: `${(status.shift_min ?? 0) > 0 ? "+" : "−"}${duration(status.shift_min ?? 0, lang)}`,
@@ -195,7 +197,7 @@ function deviceLine(status: DeviceStatus, t: Translate, lang: Language): [string
       ];
     case "no_cycle":
       return [
-        status.device,
+        name,
         t("plan.banner.rows.not_started", {
           start: clock(status.planned_start_min, lang),
           end: clock(status.planned_end_min, lang),
@@ -204,7 +206,7 @@ function deviceLine(status: DeviceStatus, t: Translate, lang: Language): [string
       ];
     default:
       return [
-        status.device,
+        name,
         t("plan.banner.rows.planned", { time: clock(status.planned_start_min, lang) }),
         `${kwh(status.planned_kwh)} kWh`,
       ];
@@ -213,8 +215,12 @@ function deviceLine(status: DeviceStatus, t: Translate, lang: Language): [string
 
 function EquipmentPill({ timeline, future }: { timeline: Timeline; future: boolean }) {
   const { language, t } = useI18n();
+  const plannedCycles = timeline.rows
+    .filter((row) => row.kind === "cycle")
+    .flatMap((row) => row.planned.filter((bar) => !bar.carried).map((bar) => bar.cycle ?? row.device));
+  const labels = cycleLabels([...timeline.statuses.map((status) => status.device), ...plannedCycles]);
   const judged: [string, string, string][] = [
-    ...timeline.statuses.map((status) => deviceLine(status, t, language)),
+    ...timeline.statuses.map((status) => deviceLine(status, labels.get(status.device) ?? status.device, t, language)),
     ...timeline.unplanned.map((u): [string, string, string] => [
       u.device,
       t("plan.banner.rows.unplanned", { time: clock(u.start_min, language) }),
@@ -232,7 +238,7 @@ function EquipmentPill({ timeline, future }: { timeline: Timeline; future: boole
             row.planned
               .filter((bar) => !bar.carried)
               .map((bar): [string, string, string] => [
-                bar.cycle ?? row.device,
+                labels.get(bar.cycle ?? row.device) ?? bar.cycle ?? row.device,
                 t("plan.banner.rows.planned", { time: clock(bar.start_hour * 60, language) }),
                 `${kwh(bar.energy_kwh)} kWh`,
               ]),

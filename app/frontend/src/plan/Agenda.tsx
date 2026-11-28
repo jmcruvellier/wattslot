@@ -54,7 +54,7 @@ function Entry({
       return (
         <li className="agenda-entry agenda-row" data-kind="cycle">
           {time}
-          <span className="agenda-title">{entry.device}</span>
+          <span className="agenda-title">{entry.label}</span>
           {energy}
         </li>
       );
@@ -66,7 +66,7 @@ function Entry({
           <summary className="agenda-row">
             {time}
             <span className="agenda-title">
-              {entry.device} <Icon name="chevron-right" size={16} />
+              {entry.label} <Icon name="chevron-right" size={16} />
             </span>
             {energy}
           </summary>

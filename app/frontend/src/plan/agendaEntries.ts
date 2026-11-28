@@ -7,6 +7,7 @@
 // résumé de la journée donne la plage où le soleil produit le plus.
 
 import { hourOfDay } from "../i18n/homeTime";
+import { cycleLabels } from "./cycleLabel";
 import type { OtherStart } from "./OtherStarts";
 import type { Bar, DayView, TimelineRow } from "./types";
 
@@ -15,7 +16,8 @@ export type AgendaEntry =
       kind: "cycle";
       minute: number;
       end: number;
-      device: string;
+      device: string; // identité du cycle : celle que prennent les actions
+      label: string; // nom affiché : numéroté dès que l'équipement a plusieurs cycles ce jour-là
       explanation: string | null;
       // Autres départs proposés par le plan et départ choisi : dépliés sous l'explication.
       alternatives: OtherStart[];
@@ -97,6 +99,11 @@ function batteryMax(view: DayView, limit: number): { minute: number; percent: nu
 export function agenda(view: DayView): AgendaEntry[] {
   const explanations = new Map(view.explanations.map((item) => [item.device, item]));
   const statuses = new Map(view.timeline.statuses.map((status) => [status.device, status]));
+  const labels = cycleLabels(
+    view.timeline.rows
+      .filter((row) => row.kind === "cycle")
+      .flatMap((row) => row.planned.filter((bar) => !bar.carried).map((bar) => bar.cycle ?? row.device)),
+  );
   const entries: AgendaEntry[] = [];
   const limit = measuredUntil(view);
   for (const row of view.timeline.rows) {
@@ -118,6 +125,7 @@ export function agenda(view: DayView): AgendaEntry[] {
           minute,
           end,
           device: cycle,
+          label: labels.get(cycle) ?? cycle,
           explanation: why?.text ?? null,
           alternatives: (why?.explanation?.alternatives ?? []).map((other) => ({
             start_min: other.debut_min,

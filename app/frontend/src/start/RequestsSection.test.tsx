@@ -100,6 +100,20 @@ describe("RequestsSection", () => {
     expect(screen.getByText("Lave-linge : fait").closest("details")?.open).toBe(false);
   });
 
+  it("numérote les demandes en cours d'un équipement qui a plusieurs cycles dans le plan du jour", async () => {
+    // 28/11/2026 : deux « Lave-linge » sans numéro, « Fait » cliqué sur la mauvaise.
+    mockApi(DEVICES, [
+      { ...OPEN, id: 2, device: "washer", cycle: "Lave-linge #2" },
+      { ...OPEN, id: 1, device: "washer", cycle: "Lave-linge", declared: true },
+      { ...OPEN, id: 3, cycle: "Lave-vaisselle" }, // un seul cycle : pas de numéro
+      { ...OPEN, id: 4, device: "washer" }, // pas dans le plan du jour : son nom seul
+    ]);
+    renderSection();
+
+    const names = (await screen.findAllByRole("listitem")).map((item) => item.querySelector(".requests-name")?.textContent);
+    expect(names).toEqual(["Lave-linge #2", "Lave-linge #1", "Lave-vaisselle", "Lave-linge"]);
+  });
+
   it("déclare lancé le cycle d'une demande placée dans le plan du jour", async () => {
     const user = userEvent.setup();
     const placed = { ...OPEN, cycle: "Lave-vaisselle #2" };
