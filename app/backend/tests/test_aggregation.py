@@ -341,6 +341,30 @@ def test_imports_home_assistant_statistics_before_the_raw_readings(tmp_path: Pat
     assert history.since == {QUARTER: at(-30), HOUR: at(-120)}
 
 
+class StubIngestorNotReady(StubIngestor):
+    ready = False
+
+
+def test_the_history_marker_waits_for_home_assistant(tmp_path: Path) -> None:
+    """Avant la connexion à Home Assistant, le fuseau de la maison n'est pas connu : le repère
+    du début des heures n'est ni posé ni déplacé (posé à minuit UTC, il reculait ensuite à
+    minuit local et faisait redemander ces heures à HA à chaque démarrage)."""
+    database = open_database(tmp_path)
+    aggregator = Aggregator(
+        cast(Ingestor, StubIngestorNotReady()),
+        RawStores(tmp_path),
+        GraphStore(tmp_path),
+        open_database(tmp_path),
+    )
+
+    assert asyncio.run(aggregator.extend_history()) == 0
+
+    marker = database.execute(
+        "SELECT value FROM app_settings WHERE key = ?", (aggregation.HOURS_FROM_KEY,)
+    ).fetchone()
+    assert marker is None
+
+
 def test_a_longer_hour_retention_brings_the_missing_hours_back(tmp_path: Path) -> None:
     """Conservation des heures allongée : les heures entre le nouveau début et l'ancien sont
     reprises de HA, une entité par tour, sans doublon après un arrêt en cours de route ; rien

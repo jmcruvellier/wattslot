@@ -633,6 +633,11 @@ class Aggregator:
         nouveau début par ``import_history``. HA garde ses statistiques horaires sans limite :
         ce qu'une purge a retiré revient, sauf pour un capteur que HA ne connaît plus.
         """
+        # Le fuseau de la maison n'est connu qu'une fois Home Assistant connecté (UTC d'ici
+        # là) : le repère, calculé à minuit UTC au démarrage, reculait ensuite à minuit local
+        # et faisait redemander une ou deux heures à HA pour chaque capteur, à chaque démarrage.
+        if not self._ingestor.ready:
+            return 0
         needed = await self._since(HOUR)
         covered = await asyncio.to_thread(self._hours_from)
         if covered is None or needed >= covered:
