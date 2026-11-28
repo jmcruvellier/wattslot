@@ -45,6 +45,31 @@ describe("construction de l'agenda", () => {
     expect(cycles.map((entry) => [entry.minute, entry.end])).toEqual([[1320, 1500]]);
   });
 
+  it("numérote le premier cycle d'un équipement qui en a plusieurs dans la journée", () => {
+    // 28/11/2026 : « Sèche Linge » puis « Sèche Linge #2 » dans « La journée ».
+    const rows = TOMORROW.timeline.rows.map((row) =>
+      row.device === "Lave-linge"
+        ? {
+            ...row,
+            actual: [],
+            planned: [
+              { ...row.planned[0], cycle: "Lave-linge" },
+              { ...row.planned[0], start_hour: 15, end_hour: 16.5, cycle: "Lave-linge #2" },
+            ],
+          }
+        : row,
+    );
+    const cycles = agenda({ ...TOMORROW, timeline: { ...TOMORROW.timeline, rows } }).filter(
+      (entry) => entry.kind === "cycle",
+    );
+
+    // Le nom affiché est numéroté ; l'identité, que prennent les actions, ne change pas.
+    expect(cycles.map((entry) => (entry.kind === "cycle" ? [entry.device, entry.label] : []))).toEqual([
+      ["Lave-linge", "Lave-linge #1"],
+      ["Lave-linge #2", "Lave-linge #2"],
+    ]);
+  });
+
   it("joint son explication à chaque appareil", () => {
     const view = { ...TODAY, explanations: [{ device: "Lave-linge", text: "Au plus fort du soleil." }] };
     expect(agenda(view)[1]).toMatchObject({ device: "Lave-linge", explanation: "Au plus fort du soleil." });
