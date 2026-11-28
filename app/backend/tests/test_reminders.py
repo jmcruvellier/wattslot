@@ -140,6 +140,37 @@ def test_routes_ask_and_cancel_a_reminder(tmp_path: Path) -> None:
         assert client.delete("/api/reminders/Lave-linge").status_code == 404
 
 
+def test_the_second_cycle_of_the_day_can_be_reminded(tmp_path: Path) -> None:
+    """28/11/2026 : premier lave-linge déclaré lancé, « Me le rappeler » pour le second
+    répondait « Le rappel n'a pas pu être enregistré » : la route cherchait « Lave-linge #2 »
+    parmi les lignes de la frise, qui portent le nom de l'équipement."""
+    today = datetime.now(UTC).date()
+    state = state_of(LINGE)
+    washer = next(item for item in state["planning"] if item["equipement"] == "Lave-linge")
+    second = {**washer, "rang": 2, "heure_debut": 15, "heure_fin": 17}
+    second.pop("debut_min", None)
+    second.pop("fin_min", None)
+    plan = {**state, "planning": [*state["planning"], second], "date_cible": today}
+    with TestClient(create_app(_settings(tmp_path))) as client:
+        PlanStore(open_database(tmp_path / "data")).save("today", today, plan, 1.0, False)
+
+        created = client.post("/api/reminders", json={"device": "Lave-linge #2"})
+
+        assert created.status_code == 201
+        assert created.json() == {"device": "Lave-linge #2", "day": today.isoformat()}
+        refused = client.post("/api/reminders", json={"device": "Lave-linge #3"})
+        assert (refused.status_code, refused.json()["detail"]) == (422, "not_planned")
+        assert client.delete("/api/reminders/Lave-linge%20%232").status_code == 204
+
+    # À son heure, le rappel part au nom du cycle.
+    database = open_database(tmp_path / "data")
+    reminders.ask(database, "Lave-linge #2", today, datetime.now(UTC))
+    late = datetime(today.year, today.month, today.day, 15, 30, tzinfo=PARIS)
+    to_send, launched = reminders.due(plan, {"Lave-linge #2"}, late, PARIS, "fr")
+    assert [(found.device, found.start_min) for found in to_send] == [("Lave-linge #2", 900)]
+    assert launched == []
+
+
 def test_reminder_window_is_the_plan_day_only(tmp_path: Path) -> None:
     client, (sent, _) = _scenario(tmp_path, "notify.phone", [at(11) + timedelta(days=1)])
     assert sent == [[]] and client.calls == []
