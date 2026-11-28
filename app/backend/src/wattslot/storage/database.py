@@ -269,6 +269,10 @@ MIGRATIONS: tuple[str, ...] = (
     UPDATE app_settings SET value = json_set(value, '$.hour_days', 456)
     WHERE key = 'retention' AND json_extract(value, '$.hour_days') IS NULL
     """,
+    # 31 : déclaration « C'est lancé » dont la demande est close (faite) : l'appareil n'est plus
+    # dit « marqué comme lancé », mais l'instant déclaré reste pour la journée — c'est lui qui
+    # sépare deux cycles enchaînés dans les mesures (``journal.real_cycles``).
+    "ALTER TABLE declared_launches ADD COLUMN closed INTEGER NOT NULL DEFAULT 0",
 )
 
 

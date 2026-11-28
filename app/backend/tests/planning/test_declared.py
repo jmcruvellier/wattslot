@@ -49,6 +49,39 @@ def test_a_declaration_is_forgotten_with_its_request(tmp_path: Path) -> None:
     assert declared.forget_request(database, "app-3") == 1
 
 
+def test_a_done_request_keeps_the_declared_moment_for_the_day(tmp_path: Path) -> None:
+    """28/11/2026 : deux séchages enchaînés, séparés dans les mesures par l'instant déclaré du
+    second. « Fait » effaçait la déclaration : ils redevenaient une seule activité, et le
+    second était dit « pas lancé ». L'instant reste, la déclaration n'est plus en vigueur."""
+    database = open_database(tmp_path)
+    day = date(2026, 11, 28)
+    first, second = (datetime(2026, 11, 28, hour, 3, tzinfo=UTC) for hour in (11, 14))
+    declared.declare(database, day, "Sèche-linge", first, request="app-1")
+    declared.declare(database, day, "Sèche-linge #2", second, request="app-2")
+    declared.declare(database, day, "Lave-linge", first, request="app-3")
+
+    assert declared.forget_request(database, "app-2", keep_moment=True) == 1  # « Fait »
+    assert declared.forget_closed(database, day, {"app-3"}) == 1  # « app-1 » close ailleurs
+    assert declared.forget_closed(database, day, {"app-3"}) == 0  # déjà close
+
+    assert declared.load(database, day) == {"Lave-linge"}
+    assert declared.moments(database, day) == {
+        "Sèche-linge": first,
+        "Sèche-linge #2": second,
+        "Lave-linge": first,
+    }
+    # Rien à retirer pour une demande close ; une demande annulée efface sa déclaration.
+    assert not declared.withdraw(database, day, "Sèche-linge #2")
+    assert declared.forget_request(database, "app-3") == 1
+    assert "Lave-linge" not in declared.moments(database, day)
+
+    # Nouvelle demande du même cycle, déclarée à son tour : en vigueur, à son propre instant.
+    later = datetime(2026, 11, 28, 16, 0, tzinfo=UTC)
+    declared.declare(database, day, "Sèche-linge #2", later, request="app-9")
+    assert declared.load(database, day) == {"Sèche-linge #2"}
+    assert declared.moments(database, day)["Sèche-linge #2"] == later
+
+
 def test_the_route_ties_the_declaration_to_the_request_of_the_cycle(tmp_path: Path) -> None:
     app = FastAPI()
     app.include_router(declared.router)
