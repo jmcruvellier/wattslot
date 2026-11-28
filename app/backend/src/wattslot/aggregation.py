@@ -960,6 +960,10 @@ class Aggregator:
                 if value is not None:
                     moment = datetime.fromisoformat(value)
                     since[period] = min(since.get(period, moment), moment)
+        # Après une purge, les heures ne remontent plus à leur reprise : pas avant le repère.
+        hours_from = self._hours_from()
+        if hours_from is not None and HOUR in since:
+            since[HOUR] = max(since[HOUR], hours_from)
         imported = {row[0] for row in rows}
         return HistoryStatus(
             imported=len(imported & set(targets)),
