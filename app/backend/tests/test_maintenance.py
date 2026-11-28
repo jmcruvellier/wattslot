@@ -233,13 +233,16 @@ def test_directory_size_ignores_files_removed_while_measuring(
     assert directory_size(tmp_path / "absent") == 0
 
 
-def test_whole_expired_months_are_removed_in_one_go(
+def test_whole_expired_months_are_removed_by_batches(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Première maintenance après le passage des heures à 15 mois : des années à retirer. Les
-    mois entièrement échus partent d'un bloc avec un seul ``flush`` pour tous (deux fois moins
-    d'écritures au banc que capteur par capteur) ; seul le mois entamé est vidé capteur par
-    capteur."""
+    """Première maintenance après le passage des heures à 15 mois : des années à retirer. Un
+    mois entièrement échu est vidé par lots, sans distinguer les capteurs, et écrit avant le
+    suivant (mémoire bornée : la première purge réelle, un mois par transaction et un seul
+    ``flush``, est montée à 1,8 Go) ; seul le mois entamé est vidé capteur par capteur."""
+    monkeypatch.setattr("wattslot.maintenance.PRUNE_BATCH", 1)
+    trims: list[bool] = []
+    monkeypatch.setattr(memory, "trim", lambda: trims.append(True))
     maintenance, _, graph = _maintenance(tmp_path, NOW)
     for month in (3, 4, 5):  # 2025, entièrement échus (limite : le 16/07/2025 à minuit)
         _aggregate(graph, HOUR, datetime(2025, month, 10, 10, tzinfo=UTC))
@@ -269,10 +272,20 @@ def test_whole_expired_months_are_removed_in_one_go(
     assert _starts(graph, HOUR) == ["2025-07-20T10:00:00Z", "2026-10-01T10:00:00Z"]
     kept = [g.rsplit("/", 1)[1] for g in graph.named_graphs(f"{BASE}/graph/aggregates/{HOUR}/")]
     assert kept == ["2025-07", "2026-10"]
-    # Un flush pour les trois mois entiers, un pour le mois entamé ; une suppression par requête
-    # pour le seul capteur du mois entamé.
-    assert len(flushes) == 2
-    assert len(updates) == 1 and "2025-07" in updates[0]
+    # Un flush par mois entier et un pour le mois entamé ; deux lots d'un agrégat par mois
+    # entier, une suppression pour le seul capteur du mois entamé.
+    assert len(flushes) == 4
+    assert [u.split("aggregates/PT1H/")[1][:7] for u in updates] == [
+        "2025-03",
+        "2025-03",
+        "2025-04",
+        "2025-04",
+        "2025-05",
+        "2025-05",
+        "2025-07",
+    ]
+    assert "madeBySensor" in updates[-1] and "madeBySensor" not in updates[0]
+    assert trims == [True]  # mémoire rendue au système dès la fin de la purge
 
 
 def test_hours_without_limit_are_never_removed(tmp_path: Path) -> None:

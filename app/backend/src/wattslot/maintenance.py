@@ -41,6 +41,15 @@ from wattslot.storage.database import DATABASE_FILENAME
 from wattslot.storage.graph import GRAPH_DIRNAME, GraphStore
 from wattslot.storage.raw import SOSA, XSD, RawStores
 
+# Un mois entièrement échu est vidé par lots d'agrégats, puis écrit (``flush``) avant le mois
+# suivant. Une transaction du magasin reste en mémoire jusqu'à sa validation, et ce qui est
+# validé y reste jusqu'au ``flush`` : la première purge réelle (777 000 heures, 28/11/2026),
+# un mois par transaction et un seul ``flush`` à la fin, est montée à 1,8 Go. Banc sur dix mois
+# de 60 000 heures, depuis 275 Mo : 2 240 Mo ainsi, 770 Mo avec un ``flush`` par mois, 600 Mo
+# par lots de 5 000 ; avec le ``flush`` par mois, le compactage rend aussi la place (592 Mo
+# au lieu de 1 794 pour un magasin de 1 403 Mo).
+PRUNE_BATCH = 5000
+
 __all__ = ["Retention", "load_retention", "save_retention"]  # repris par les appelants
 
 logger = logging.getLogger(__name__)
@@ -240,13 +249,16 @@ class Maintenance:
             self._graph.optimize()
             run.compacted = True
             step("optimize")
+            # La mémoire libérée par la purge reste à l'allocateur : rendue tout de suite, sans
+            # attendre le calcul suivant.
+            memory.trim()
         run.duration_s = round(time_module.monotonic() - began, 1)
         return run
 
     def _prune(self, period: str, cutoff: datetime) -> tuple[int, int]:
         """Supprime les agrégats d'une période antérieurs à ``cutoff`` : les mois entièrement
-        échus d'un bloc, le mois entamé capteur par capteur ; rend le nombre d'agrégats supprimés
-        et celui des graphes mensuels retirés."""
+        échus par lots de ``PRUNE_BATCH``, le mois entamé capteur par capteur ; rend le nombre
+        d'agrégats supprimés et celui des graphes mensuels retirés."""
         zone = self._raw.zone
         removed = graphs_removed = 0
         partial = []
@@ -258,14 +270,21 @@ class Maintenance:
             if datetime.combine(following, time(), zone) > cutoff:
                 partial.append(graph)
                 continue
-            for row in self._graph.select(
-                f"SELECT (COUNT(?a) AS ?n) WHERE {{ GRAPH <{graph}> {{ ?a <{VOCAB}start> ?t }} }}"
-            ):
+            aggregates = f"GRAPH <{graph}> {{ ?a <{VOCAB}start> ?t }}"
+            for row in self._graph.select(f"SELECT (COUNT(?a) AS ?n) WHERE {{ {aggregates} }}"):
                 removed += int(row["n"])
-            self._graph.remove_graph(graph, flush=False)
-            graphs_removed += 1
-        if graphs_removed:
+            while any(
+                True for _ in self._graph.select(f"SELECT ?a WHERE {{ {aggregates} }} LIMIT 1")
+            ):
+                self._graph.update(
+                    f"DELETE {{ GRAPH <{graph}> {{ ?a ?p ?o }} }} WHERE {{ GRAPH <{graph}> {{ "
+                    f"{{ SELECT ?a WHERE {{ ?a <{VOCAB}start> ?t }} LIMIT {PRUNE_BATCH} }} "
+                    f"?a ?p ?o }} }}",
+                    flush=False,
+                )
+            self._graph.remove_graph(graph, flush=False)  # ce qui reste du graphe
             self._graph.flush()
+            graphs_removed += 1
         for graph in partial:
             sensors = [
                 row["s"]
